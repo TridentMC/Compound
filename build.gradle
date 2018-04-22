@@ -59,8 +59,8 @@ processResources {
     }
 }
 
-# Borrowed from Concrete, another great solution for mod utilities!
-# (https://github.com/elytra/Concrete)
+// Borrowed from Concrete, another great solution for mod utilities!
+// (https://github.com/elytra/Concrete)
 
 task buildCore(type: Jar) {
 	baseName = 'compound-core'
