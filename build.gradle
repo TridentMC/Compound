@@ -9,7 +9,7 @@ buildscript {
 }
 
 plugins {
-	id 'net.minecrell.licenser' version '0.3'
+    id 'net.minecrell.licenser' version '0.3'
 }
 
 apply plugin: 'net.minecraftforge.gradle.forge'
@@ -30,12 +30,12 @@ license {
 }
 
 minecraft {
-    version = "1.12.2-14.23.2.2611"
+    version = "1.12.2-14.23.3.2673"
     runDir = "run"
-    
- 
-    mappings = "snapshot_20171130"
-    makeObfSourceJar = false 
+
+
+    mappings = "snapshot_20180424"
+    makeObfSourceJar = false
 }
 
 dependencies {
@@ -50,10 +50,10 @@ processResources {
 
     from(sourceSets.main.resources.srcDirs) {
         include 'mcmod.info'
-                
-        expand 'version':project.version, 'mcversion':project.minecraft.version
+
+        expand 'version': project.version, 'mcversion': project.minecraft.version
     }
-        
+
     from(sourceSets.main.resources.srcDirs) {
         exclude 'mcmod.info'
     }
@@ -63,32 +63,39 @@ processResources {
 // (https://github.com/elytra/Concrete)
 
 task buildCore(type: Jar) {
-	baseName = 'compound-core'
-	from(sourceSets.main.output) {
-		include 'com/tridevmc/compound/core/**'
-	}
+    baseName = 'compound-core'
+    from(sourceSets.main.output) {
+        include 'com/tridevmc/compound/core/**'
+    }
 }
 
 task buildGui(type: Jar) {
-	baseName = 'compound-gui'
-	from(sourceSets.main.output) {
-		include 'com/tridevmc/compound/gui/**'
-	}
+    baseName = 'compound-gui'
+    from(sourceSets.main.output) {
+        include 'com/tridevmc/compound/gui/**'
+    }
 }
 
 task buildInventory(type: Jar) {
-	baseName = 'compound-inventory'
-	from(sourceSets.main.output) {
-		include 'com/tridevmc/compound/inventory/**'
-	}
+    baseName = 'compound-inventory'
+    from(sourceSets.main.output) {
+        include 'com/tridevmc/compound/inventory/**'
+    }
+}
+
+task buildNetwork(type: Jar) {
+    baseName = 'compound-network'
+    from(sourceSets.main.output) {
+        include 'com/tridevmc/compound/network/**'
+    }
 }
 
 reobf {
-	buildCore { mappingType = 'SEARGE' }
-	buildGui { mappingType = 'SEARGE' }
-	buildInventory { mappingType = 'SEARGE' }
+    buildCore { mappingType = 'SEARGE' }
+    buildGui { mappingType = 'SEARGE' }
+    buildInventory { mappingType = 'SEARGE' }
 }
 
 artifacts {
-	archives buildCore, buildGui, buildInventory
+    archives buildCore, buildGui, buildInventory, buildNetwork
 }
