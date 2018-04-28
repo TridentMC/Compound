@@ -7,12 +7,14 @@ import net.minecraftforge.client.model.ModelLoader;
 
 @SuppressWarnings("MethodCallSideOnly")
 public class ClientProxy extends CommonProxy {
-	public void init() {
-		super.init();
-	}
 
-	@Override
-	public void registerItemRenderer(Item item, int meta, String id) {
-		ModelLoader.setCustomModelResourceLocation(item, meta, new ModelResourceLocation(Molecule.MOD_ID + ":" + id, "inventory"));
-	}
+    public void init() {
+        super.init();
+    }
+
+    @Override
+    public void registerItemRenderer(Item item, int meta, String id) {
+        ModelLoader.setCustomModelResourceLocation(item, meta,
+            new ModelResourceLocation(Molecule.MOD_ID + ":" + id, "inventory"));
+    }
 }
