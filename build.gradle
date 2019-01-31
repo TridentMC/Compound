@@ -8,31 +8,32 @@ buildscript {
     }
 }
 
-plugins {
-    id 'net.minecrell.licenser' version '0.3'
-}
+//plugins {
+//    id 'net.minecrell.licenser' version '0.3'
+//}
 
 apply plugin: 'net.minecraftforge.gradle.forge'
+apply plugin: 'maven-publish'
 
 // === CHANGE BELOW HERE === //
 
-version = "0.1.0"
+version = "0.0.1"
 group = "com.tridevmc"
 archivesBaseName = "Compound"
+ext.versionTag = ''
 
 sourceCompatibility = targetCompatibility = '1.8'
 compileJava {
     sourceCompatibility = targetCompatibility = '1.8'
 }
 
-license {
-    header = project.file('HEADER')
-}
+//license { TODO: Re-enable this, just disabling to test ci.
+//    header = project.file('HEADER')
+//}
 
 minecraft {
     version = "1.12.2-14.23.3.2673"
     runDir = "run"
-
 
     mappings = "snapshot_20180424"
     makeObfSourceJar = false
@@ -59,8 +60,19 @@ processResources {
     }
 }
 
-// Borrowed from Concrete, another great solution for mod utilities!
-// (https://github.com/elytra/Concrete)
+if (file('private.gradle').exists()) {
+    apply from: 'private.gradle'
+}
+
+// Borrowed from concrete
+// (https://github.com/elytra/concrete)
+
+task buildAll(type: Jar) {
+    baseName = 'compound-all'
+    from(sourceSets.main.output) {
+        include 'com/tridevmc/compound/**'
+    }
+}
 
 task buildCore(type: Jar) {
     baseName = 'compound-core'
@@ -97,5 +109,42 @@ reobf {
 }
 
 artifacts {
-    archives buildCore, buildGui, buildInventory, buildNetwork
+    archives buildAll, buildCore, buildGui, buildInventory, buildNetwork
+}
+
+print(versionTag)
+
+publishing {
+	publications {
+		all(MavenPublication) {
+			groupId 'com.tridevmc.compound'
+			artifactId 'compound-all'
+			version project.version + versionTag
+			artifact buildAll
+		}
+		core(MavenPublication) {
+			groupId 'com.tridevmc.compound'
+			artifactId 'compound-core'
+			version project.version + versionTag
+			artifact buildCore
+		}
+		block(MavenPublication) {
+			groupId 'com.tridevmc.compound'
+			artifactId 'compound-gui'
+			version project.version + versionTag
+			artifact buildGui
+		}
+		inventory(MavenPublication) {
+			groupId 'com.tridevmc.compound'
+			artifactId 'compound-inventory'
+			version project.version + versionTag
+			artifact buildInventory
+		}
+		recipe(MavenPublication) {
+			groupId 'com.tridevmc.compound'
+			artifactId 'compound-network'
+			version project.version + versionTag
+			artifact buildNetwork
+		}
+	}
 }
