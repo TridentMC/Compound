@@ -1,10 +1,12 @@
 package com.tridevmc.compound.core.reflect;
 
+import net.minecraftforge.fml.relauncher.ReflectionHelper;
+import org.apache.commons.lang3.reflect.FieldUtils;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
-import org.apache.commons.lang3.reflect.FieldUtils;
+import java.lang.reflect.Type;
 
 /**
  * A wrapper for fields that allows easier access to their values.
@@ -32,7 +34,7 @@ public class WrappedField {
     /**
      * Finds a field matching the given information and creates a wrapper for it.
      *
-     * @param clazz the class to search within.
+     * @param clazz     the class to search within.
      * @param fieldName the field name to search.
      * @return a WrappedField representing the field that was found.
      */
@@ -43,7 +45,7 @@ public class WrappedField {
     /**
      * Finds a field matching the given information and creates a wrapper for it.
      *
-     * @param clazz the class to search within.
+     * @param clazz      the class to search within.
      * @param fieldNames the possible names of the field.
      * @return a WrappedField representing the field that was found.
      */
@@ -74,7 +76,7 @@ public class WrappedField {
      * Gets the value of the field on the given target.
      *
      * @param target the instance to get the field value from.
-     * @param force whether to force access to get the value.
+     * @param force  whether to force access to get the value.
      * @return the value of the field on the given target.
      */
     public Object getValue(Object target, boolean force) {
@@ -86,7 +88,7 @@ public class WrappedField {
             }
         } catch (IllegalAccessException e) {
             throw new RuntimeException(
-                String.format("Failed to read value of field %s", this.field.getName()), e);
+                    String.format("Failed to read value of field %s", this.field.getName()), e);
         }
     }
 
@@ -103,7 +105,7 @@ public class WrappedField {
      * Sets the value on the field of the target instance to the given value.
      *
      * @param target the instance to set the value on.
-     * @param value the new value of the field.
+     * @param value  the new value of the field.
      */
     public void setValue(Object target, Object value) {
         this.setValue(target, value, true);
@@ -113,8 +115,8 @@ public class WrappedField {
      * Sets the value of the field on the given target instance to the given value.
      *
      * @param target the instance to set the value on.
-     * @param value the new value of the field.
-     * @param force whether to force access to set the value.
+     * @param value  the new value of the field.
+     * @param force  whether to force access to set the value.
      */
     public void setValue(Object target, Object value, boolean force) {
         try {
@@ -125,13 +127,13 @@ public class WrappedField {
             }
         } catch (IllegalAccessException e) {
             throw new RuntimeException(
-                String.format("Failed to write value of field %s", this.field.getName()), e);
+                    String.format("Failed to write value of field %s", this.field.getName()), e);
         }
     }
 
     /**
      * Gets the declaring class of the field.
-     *
+     * <p>
      * Delegates to method in Field class.
      *
      * @return the class that declared this field.
@@ -142,7 +144,7 @@ public class WrappedField {
 
     /**
      * Gets the name of the field.
-     *
+     * <p>
      * Delegates to method in Field class.
      *
      * @return the field's name.
@@ -153,7 +155,7 @@ public class WrappedField {
 
     /**
      * Gets the type of the field.
-     *
+     * <p>
      * Delegates to method in Field class.
      *
      * @return the field's type.
@@ -163,12 +165,23 @@ public class WrappedField {
     }
 
     /**
-     * Gets the annotation of the given type and class on this field.
+     * Gets the type of the field with generics in tact.
+     * <p>
+     * Delegates to method in Field class.
      *
+     * @return the field's type with generics.
+     */
+    public Type getGenericType() {
+        return field.getGenericType();
+    }
+
+    /**
+     * Gets the annotation of the given type and class on this field.
+     * <p>
      * Delegates to method in Field class.
      *
      * @param annotationClass the class of the annotation.
-     * @param <T> the type of annotation to receive
+     * @param <T>             the type of annotation to receive
      * @return the annotation of the given type and class.
      */
     public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
@@ -177,11 +190,11 @@ public class WrappedField {
 
     /**
      * Gets an array of annotations matching the given type and class on this field.
-     *
+     * <p>
      * Delegates to method in Field class.
      *
      * @param annotationClass the class of the desired annotations.
-     * @param <T> the type of annotation to receive.
+     * @param <T>             the type of annotation to receive.
      * @return an array of matching annotations.
      */
     public <T extends Annotation> T[] getAnnotationsByType(Class<T> annotationClass) {
@@ -190,7 +203,7 @@ public class WrappedField {
 
     /**
      * Checks if this field is accessible.
-     *
+     * <p>
      * Delegates to method in Field class.
      *
      * @return whether the this field is accessible or not.
@@ -201,7 +214,7 @@ public class WrappedField {
 
     /**
      * Checks if the given annotation class is present on this field.
-     *
+     * <p>
      * Delegates to method in Field class.
      *
      * @param annotationClass the class of annotation to search for.
@@ -209,5 +222,16 @@ public class WrappedField {
      */
     public boolean isAnnotationPresent(Class<? extends Annotation> annotationClass) {
         return field.isAnnotationPresent(annotationClass);
+    }
+
+    /**
+     * Sets the accessibility of the field to the value specified.
+     * <p>
+     * Delegates to method in Field class.
+     *
+     * @param b the accessibility to set the field to.
+     */
+    public void setAccessible(boolean b) {
+        field.setAccessible(b);
     }
 }

@@ -1,10 +1,12 @@
 package com.tridevmc.molecule;
 
 
+import com.tridevmc.compound.config.CompoundConfig;
 import com.tridevmc.compound.gui.CompoundGui;
 import com.tridevmc.compound.gui.CompoundTestGui;
 import com.tridevmc.compound.gui.widget.WidgetTest;
 import com.tridevmc.compound.network.core.CompoundNetwork;
+import com.tridevmc.molecule.config.MoleculeConfig;
 import com.tridevmc.molecule.init.MLBlocks;
 import com.tridevmc.molecule.network.ClientTestMessage;
 import com.tridevmc.molecule.network.ServerTestMessage;
@@ -28,24 +30,27 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @Mod(
-    modid = Molecule.MOD_ID,
-    name = Molecule.NAME,
-    version = Molecule.VERSION)
+        modid = Molecule.MOD_ID,
+        name = Molecule.NAME,
+        version = Molecule.VERSION,
+        guiFactory = "com.tridevmc.molecule.config.MoleculeGuiFactory")
 @Mod.EventBusSubscriber
 public final class Molecule {
 
     public static final String MOD_ID = "molecule";
-    public static final String NAME = "Moldule";
+    public static final String NAME = "Molecule";
     public static final String VERSION = "1.12.2-0.1.0";
 
     public static final Logger LOG = LogManager.getLogger(Molecule.NAME);
     @SidedProxy(
-        clientSide = "com.tridevmc.molecule.proxy.ClientProxy",
-        serverSide = "com.tridevmc.molecule.proxy.CommonProxy")
+            clientSide = "com.tridevmc.molecule.proxy.ClientProxy",
+            serverSide = "com.tridevmc.molecule.proxy.CommonProxy")
     public static CommonProxy PROXY;
     public static MoleculeCreativeTab CREATIVE_TAB = new MoleculeCreativeTab(Molecule.NAME);
     @Mod.Instance
     public static Molecule INSTANCE;
+    public static MoleculeConfig CONFIG;
+
     static CompoundGui gui;
 
     @SubscribeEvent
@@ -72,6 +77,7 @@ public final class Molecule {
     public void preInit(FMLPreInitializationEvent event) throws Exception {
         PROXY.init();
 
+        CONFIG = CompoundConfig.of(MoleculeConfig.class, MOD_ID);
         CompoundNetwork.createNetwork("molecule", event.getAsmData());
     }
 

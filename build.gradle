@@ -102,49 +102,65 @@ task buildNetwork(type: Jar) {
     }
 }
 
+task buildConfig(type: Jar) {
+    baseName = 'compound-config'
+    from(sourceSets.main.output) {
+        include 'com/tridevmc/compound/config/**'
+    }
+}
+
 reobf {
+    buildAll { mappingType = 'SEARGE' }
     buildCore { mappingType = 'SEARGE' }
     buildGui { mappingType = 'SEARGE' }
     buildInventory { mappingType = 'SEARGE' }
+    buildNetwork { mappingType = 'SEARGE' }
+    buildConfig { mappingType = 'SEARGE' }
 }
 
 artifacts {
-    archives buildAll, buildCore, buildGui, buildInventory, buildNetwork
+    archives buildAll, buildCore, buildGui, buildInventory, buildNetwork, buildConfig
 }
 
 print(versionTag)
 
 publishing {
-	publications {
-		all(MavenPublication) {
-			groupId 'com.tridevmc.compound'
-			artifactId 'compound-all'
-			version project.version + versionTag
-			artifact buildAll
-		}
-		core(MavenPublication) {
-			groupId 'com.tridevmc.compound'
-			artifactId 'compound-core'
-			version project.version + versionTag
-			artifact buildCore
-		}
-		block(MavenPublication) {
-			groupId 'com.tridevmc.compound'
-			artifactId 'compound-gui'
-			version project.version + versionTag
-			artifact buildGui
-		}
-		inventory(MavenPublication) {
-			groupId 'com.tridevmc.compound'
-			artifactId 'compound-inventory'
-			version project.version + versionTag
-			artifact buildInventory
-		}
-		recipe(MavenPublication) {
-			groupId 'com.tridevmc.compound'
-			artifactId 'compound-network'
-			version project.version + versionTag
-			artifact buildNetwork
-		}
-	}
+    publications {
+        all(MavenPublication) {
+            groupId 'com.tridevmc.compound'
+            artifactId 'compound-all'
+            version project.version + versionTag
+            artifact buildAll
+        }
+        core(MavenPublication) {
+            groupId 'com.tridevmc.compound'
+            artifactId 'compound-core'
+            version project.version + versionTag
+            artifact buildCore
+        }
+        block(MavenPublication) {
+            groupId 'com.tridevmc.compound'
+            artifactId 'compound-gui'
+            version project.version + versionTag
+            artifact buildGui
+        }
+        inventory(MavenPublication) {
+            groupId 'com.tridevmc.compound'
+            artifactId 'compound-inventory'
+            version project.version + versionTag
+            artifact buildInventory
+        }
+        network(MavenPublication) {
+            groupId 'com.tridevmc.compound'
+            artifactId 'compound-network'
+            version project.version + versionTag
+            artifact buildNetwork
+        }
+        config(MavenPublication) {
+            groupId 'com.tridevmc.compound'
+            artifactId 'compound-config'
+            version project.version + versionTag
+            artifact buildConfig
+        }
+    }
 }
