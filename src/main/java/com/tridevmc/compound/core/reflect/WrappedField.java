@@ -11,7 +11,7 @@ import java.lang.reflect.Type;
 /**
  * A wrapper for fields that allows easier access to their values.
  */
-public class WrappedField {
+public class WrappedField<T> {
 
     private Field field;
     private boolean isStatic;
@@ -27,8 +27,8 @@ public class WrappedField {
      * @param field the real field.
      * @return a WrappedField representing the given field.
      */
-    public static WrappedField create(Field field) {
-        return new WrappedField(field);
+    public static <T> WrappedField<T> create(Field field) {
+        return new WrappedField<T>(field);
     }
 
     /**
@@ -38,8 +38,8 @@ public class WrappedField {
      * @param fieldName the field name to search.
      * @return a WrappedField representing the field that was found.
      */
-    public static WrappedField create(Class clazz, String fieldName) {
-        return new WrappedField(FieldUtils.getField(clazz, fieldName, true));
+    public static <T> WrappedField<T> create(Class clazz, String fieldName) {
+        return new WrappedField<T>(FieldUtils.getField(clazz, fieldName, true));
     }
 
     /**
@@ -49,8 +49,8 @@ public class WrappedField {
      * @param fieldNames the possible names of the field.
      * @return a WrappedField representing the field that was found.
      */
-    public static WrappedField create(Class clazz, String[] fieldNames) {
-        return new WrappedField(ReflectionHelper.findField(clazz, fieldNames));
+    public static <T> WrappedField<T> create(Class clazz, String[] fieldNames) {
+        return new WrappedField<T>(ReflectionHelper.findField(clazz, fieldNames));
     }
 
     /**
@@ -58,7 +58,7 @@ public class WrappedField {
      *
      * @return the value of the static field.
      */
-    public Object getStaticValue() {
+    public T getStaticValue() {
         return this.getValue(null);
     }
 
@@ -68,7 +68,7 @@ public class WrappedField {
      * @param target the instance to get the field value from.
      * @return the value of the field on the given target.
      */
-    public Object getValue(Object target) {
+    public T getValue(Object target) {
         return this.getValue(target, true);
     }
 
@@ -79,12 +79,12 @@ public class WrappedField {
      * @param force  whether to force access to get the value.
      * @return the value of the field on the given target.
      */
-    public Object getValue(Object target, boolean force) {
+    public T getValue(Object target, boolean force) {
         try {
             if (this.isStatic) {
-                return FieldUtils.readStaticField(this.field, force);
+                return (T) FieldUtils.readStaticField(this.field, force);
             } else {
-                return FieldUtils.readField(this.field, target, force);
+                return (T) FieldUtils.readField(this.field, target, force);
             }
         } catch (IllegalAccessException e) {
             throw new RuntimeException(
@@ -97,7 +97,7 @@ public class WrappedField {
      *
      * @param value the value to set on the static field.
      */
-    public void setStaticValue(Object value) {
+    public void setStaticValue(T value) {
         this.setValue(null, value);
     }
 
@@ -107,7 +107,7 @@ public class WrappedField {
      * @param target the instance to set the value on.
      * @param value  the new value of the field.
      */
-    public void setValue(Object target, Object value) {
+    public void setValue(Object target, T value) {
         this.setValue(target, value, true);
     }
 
@@ -118,7 +118,7 @@ public class WrappedField {
      * @param value  the new value of the field.
      * @param force  whether to force access to set the value.
      */
-    public void setValue(Object target, Object value, boolean force) {
+    public void setValue(Object target, T value, boolean force) {
         try {
             if (this.isStatic) {
                 FieldUtils.writeStaticField(this.field, value);

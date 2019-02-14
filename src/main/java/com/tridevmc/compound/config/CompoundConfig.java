@@ -18,10 +18,15 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Map;
 
+/**
+ * Used for the management and creation of Compound configs, create and load a configuration using {@link #of(Class, String)}
+ *
+ * @param <T> the class of the configuration object.
+ */
 public class CompoundConfig<T> {
 
     private static final Logger LOG = LogManager.getLogger("CompoundConfig");
-    protected static final Map<Object, CompoundConfig> KNOWN_CONFIGS = Maps.newHashMap();
+    static final Map<Object, CompoundConfig> KNOWN_CONFIGS = Maps.newHashMap();
 
     private final String modId;
     private final Configuration forgeConfig;
@@ -92,29 +97,75 @@ public class CompoundConfig<T> {
         }
     }
 
+    /**
+     * Create a configuration object managed by a Compound config.
+     *
+     * @param type  the type of class the Compound config will generate.
+     * @param modId the id of the mod the configuration is from.
+     * @param <C>   the class of the configuration object the Compound config will manage.
+     * @return the configuration object that will be managed by the Compound config.
+     */
     @Nullable
     public static <C> C of(@Nonnull Class<C> type, @Nonnull String modId) {
         File configDir = new File(Loader.instance().getConfigDir(), modId);
         return CompoundConfig.of(type, modId, new File(configDir, modId + ".cfg"), null);
     }
 
+    /**
+     * Create a configuration object managed by a Compound config.
+     *
+     * @param type       the type of class the Compound config will generate.
+     * @param modId      the id of the mod the configuration is from.
+     * @param configName the name of the configuration file to manage.
+     * @param <C>        the class of the configuration object the Compound config will manage.
+     * @return the configuration object that will be managed by the Compound config.
+     */
     @Nullable
     public static <C> C of(@Nonnull Class<C> type, @Nonnull String modId, @Nullable String configName) {
         File configDir = new File(Loader.instance().getConfigDir(), modId);
         return CompoundConfig.of(type, modId, new File(configDir, configName + ".cfg"), "");
     }
 
+    /**
+     * Create a configuration object managed by a Compound config.
+     *
+     * @param type          the type of class the Compound config will generate.
+     * @param modId         the id of the mod the configuration is from.
+     * @param configName    the name of the configuration file to manage.
+     * @param configVersion the version of the configuration file to manage.
+     * @param <C>           the class of the configuration object the Compound config will manage.
+     * @return the configuration object that will be managed by the Compound config.
+     */
     @Nullable
     public static <C> C of(@Nonnull Class<C> type, @Nonnull String modId, @Nonnull String configName, @Nullable String configVersion) {
         File configDir = new File(Loader.instance().getConfigDir(), modId);
         return CompoundConfig.of(type, modId, new File(configDir, configName + ".cfg"), configVersion);
     }
 
+    /**
+     * Create a configuration object managed by a Compound config.
+     *
+     * @param type       the type of class the Compound config will generate.
+     * @param modId      the id of the mod the configuration is from.
+     * @param configFile the file of the configuration file to manage.
+     * @param <C>        the class of the configuration object the Compound config will manage.
+     * @return the configuration object that will be managed by the Compound config.
+     */
     @Nullable
     public static <C> C of(@Nonnull Class<C> type, @Nonnull String modId, @Nonnull File configFile) {
         return CompoundConfig.of(type, modId, configFile, null);
     }
 
+    /**
+     * Create a configuration object managed by a Compound config.
+     *
+     * @param type          the type of class the Compound config will generate.
+     * @param modId         the id of the mod the configuration is from.
+     * @param configFile    the file of the configuration file to manage.
+     * @param configVersion the version of the configuration file to manage.
+     * @param <C>           the class of the configuration object the Compound config will manage.
+     * @return the configuration object that will be managed by the Compound config.
+     */
     @Nullable
     public static <C> C of(@Nonnull Class<C> type, @Nonnull String modId, @Nonnull File configFile, @Nullable String configVersion) {
         CompoundConfig<C> cCompoundConfig = null;

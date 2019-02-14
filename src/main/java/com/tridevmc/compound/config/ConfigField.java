@@ -54,7 +54,7 @@ public class ConfigField {
         this.field = field;
         this.config = config;
 
-        ConfigValue configValue = field.getAnnotation(ConfigValue.class);
+        ConfigValue configValue = (ConfigValue) field.getAnnotation(ConfigValue.class);
         this.name = configValue.name().isEmpty() ? this.getField().getName() : configValue.name();
         this.comment = configValue.comment();
         this.langKey = configValue.langKey().isEmpty() ? config.getModId() + ".compoundconfig.gui.property." + this.getName() : configValue.langKey();
