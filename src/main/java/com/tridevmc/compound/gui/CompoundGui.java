@@ -2,15 +2,16 @@ package com.tridevmc.compound.gui;
 
 import com.tridevmc.compound.gui.grid.WidgetGrid;
 import com.tridevmc.compound.gui.grid.WidgetGridNormal;
+import net.minecraft.client.MainWindow;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.common.MinecraftForge;
 
-@SideOnly(Side.CLIENT)
+@OnlyIn(Dist.CLIENT)
 public abstract class CompoundGui extends GuiScreen {
 
     protected final WidgetGrid grid;
@@ -18,7 +19,7 @@ public abstract class CompoundGui extends GuiScreen {
 
     public CompoundGui() {
         super();
-        this.fontRenderer = Minecraft.getMinecraft().fontRenderer;
+        this.fontRenderer = Minecraft.getInstance().fontRenderer;
         this.grid = new WidgetGridNormal(0, 0, this.width, this.height);
         this.grid.onRegister(this);
     }
@@ -28,12 +29,13 @@ public abstract class CompoundGui extends GuiScreen {
     }
 
     public void drawScreen(int mouseX, int mouseY) {
-        ScaledResolution scaledresolution = new ScaledResolution(Minecraft.getMinecraft());
-        this.grid.setWidth(scaledresolution.getScaledWidth());
-        this.grid.setHeight(scaledresolution.getScaledHeight());
+        MainWindow mainWindow = Minecraft.getInstance().mainWindow;
+        this.grid.setWidth(mainWindow.getScaledWidth());
+        this.grid.setHeight(mainWindow.getScaledHeight());
         if (this.fontRenderer == null) {
             // TODO: Don't do this.
-            throw new RuntimeException("Font renderer was null on render call...");
+            return;
+            //throw new RuntimeException("Font renderer was null on render call...");
         }
         this.drawBackground(mouseX, mouseY);
         this.drawForeground(mouseX, mouseY);
@@ -72,7 +74,7 @@ public abstract class CompoundGui extends GuiScreen {
     }
 
     public void drawBeveledBox(int x, int y, int width, int height, int background, int topleft,
-        int botright) {
+                               int botright) {
         Gui.drawRect(x, y, x + width, y + height, background);
         Gui.drawRect(x, y, x + (width - 1), y + (height - 1), topleft);
         Gui.drawRect(x + 1, y + 1, x + width, y + height, botright);

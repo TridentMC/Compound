@@ -4,7 +4,7 @@ import com.tridevmc.compound.network.message.Message;
 import com.tridevmc.molecule.Molecule;
 import java.util.Random;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.Item;
+import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.BlockPos;
@@ -47,7 +47,7 @@ public class TestMessage extends Message {
             this.myChar = 'a';
             this.myString = "haha YES";
 
-            this.myItemStack = Item.REGISTRY.getRandomObject(new Random()).getDefaultInstance();
+            this.myItemStack = Items.TRIDENT.getDefaultInstance();
             this.myTag = new NBTTagCompound();
             this.myTag.setFloat("Float", 4F);
             Random rand = new Random();
@@ -70,7 +70,7 @@ public class TestMessage extends Message {
             .append("myOtherBoolean", myOtherBoolean)
             .append("myChar", myChar)
             .append("myString", myString)
-            .append("myItemStack", myItemStack.getItem() + ":" + myItemStack.getMetadata())
+            .append("myItemStack", myItemStack.getItem() + ":" + myItemStack.getTag())
             .append("myTag", myTag)
             .append("myPos", myPos)
             .toString();

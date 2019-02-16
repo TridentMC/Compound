@@ -1,17 +1,17 @@
 package com.tridevmc.molecule;
 
-import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.init.Blocks;
+import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 
-public class MoleculeCreativeTab extends CreativeTabs {
+public class MoleculeItemGroup extends ItemGroup {
 
-    public MoleculeCreativeTab(String name) {
+    public MoleculeItemGroup(String name) {
         super(name);
     }
 
     @Override
-    public ItemStack getTabIconItem() {
+    public ItemStack createIcon() {
         return new ItemStack(Blocks.BARRIER, 1);
     }
 }

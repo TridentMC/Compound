@@ -1,9 +1,9 @@
 package com.tridevmc.molecule.network;
 
 import com.tridevmc.compound.network.message.RegisteredMessage;
-import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.api.distmarker.Dist;
 
-@RegisteredMessage(destination = Side.SERVER, networkChannel = "molecule")
+@RegisteredMessage(destination = Dist.DEDICATED_SERVER, networkChannel = "molecule:network")
 public class ServerTestMessage extends TestMessage {
 
     public ServerTestMessage() {

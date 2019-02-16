@@ -216,8 +216,9 @@ public class CompoundNetwork {
     private List<ModFileScanData.AnnotationData> getAnnotationDataOfType(Class annotation) {
         List<ModFileScanData> modScanData = ModList.get().getAllScanData();
         ArrayList<ModFileScanData.AnnotationData> out = Lists.newArrayList();
+        String annotationName = annotation.getName();
 
-        modScanData.stream().forEach((m) -> m.getAnnotations().stream().filter(a -> Objects.equals(a.getAnnotationType(), annotation)).forEach(a -> {
+        modScanData.stream().forEach((m) -> m.getAnnotations().stream().filter(a -> Objects.equals(a.getAnnotationType().getClassName(), annotationName)).forEach(a -> {
             Map<String, Object> annotationInfo = a.getAnnotationData();
 
             String networkChannel = (String) annotationInfo.get("networkChannel");
@@ -272,6 +273,8 @@ public class CompoundNetwork {
                 .decoder(getMsgConcept(msgClass)::fromBytes)
                 .consumer((m, ctx) -> handler.handle(m, ctx.get()))
                 .add();
+
+        NETWORKS.put(msgClass, this);
     }
 
 
