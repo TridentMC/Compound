@@ -1,1 +1,3 @@
-include 'core', 'gui', 'inventory'
+rootProject.name = 'Compound'
+
+//include 'all', 'core', 'gui', 'inventory', 'network', 'config'
