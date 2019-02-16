@@ -14,8 +14,8 @@ buildscript {
 //}
 
 apply plugin: 'net.minecraftforge.gradle'
-
 apply plugin: 'eclipse'
+
 apply plugin: 'maven-publish'
 
 // === CHANGE BELOW HERE === //
@@ -53,6 +53,7 @@ minecraft {
         }
     }
 }
+
 
 dependencies {
     minecraft 'net.minecraftforge:forge:1.13.2-25.0.13'
@@ -105,15 +106,6 @@ task buildConfig(type: Jar) {
     from(sourceSets.main.output) {
         include 'com/tridevmc/compound/config/**'
     }
-}
-
-reobf {
-    buildAll {  }
-    buildCore {  }
-    buildGui {  }
-    buildInventory {  }
-    buildNetwork {  }
-    buildConfig {  }
 }
 
 artifacts {
