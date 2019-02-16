@@ -1,6 +1,5 @@
 package com.tridevmc.compound.core.reflect;
 
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import org.apache.commons.lang3.reflect.FieldUtils;
 
 import java.lang.annotation.Annotation;
@@ -50,7 +49,15 @@ public class WrappedField<T> {
      * @return a WrappedField representing the field that was found.
      */
     public static <T> WrappedField<T> create(Class clazz, String[] fieldNames) {
-        return new WrappedField<T>(ReflectionHelper.findField(clazz, fieldNames));
+        Field f = null;
+        for (String fieldName : fieldNames) {
+            if (f != null) {
+                break;
+            }
+            f = FieldUtils.getDeclaredField(clazz, fieldName, true);
+        }
+
+        return new WrappedField<T>(f);
     }
 
     /**

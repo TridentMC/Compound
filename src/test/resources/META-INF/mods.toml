@@ -1,0 +1,9 @@
+modLoader="javafml"
+loaderVersion="[24,)"
+[[mods]]
+modId="molecule"
+version="${file.jarVersion}"
+displayName="Molecule"
+description='''
+Molecule is the test mod used for the development of Trident Compound.
+'''

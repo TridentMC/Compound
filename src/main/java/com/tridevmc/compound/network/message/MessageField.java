@@ -3,14 +3,15 @@ package com.tridevmc.compound.network.message;
 import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.network.marshallers.MarshallerBase;
 import io.netty.buffer.ByteBuf;
+import net.minecraft.network.PacketBuffer;
+
+import javax.annotation.Nullable;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import javax.annotation.Nullable;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
 
 /**
  * Stores information about a field on a message object.
- *
+ * <p>
  * For internal use only.
  *
  * @param <T> the type of the message field.
@@ -41,7 +42,7 @@ public class MessageField<T> {
 
         if (field.getType().isArray()) {
             T[] values = (T[]) getValue(msg);
-            ByteBufUtils.writeVarInt(target, values.length, 5);
+            new PacketBuffer(target).writeVarInt(values.length);
             for (T value : values) {
                 getMarshaller().writeTo(target, value);
             }
@@ -57,7 +58,7 @@ public class MessageField<T> {
         }
 
         if (field.getType().isArray()) {
-            int size = ByteBufUtils.readVarInt(source, 5);
+            int size = new PacketBuffer(source).readVarInt();
 
             T[] values = (T[]) Array.newInstance(field.getType(), size);
             for (int i = 0; i < size; i++) {
