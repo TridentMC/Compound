@@ -4,7 +4,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import net.minecraftforge.fml.relauncher.Side;
+
+import net.minecraftforge.api.distmarker.Dist;
 
 /**
  * Used for registration of different message types, attach to a message class and provide the
@@ -28,5 +29,5 @@ public @interface RegisteredMessage {
      *
      * @return the destination for the annotated message.
      */
-    Side destination();
+    Dist destination();
 }

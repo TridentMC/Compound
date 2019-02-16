@@ -2,41 +2,33 @@ package com.tridevmc.compound.network.core;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.tridevmc.compound.network.marshallers.DefaultMarshallers;
-import com.tridevmc.compound.network.marshallers.EnumMarshallerPriority;
-import com.tridevmc.compound.network.marshallers.MarshallerBase;
-import com.tridevmc.compound.network.marshallers.MarshallerMetadata;
-import com.tridevmc.compound.network.marshallers.RegisteredMarshaller;
-import com.tridevmc.compound.network.marshallers.SetMarshaller;
+import com.tridevmc.compound.network.marshallers.*;
 import com.tridevmc.compound.network.message.Message;
 import com.tridevmc.compound.network.message.MessageConcept;
 import com.tridevmc.compound.network.message.MessageField;
 import com.tridevmc.compound.network.message.RegisteredMessage;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import net.minecraftforge.fml.common.discovery.ASMDataTable;
-import net.minecraftforge.fml.common.discovery.ASMDataTable.ASMData;
-import net.minecraftforge.fml.common.discovery.asm.ModAnnotation.EnumHolder;
-import net.minecraftforge.fml.common.network.FMLEmbeddedChannel;
-import net.minecraftforge.fml.common.network.NetworkRegistry;
-import net.minecraftforge.fml.relauncher.Side;
+import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.loading.moddiscovery.ModAnnotation;
+import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraftforge.fml.network.NetworkRegistry;
+import net.minecraftforge.fml.network.simple.SimpleChannel;
+import net.minecraftforge.forgespi.language.ModFileScanData;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.lang.reflect.Field;
+import java.util.*;
+import java.util.stream.Collectors;
+
 /**
  * CompoundNetwork is used for the creation and management of networks.
- *
+ * <p>
  * Use createNetwork to create and register a network for a given channel.
- *
+ * <p>
  * Use @RegisteredMessage and @RegisteredMarshaller for registration of implementations.
  */
 public class CompoundNetwork {
@@ -45,48 +37,64 @@ public class CompoundNetwork {
 
     private final Logger logger;
     private final String name;
-    private EnumMap<Side, FMLEmbeddedChannel> channels;
-    private CompoundIndexedCodec codec;
+    private final SimpleChannel networkChannel;
 
     private Map<Class<? extends Message>, MessageConcept> messageConcepts;
     private Map<String, MarshallerBase> marshallers;
     private Map<Class, String> marshallerIds;
-    private CompoundChannelHandler universalChannelHandler;
+    private Map<Dist, ICompoundNetworkHandler> handlers;
 
-    private CompoundNetwork(String name) {
-        this.name = name;
-        this.codec = new CompoundIndexedCodec(this);
-        this.channels = NetworkRegistry.INSTANCE.newChannel(name, codec);
-        this.universalChannelHandler = new CompoundChannelHandler(this);
 
+    private CompoundNetwork(ResourceLocation name, String version) {
+        this.name = name.toString();
+        this.networkChannel = NetworkRegistry.ChannelBuilder.named(name)
+                .clientAcceptedVersions((v) -> true)
+                .serverAcceptedVersions((v) -> true)
+                .networkProtocolVersion(() -> version)
+                .simpleChannel();
         this.messageConcepts = Maps.newHashMap();
         this.marshallers = Maps.newHashMap();
         this.marshallerIds = Maps.newHashMap();
+        this.handlers = Maps.newHashMap();
+        this.handlers.put(Dist.CLIENT, new CompoundClientHandler());
+        this.handlers.put(Dist.DEDICATED_SERVER, new CompoundServerHandler());
 
         this.logger = LogManager.getLogger("CompoundNetwork-" + name);
+    }
+
+    private <T extends NetworkEvent> void onNetworkEvent(T packet) {
+        final NetworkEvent.Context wrappedContext = packet.getSource().get();
+        final PacketBuffer payload = packet.getPayload();
+        ResourceLocation targetNetworkReceiver = null;
+        PacketBuffer data = null;
+        if (payload != null) {
+            targetNetworkReceiver = payload.readResourceLocation();
+            final int payloadLength = payload.readVarInt();
+            data = new PacketBuffer(payload.readBytes(payloadLength));
+        }
+
     }
 
     /**
      * Create a network with the given name with messages and marshallers loaded from the given data
      * table.
      *
-     * @param name the name to use for the network.
-     * @param dataTable an ASMDataTable that can be used for locating registered marshallers and
-     * messages.
+     * @param name    the name to use for the network.
+     * @param version the version to use for the network.
      * @return the created network instance.
      */
-    public static CompoundNetwork createNetwork(String name, ASMDataTable dataTable) {
+    public static CompoundNetwork createNetwork(ResourceLocation name, String version) {
         try {
-            CompoundNetwork network = new CompoundNetwork(name);
+            CompoundNetwork network = new CompoundNetwork(name, version);
             network.loadDefaultMarshallers();
-            network.discoverMarshallers(dataTable);
-            network.discoverMessages(dataTable);
+            network.discoverMarshallers();
+            network.discoverMessages();
             return network;
         } catch (Exception e) {
             throw new RuntimeException(String.format(
-                "Failed to create a CompoundNetwork with name %s",
-                name),
-                e);
+                    "Failed to create a CompoundNetwork with name %s",
+                    name),
+                    e);
         }
     }
 
@@ -113,52 +121,43 @@ public class CompoundNetwork {
         }
     }
 
-    private void discoverMarshallers(ASMDataTable dataTable) throws Exception {
-        Set<ASMData> registeredMarshallers = dataTable.getAll(RegisteredMarshaller.class.getName());
-        ArrayList<ASMData> applicableMarshallers = Lists.newArrayList();
-        for (ASMData registeredMarshaller : registeredMarshallers) {
-            Map<String, Object> annotationInfo = registeredMarshaller.getAnnotationInfo();
-
-            String networkChannel = (String) annotationInfo.get("networkChannel");
-            if (Objects.equals(networkChannel, this.name)) {
-                applicableMarshallers.add(registeredMarshaller);
-            }
-        }
+    private void discoverMarshallers() {
+        List<ModFileScanData.AnnotationData> applicableMarshallers = getAnnotationDataOfType(RegisteredMarshaller.class);
 
         applicableMarshallers.sort(Comparator.comparingInt(
-            o -> EnumMarshallerPriority
-                .valueOf(((EnumHolder) o.getAnnotationInfo().get("priority")).getValue())
-                .getRank()));
+                o -> EnumMarshallerPriority
+                        .valueOf(((ModAnnotation.EnumHolder) o.getAnnotationData().get("priority")).getValue())
+                        .getRank()));
 
-        for (ASMData applicableMarshaller : applicableMarshallers) {
+        for (ModFileScanData.AnnotationData applicableMarshaller : applicableMarshallers) {
             MarshallerBase marshaller = null;
 
             try {
-                marshaller = (MarshallerBase) Class.forName(applicableMarshaller.getClassName())
-                    .newInstance();
+                marshaller = (MarshallerBase) Class.forName(applicableMarshaller.getMemberName())
+                        .newInstance();
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(String.format(
-                    "Unable to find class: \"%s\" for registered marshaller.",
-                    applicableMarshaller.getClassName()),
-                    e);
+                        "Unable to find class: \"%s\" for registered marshaller.",
+                        applicableMarshaller.getMemberName()),
+                        e);
             } catch (ClassCastException e) {
                 throw new RuntimeException(String.format(
-                    "Class: \"%s\" annotated with RegisteredMarshaller does not extend MarshallerBase.",
-                    applicableMarshaller.getClassName()),
-                    e);
+                        "Class: \"%s\" annotated with RegisteredMarshaller does not extend MarshallerBase.",
+                        applicableMarshaller.getMemberName()),
+                        e);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(String.format(
-                    "Failed to instantiate %s, is there an empty constructor?",
-                    applicableMarshaller.getClassName()),
-                    e);
+                        "Failed to instantiate %s, is there an empty constructor?",
+                        applicableMarshaller.getMemberName()),
+                        e);
             } catch (InstantiationException e) {
                 throw new RuntimeException(String.format(
-                    "Failed to instantiate %s",
-                    applicableMarshaller.getClassName()),
-                    e);
+                        "Failed to instantiate %s",
+                        applicableMarshaller.getMemberName()),
+                        e);
             }
 
-            Map<String, Object> annotationInfo = applicableMarshaller.getAnnotationInfo();
+            Map<String, Object> annotationInfo = applicableMarshaller.getAnnotationData();
             String[] ids = (String[]) annotationInfo.get("ids");
             Class[] acceptedTypes = (Class[]) annotationInfo.get("acceptedTypes");
 
@@ -172,38 +171,39 @@ public class CompoundNetwork {
         }
     }
 
-    private void discoverMessages(ASMDataTable dataTable) throws Exception {
-        Set<ASMData> registeredMessages = dataTable.getAll(RegisteredMessage.class.getName());
+    private void discoverMessages() {
+        List<ModFileScanData.AnnotationData> applicableMessages = getAnnotationDataOfType(RegisteredMessage.class);
+
         int currentDiscriminator = 0;
-        for (ASMData registeredMessage : registeredMessages) {
-            Map<String, Object> annotationInfo = registeredMessage.getAnnotationInfo();
+        for (ModFileScanData.AnnotationData registeredMessage : applicableMessages) {
+            Map<String, Object> annotationInfo = registeredMessage.getAnnotationData();
 
             String networkChannel = (String) annotationInfo.get("networkChannel");
 
             if (Objects.equals(networkChannel, this.name)) {
                 // Found a message that can be registered for this network instance.
-                EnumHolder destinationHolder = (EnumHolder) annotationInfo.get("destination");
-                Side destination = Side.valueOf(destinationHolder.getValue());
+                ModAnnotation.EnumHolder destinationHolder = (ModAnnotation.EnumHolder) annotationInfo.get("destination");
+                Dist destination = Dist.valueOf(destinationHolder.getValue());
                 Class<? extends Message> msgClass = null;
                 try {
                     msgClass = (Class<? extends Message>) Class
-                        .forName(registeredMessage.getClassName());
+                            .forName(registeredMessage.getMemberName());
                     msgClass.getConstructor();
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException(String.format(
-                        "Unable to find class: %s for registered message.",
-                        registeredMessage.getClassName()),
-                        e);
+                            "Unable to find class: %s for registered message.",
+                            registeredMessage.getMemberName()),
+                            e);
                 } catch (ClassCastException e) {
                     throw new RuntimeException(String.format(
-                        "Class \"%s\" annotated with RegisteredMessage does not extend Message.",
-                        registeredMessage.getClassName()),
-                        e);
+                            "Class \"%s\" annotated with RegisteredMessage does not extend Message.",
+                            registeredMessage.getMemberName()),
+                            e);
                 } catch (NoSuchMethodException e) {
                     throw new RuntimeException(String.format(
-                        "Class \"%s\" does not have an empty constructor available, this is required for networking.",
-                        registeredMessage.getClassName()),
-                        e);
+                            "Class \"%s\" does not have an empty constructor available, this is required for networking.",
+                            registeredMessage.getMemberName()),
+                            e);
                 }
 
                 createConcept(msgClass, destination);
@@ -213,7 +213,23 @@ public class CompoundNetwork {
         }
     }
 
-    private void createConcept(Class<? extends Message> msgClass, Side destination) {
+    private List<ModFileScanData.AnnotationData> getAnnotationDataOfType(Class annotation) {
+        List<ModFileScanData> modScanData = ModList.get().getAllScanData();
+        ArrayList<ModFileScanData.AnnotationData> out = Lists.newArrayList();
+
+        modScanData.stream().forEach((m) -> m.getAnnotations().stream().filter(a -> Objects.equals(a.getAnnotationType(), annotation)).forEach(a -> {
+            Map<String, Object> annotationInfo = a.getAnnotationData();
+
+            String networkChannel = (String) annotationInfo.get("networkChannel");
+            if (Objects.equals(networkChannel, this.name)) {
+                out.add(a);
+            }
+        }));
+
+        return out;
+    }
+
+    private void createConcept(Class<? extends Message> msgClass, Dist destination) {
         List<Field> usableFields = FieldUtils.getAllFieldsList(msgClass).stream().filter(field -> {
             Class fieldDeclarer = field.getDeclaringClass();
             return !fieldDeclarer.equals(Message.class) && !fieldDeclarer.equals(Object.class);
@@ -224,8 +240,7 @@ public class CompoundNetwork {
             return marshallers.get(marshallerId).getMessageField(field);
         }).collect(Collectors.toList());
 
-        MessageConcept msgConcept = new MessageConcept(msgClass, new ArrayList<>(messageFields),
-            destination);
+        MessageConcept msgConcept = new MessageConcept(this, msgClass, new ArrayList<>(messageFields), destination);
         messageConcepts.put(msgClass, msgConcept);
     }
 
@@ -237,39 +252,44 @@ public class CompoundNetwork {
         String marshallerId = this.marshallerIds.getOrDefault(fieldClass, null);
         if (marshallerId == null) {
             Optional<Class> matchingClass = this.marshallerIds.keySet().stream()
-                .filter(c -> c.isAssignableFrom(fieldClass)).findFirst();
+                    .filter(c -> c.isAssignableFrom(fieldClass)).findFirst();
 
             if (matchingClass.isPresent()) {
                 marshallerId = this.marshallerIds.get(matchingClass.get());
             } else {
                 throw new RuntimeException(
-                    "Unable to find marshaller id for " + fieldClass.getName());
+                        "Unable to find marshaller id for " + fieldClass.getName());
             }
         }
 
         return marshallerId;
     }
 
-    private void registerMessage(Class<? extends Message> msgClass, Side side, int discriminator) {
-        this.codec.addDiscriminator(discriminator, msgClass);
-
-        FMLEmbeddedChannel channel = channels.get(side);
-        String type = channel.findChannelHandlerNameForType(this.codec.getClass());
-        String name = msgClass.getName() + ":" + side.name();
-
-        channels.get(side).pipeline().addAfter(type, name, this.universalChannelHandler);
-        NETWORKS.put(msgClass, this);
+    private <M extends Message> void registerMessage(Class<M> msgClass, Dist side, int discriminator) {
+        ICompoundNetworkHandler handler = this.handlers.get(side);
+        this.networkChannel.messageBuilder(msgClass, discriminator)
+                .encoder(getMsgConcept(msgClass)::toBytes)
+                .decoder(getMsgConcept(msgClass)::fromBytes)
+                .consumer((m, ctx) -> handler.handle(m, ctx.get()))
+                .add();
     }
+
 
     public Logger getLogger() {
         return logger;
+    }
+
+    public SimpleChannel getNetworkChannel() {
+        return networkChannel;
     }
 
     public MessageConcept getMsgConcept(Message msg) {
         return this.messageConcepts.get(msg.getClass());
     }
 
-    public EnumMap<Side, FMLEmbeddedChannel> getChannels() {
-        return channels;
+    public MessageConcept getMsgConcept(Class<? extends Message> msgClass) {
+        return this.messageConcepts.get(msgClass);
     }
+
+
 }
