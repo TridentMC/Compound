@@ -33,7 +33,7 @@ sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = co
 
 minecraft {
     mappings channel: 'snapshot', version: '20180921-1.13'
-    
+
     runs {
         client = {
             // recommended logging data for a userdev environment
@@ -55,7 +55,7 @@ minecraft {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.13.2-25.0.10'
+    minecraft 'net.minecraftforge:forge:1.13.2-25.0.13'
 }
 
 if (file('private.gradle').exists()) {
