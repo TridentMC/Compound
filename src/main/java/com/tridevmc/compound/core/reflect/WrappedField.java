@@ -61,30 +61,30 @@ public class WrappedField<T> {
     }
 
     /**
-     * Gets the value of the field, only use if the field is static.
+     * Gets the type of the field, only use if the field is static.
      *
-     * @return the value of the static field.
+     * @return the type of the static field.
      */
     public T getStaticValue() {
         return this.getValue(null);
     }
 
     /**
-     * Gets the value of the field on the given target.
+     * Gets the type of the field on the given target.
      *
-     * @param target the instance to get the field value from.
-     * @return the value of the field on the given target.
+     * @param target the instance to get the field type from.
+     * @return the type of the field on the given target.
      */
     public T getValue(Object target) {
         return this.getValue(target, true);
     }
 
     /**
-     * Gets the value of the field on the given target.
+     * Gets the type of the field on the given target.
      *
-     * @param target the instance to get the field value from.
-     * @param force  whether to force access to get the value.
-     * @return the value of the field on the given target.
+     * @param target the instance to get the field type from.
+     * @param force  whether to force access to get the type.
+     * @return the type of the field on the given target.
      */
     public T getValue(Object target, boolean force) {
         try {
@@ -95,35 +95,35 @@ public class WrappedField<T> {
             }
         } catch (IllegalAccessException e) {
             throw new RuntimeException(
-                    String.format("Failed to read value of field %s", this.field.getName()), e);
+                    String.format("Failed to read type of field %s", this.field.getName()), e);
         }
     }
 
     /**
-     * Sets the value on the field, only use if the field is static.
+     * Sets the type on the field, only use if the field is static.
      *
-     * @param value the value to set on the static field.
+     * @param value the type to set on the static field.
      */
     public void setStaticValue(T value) {
         this.setValue(null, value);
     }
 
     /**
-     * Sets the value on the field of the target instance to the given value.
+     * Sets the type on the field of the target instance to the given type.
      *
-     * @param target the instance to set the value on.
-     * @param value  the new value of the field.
+     * @param target the instance to set the type on.
+     * @param value  the new type of the field.
      */
     public void setValue(Object target, T value) {
         this.setValue(target, value, true);
     }
 
     /**
-     * Sets the value of the field on the given target instance to the given value.
+     * Sets the type of the field on the given target instance to the given type.
      *
-     * @param target the instance to set the value on.
-     * @param value  the new value of the field.
-     * @param force  whether to force access to set the value.
+     * @param target the instance to set the type on.
+     * @param value  the new type of the field.
+     * @param force  whether to force access to set the type.
      */
     public void setValue(Object target, T value, boolean force) {
         try {
@@ -134,7 +134,7 @@ public class WrappedField<T> {
             }
         } catch (IllegalAccessException e) {
             throw new RuntimeException(
-                    String.format("Failed to write value of field %s", this.field.getName()), e);
+                    String.format("Failed to write type of field %s", this.field.getName()), e);
         }
     }
 
@@ -232,7 +232,7 @@ public class WrappedField<T> {
     }
 
     /**
-     * Sets the accessibility of the field to the value specified.
+     * Sets the accessibility of the field to the type specified.
      * <p>
      * Delegates to method in Field class.
      *
