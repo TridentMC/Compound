@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.tridevmc.compound.core.reflect.WrappedField;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
 import org.apache.commons.lang3.tuple.Pair;
@@ -27,6 +28,7 @@ public class CompoundConfig<T> {
     private static final Logger LOG = LogManager.getLogger("CompoundConfig");
     static final Map<Object, CompoundConfig> KNOWN_CONFIGS = Maps.newHashMap();
 
+    private final CompoundModConfig modConfig;
     private final String modId;
     private final ModConfig.Type configType;
     private final ForgeConfigSpec forgeConfig;
@@ -45,8 +47,7 @@ public class CompoundConfig<T> {
         Pair<Object, ForgeConfigSpec> configure = new ForgeConfigSpec.Builder().configure(this::loadConfig);
         this.forgeConfig = configure.getRight();
 
-        ModLoadingContext.get().registerConfig(this.configType, getForgeConfig(), configFile);
-        //this.fields.forEach(ConfigField::loadField);
+        this.modConfig = new CompoundModConfig(this, ModLoadingContext.get().getActiveContainer(), configFile);
         KNOWN_CONFIGS.put(this.configInstance, this);
     }
 
@@ -80,21 +81,40 @@ public class CompoundConfig<T> {
         return this;
     }
 
-    public String getModId() {
+    protected void loadFields() {
+        this.fields.forEach(ConfigField::loadField);
+    }
+
+    protected String getModId() {
         return modId;
     }
 
-    public ForgeConfigSpec getForgeConfig() {
+    protected ForgeConfigSpec getForgeConfig() {
         return forgeConfig;
     }
 
-    public Class<T> getConfigClass() {
+    protected Class<T> getConfigClass() {
         return configClass;
     }
 
-    public T getConfigInstance() {
+    protected T getConfigInstance() {
         return configInstance;
     }
+
+    protected ModConfig.Type getConfigType() {
+        return configType;
+    }
+
+    @SubscribeEvent
+    protected void onConfigLoading(ModConfig.Loading e) {
+        LOG.info("Sup");
+    }
+
+    @SubscribeEvent
+    protected void onConfigReloading(ModConfig.ConfigReloading e) {
+        LOG.info("Bro");
+    }
+
 
     /**
      * Create a configuration object managed by a Compound config.

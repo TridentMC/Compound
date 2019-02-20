@@ -7,10 +7,12 @@ import net.minecraftforge.common.ForgeConfigSpec;
 import org.apache.commons.lang3.ArrayUtils;
 
 import javax.annotation.Nonnull;
+import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 public class ConfigField {
 
@@ -170,7 +172,8 @@ public class ConfigField {
 
     public void loadField() {
         if (this.isValueArray()) {
-            this.setListValue(this.value.get());
+            // Value arrays are always stored as a list internally, we adjust the value to match the field type later.
+            this.setListValue((List) this.value.get());
         } else {
             this.getField().setValue(this.config.getConfigInstance(), this.value.get());
         }
@@ -214,18 +217,21 @@ public class ConfigField {
         return Arrays.asList((Object[]) values);
     }
 
-    private void setListValue(Object values) {
+    private void setListValue(List values) {
         Object configInstance = this.config.getConfigInstance();
         if (this.getField().getType().isArray()) {
-            if (!this.getField().getType().getComponentType().isPrimitive()) {
-                this.getField().setValue(configInstance, toObject(values));
+            Object valueArray = Array.newInstance(this.getField().getType().getComponentType(), (values).size());
+            IntStream.range(0, values.size()).forEach(i -> Array.set(valueArray, i, values.get(i)));
+
+            if (this.getField().getType().getComponentType().isPrimitive()) {
+                this.getField().setValue(configInstance, toPrimitive(valueArray));
             } else {
-                this.getField().setValue(configInstance, values);
+                this.getField().setValue(configInstance, valueArray);
             }
         } else {
             List valueList = (List) getField().getValue(configInstance);
             valueList.clear();
-            valueList.addAll(Arrays.asList(toObject(values)));
+            valueList.addAll(values);
         }
     }
 
