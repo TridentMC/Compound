@@ -6,6 +6,7 @@ import com.tridevmc.compound.core.reflect.WrappedField;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
 import org.apache.commons.lang3.tuple.Pair;
@@ -47,7 +48,10 @@ public class CompoundConfig<T> {
         Pair<Object, ForgeConfigSpec> configure = new ForgeConfigSpec.Builder().configure(this::loadConfig);
         this.forgeConfig = configure.getRight();
 
-        this.modConfig = new CompoundModConfig(this, ModLoadingContext.get().getActiveContainer(), configFile);
+        ModContainer modContainer = ModLoadingContext.get().getActiveContainer();
+        this.modConfig = new CompoundModConfig(this, modContainer, configFile);
+        // TODO: Add config guis...
+        //modContainer.registerExtensionPoint(ExtensionPoint.CONFIGGUIFACTORY, () -> (mc, parent) -> {});
         KNOWN_CONFIGS.put(this.configInstance, this);
     }
 
