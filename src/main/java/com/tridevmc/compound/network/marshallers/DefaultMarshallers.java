@@ -147,10 +147,10 @@ public class DefaultMarshallers {
         writeVarLong(buf, value.toLong());
     }
 
-    private static class SimpleMarshaller<T> extends MarshallerBase<T> {
+    private static class SimpleMarshaller<T> extends Marshaller<T> {
 
-        private Function<ByteBuf, T> readMethod;
-        private EntryTransformer<ByteBuf, T, ByteBuf> writeMethod;
+        private final Function<ByteBuf, T> readMethod;
+        private final EntryTransformer<ByteBuf, T, ByteBuf> writeMethod;
 
         public SimpleMarshaller(Function<ByteBuf, T> readMethod,
                                 EntryTransformer<ByteBuf, T, ByteBuf> writeMethod) {
@@ -172,10 +172,10 @@ public class DefaultMarshallers {
         }
     }
 
-    private static class StaticSimpleMarshaller<T> extends MarshallerBase<T> {
+    private static class StaticSimpleMarshaller<T> extends Marshaller<T> {
 
-        private Function<ByteBuf, T> readMethod;
-        private BiConsumer<ByteBuf, T> writeMethod;
+        private final Function<ByteBuf, T> readMethod;
+        private final BiConsumer<ByteBuf, T> writeMethod;
 
         public StaticSimpleMarshaller(Function<ByteBuf, T> readMethod,
                                       BiConsumer<ByteBuf, T> writeMethod) {

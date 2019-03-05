@@ -16,16 +16,6 @@ import java.util.stream.IntStream;
 
 public class ConfigField {
 
-    private enum EnumFieldType {
-        INTEGER,
-        LONG,
-        DOUBLE,
-        BOOLEAN,
-        ENUM,
-        OBJECT,
-        LIST
-    }
-
     private static final Map<Class, EnumFieldType> TYPE_MAP = Maps.newHashMap();
 
     static {
@@ -42,24 +32,19 @@ public class ConfigField {
         TYPE_MAP.put(boolean.class, EnumFieldType.BOOLEAN);
     }
 
-
     @Nonnull
     private final WrappedField field;
     private final Class fieldType;
     private final CompoundConfig config;
     private final EnumFieldType type;
-    private ForgeConfigSpec.ConfigValue value;
-
     private final Object defaultValue;
     private final Object minValue, maxValue;
-
     private final String name;
     private final String comment;
     private final String langKey;
-
     private final boolean requiresWorldRestart;
-
     private final boolean isValueArray;
+    private ForgeConfigSpec.ConfigValue value;
 
     protected ConfigField(CompoundConfig config, @Nonnull WrappedField field) {
         this.field = field;
@@ -262,6 +247,16 @@ public class ConfigField {
 
     public boolean requiresWorldRestart() {
         return requiresWorldRestart;
+    }
+
+    private enum EnumFieldType {
+        INTEGER,
+        LONG,
+        DOUBLE,
+        BOOLEAN,
+        ENUM,
+        OBJECT,
+        LIST
     }
 
 }

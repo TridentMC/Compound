@@ -2,6 +2,7 @@ package com.tridevmc.compound.network.marshallers;
 
 import com.tridevmc.compound.network.message.MessageField;
 import io.netty.buffer.ByteBuf;
+
 import java.lang.reflect.Field;
 
 /**
@@ -10,7 +11,7 @@ import java.lang.reflect.Field;
  *
  * @param <T> The type of object this marshaller is made for.
  */
-public abstract class MarshallerBase<T> {
+public abstract class Marshaller<T> {
 
     /**
      * Read a previously written object from the given ByteBuf.
@@ -27,7 +28,6 @@ public abstract class MarshallerBase<T> {
      * @param obj the object to write.
      */
     public abstract void writeTo(ByteBuf buf, T obj);
-
 
     /**
      * Creates a message field for the given field using this marshaller.

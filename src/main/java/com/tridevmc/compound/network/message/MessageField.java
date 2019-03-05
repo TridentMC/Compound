@@ -1,7 +1,7 @@
 package com.tridevmc.compound.network.message;
 
 import com.tridevmc.compound.core.reflect.WrappedField;
-import com.tridevmc.compound.network.marshallers.MarshallerBase;
+import com.tridevmc.compound.network.marshallers.Marshaller;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.PacketBuffer;
 
@@ -18,11 +18,11 @@ import java.lang.reflect.Field;
  */
 public class MessageField<T> {
 
-    private final MarshallerBase<T> marshaller;
+    private final Marshaller<T> marshaller;
     private final WrappedField field;
     private final boolean isNullable;
 
-    public MessageField(MarshallerBase<T> marshaller, Field field) {
+    public MessageField(Marshaller<T> marshaller, Field field) {
         this.marshaller = marshaller;
         this.field = WrappedField.create(field);
 
@@ -83,7 +83,7 @@ public class MessageField<T> {
     }
 
 
-    public MarshallerBase<T> getMarshaller() {
+    public Marshaller<T> getMarshaller() {
         return marshaller;
     }
 

@@ -6,7 +6,7 @@ import net.minecraftforge.fml.network.NetworkEvent.Context;
 
 public interface ICompoundNetworkHandler {
 
-    public <M extends Message> void handle(M m, Context ctx);
+    <M extends Message> void handle(M m, Context ctx);
 
     EntityPlayer getPlayer(Context ctx);
 
