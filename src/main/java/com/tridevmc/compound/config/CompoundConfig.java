@@ -143,14 +143,4 @@ public class CompoundConfig<T> {
         return configType;
     }
 
-    @SubscribeEvent
-    protected void onConfigLoading(ModConfig.Loading e) {
-        LOG.info("Sup");
-    }
-
-    @SubscribeEvent
-    protected void onConfigReloading(ModConfig.ConfigReloading e) {
-        LOG.info("Bro");
-    }
-
 }
