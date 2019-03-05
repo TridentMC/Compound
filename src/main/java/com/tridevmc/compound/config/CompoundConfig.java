@@ -26,9 +26,8 @@ import java.util.Map;
  */
 public class CompoundConfig<T> {
 
-    private static final Logger LOG = LogManager.getLogger("CompoundConfig");
     static final Map<Object, CompoundConfig> KNOWN_CONFIGS = Maps.newHashMap();
-
+    private static final Logger LOG = LogManager.getLogger("CompoundConfig");
     private final CompoundModConfig modConfig;
     private final String modId;
     private final ModConfig.Type configType;
@@ -53,6 +52,41 @@ public class CompoundConfig<T> {
         // TODO: Add config guis...
         //modContainer.registerExtensionPoint(ExtensionPoint.CONFIGGUIFACTORY, () -> (mc, parent) -> {});
         KNOWN_CONFIGS.put(this.configInstance, this);
+    }
+
+    /**
+     * Create a configuration object managed by a Compound config.
+     *
+     * @param type  the type of class the Compound config will generate.
+     * @param modId the id of the mod the configuration is from.
+     * @param <C>   the class of the configuration object the Compound config will manage.
+     * @return the configuration object that will be managed by the Compound config.
+     */
+    @Nullable
+    public static <C> C of(@Nonnull Class<C> type, @Nonnull String modId) {
+        return CompoundConfig.of(type, modId, modId + ".toml");
+    }
+
+    /**
+     * Create a configuration object managed by a Compound config.
+     *
+     * @param type  the type of class the Compound config will generate.
+     * @param modId the id of the mod the configuration is from.
+     * @param <C>   the class of the configuration object the Compound config will manage.
+     * @return the configuration object that will be managed by the Compound config.
+     */
+    @Nullable
+    public static <C> C of(@Nonnull Class<C> type, @Nonnull String modId, @Nonnull String fileName) {
+        CompoundConfig<C> cCompoundConfig = null;
+        try {
+            cCompoundConfig = new CompoundConfig<C>(type, modId, fileName);
+            MinecraftForge.EVENT_BUS.register(cCompoundConfig);
+        } catch (Exception e) {
+            LOG.error("Failed to create compound config of type {}", type.getName());
+            e.printStackTrace();
+        }
+
+        return cCompoundConfig == null ? null : cCompoundConfig.configInstance;
     }
 
     private ModConfig.Type genConfigType() {
@@ -117,42 +151,6 @@ public class CompoundConfig<T> {
     @SubscribeEvent
     protected void onConfigReloading(ModConfig.ConfigReloading e) {
         LOG.info("Bro");
-    }
-
-
-    /**
-     * Create a configuration object managed by a Compound config.
-     *
-     * @param type  the type of class the Compound config will generate.
-     * @param modId the id of the mod the configuration is from.
-     * @param <C>   the class of the configuration object the Compound config will manage.
-     * @return the configuration object that will be managed by the Compound config.
-     */
-    @Nullable
-    public static <C> C of(@Nonnull Class<C> type, @Nonnull String modId) {
-        return CompoundConfig.of(type, modId, modId + ".toml");
-    }
-
-    /**
-     * Create a configuration object managed by a Compound config.
-     *
-     * @param type  the type of class the Compound config will generate.
-     * @param modId the id of the mod the configuration is from.
-     * @param <C>   the class of the configuration object the Compound config will manage.
-     * @return the configuration object that will be managed by the Compound config.
-     */
-    @Nullable
-    public static <C> C of(@Nonnull Class<C> type, @Nonnull String modId, @Nonnull String fileName) {
-        CompoundConfig<C> cCompoundConfig = null;
-        try {
-            cCompoundConfig = new CompoundConfig<C>(type, modId, fileName);
-            MinecraftForge.EVENT_BUS.register(cCompoundConfig);
-        } catch (Exception e) {
-            LOG.error("Failed to create compound config of type {}", type.getName());
-            e.printStackTrace();
-        }
-
-        return cCompoundConfig == null ? null : cCompoundConfig.configInstance;
     }
 
 }

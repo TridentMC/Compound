@@ -70,6 +70,15 @@ public class WrappedField<T> {
     }
 
     /**
+     * Sets the type on the field, only use if the field is static.
+     *
+     * @param value the type to set on the static field.
+     */
+    public void setStaticValue(T value) {
+        this.setValue(null, value);
+    }
+
+    /**
      * Gets the type of the field on the given target.
      *
      * @param target the instance to get the field type from.
@@ -97,15 +106,6 @@ public class WrappedField<T> {
             throw new RuntimeException(
                     String.format("Failed to read type of field %s", this.field.getName()), e);
         }
-    }
-
-    /**
-     * Sets the type on the field, only use if the field is static.
-     *
-     * @param value the type to set on the static field.
-     */
-    public void setStaticValue(T value) {
-        this.setValue(null, value);
     }
 
     /**
@@ -220,6 +220,17 @@ public class WrappedField<T> {
     }
 
     /**
+     * Sets the accessibility of the field to the type specified.
+     * <p>
+     * Delegates to method in Field class.
+     *
+     * @param b the accessibility to set the field to.
+     */
+    public void setAccessible(boolean b) {
+        field.setAccessible(b);
+    }
+
+    /**
      * Checks if the given annotation class is present on this field.
      * <p>
      * Delegates to method in Field class.
@@ -229,16 +240,5 @@ public class WrappedField<T> {
      */
     public boolean isAnnotationPresent(Class<? extends Annotation> annotationClass) {
         return field.isAnnotationPresent(annotationClass);
-    }
-
-    /**
-     * Sets the accessibility of the field to the type specified.
-     * <p>
-     * Delegates to method in Field class.
-     *
-     * @param b the accessibility to set the field to.
-     */
-    public void setAccessible(boolean b) {
-        field.setAccessible(b);
     }
 }

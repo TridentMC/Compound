@@ -24,7 +24,7 @@ public @interface RegisteredMarshaller {
      *
      * @return the name of the network channel to use.
      */
-    String networkChannel() default "";
+    String channel();
 
     /**
      * Used to determine the priority at which this marshaller will be selected for a given field.

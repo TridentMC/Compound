@@ -3,7 +3,7 @@ package com.tridevmc.compound.network.message;
 import com.tridevmc.compound.network.core.CompoundNetwork;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.LogicalSide;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -19,18 +19,18 @@ public class MessageConcept {
 
     private final CompoundNetwork network;
     private final Class<? extends Message> messageClass;
-    private final Dist messageSide;
+    private final LogicalSide messageSide;
     private final ArrayList<MessageField> messageFields;
 
     public MessageConcept(CompoundNetwork network, Class<? extends Message> messageClass,
-                          ArrayList<MessageField> messageFields, Dist messageSide) {
+                          ArrayList<MessageField> messageFields, LogicalSide messageSide) {
         this.network = network;
         this.messageClass = messageClass;
         this.messageSide = messageSide;
         this.messageFields = messageFields;
     }
 
-    public Dist getMessageSide() {
+    public LogicalSide getMessageSide() {
         return messageSide;
     }
 
