@@ -16,10 +16,32 @@ public abstract class Marshaller<T> {
     /**
      * Read a previously written object from the given ByteBuf.
      *
+     * @param field the field that the data will be injected into.
+     * @param buf   the buffer containing the item.
+     * @return the object read from the buffer.
+     */
+    public T readFrom(MessageField field, ByteBuf buf) {
+        return this.readFrom(buf);
+    }
+
+    /**
+     * Read a previously written object from the given ByteBuf.
+     *
      * @param buf the buffer containing the item.
      * @return the object read from the buffer.
      */
     public abstract T readFrom(ByteBuf buf);
+
+    /**
+     * Write the given object to the given ByteBuf for sending over the network.
+     *
+     * @param field the field the value is stored in.
+     * @param buf   the buffer to write to.
+     * @param obj   the object to write.
+     */
+    public void writeTo(MessageField field, ByteBuf buf, T obj) {
+        this.writeTo(buf, obj);
+    }
 
     /**
      * Write the given object to the given ByteBuf for sending over the network.

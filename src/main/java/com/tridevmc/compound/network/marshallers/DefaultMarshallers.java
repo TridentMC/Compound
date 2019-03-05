@@ -3,6 +3,7 @@ package com.tridevmc.compound.network.marshallers;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps.EntryTransformer;
+import com.tridevmc.compound.network.message.MessageField;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -74,6 +75,10 @@ public class DefaultMarshallers {
                 ByteBuf::writeChar
         ), new Class[]{Character.class, char.class}));
 
+        out.add(new MarshallerMetadata(new String[]{"Enum", "enum"},
+                new EnumMarshaller(),
+                new Class[]{Enum.class}));
+
         out.add(new MarshallerMetadata(new String[]{"String"}, new StaticSimpleMarshaller<String>(
                 DefaultMarshallers::readString,
                 DefaultMarshallers::writeString),
@@ -95,6 +100,7 @@ public class DefaultMarshallers {
                         DefaultMarshallers::readBlockPos,
                         DefaultMarshallers::writeBlockPos),
                 new Class[]{BlockPos.class, Vec3i.class}));
+
 
         return out;
     }
@@ -194,6 +200,24 @@ public class DefaultMarshallers {
         @Override
         public void writeTo(ByteBuf buf, T obj) {
             writeMethod.accept(buf, obj);
+        }
+    }
+
+    private static class EnumMarshaller<T extends Enum> extends Marshaller<T> {
+
+        @Override
+        public T readFrom(MessageField field, ByteBuf buf) {
+            return (T) field.getType().getEnumConstants()[buf.readInt()];
+        }
+
+        @Override
+        public T readFrom(ByteBuf buf) {
+            throw new RuntimeException("Unable to read enum with no field context.");
+        }
+
+        @Override
+        public void writeTo(ByteBuf buf, T obj) {
+            buf.writeInt(obj.ordinal());
         }
     }
 
