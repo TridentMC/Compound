@@ -7,17 +7,17 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.fml.LogicalSide;
+import net.minecraftforge.fml.LogicalSidedProvider;
 import net.minecraftforge.fml.network.NetworkDirection;
-import net.minecraftforge.fml.server.ServerLifecycleHooks;
+import net.minecraftforge.fml.network.PacketDistributor;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.Objects;
 import java.util.function.Predicate;
 
 
@@ -56,7 +56,8 @@ public abstract class Message {
      * @param playerPredicate the predicate that determines if the player should receive the packet.
      */
     public void sendToMatching(@Nonnull Predicate<EntityPlayerMP> playerPredicate) {
-        ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayers().stream()
+        MinecraftServer server = LogicalSidedProvider.INSTANCE.get(LogicalSide.SERVER);
+        server.getPlayerList().getPlayers().stream()
                 .filter(playerPredicate)
                 .forEach(this::sendTo);
     }
@@ -78,18 +79,8 @@ public abstract class Message {
      * @param range     the range around the point that the target clients are within.
      */
     public void sendToAllAround(@Nonnull DimensionType dimension, @Nonnull BlockPos pos, double range) {
-        MinecraftServer currentServer = ServerLifecycleHooks.getCurrentServer();
-        WorldServer world = DimensionManager.getWorld(currentServer, dimension, false, false);
-        if (world != null) {
-            BlockPos min = pos.subtract(new Vec3i(range, 0, range));
-            BlockPos max = pos.add(new Vec3i(range, 0, range));
-
-            currentServer.getPlayerList().getPlayers().stream().filter((e) -> {
-                BlockPos ePos = e.getPosition();
-                return ePos.getX() >= min.getX() && ePos.getX() <= max.getX() &&
-                        ePos.getZ() >= min.getZ() && ePos.getZ() <= max.getZ();
-            }).forEach(this::sendTo);
-        }
+        PacketDistributor.TargetPoint target = new PacketDistributor.TargetPoint(pos.getX(), pos.getY(), pos.getZ(), range, dimension);
+        this.getNetwork().getNetworkChannel().send(PacketDistributor.NEAR.with(() -> target), this);
     }
 
     /**
@@ -98,7 +89,7 @@ public abstract class Message {
      * @param entity the entity that the target clients are tracking.
      */
     public void sendToAllTracking(@Nonnull Entity entity) {
-        this.sendToAllTracking(entity.dimension, entity.getPosition());
+        this.getNetwork().getNetworkChannel().send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity), this);
     }
 
     /**
@@ -107,7 +98,7 @@ public abstract class Message {
      * @param tile the tile entity that the target clients are tracking.
      */
     public void sendToAllTracking(@Nonnull TileEntity tile) {
-        this.sendToAllTracking(tile.getWorld().getDimension().getType(), tile.getPos());
+        this.sendToAllTracking(tile.getWorld().getChunk(tile.getPos()));
     }
 
     /**
@@ -117,14 +108,22 @@ public abstract class Message {
      * @param pos       the coordinates of the point.
      */
     public void sendToAllTracking(@Nonnull DimensionType dimension, @Nonnull BlockPos pos) {
-        MinecraftServer currentServer = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer currentServer = LogicalSidedProvider.INSTANCE.get(LogicalSide.SERVER);
+        // Dont force load the world because if we have to load the world then nobody is tracking this to begin with.
         WorldServer world = DimensionManager.getWorld(currentServer, dimension, false, false);
         if (world != null) {
-            ChunkPos chunkPos = new ChunkPos(pos);
-            currentServer.getPlayerList().getPlayers().stream()
-                    .filter((e) -> world.getPlayerChunkMap().isPlayerWatchingChunk(e, chunkPos.x, chunkPos.z))
-                    .forEach(this::sendTo);
+            Chunk chunk = world.getChunk(pos);
+            this.sendToAllTracking(chunk);
         }
+    }
+
+    /**
+     * Sends this message to all clients tracking the given chunk.
+     *
+     * @param chunk the chunk that the target clients are tracking.
+     */
+    public void sendToAllTracking(@Nonnull Chunk chunk) {
+        this.getNetwork().getNetworkChannel().send(PacketDistributor.TRACKING_CHUNK.with(() -> chunk), this);
     }
 
     /**
@@ -133,10 +132,7 @@ public abstract class Message {
      * @param dimension the dimension this message should be sent to.
      */
     public void sendToDimension(@Nonnull DimensionType dimension) {
-        MinecraftServer currentServer = ServerLifecycleHooks.getCurrentServer();
-        currentServer.getPlayerList().getPlayers().stream()
-                .filter((e) -> Objects.equals(e.dimension, dimension))
-                .forEach(this::sendTo);
+        this.getNetwork().getNetworkChannel().send(PacketDistributor.DIMENSION.with(() -> dimension), this);
     }
 
     /**

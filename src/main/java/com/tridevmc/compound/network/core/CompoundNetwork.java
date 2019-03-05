@@ -7,18 +7,19 @@ import com.tridevmc.compound.network.message.Message;
 import com.tridevmc.compound.network.message.MessageConcept;
 import com.tridevmc.compound.network.message.MessageField;
 import com.tridevmc.compound.network.message.RegisteredMessage;
-import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.LogicalSide;
+import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.loading.moddiscovery.ModAnnotation;
-import net.minecraftforge.fml.network.NetworkEvent;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 import net.minecraftforge.forgespi.language.ModFileScanData;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.objectweb.asm.Type;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -40,13 +41,13 @@ public class CompoundNetwork {
     private final SimpleChannel networkChannel;
 
     private Map<Class<? extends Message>, MessageConcept> messageConcepts;
-    private Map<String, MarshallerBase> marshallers;
+    private Map<String, Marshaller> marshallers;
     private Map<Class, String> marshallerIds;
-    private Map<Dist, ICompoundNetworkHandler> handlers;
+    private Map<LogicalSide, ICompoundNetworkHandler> handlers;
 
 
     private CompoundNetwork(ResourceLocation name, String version) {
-        this.name = name.toString();
+        this.name = name.getPath();
         this.networkChannel = NetworkRegistry.ChannelBuilder.named(name)
                 .clientAcceptedVersions((v) -> true)
                 .serverAcceptedVersions((v) -> true)
@@ -56,44 +57,32 @@ public class CompoundNetwork {
         this.marshallers = Maps.newHashMap();
         this.marshallerIds = Maps.newHashMap();
         this.handlers = Maps.newHashMap();
-        this.handlers.put(Dist.CLIENT, new CompoundClientHandler());
-        this.handlers.put(Dist.DEDICATED_SERVER, new CompoundServerHandler());
+        this.handlers.put(LogicalSide.CLIENT, new CompoundClientHandler());
+        this.handlers.put(LogicalSide.SERVER, new CompoundServerHandler());
 
         this.logger = LogManager.getLogger("CompoundNetwork-" + name);
-    }
-
-    private <T extends NetworkEvent> void onNetworkEvent(T packet) {
-        final NetworkEvent.Context wrappedContext = packet.getSource().get();
-        final PacketBuffer payload = packet.getPayload();
-        ResourceLocation targetNetworkReceiver = null;
-        PacketBuffer data = null;
-        if (payload != null) {
-            targetNetworkReceiver = payload.readResourceLocation();
-            final int payloadLength = payload.readVarInt();
-            data = new PacketBuffer(payload.readBytes(payloadLength));
-        }
-
     }
 
     /**
      * Create a network with the given name with messages and marshallers loaded from the given data
      * table.
      *
-     * @param name    the name to use for the network.
+     * @param channel the name to use for the network.
      * @param version the version to use for the network.
      * @return the created network instance.
      */
-    public static CompoundNetwork createNetwork(ResourceLocation name, String version) {
+    public static CompoundNetwork createNetwork(String channel, String version) {
         try {
-            CompoundNetwork network = new CompoundNetwork(name, version);
+            ModContainer activeContainer = ModLoadingContext.get().getActiveContainer();
+            CompoundNetwork network = new CompoundNetwork(new ResourceLocation(activeContainer.getModId(), channel), version);
             network.loadDefaultMarshallers();
             network.discoverMarshallers();
             network.discoverMessages();
             return network;
         } catch (Exception e) {
             throw new RuntimeException(String.format(
-                    "Failed to create a CompoundNetwork with name %s",
-                    name),
+                    "Failed to create a CompoundNetwork with channel name %s",
+                    channel),
                     e);
         }
     }
@@ -111,12 +100,13 @@ public class CompoundNetwork {
     private void loadDefaultMarshallers() {
         List<MarshallerMetadata> marshallerMetadata = DefaultMarshallers.genDefaultMarshallers();
 
-        for (MarshallerMetadata marshaller : marshallerMetadata) {
-            for (String id : marshaller.ids) {
-                this.marshallers.put(id, marshaller.marshaller);
+        for (MarshallerMetadata marshallerMeta : marshallerMetadata) {
+            String defaultId = marshallerMeta.ids[0];
+            for (String id : marshallerMeta.ids) {
+                this.marshallers.put(id, marshallerMeta.marshaller);
             }
-            for (Class acceptedType : marshaller.acceptedTypes) {
-                this.marshallerIds.put(acceptedType, marshaller.ids[0]);
+            for (Class type : marshallerMeta.acceptedTypes) {
+                this.marshallerIds.put(type, defaultId);
             }
         }
     }
@@ -130,10 +120,10 @@ public class CompoundNetwork {
                         .getRank()));
 
         for (ModFileScanData.AnnotationData applicableMarshaller : applicableMarshallers) {
-            MarshallerBase marshaller = null;
+            Marshaller marshaller = null;
 
             try {
-                marshaller = (MarshallerBase) Class.forName(applicableMarshaller.getMemberName())
+                marshaller = (Marshaller) Class.forName(applicableMarshaller.getMemberName())
                         .newInstance();
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(String.format(
@@ -142,7 +132,7 @@ public class CompoundNetwork {
                         e);
             } catch (ClassCastException e) {
                 throw new RuntimeException(String.format(
-                        "Class: \"%s\" annotated with RegisteredMarshaller does not extend MarshallerBase.",
+                        "Class: \"%s\" annotated with RegisteredMarshaller does not extend Marshaller.",
                         applicableMarshaller.getMemberName()),
                         e);
             } catch (IllegalAccessException e) {
@@ -158,15 +148,22 @@ public class CompoundNetwork {
             }
 
             Map<String, Object> annotationInfo = applicableMarshaller.getAnnotationData();
-            String[] ids = (String[]) annotationInfo.get("ids");
-            Class[] acceptedTypes = (Class[]) annotationInfo.get("acceptedTypes");
+            ArrayList<String> ids = (ArrayList<String>) annotationInfo.get("ids");
+            ArrayList<Type> acceptedTypes = (ArrayList<Type>) annotationInfo.get("acceptedTypes");
 
             for (String id : ids) {
                 this.marshallers.put(id, marshaller);
             }
 
-            for (Class acceptedType : acceptedTypes) {
-                this.marshallerIds.put(acceptedType, ids[0]);
+            for (Type acceptedType : acceptedTypes) {
+                try {
+                    this.marshallerIds.put(Class.forName(acceptedType.getClassName()), ids.get(0));
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException(String.format(
+                            "Failed to find class to marshall with name %s",
+                            acceptedType.getClassName()),
+                            e);
+                }
             }
         }
     }
@@ -178,13 +175,13 @@ public class CompoundNetwork {
         for (ModFileScanData.AnnotationData registeredMessage : applicableMessages) {
             Map<String, Object> annotationInfo = registeredMessage.getAnnotationData();
 
-            String networkChannel = (String) annotationInfo.get("networkChannel");
+            String networkChannel = (String) annotationInfo.get("channel");
 
             if (Objects.equals(networkChannel, this.name)) {
                 // Found a message that can be registered for this network instance.
                 ModAnnotation.EnumHolder destinationHolder = (ModAnnotation.EnumHolder) annotationInfo.get("destination");
-                Dist destination = Dist.valueOf(destinationHolder.getValue());
-                Class<? extends Message> msgClass = null;
+                LogicalSide destination = LogicalSide.valueOf(destinationHolder.getValue());
+                Class<? extends Message> msgClass;
                 try {
                     msgClass = (Class<? extends Message>) Class
                             .forName(registeredMessage.getMemberName());
@@ -218,11 +215,10 @@ public class CompoundNetwork {
         ArrayList<ModFileScanData.AnnotationData> out = Lists.newArrayList();
         String annotationName = annotation.getName();
 
-        modScanData.stream().forEach((m) -> m.getAnnotations().stream().filter(a -> Objects.equals(a.getAnnotationType().getClassName(), annotationName)).forEach(a -> {
+        modScanData.forEach((m) -> m.getAnnotations().stream().filter(a -> Objects.equals(a.getAnnotationType().getClassName(), annotationName)).forEach(a -> {
             Map<String, Object> annotationInfo = a.getAnnotationData();
-
-            String networkChannel = (String) annotationInfo.get("networkChannel");
-            if (Objects.equals(networkChannel, this.name)) {
+            String channel = (String) annotationInfo.get("channel");
+            if (Objects.equals(channel, this.name)) {
                 out.add(a);
             }
         }));
@@ -230,7 +226,7 @@ public class CompoundNetwork {
         return out;
     }
 
-    private void createConcept(Class<? extends Message> msgClass, Dist destination) {
+    private void createConcept(Class<? extends Message> msgClass, LogicalSide destination) {
         List<Field> usableFields = FieldUtils.getAllFieldsList(msgClass).stream().filter(field -> {
             Class fieldDeclarer = field.getDeclaringClass();
             return !fieldDeclarer.equals(Message.class) && !fieldDeclarer.equals(Object.class);
@@ -247,7 +243,7 @@ public class CompoundNetwork {
 
     private String getMarshallerIdFor(Field field) {
         if (field.isAnnotationPresent(SetMarshaller.class)) {
-            return field.getAnnotation(SetMarshaller.class).marshallerId();
+            return field.getAnnotation(SetMarshaller.class).value();
         }
         Class fieldClass = field.getType();
         String marshallerId = this.marshallerIds.getOrDefault(fieldClass, null);
@@ -266,7 +262,7 @@ public class CompoundNetwork {
         return marshallerId;
     }
 
-    private <M extends Message> void registerMessage(Class<M> msgClass, Dist side, int discriminator) {
+    private <M extends Message> void registerMessage(Class<M> msgClass, LogicalSide side, int discriminator) {
         ICompoundNetworkHandler handler = this.handlers.get(side);
         this.networkChannel.messageBuilder(msgClass, discriminator)
                 .encoder(getMsgConcept(msgClass)::toBytes)

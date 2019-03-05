@@ -19,7 +19,7 @@ public class WidgetTest extends WidgetBase {
                     //GlStateManager.disableDepth();
                     //GlStateManager.colorMask(true, true, true, false);
                     Gui.drawRect(24 + j * (18) + 1, 24 + i * (18), 24 + j * (18) + 17,
-                        24 + i * (18) + 17, -2130706433);
+                            24 + i * (18) + 17, -2130706433);
                     //GlStateManager.colorMask(true, true, true, true);
                     //GlStateManager.enableLighting();
                     //GlStateManager.enableDepth();

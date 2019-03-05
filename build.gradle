@@ -20,7 +20,7 @@ apply plugin: 'maven-publish'
 
 // === CHANGE BELOW HERE === //
 
-version = "1.0.0"
+version = "1.1.0"
 group = "com.tridevmc"
 archivesBaseName = "compound"
 ext.versionTag = ''
