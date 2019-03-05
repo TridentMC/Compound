@@ -44,10 +44,10 @@ public class MessageField<T> {
             T[] values = (T[]) getValue(msg);
             new PacketBuffer(target).writeVarInt(values.length);
             for (T value : values) {
-                getMarshaller().writeTo(target, value);
+                getMarshaller().writeTo(this, target, value);
             }
         } else {
-            getMarshaller().writeTo(target, (T) getValue(msg));
+            getMarshaller().writeTo(this, target, (T) getValue(msg));
         }
     }
 
@@ -62,11 +62,11 @@ public class MessageField<T> {
 
             T[] values = (T[]) Array.newInstance(field.getType(), size);
             for (int i = 0; i < size; i++) {
-                values[i] = getMarshaller().readFrom(source);
+                values[i] = getMarshaller().readFrom(this, source);
             }
             setValue(msg, values);
         } else {
-            setValue(msg, getMarshaller().readFrom(source));
+            setValue(msg, getMarshaller().readFrom(this, source));
         }
     }
 
@@ -81,7 +81,6 @@ public class MessageField<T> {
     public Object getValue(Message msg) {
         return getField().getValue(msg);
     }
-
 
     public Marshaller<T> getMarshaller() {
         return marshaller;

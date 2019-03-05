@@ -1,0 +1,10 @@
+ext {
+    // Mod Stuff
+    modGroup = "com.tridevmc"
+    modVersion = "1.1.1"
+    modBaseName = "compound"
+
+    // Forge Stuff
+    forgeVersion = "1.13.2-25.0.70"
+    mappingsVersion = "20190305-1.13.1"
+}
