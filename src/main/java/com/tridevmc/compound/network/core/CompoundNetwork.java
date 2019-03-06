@@ -137,7 +137,7 @@ public class CompoundNetwork {
                         e);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(String.format(
-                        "Failed to instantiate %s, is there an empty constructor?",
+                        "Failed to instantiate %s, is there a public empty constructor?",
                         applicableMarshaller.getMemberName()),
                         e);
             } catch (InstantiationException e) {

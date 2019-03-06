@@ -13,10 +13,4 @@ public class CompoundModConfig extends ModConfig {
         activeContainer.addConfig(this);
     }
 
-    @Override
-    public void save() {
-        super.save();
-
-        this.parentConfig.loadFields();
-    }
 }

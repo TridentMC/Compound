@@ -2,13 +2,17 @@ package com.tridevmc.compound.config;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.tridevmc.compound.core.reflect.WrappedField;
 import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModContainer;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.javafmlmod.FMLModContainer;
+import net.minecraftforge.forgespi.language.ModFileScanData;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,8 +20,8 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Used for the management and creation of Compound configs, create and load a configuration using {@link #of(Class, String)}
@@ -32,6 +36,7 @@ public class CompoundConfig<T> {
     private final String modId;
     private final ModConfig.Type configType;
     private final ForgeConfigSpec forgeConfig;
+    private final Set<IConfigObjectSerializer> objectSerializers;
 
     private final Class<T> configClass;
     private final T configInstance;
@@ -43,11 +48,16 @@ public class CompoundConfig<T> {
         this.configClass = type;
         this.configInstance = type.newInstance();
         this.configType = this.genConfigType();
+        this.objectSerializers = Sets.newHashSet();
+        this.objectSerializers.add(new ForgeRegistryEntrySerializer());
 
         Pair<Object, ForgeConfigSpec> configure = new ForgeConfigSpec.Builder().configure(this::loadConfig);
         this.forgeConfig = configure.getRight();
 
         ModContainer modContainer = ModLoadingContext.get().getActiveContainer();
+        if (modContainer instanceof FMLModContainer) {
+            ((FMLModContainer) modContainer).getEventBus().register(this);
+        }
         this.modConfig = new CompoundModConfig(this, modContainer, configFile);
         // TODO: Add config guis...
         //modContainer.registerExtensionPoint(ExtensionPoint.CONFIGGUIFACTORY, () -> (mc, parent) -> {});
@@ -80,7 +90,6 @@ public class CompoundConfig<T> {
         CompoundConfig<C> cCompoundConfig = null;
         try {
             cCompoundConfig = new CompoundConfig<C>(type, modId, fileName);
-            MinecraftForge.EVENT_BUS.register(cCompoundConfig);
         } catch (Exception e) {
             LOG.error("Failed to create compound config of type {}", type.getName());
             e.printStackTrace();
@@ -99,6 +108,41 @@ public class CompoundConfig<T> {
     }
 
     private CompoundConfig loadConfig(ForgeConfigSpec.Builder builder) {
+        if (this.objectSerializers.isEmpty()) {
+            List<ModFileScanData> modScanData = ModList.get().getAllScanData();
+            ArrayList<ModFileScanData.AnnotationData> annotationData = Lists.newArrayList();
+            String annotationName = RegisteredConfigObjectSerializer.class.getName();
+
+            modScanData.forEach((m) -> m.getAnnotations().stream().filter(a -> Objects.equals(a.getAnnotationType().getClassName(), annotationName)).forEach(a -> {
+                Map<String, Object> annotationInfo = a.getAnnotationData();
+                String modId = (String) annotationInfo.get("value");
+                if (Objects.equals(modId, this.getModId())) {
+                    annotationData.add(a);
+                }
+            }));
+
+            this.objectSerializers.addAll(annotationData.stream().map(data -> {
+                try {
+                    return (IConfigObjectSerializer) Class.forName(data.getClassType().getClassName()).newInstance();
+                } catch (InstantiationException e) {
+                    throw new RuntimeException(String.format(
+                            "Failed to instantiate %s, is there an empty constructor?",
+                            data.getMemberName()),
+                            e);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(String.format(
+                            "Failed to instantiate %s, is there a public empty constructor?",
+                            data.getMemberName()),
+                            e);
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException(String.format(
+                            "Unable to find class: \"%s\" for registered marshaller.",
+                            data.getMemberName()),
+                            e);
+                }
+            }).filter(Objects::nonNull).collect(Collectors.toSet()));
+        }
+
         if (this.fields.isEmpty()) {
             // Load any fields if we haven't already.
             for (Field field : configClass.getDeclaredFields()) {
@@ -117,6 +161,21 @@ public class CompoundConfig<T> {
 
         this.fields.forEach((f) -> f.addToSpec(builder));
         return this;
+    }
+
+    // We need this to run first so config implementations can load their data from the injected changes.
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public void onConfigReloading(ModConfig.ConfigReloading e) {
+        if (Objects.equals(e.getConfig().getModId(), this.modId)) {
+            this.loadFields();
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public void onConfigLoading(ModConfig.Loading e) {
+        if (Objects.equals(e.getConfig().getModId(), this.modId)) {
+            this.loadFields();
+        }
     }
 
     protected void loadFields() {
@@ -143,4 +202,11 @@ public class CompoundConfig<T> {
         return configType;
     }
 
+    @Nullable
+    protected IConfigObjectSerializer getSerializerFor(Class fieldType) {
+        Optional<IConfigObjectSerializer> serializer = this.objectSerializers.stream()
+                .filter((s) -> s.accepts(fieldType))
+                .findFirst();
+        return serializer.orElse(null);
+    }
 }

@@ -12,6 +12,7 @@ import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class ConfigField {
@@ -35,6 +36,7 @@ public class ConfigField {
     @Nonnull
     private final WrappedField field;
     private final Class fieldType;
+    private final IConfigObjectSerializer serializer;
     private final CompoundConfig config;
     private final EnumFieldType type;
     private final Object defaultValue;
@@ -77,6 +79,7 @@ public class ConfigField {
         }
 
         this.fieldType = fieldType;
+        this.serializer = config.getSerializerFor(this.fieldType);
         this.defaultValue = this.genDefaultValue();
         Tuple<Object, Object> rangeData = this.getRangeData();
         this.minValue = rangeData.getA();
@@ -111,6 +114,15 @@ public class ConfigField {
         Class fieldType = field.getType();
         if (fieldType.isArray()) {
             value = toObject(value);
+        }
+
+        if (this.serializer != null) {
+            if (this.type == EnumFieldType.LIST) {
+                List values = (List) value;
+                value = values.stream().map((o) -> this.serializer.toString(this.fieldType, o)).collect(Collectors.toList());
+            } else {
+                value = serializer.toString(this.fieldType, value);
+            }
         }
 
         return value;
@@ -158,9 +170,21 @@ public class ConfigField {
     public void loadField() {
         if (this.isValueArray()) {
             // Value arrays are always stored as a list internally, we adjust the value to match the field type later.
-            this.setListValue((List) this.value.get());
+            List newValue = (List) this.value.get();
+            if (this.serializer != null && newValue.stream().allMatch((o) -> o instanceof String)) {
+                newValue = (List) newValue.stream()
+                        .map((o) -> serializer.fromString(this.fieldType, (String) o))
+                        .collect(Collectors.toList());
+            }
+
+            this.setListValue(newValue);
         } else {
-            this.getField().setValue(this.config.getConfigInstance(), this.value.get());
+            Object newValue = this.value.get();
+            if (this.serializer != null && newValue instanceof String) {
+                newValue = serializer.fromString(this.fieldType, (String) newValue);
+            }
+
+            this.getField().setValue(this.config.getConfigInstance(), newValue);
         }
     }
 
