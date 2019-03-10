@@ -128,7 +128,7 @@ public class WrappedField<T> {
     public void setValue(Object target, T value, boolean force) {
         try {
             if (this.isStatic) {
-                FieldUtils.writeStaticField(this.field, value);
+                FieldUtils.writeStaticField(this.field, value, force);
             } else {
                 FieldUtils.writeField(this.field, target, value, force);
             }
