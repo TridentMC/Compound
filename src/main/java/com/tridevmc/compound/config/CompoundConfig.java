@@ -42,8 +42,8 @@ public class CompoundConfig<T> {
 
     private final ArrayList<ConfigField> fields = Lists.newArrayList();
 
-    private CompoundConfig(@Nonnull Class<T> type, String modId, String configFile) throws IllegalAccessException, InstantiationException {
-        this.modId = modId;
+    private CompoundConfig(@Nonnull Class<T> type, ModContainer container, String configFile) throws IllegalAccessException, InstantiationException {
+        this.modId = container.getModId();
         this.configClass = type;
         this.configInstance = type.newInstance();
         this.configType = this.genConfigType();
@@ -53,11 +53,10 @@ public class CompoundConfig<T> {
         Pair<Object, ForgeConfigSpec> configure = new ForgeConfigSpec.Builder().configure(this::loadConfig);
         this.forgeConfig = configure.getRight();
 
-        ModContainer modContainer = ModList.get().getModContainerById(modId).get();
-        if (modContainer instanceof FMLModContainer) {
-            ((FMLModContainer) modContainer).getEventBus().register(this);
+        if (container instanceof FMLModContainer) {
+            ((FMLModContainer) container).getEventBus().register(this);
         }
-        this.modConfig = new CompoundModConfig(this, modContainer, configFile);
+        this.modConfig = new CompoundModConfig(this, container, configFile);
         // TODO: Add config guis...
         //modContainer.registerExtensionPoint(ExtensionPoint.CONFIGGUIFACTORY, () -> (mc, parent) -> {});
         KNOWN_CONFIGS.put(this.configInstance, this);
@@ -66,29 +65,29 @@ public class CompoundConfig<T> {
     /**
      * Create a configuration object managed by a Compound config.
      *
-     * @param type  the type of class the Compound config will generate.
-     * @param modId the id of the mod the configuration is from.
-     * @param <C>   the class of the configuration object the Compound config will manage.
+     * @param type      the type of class the Compound config will generate.
+     * @param container the container of the mod this config belongs to.
+     * @param <C>       the class of the configuration object the Compound config will manage.
      * @return the configuration object that will be managed by the Compound config.
      */
     @Nullable
-    public static <C> C of(@Nonnull Class<C> type, @Nonnull String modId) {
-        return CompoundConfig.of(type, modId, modId + ".toml");
+    public static <C> C of(@Nonnull Class<C> type, @Nonnull ModContainer container) {
+        return CompoundConfig.of(type, container, container.getModId() + ".toml");
     }
 
     /**
      * Create a configuration object managed by a Compound config.
      *
-     * @param type  the type of class the Compound config will generate.
-     * @param modId the id of the mod the configuration is from.
-     * @param <C>   the class of the configuration object the Compound config will manage.
+     * @param type      the type of class the Compound config will generate.
+     * @param container the container of the mod this config belongs to.
+     * @param <C>       the class of the configuration object the Compound config will manage.
      * @return the configuration object that will be managed by the Compound config.
      */
     @Nullable
-    public static <C> C of(@Nonnull Class<C> type, @Nonnull String modId, @Nonnull String fileName) {
+    public static <C> C of(@Nonnull Class<C> type, @Nonnull ModContainer container, @Nonnull String fileName) {
         CompoundConfig<C> cCompoundConfig = null;
         try {
-            cCompoundConfig = new CompoundConfig<C>(type, modId, fileName);
+            cCompoundConfig = new CompoundConfig<C>(type, container, fileName);
         } catch (Exception e) {
             LOG.error("Failed to create compound config of type {}", type.getName());
             e.printStackTrace();

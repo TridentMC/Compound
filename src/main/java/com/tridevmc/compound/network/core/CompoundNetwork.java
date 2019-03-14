@@ -9,6 +9,7 @@ import com.tridevmc.compound.network.message.MessageField;
 import com.tridevmc.compound.network.message.RegisteredMessage;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.LogicalSide;
+import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.moddiscovery.ModAnnotation;
 import net.minecraftforge.fml.network.NetworkRegistry;
@@ -66,14 +67,14 @@ public class CompoundNetwork {
      * Create a network with the given name with messages and marshallers loaded from the given data
      * table.
      *
-     * @param modId   the mod id of the mod this network belongs to.
-     * @param channel the name to use for the network.
+     * @param container the mod container of the mod this network belongs to.
+     * @param channel   the name to use for the network.
      * @return the created network instance.
      */
-    public static CompoundNetwork createNetwork(String modId, String channel) {
+    public static CompoundNetwork createNetwork(ModContainer container, String channel) {
         try {
-            ArtifactVersion version = ModList.get().getModContainerById(modId).get().getModInfo().getVersion();
-            CompoundNetwork network = new CompoundNetwork(new ResourceLocation(modId, channel), version.toString());
+            ArtifactVersion version = container.getModInfo().getVersion();
+            CompoundNetwork network = new CompoundNetwork(new ResourceLocation(container.getModId(), channel), version.toString());
             network.loadDefaultMarshallers();
             network.discoverMarshallers();
             network.discoverMessages();
