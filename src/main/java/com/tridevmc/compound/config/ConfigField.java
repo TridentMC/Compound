@@ -109,7 +109,7 @@ public class ConfigField {
     }
 
     private Object genDefaultValue() {
-        Object value = field.getValue(config.getConfigInstance(), true);
+        Object value = field.get(config.getConfigInstance(), true);
 
         Class fieldType = field.getType();
         if (fieldType.isArray()) {
@@ -184,7 +184,7 @@ public class ConfigField {
                 newValue = serializer.fromString(this.fieldType, (String) newValue);
             }
 
-            this.getField().setValue(this.config.getConfigInstance(), newValue);
+            this.getField().set(this.config.getConfigInstance(), newValue);
         }
     }
 
@@ -233,12 +233,12 @@ public class ConfigField {
             IntStream.range(0, values.size()).forEach(i -> Array.set(valueArray, i, values.get(i)));
 
             if (this.getField().getType().getComponentType().isPrimitive()) {
-                this.getField().setValue(configInstance, toPrimitive(valueArray));
+                this.getField().set(configInstance, toPrimitive(valueArray));
             } else {
-                this.getField().setValue(configInstance, valueArray);
+                this.getField().set(configInstance, valueArray);
             }
         } else {
-            List valueList = (List) getField().getValue(configInstance);
+            List valueList = (List) getField().get(configInstance);
             valueList.clear();
             valueList.addAll(values);
         }

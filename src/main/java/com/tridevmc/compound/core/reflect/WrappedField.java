@@ -48,7 +48,7 @@ public class WrappedField<T> {
      * @param fieldNames the possible names of the field.
      * @return a WrappedField representing the field that was found.
      */
-    public static <T> WrappedField<T> create(Class clazz, String[] fieldNames) {
+    public static <T> WrappedField<T> create(Class clazz, String... fieldNames) {
         Field f = null;
         for (String fieldName : fieldNames) {
             if (f != null) {
@@ -65,8 +65,8 @@ public class WrappedField<T> {
      *
      * @return the type of the static field.
      */
-    public T getStaticValue() {
-        return this.getValue(null);
+    public T get() {
+        return this.get(null);
     }
 
     /**
@@ -74,8 +74,8 @@ public class WrappedField<T> {
      *
      * @param value the type to set on the static field.
      */
-    public void setStaticValue(T value) {
-        this.setValue(null, value);
+    public void set(T value) {
+        this.set(null, value);
     }
 
     /**
@@ -84,8 +84,8 @@ public class WrappedField<T> {
      * @param target the instance to get the field type from.
      * @return the type of the field on the given target.
      */
-    public T getValue(Object target) {
-        return this.getValue(target, true);
+    public T get(Object target) {
+        return this.get(target, true);
     }
 
     /**
@@ -95,7 +95,7 @@ public class WrappedField<T> {
      * @param force  whether to force access to get the type.
      * @return the type of the field on the given target.
      */
-    public T getValue(Object target, boolean force) {
+    public T get(Object target, boolean force) {
         try {
             if (this.isStatic) {
                 return (T) FieldUtils.readStaticField(this.field, force);
@@ -114,8 +114,8 @@ public class WrappedField<T> {
      * @param target the instance to set the type on.
      * @param value  the new type of the field.
      */
-    public void setValue(Object target, T value) {
-        this.setValue(target, value, true);
+    public void set(Object target, T value) {
+        this.set(target, value, true);
     }
 
     /**
@@ -125,7 +125,7 @@ public class WrappedField<T> {
      * @param value  the new type of the field.
      * @param force  whether to force access to set the type.
      */
-    public void setValue(Object target, T value, boolean force) {
+    public void set(Object target, T value, boolean force) {
         try {
             if (this.isStatic) {
                 FieldUtils.writeStaticField(this.field, value, force);

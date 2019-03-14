@@ -9,9 +9,7 @@ import com.tridevmc.compound.network.message.MessageField;
 import com.tridevmc.compound.network.message.RegisteredMessage;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.LogicalSide;
-import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.loading.moddiscovery.ModAnnotation;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
@@ -19,6 +17,7 @@ import net.minecraftforge.forgespi.language.ModFileScanData;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.objectweb.asm.Type;
 
 import java.lang.reflect.Field;
@@ -67,14 +66,14 @@ public class CompoundNetwork {
      * Create a network with the given name with messages and marshallers loaded from the given data
      * table.
      *
+     * @param modId   the mod id of the mod this network belongs to.
      * @param channel the name to use for the network.
-     * @param version the version to use for the network.
      * @return the created network instance.
      */
-    public static CompoundNetwork createNetwork(String channel, String version) {
+    public static CompoundNetwork createNetwork(String modId, String channel) {
         try {
-            ModContainer activeContainer = ModLoadingContext.get().getActiveContainer();
-            CompoundNetwork network = new CompoundNetwork(new ResourceLocation(activeContainer.getModId(), channel), version);
+            ArtifactVersion version = ModList.get().getModContainerById(modId).get().getModInfo().getVersion();
+            CompoundNetwork network = new CompoundNetwork(new ResourceLocation(modId, channel), version.toString());
             network.loadDefaultMarshallers();
             network.discoverMarshallers();
             network.discoverMessages();

@@ -9,7 +9,6 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.javafmlmod.FMLModContainer;
 import net.minecraftforge.forgespi.language.ModFileScanData;
@@ -54,7 +53,7 @@ public class CompoundConfig<T> {
         Pair<Object, ForgeConfigSpec> configure = new ForgeConfigSpec.Builder().configure(this::loadConfig);
         this.forgeConfig = configure.getRight();
 
-        ModContainer modContainer = ModLoadingContext.get().getActiveContainer();
+        ModContainer modContainer = ModList.get().getModContainerById(modId).get();
         if (modContainer instanceof FMLModContainer) {
             ((FMLModContainer) modContainer).getEventBus().register(this);
         }

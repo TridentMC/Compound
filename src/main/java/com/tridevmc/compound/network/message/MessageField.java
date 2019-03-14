@@ -75,11 +75,11 @@ public class MessageField<T> {
     }
 
     public void setValue(Message msg, Object value) {
-        getField().setValue(msg, value);
+        getField().set(msg, value);
     }
 
     public Object getValue(Message msg) {
-        return getField().getValue(msg);
+        return getField().get(msg);
     }
 
     public Marshaller<T> getMarshaller() {
@@ -91,6 +91,6 @@ public class MessageField<T> {
     }
 
     private boolean isNull(Message msg) {
-        return getField().getValue(msg) == null;
+        return getField().get(msg) == null;
     }
 }
