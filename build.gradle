@@ -22,7 +22,7 @@ apply plugin: 'maven-publish'
 
 // === CHANGE BELOW HERE === //
 
-version = modVersion 
+version = modVersion
 group = modGroup
 archivesBaseName = modBaseName
 ext.versionTag = ''
@@ -53,11 +53,17 @@ task buildAll(type: Jar) {
     from(sourceSets.main.allSource) {
         include 'com/tridevmc/compound/**'
     }
+    from(sourceSets.main.output) {
+        include 'com/tridevmc/compound/**'
+    }
 }
 
 task buildCore(type: Jar) {
     baseName = 'compound-core'
     from(sourceSets.main.allSource) {
+        include 'com/tridevmc/compound/core/**'
+    }
+    from(sourceSets.main.output) {
         include 'com/tridevmc/compound/core/**'
     }
 }
@@ -67,11 +73,17 @@ task buildGui(type: Jar) {
     from(sourceSets.main.allSource) {
         include 'com/tridevmc/compound/gui/**'
     }
+    from(sourceSets.main.output) {
+        include 'com/tridevmc/compound/gui/**'
+    }
 }
 
 task buildInventory(type: Jar) {
     baseName = 'compound-inventory'
     from(sourceSets.main.allSource) {
+        include 'com/tridevmc/compound/inventory/**'
+    }
+    from(sourceSets.main.output) {
         include 'com/tridevmc/compound/inventory/**'
     }
 }
@@ -81,11 +93,17 @@ task buildNetwork(type: Jar) {
     from(sourceSets.main.allSource) {
         include 'com/tridevmc/compound/network/**'
     }
+    from(sourceSets.main.output) {
+        include 'com/tridevmc/compound/network/**'
+    }
 }
 
 task buildConfig(type: Jar) {
     baseName = 'compound-config'
     from(sourceSets.main.allSource) {
+        include 'com/tridevmc/compound/config/**'
+    }
+    from(sourceSets.main.output) {
         include 'com/tridevmc/compound/config/**'
     }
 }
