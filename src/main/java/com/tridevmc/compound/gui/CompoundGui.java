@@ -24,7 +24,7 @@ public abstract class CompoundGui extends GuiScreen {
     }
 
     public WidgetGrid getGrid() {
-        return grid;
+        return this.grid;
     }
 
     public void drawScreen(int mouseX, int mouseY) {
@@ -67,7 +67,7 @@ public abstract class CompoundGui extends GuiScreen {
     public void drawBeveledBoxes(int x, int y, int width, int height, int wide, int high) {
         for (int wY = 0; wY < high; wY++) {
             for (int wX = 0; wX < wide; wX++) {
-                drawBeveledBox(x + (width * wX), y + (height * wY), width, height);
+                this.drawBeveledBox(x + (width * wX), y + (height * wY), width, height);
             }
         }
     }
@@ -81,7 +81,7 @@ public abstract class CompoundGui extends GuiScreen {
     }
 
     public void drawBeveledBox(int x, int y, int width, int height) {
-        drawBeveledBox(x, y, width, height, 0xFF8b8b8b, 0xFF373737, 0xFFffffff);
+        this.drawBeveledBox(x, y, width, height, 0xFF8b8b8b, 0xFF373737, 0xFFffffff);
     }
 
 

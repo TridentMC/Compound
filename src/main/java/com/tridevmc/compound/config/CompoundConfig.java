@@ -97,8 +97,8 @@ public class CompoundConfig<T> {
     }
 
     private ModConfig.Type genConfigType() {
-        if (configClass.isAnnotationPresent(ConfigType.class)) {
-            ConfigType annotation = configClass.getAnnotation(ConfigType.class);
+        if (this.configClass.isAnnotationPresent(ConfigType.class)) {
+            ConfigType annotation = this.configClass.getAnnotation(ConfigType.class);
             return annotation.value();
         } else {
             return ModConfig.Type.COMMON;
@@ -143,7 +143,7 @@ public class CompoundConfig<T> {
 
         if (this.fields.isEmpty()) {
             // Load any fields if we haven't already.
-            for (Field field : configClass.getDeclaredFields()) {
+            for (Field field : this.configClass.getDeclaredFields()) {
                 if (field.isAnnotationPresent(ConfigValue.class)) {
                     WrappedField wrappedField = WrappedField.create(field);
                     wrappedField.setAccessible(true);
@@ -181,23 +181,23 @@ public class CompoundConfig<T> {
     }
 
     protected String getModId() {
-        return modId;
+        return this.modId;
     }
 
     protected ForgeConfigSpec getForgeConfig() {
-        return forgeConfig;
+        return this.forgeConfig;
     }
 
     protected Class<T> getConfigClass() {
-        return configClass;
+        return this.configClass;
     }
 
     protected T getConfigInstance() {
-        return configInstance;
+        return this.configInstance;
     }
 
     protected ModConfig.Type getConfigType() {
-        return configType;
+        return this.configType;
     }
 
     @Nullable

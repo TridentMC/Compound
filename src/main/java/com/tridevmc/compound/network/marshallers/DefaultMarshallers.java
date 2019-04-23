@@ -169,12 +169,12 @@ public class DefaultMarshallers {
 
         @Override
         public T readFrom(ByteBuf buf) {
-            return readMethod.apply(buf);
+            return this.readMethod.apply(buf);
         }
 
         @Override
         public void writeTo(ByteBuf buf, T obj) {
-            writeMethod.transformEntry(buf, obj);
+            this.writeMethod.transformEntry(buf, obj);
         }
     }
 
@@ -194,12 +194,12 @@ public class DefaultMarshallers {
 
         @Override
         public T readFrom(ByteBuf buf) {
-            return readMethod.apply(buf);
+            return this.readMethod.apply(buf);
         }
 
         @Override
         public void writeTo(ByteBuf buf, T obj) {
-            writeMethod.accept(buf, obj);
+            this.writeMethod.accept(buf, obj);
         }
     }
 

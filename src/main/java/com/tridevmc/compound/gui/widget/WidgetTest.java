@@ -14,7 +14,7 @@ public class WidgetTest extends WidgetBase {
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 9; j++) {
                 this.parent.drawBeveledBox(24 + j * (18), 24 + (i * 18), 18, 18);
-                if ((i * 9) + j == current) {
+                if ((i * 9) + j == this.current) {
                     //GlStateManager.disableLighting();
                     //GlStateManager.disableDepth();
                     //GlStateManager.colorMask(true, true, true, false);
@@ -23,12 +23,12 @@ public class WidgetTest extends WidgetBase {
                     //GlStateManager.colorMask(true, true, true, true);
                     //GlStateManager.enableLighting();
                     //GlStateManager.enableDepth();
-                    currentTimer--;
-                    if (currentTimer == 0) {
-                        currentTimer = 5;
+                    this.currentTimer--;
+                    if (this.currentTimer == 0) {
+                        this.currentTimer = 5;
 
-                        if (++current == 4 * 9) {
-                            current = 0;
+                        if (++this.current == 4 * 9) {
+                            this.current = 0;
                         }
                     }
                 }

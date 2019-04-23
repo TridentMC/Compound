@@ -16,6 +16,6 @@ public enum EnumMarshallerPriority {
     }
 
     public int getRank() {
-        return rank;
+        return this.rank;
     }
 }

@@ -7,7 +7,7 @@ import net.minecraftforge.fml.network.NetworkEvent.Context;
 public class CompoundServerHandler implements ICompoundNetworkHandler {
     @Override
     public <M extends Message> void handle(M m, Context ctx) {
-        m.handle(getPlayer(ctx));
+        m.handle(this.getPlayer(ctx));
     }
 
     @Override

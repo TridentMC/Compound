@@ -32,7 +32,7 @@ public class MessageField<T> {
     public void writeField(Message msg, ByteBuf target) {
         // Write a boolean for null checks if the field is nullable.
         if (this.isNullable) {
-            if (isNull(msg)) {
+            if (this.isNull(msg)) {
                 target.writeBoolean(true);
                 return;
             } else {
@@ -40,14 +40,14 @@ public class MessageField<T> {
             }
         }
 
-        if (field.getType().isArray()) {
-            T[] values = (T[]) getValue(msg);
+        if (this.field.getType().isArray()) {
+            T[] values = (T[]) this.getValue(msg);
             new PacketBuffer(target).writeVarInt(values.length);
             for (T value : values) {
-                getMarshaller().writeTo(this, target, value);
+                this.getMarshaller().writeTo(this, target, value);
             }
         } else {
-            getMarshaller().writeTo(this, target, (T) getValue(msg));
+            this.getMarshaller().writeTo(this, target, (T) this.getValue(msg));
         }
     }
 
@@ -57,40 +57,40 @@ public class MessageField<T> {
             return;
         }
 
-        if (field.getType().isArray()) {
+        if (this.field.getType().isArray()) {
             int size = new PacketBuffer(source).readVarInt();
 
-            T[] values = (T[]) Array.newInstance(field.getType(), size);
+            T[] values = (T[]) Array.newInstance(this.field.getType(), size);
             for (int i = 0; i < size; i++) {
-                values[i] = getMarshaller().readFrom(this, source);
+                values[i] = this.getMarshaller().readFrom(this, source);
             }
-            setValue(msg, values);
+            this.setValue(msg, values);
         } else {
-            setValue(msg, getMarshaller().readFrom(this, source));
+            this.setValue(msg, this.getMarshaller().readFrom(this, source));
         }
     }
 
     public Class getType() {
-        return getField().getType();
+        return this.getField().getType();
     }
 
     public void setValue(Message msg, Object value) {
-        getField().set(msg, value);
+        this.getField().set(msg, value);
     }
 
     public Object getValue(Message msg) {
-        return getField().get(msg);
+        return this.getField().get(msg);
     }
 
     public Marshaller<T> getMarshaller() {
-        return marshaller;
+        return this.marshaller;
     }
 
     public WrappedField getField() {
-        return field;
+        return this.field;
     }
 
     private boolean isNull(Message msg) {
-        return getField().get(msg) == null;
+        return this.getField().get(msg) == null;
     }
 }

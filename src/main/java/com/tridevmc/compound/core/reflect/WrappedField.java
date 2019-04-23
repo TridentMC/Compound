@@ -146,7 +146,7 @@ public class WrappedField<T> {
      * @return the class that declared this field.
      */
     public Class<?> getDeclaringClass() {
-        return field.getDeclaringClass();
+        return this.field.getDeclaringClass();
     }
 
     /**
@@ -157,7 +157,7 @@ public class WrappedField<T> {
      * @return the field's name.
      */
     public String getName() {
-        return field.getName();
+        return this.field.getName();
     }
 
     /**
@@ -168,7 +168,7 @@ public class WrappedField<T> {
      * @return the field's type.
      */
     public Class<?> getType() {
-        return field.getType();
+        return this.field.getType();
     }
 
     /**
@@ -179,7 +179,7 @@ public class WrappedField<T> {
      * @return the field's type with generics.
      */
     public Type getGenericType() {
-        return field.getGenericType();
+        return this.field.getGenericType();
     }
 
     /**
@@ -192,7 +192,7 @@ public class WrappedField<T> {
      * @return the annotation of the given type and class.
      */
     public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
-        return field.getAnnotation(annotationClass);
+        return this.field.getAnnotation(annotationClass);
     }
 
     /**
@@ -205,7 +205,7 @@ public class WrappedField<T> {
      * @return an array of matching annotations.
      */
     public <T extends Annotation> T[] getAnnotationsByType(Class<T> annotationClass) {
-        return field.getAnnotationsByType(annotationClass);
+        return this.field.getAnnotationsByType(annotationClass);
     }
 
     /**
@@ -216,7 +216,7 @@ public class WrappedField<T> {
      * @return whether the this field is accessible or not.
      */
     public boolean isAccessible() {
-        return field.isAccessible();
+        return this.field.isAccessible();
     }
 
     /**
@@ -227,7 +227,7 @@ public class WrappedField<T> {
      * @param b the accessibility to set the field to.
      */
     public void setAccessible(boolean b) {
-        field.setAccessible(b);
+        this.field.setAccessible(b);
     }
 
     /**
@@ -239,6 +239,6 @@ public class WrappedField<T> {
      * @return whether an annotation matching the class was found.
      */
     public boolean isAnnotationPresent(Class<? extends Annotation> annotationClass) {
-        return field.isAnnotationPresent(annotationClass);
+        return this.field.isAnnotationPresent(annotationClass);
     }
 }

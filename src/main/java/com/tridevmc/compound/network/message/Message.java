@@ -139,7 +139,7 @@ public abstract class Message {
      * Sends this message to the server to be executed.
      */
     public void sendToServer() {
-        getNetwork().getNetworkChannel().sendToServer(this);
+        this.getNetwork().getNetworkChannel().sendToServer(this);
     }
 
 }

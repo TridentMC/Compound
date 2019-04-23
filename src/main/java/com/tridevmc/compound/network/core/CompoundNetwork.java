@@ -112,7 +112,7 @@ public class CompoundNetwork {
     }
 
     private void discoverMarshallers() {
-        List<ModFileScanData.AnnotationData> applicableMarshallers = getAnnotationDataOfType(RegisteredMarshaller.class);
+        List<ModFileScanData.AnnotationData> applicableMarshallers = this.getAnnotationDataOfType(RegisteredMarshaller.class);
 
         applicableMarshallers.sort(Comparator.comparingInt(
                 o -> EnumMarshallerPriority
@@ -169,7 +169,7 @@ public class CompoundNetwork {
     }
 
     private void discoverMessages() {
-        List<ModFileScanData.AnnotationData> applicableMessages = getAnnotationDataOfType(RegisteredMessage.class);
+        List<ModFileScanData.AnnotationData> applicableMessages = this.getAnnotationDataOfType(RegisteredMessage.class);
 
         int currentDiscriminator = 0;
         for (ModFileScanData.AnnotationData registeredMessage : applicableMessages) {
@@ -203,8 +203,8 @@ public class CompoundNetwork {
                             e);
                 }
 
-                createConcept(msgClass, destination);
-                registerMessage(msgClass, destination, currentDiscriminator);
+                this.createConcept(msgClass, destination);
+                this.registerMessage(msgClass, destination, currentDiscriminator);
                 currentDiscriminator++;
             }
         }
@@ -234,11 +234,11 @@ public class CompoundNetwork {
 
         List<MessageField> messageFields = usableFields.stream().map(field -> {
             String marshallerId = this.getMarshallerIdFor(field);
-            return marshallers.get(marshallerId).getMessageField(field);
+            return this.marshallers.get(marshallerId).getMessageField(field);
         }).collect(Collectors.toList());
 
         MessageConcept msgConcept = new MessageConcept(this, msgClass, new ArrayList<>(messageFields), destination);
-        messageConcepts.put(msgClass, msgConcept);
+        this.messageConcepts.put(msgClass, msgConcept);
     }
 
     private String getMarshallerIdFor(Field field) {
@@ -265,8 +265,8 @@ public class CompoundNetwork {
     private <M extends Message> void registerMessage(Class<M> msgClass, LogicalSide side, int discriminator) {
         ICompoundNetworkHandler handler = this.handlers.get(side);
         this.networkChannel.messageBuilder(msgClass, discriminator)
-                .encoder(getMsgConcept(msgClass)::toBytes)
-                .decoder(getMsgConcept(msgClass)::fromBytes)
+                .encoder(this.getMsgConcept(msgClass)::toBytes)
+                .decoder(this.getMsgConcept(msgClass)::fromBytes)
                 .consumer((m, ctx) -> handler.handle(m, ctx.get()))
                 .add();
 
@@ -275,11 +275,11 @@ public class CompoundNetwork {
 
 
     public Logger getLogger() {
-        return logger;
+        return this.logger;
     }
 
     public SimpleChannel getNetworkChannel() {
-        return networkChannel;
+        return this.networkChannel;
     }
 
     public MessageConcept getMsgConcept(Message msg) {

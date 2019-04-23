@@ -31,7 +31,7 @@ public class MessageConcept {
     }
 
     public LogicalSide getMessageSide() {
-        return messageSide;
+        return this.messageSide;
     }
 
     public void toBytes(Message msg, PacketBuffer target) {
@@ -39,7 +39,7 @@ public class MessageConcept {
     }
 
     public void toBytes(Message msg, ByteBuf target) {
-        List<MessageField> booleanFields = messageFields.stream()
+        List<MessageField> booleanFields = this.messageFields.stream()
                 .filter(mf -> mf.getType() == Boolean.class).sorted(
                         Comparator.comparing(o -> o.getField().getName())).collect(Collectors.toList());
 
@@ -65,7 +65,7 @@ public class MessageConcept {
             }
         }
 
-        for (MessageField msgField : messageFields) {
+        for (MessageField msgField : this.messageFields) {
             if (msgField.getType() != Boolean.class) {
                 msgField.writeField(msg, target);
             }
@@ -84,7 +84,7 @@ public class MessageConcept {
     }
 
     public void fromBytes(Message msg, ByteBuf source) {
-        List<MessageField> booleanFields = messageFields.stream()
+        List<MessageField> booleanFields = this.messageFields.stream()
                 .filter(mf -> mf.getType() == Boolean.class).sorted(
                         Comparator.comparing(o -> o.getField().getName())).collect(Collectors.toList());
 
@@ -102,7 +102,7 @@ public class MessageConcept {
             }
         }
 
-        for (MessageField msgField : messageFields) {
+        for (MessageField msgField : this.messageFields) {
             if (msgField.getType() != Boolean.class) {
                 msgField.readField(msg, source);
             }

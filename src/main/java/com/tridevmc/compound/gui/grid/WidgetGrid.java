@@ -23,7 +23,7 @@ public abstract class WidgetGrid extends WidgetBase {
     public void registerWidget(WidgetBase widget, int top, int left) {
         widget.setPosition(top, left);
         widget.onRegister(this.parent);
-        widgets.add(widget);
+        this.widgets.add(widget);
     }
 
     public void registerMousePressedCallback(Predicate<MouseState> predicate,
@@ -33,14 +33,14 @@ public abstract class WidgetGrid extends WidgetBase {
 
     @Override
     public void drawBackground(int mouseX, int mouseY) {
-        for (WidgetBase widget : widgets) {
+        for (WidgetBase widget : this.widgets) {
             widget.drawBackground(mouseX, mouseY);
         }
     }
 
     @Override
     public void drawForeground(int mouseX, int mouseY) {
-        for (WidgetBase widget : widgets) {
+        for (WidgetBase widget : this.widgets) {
             widget.drawForeground(mouseX, mouseY);
         }
     }
@@ -54,7 +54,7 @@ public abstract class WidgetGrid extends WidgetBase {
         int buttonState = mouseHelper.isLeftDown() ? 0 : mouseHelper.isRightDown() ? 1 : -1;
         MouseState state = new MouseState(normalizedX, normalizedY, buttonState);
 
-        for (Tuple<Predicate<MouseState>, Consumer<MouseState>> t : mousePressedCallbacks) {
+        for (Tuple<Predicate<MouseState>, Consumer<MouseState>> t : this.mousePressedCallbacks) {
             if (t.getA().test(state)) {
                 t.getB().accept(state);
                 return;

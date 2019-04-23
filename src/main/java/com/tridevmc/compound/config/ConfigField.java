@@ -109,11 +109,11 @@ public class ConfigField {
     }
 
     private Object genDefaultValue() {
-        Object value = field.get(config.getConfigInstance(), true);
+        Object value = this.field.get(this.config.getConfigInstance(), true);
 
-        Class fieldType = field.getType();
+        Class fieldType = this.field.getType();
         if (fieldType.isArray()) {
-            value = toObject(value);
+            value = this.toObject(value);
         }
 
         if (this.serializer != null) {
@@ -121,7 +121,7 @@ public class ConfigField {
                 List values = (List) value;
                 value = values.stream().map((o) -> this.serializer.toString(this.fieldType, o)).collect(Collectors.toList());
             } else {
-                value = serializer.toString(this.fieldType, value);
+                value = this.serializer.toString(this.fieldType, value);
             }
         }
 
@@ -173,7 +173,7 @@ public class ConfigField {
             List newValue = (List) this.value.get();
             if (this.serializer != null && newValue.stream().allMatch((o) -> o instanceof String)) {
                 newValue = (List) newValue.stream()
-                        .map((o) -> serializer.fromString(this.fieldType, (String) o))
+                        .map((o) -> this.serializer.fromString(this.fieldType, (String) o))
                         .collect(Collectors.toList());
             }
 
@@ -181,7 +181,7 @@ public class ConfigField {
         } else {
             Object newValue = this.value.get();
             if (this.serializer != null && newValue instanceof String) {
-                newValue = serializer.fromString(this.fieldType, (String) newValue);
+                newValue = this.serializer.fromString(this.fieldType, (String) newValue);
             }
 
             this.getField().set(this.config.getConfigInstance(), newValue);
@@ -233,12 +233,12 @@ public class ConfigField {
             IntStream.range(0, values.size()).forEach(i -> Array.set(valueArray, i, values.get(i)));
 
             if (this.getField().getType().getComponentType().isPrimitive()) {
-                this.getField().set(configInstance, toPrimitive(valueArray));
+                this.getField().set(configInstance, this.toPrimitive(valueArray));
             } else {
                 this.getField().set(configInstance, valueArray);
             }
         } else {
-            List valueList = (List) getField().get(configInstance);
+            List valueList = (List) this.getField().get(configInstance);
             valueList.clear();
             valueList.addAll(values);
         }
@@ -246,31 +246,31 @@ public class ConfigField {
 
     @Nonnull
     public WrappedField getField() {
-        return field;
+        return this.field;
     }
 
     public boolean isValueArray() {
-        return isValueArray;
+        return this.isValueArray;
     }
 
     public String getName() {
-        return name;
+        return this.name;
     }
 
     public String getComment() {
-        return comment;
+        return this.comment;
     }
 
     public Object getDefaultValue() {
-        return defaultValue;
+        return this.defaultValue;
     }
 
     public String getLangKey() {
-        return langKey;
+        return this.langKey;
     }
 
     public boolean requiresWorldRestart() {
-        return requiresWorldRestart;
+        return this.requiresWorldRestart;
     }
 
     private enum EnumFieldType {
