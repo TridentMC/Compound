@@ -27,17 +27,6 @@ public class ElementBox implements IElement {
         this.layout = layout;
     }
 
-    @SubscribeEvent
-    public void onKeyPressed(GuiScreenEvent.KeyboardCharTypedEvent e) {
-        if (e.getCodePoint() == '-') {
-            this.dimensions.setWidth(this.dimensions.getWidth() - 1);
-            this.dimensions.setHeight(this.dimensions.getHeight() - 1);
-        } else if (e.getCodePoint() == '+') {
-            this.dimensions.setWidth(this.dimensions.getWidth() + 1);
-            this.dimensions.setHeight(this.dimensions.getHeight() + 1);
-        }
-    }
-
     @Override
     public void drawBackground(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
