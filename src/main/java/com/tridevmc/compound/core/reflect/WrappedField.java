@@ -104,7 +104,7 @@ public class WrappedField<T> {
             }
         } catch (IllegalAccessException e) {
             throw new RuntimeException(
-                    String.format("Failed to read type of field %s", this.field.getName()), e);
+                    String.format("Failed to read value of field %s", this.field.getName()), e);
         }
     }
 
