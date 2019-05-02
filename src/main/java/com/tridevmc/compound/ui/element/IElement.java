@@ -4,6 +4,7 @@ import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.ICompoundUI;
 import com.tridevmc.compound.ui.Rect2D;
 import com.tridevmc.compound.ui.layout.ILayout;
+import com.tridevmc.compound.ui.screen.IScreenContext;
 
 import javax.annotation.Nonnull;
 
@@ -57,6 +58,15 @@ public interface IElement {
     }
 
     /**
+     * Called after all elements have been added to the UI but before they've been drawn.
+     * Used for adding listeners and initializing any cross-element interactions.
+     *
+     * @param ui the ui that contains the element.
+     */
+    default void initElement(ICompoundUI ui) {
+    }
+
+    /**
      * Gets the dimensions of this element.
      *
      * @return the dimensions of this element.
@@ -85,5 +95,15 @@ public interface IElement {
      * @param layout the new layout of the element.
      */
     void setLayout(@Nonnull ILayout layout);
+
+    /**
+     * Uses the layout of the element to get the actual position of the element on the screen.
+     *
+     * @param screen the screen to pass to the layout.
+     * @return the transformed rect for this element.
+     */
+    default Rect2D getTransformedDimensions(IScreenContext screen) {
+        return this.getLayout().getTransformedRect(screen, this.getDimensions());
+    }
 
 }

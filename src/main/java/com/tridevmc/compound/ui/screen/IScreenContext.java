@@ -30,6 +30,20 @@ public interface IScreenContext {
     int getHeight();
 
     /**
+     * Gets the current x coordinate of the mouse on the screen.
+     *
+     * @return the current x coordinate of the mouse.
+     */
+    float getMouseX();
+
+    /**
+     * Gets the current y coordinate of the mouse on the screen.
+     *
+     * @return the current y coordinate of the mouse.
+     */
+    float getMouseY();
+
+    /**
      * Gets the partial tick value for the current frame.
      *
      * @return the current partial tick value.
@@ -226,6 +240,15 @@ public interface IScreenContext {
      * @param y         the y position to draw the tooltip at.
      */
     void drawTooltip(ITextComponent component, int x, int y);
+
+    /**
+     * Draws the given itemstack on the screen within the given dimensions.
+     *
+     * @param stack      the stack to draw.
+     * @param dimensions the dimensions to draw the stack within.
+     * @param altText    the text to draw if no stack count will be drawn.
+     */
+    void drawItemStack(ItemStack stack, Rect2D dimensions, String altText);
 
     /**
      * Draws the given itemstack on the screen at the given coordinates.

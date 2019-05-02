@@ -1,6 +1,6 @@
 package com.tridevmc.compound.ui.screen;
 
-import com.tridevmc.compound.ui.CompoundUI;
+import com.tridevmc.compound.ui.IInternalCompoundUI;
 import com.tridevmc.compound.ui.Rect2D;
 import com.tridevmc.compound.ui.UVData;
 import net.minecraft.client.Minecraft;
@@ -9,6 +9,7 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
@@ -23,9 +24,9 @@ import java.util.List;
 
 public class CompoundScreenContext implements IScreenContext {
 
-    private CompoundUI ui;
+    private IInternalCompoundUI ui;
 
-    public CompoundScreenContext(CompoundUI ui) {
+    public CompoundScreenContext(IInternalCompoundUI ui) {
         this.ui = ui;
     }
 
@@ -35,17 +36,28 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public int getWidth() {
-        return this.ui.width;
+        return this.ui.getWidth();
     }
 
     @Override
     public int getHeight() {
-        return this.ui.height;
+        return this.ui.getHeight();
+    }
+
+
+    @Override
+    public float getMouseX() {
+        return this.ui.getMouseX();
+    }
+
+    @Override
+    public float getMouseY() {
+        return this.ui.getMouseY();
     }
 
     @Override
     public Minecraft getMc() {
-        return this.ui.mc;
+        return this.ui.getMc();
     }
 
     @Override
@@ -55,35 +67,17 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public GuiScreen getActiveGui() {
-        return this.ui;
+        return this.ui.asGuiScreen();
     }
 
     @Override
     public void bindTexture(ResourceLocation texture) {
-        this.ui.mc.textureManager.bindTexture(texture);
+        this.getMc().textureManager.bindTexture(texture);
     }
 
     @Override
     public void drawRect(Rect2D rect, int colour) {
-        float[] colourUnpacked = this.getRGBA(colour);
-        float r = colourUnpacked[0];
-        float g = colourUnpacked[1];
-        float b = colourUnpacked[2];
-        float a = colourUnpacked[3];
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder bufferbuilder = tessellator.getBuffer();
-        GlStateManager.enableBlend();
-        GlStateManager.disableTexture2D();
-        GlStateManager.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-        GlStateManager.color4f(r, g, b, a);
-        bufferbuilder.begin(7, DefaultVertexFormats.POSITION);
-        bufferbuilder.pos(rect.getX(), rect.getY() - rect.getHeight(), 0.0D).endVertex();
-        bufferbuilder.pos(rect.getX() + rect.getWidth(), rect.getY() - rect.getHeight(), 0.0D).endVertex();
-        bufferbuilder.pos(rect.getX() + rect.getWidth(), rect.getY(), 0.0D).endVertex();
-        bufferbuilder.pos(rect.getX(), rect.getY(), 0.0D).endVertex();
-        tessellator.draw();
-        GlStateManager.enableTexture2D();
-        GlStateManager.disableBlend();
+        this.drawGradientRect(rect, colour, colour);
     }
 
     @Override
@@ -108,10 +102,18 @@ public class CompoundScreenContext implements IScreenContext {
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuffer();
         bufferbuilder.begin(7, DefaultVertexFormats.POSITION_COLOR);
-        bufferbuilder.pos(rect.getX() + rect.getWidth(), rect.getY(), (double) this.getZLevel()).color(r1, g1, b1, a1).endVertex();
-        bufferbuilder.pos(rect.getX(), rect.getY(), (double) this.getZLevel()).color(r1, g1, b1, a1).endVertex();
-        bufferbuilder.pos(rect.getX(), rect.getY() - rect.getHeight(), (double) this.getZLevel()).color(r2, g2, b2, a2).endVertex();
-        bufferbuilder.pos(rect.getX() + rect.getWidth(), rect.getY() - rect.getHeight(), (double) this.getZLevel()).color(r2, g2, b2, a2).endVertex();
+        bufferbuilder.pos(rect.getX() + rect.getWidth(), rect.getY(), this.getZLevel())
+                .color(r1, g1, b1, a1)
+                .endVertex();
+        bufferbuilder.pos(rect.getX(), rect.getY(), this.getZLevel())
+                .color(r1, g1, b1, a1)
+                .endVertex();
+        bufferbuilder.pos(rect.getX(), rect.getY() + rect.getHeight(), this.getZLevel())
+                .color(r2, g2, b2, a2)
+                .endVertex();
+        bufferbuilder.pos(rect.getX() + rect.getWidth(), rect.getY() + rect.getHeight(), this.getZLevel())
+                .color(r2, g2, b2, a2)
+                .endVertex();
         tessellator.draw();
         GlStateManager.shadeModel(7424);
         GlStateManager.disableBlend();
@@ -121,24 +123,24 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawString(String text, int x, int y, int colour) {
-        this.ui.mc.fontRenderer.drawString(text, x, y, colour);
+        this.getMc().fontRenderer.drawString(text, x, y, colour);
     }
 
     @Override
     public void drawCenteredString(String text, int x, int y, int colour) {
-        int stringWidth = this.ui.mc.fontRenderer.getStringWidth(text);
-        this.ui.mc.fontRenderer.drawString(text, x - (stringWidth / 2), y, colour);
+        int stringWidth = this.getMc().fontRenderer.getStringWidth(text);
+        this.getMc().fontRenderer.drawString(text, x - (stringWidth / 2), y, colour);
     }
 
     @Override
     public void drawStringWithShadow(String text, int x, int y, int colour) {
-        this.ui.mc.fontRenderer.drawStringWithShadow(text, x, y, colour);
+        this.getMc().fontRenderer.drawStringWithShadow(text, x, y, colour);
     }
 
     @Override
     public void drawCenteredStringWithShadow(String text, int x, int y, int colour) {
-        int stringWidth = this.ui.mc.fontRenderer.getStringWidth(text);
-        this.ui.mc.fontRenderer.drawStringWithShadow(text, x - (stringWidth / 2), y, colour);
+        int stringWidth = this.getMc().fontRenderer.getStringWidth(text);
+        this.getMc().fontRenderer.drawStringWithShadow(text, x - (stringWidth / 2), y, colour);
     }
 
     @Override
@@ -148,7 +150,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawTexturedRect(float x, float y, UVData minUvs, UVData maxUvs) {
-        this.ui.drawTexturedModalRect(x, y, (int) minUvs.getU(), (int) minUvs.getV(), (int) maxUvs.getU(), (int) maxUvs.getV());
+        this.ui.asGuiScreen().drawTexturedModalRect(x, y, (int) minUvs.getU(), (int) minUvs.getV(), (int) maxUvs.getU(), (int) maxUvs.getV());
     }
 
     @Override
@@ -187,13 +189,15 @@ public class CompoundScreenContext implements IScreenContext {
     @Override
     public void drawTooltip(ItemStack stack, int x, int y) {
         net.minecraftforge.fml.client.config.GuiUtils.preItemToolTip(stack);
-        this.drawTooltip(this.ui.getItemToolTip(stack), x, y, stack.getItem().getFontRenderer(stack));
+        FontRenderer font = stack.getItem().getFontRenderer(stack);
+        font = font == null ? this.getMc().fontRenderer : font;
+        this.drawTooltip(this.ui.asGuiScreen().getItemToolTip(stack), x, y, font);
         net.minecraftforge.fml.client.config.GuiUtils.postItemToolTip();
     }
 
     @Override
     public void drawTooltip(String text, int x, int y) {
-        this.drawTooltip(text, x, y, this.ui.mc.fontRenderer);
+        this.drawTooltip(text, x, y, this.getMc().fontRenderer);
     }
 
     @Override
@@ -203,12 +207,12 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawTooltip(List<String> lines, int x, int y) {
-        this.drawTooltip(lines, x, y, this.ui.mc.fontRenderer);
+        this.drawTooltip(lines, x, y, this.getMc().fontRenderer);
     }
 
     @Override
     public void drawTooltip(List<String> lines, int x, int y, FontRenderer fontRenderer) {
-        this.ui.drawHoveringText(lines, x, y, fontRenderer);
+        this.ui.asGuiScreen().drawHoveringText(lines, x, y, fontRenderer);
     }
 
     @Override
@@ -217,17 +221,28 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawItemStack(ItemStack stack, int x, int y, String altText) {
+    public void drawItemStack(ItemStack stack, Rect2D dimensions, String altText) {
         float oZLevel = this.ui.getZLevel();
-        GlStateManager.translatef(0.0F, 0.0F, 32.0F);
         this.ui.setZLevel(200F);
-        this.ui.mc.getItemRenderer().zLevel = 200.0F;
+        this.getMc().getItemRenderer().zLevel = 200.0F;
         net.minecraft.client.gui.FontRenderer font = stack.getItem().getFontRenderer(stack);
-        if (font == null) font = this.ui.mc.fontRenderer;
-        this.ui.mc.getItemRenderer().renderItemAndEffectIntoGUI(stack, x, y);
-        this.ui.mc.getItemRenderer().renderItemOverlayIntoGUI(font, stack, x, y, altText);
+        if (font == null) font = this.getMc().fontRenderer;
+        GlStateManager.pushMatrix();
+        GlStateManager.translated(dimensions.getX(), dimensions.getY(), 0);
+        GlStateManager.scaled(1D / 16D, 1D / 16D, 1);
+        GlStateManager.scaled(dimensions.getWidth(), dimensions.getHeight(), 1);
+        RenderHelper.enableGUIStandardItemLighting();
+        this.getMc().getItemRenderer().renderItemAndEffectIntoGUI(stack, 0, 0);
+        this.getMc().getItemRenderer().renderItemOverlayIntoGUI(font, stack, 0, 0, altText);
+        RenderHelper.disableStandardItemLighting();
+        GlStateManager.popMatrix();
         this.ui.setZLevel(oZLevel);
-        this.ui.mc.getItemRenderer().zLevel = 0.0F;
+        this.getMc().getItemRenderer().zLevel = 0.0F;
+    }
+
+    @Override
+    public void drawItemStack(ItemStack stack, int x, int y, String altText) {
+        this.drawItemStack(stack, new Rect2D(x, y, 16, 16), altText);
     }
 
     @Override
@@ -237,7 +252,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void sendChatMessage(String message, boolean addToChat) {
-        this.ui.sendChatMessage(message, addToChat);
+        this.ui.asGuiScreen().sendChatMessage(message, addToChat);
     }
 
     @Override

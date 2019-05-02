@@ -193,16 +193,6 @@ public class WrappedMethod<T> {
     }
 
     /**
-     * Sets the accessibility of the method to the value specified.
-     * Delegates to method in Method class.
-     *
-     * @param b the accessibility to set the method to.
-     */
-    public void setAccessible(boolean b) {
-        this.method.setAccessible(b);
-    }
-
-    /**
      * Checks if the method is accessible.
      * Delegates to method in Method class.
      *
@@ -210,6 +200,16 @@ public class WrappedMethod<T> {
      */
     public boolean isAccessible() {
         return this.method.isAccessible();
+    }
+
+    /**
+     * Sets the accessibility of the method to the value specified.
+     * Delegates to method in Method class.
+     *
+     * @param b the accessibility to set the method to.
+     */
+    public void setAccessible(boolean b) {
+        this.method.setAccessible(b);
     }
 
     /**

@@ -12,9 +12,10 @@ import net.minecraft.util.text.ITextComponent;
 
 import java.util.List;
 
-public abstract class CompoundUI extends GuiScreen implements ICompoundUI {
+public abstract class CompoundUI extends GuiScreen implements ICompoundUI, IInternalCompoundUI {
 
     private float partialTicks;
+    private float mouseX, mouseY;
 
     private CompoundScreenContext screenContext;
     private List<IElement> elements;
@@ -46,6 +47,8 @@ public abstract class CompoundUI extends GuiScreen implements ICompoundUI {
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
         this.partialTicks = partialTicks;
+        this.mouseX = mouseX;
+        this.mouseY = mouseY;
         for (EnumUILayer layer : EnumUILayer.values()) {
             this.elements.forEach((e) -> e.drawLayer(this, layer));
         }
@@ -53,30 +56,56 @@ public abstract class CompoundUI extends GuiScreen implements ICompoundUI {
         super.render(mouseX, mouseY, partialTicks);
     }
 
-    /**
-     * Sets the current z-level being used by the gui. Needed for CompoundScreenContext.
-     */
-    public void setZLevel(float zLevel) {
-        this.zLevel = zLevel;
+    @Override
+    public float getMouseX() {
+        return this.mouseX;
     }
 
-    /**
-     * Gets the current z-level being used by the gui. Needed for CompoundScreenContext.
-     */
+    @Override
+    public float getMouseY() {
+        return this.mouseY;
+    }
+
+    @Override
     public float getZLevel() {
         return this.zLevel;
     }
 
-    /**
-     * Forwards to handleComponentHover in GuiScreen. Needed for CompoundScreenContext.
-     */
+    @Override
+    public void setZLevel(float zLevel) {
+        this.zLevel = zLevel;
+    }
+
+    @Override
+    public float getPartialTicks() {
+        return this.partialTicks;
+    }
+
+    @Override
+    public int getWidth() {
+        return this.width;
+    }
+
+    @Override
+    public int getHeight() {
+        return this.height;
+    }
+
+    @Override
+    public Minecraft getMc() {
+        return this.mc;
+    }
+
+    @Override
+    public GuiScreen asGuiScreen() {
+        return this;
+    }
+
+    @Override
     public void drawTextComponent(ITextComponent component, int x, int y) {
         this.handleComponentHover(component, x, y);
     }
 
-    public float getPartialTicks() {
-        return this.partialTicks;
-    }
 
     @Override
     public boolean keyPressed(int key, int scanCode, int modifiers) {
