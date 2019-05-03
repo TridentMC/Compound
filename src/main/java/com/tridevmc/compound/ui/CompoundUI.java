@@ -16,6 +16,7 @@ public abstract class CompoundUI extends GuiScreen implements ICompoundUI, IInte
 
     private float partialTicks;
     private float mouseX, mouseY;
+    private EnumUILayer currentLayer;
 
     private CompoundScreenContext screenContext;
     private List<IElement> elements;
@@ -50,6 +51,7 @@ public abstract class CompoundUI extends GuiScreen implements ICompoundUI, IInte
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         for (EnumUILayer layer : EnumUILayer.values()) {
+            this.currentLayer = layer;
             this.elements.forEach((e) -> e.drawLayer(this, layer));
         }
 
@@ -99,6 +101,11 @@ public abstract class CompoundUI extends GuiScreen implements ICompoundUI, IInte
     @Override
     public GuiScreen asGuiScreen() {
         return this;
+    }
+
+    @Override
+    public EnumUILayer getCurrentLayer() {
+        return this.currentLayer;
     }
 
     @Override

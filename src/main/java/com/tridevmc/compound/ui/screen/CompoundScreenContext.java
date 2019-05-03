@@ -1,5 +1,6 @@
 package com.tridevmc.compound.ui.screen;
 
+import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
 import com.tridevmc.compound.ui.Rect2D;
 import com.tridevmc.compound.ui.UVData;
@@ -43,7 +44,6 @@ public class CompoundScreenContext implements IScreenContext {
     public int getHeight() {
         return this.ui.getHeight();
     }
-
 
     @Override
     public float getMouseX() {
@@ -277,5 +277,10 @@ public class CompoundScreenContext implements IScreenContext {
         float b = (float) (colour & 255) / 255.0F;
         float a = (float) (colour >> 24 & 255) / 255.0F;
         return new float[]{r, g, b, a};
+    }
+
+    @Override
+    public EnumUILayer getCurrentLayer() {
+        return ui.getCurrentLayer();
     }
 }

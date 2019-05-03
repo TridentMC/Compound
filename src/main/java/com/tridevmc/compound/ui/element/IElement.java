@@ -103,7 +103,7 @@ public interface IElement {
      * @return the transformed rect for this element.
      */
     default Rect2D getTransformedDimensions(IScreenContext screen) {
-        return this.getLayout().getTransformedRect(screen, this.getDimensions());
+        return this.getLayout().getTransformedRect(screen, this, this.getDimensions());
     }
 
 }

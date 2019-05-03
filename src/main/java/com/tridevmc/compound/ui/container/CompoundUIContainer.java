@@ -36,6 +36,7 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
 
     private float partialTicks;
     private float mouseX, mouseY;
+    private EnumUILayer currentLayer;
 
     private CompoundScreenContext screenContext;
     private List<IElement> elements;
@@ -71,6 +72,7 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
 
     @Override
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
+        this.currentLayer = EnumUILayer.BACKGROUND;
         this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.BACKGROUND));
     }
 
@@ -79,7 +81,9 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
         super.drawGuiContainerForegroundLayer(mouseX, mouseY);
         GlStateManager.pushMatrix();
         GlStateManager.translatef(-this.guiLeft, -this.guiTop, 0);
+        this.currentLayer = EnumUILayer.FOREGROUND;
         this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.FOREGROUND));
+        this.currentLayer = EnumUILayer.OVERLAY;
         this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.OVERLAY));
         GlStateManager.popMatrix();
     }
@@ -90,11 +94,11 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
         this.partialTicks = partialTicks;
         this.mouseX = mouseX;
         this.mouseY = mouseY;
-        this.updateSlotStates(mouseX, mouseY);
+        this.updateSlotStates();
         super.render(mouseX, mouseY, partialTicks);
     }
 
-    private void updateSlotStates(int mouseX, int mouseY) {
+    private void updateSlotStates() {
         Slot clickSlot = clickedSlot.get(this);
         ItemStack dragStack = draggedStack.get(this);
         Integer dragLimit = dragSplittingLimit.get(this);
@@ -131,16 +135,17 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
         }
     }
 
-    public void addSlotElement(ILayout layout, int slotIndex) {
+    public ElementSlot addSlotElement(ILayout layout, int slotIndex) {
         Slot slot = this.inventorySlots.getSlot(slotIndex);
-        this.addSlotElement(new Rect2D(slot.xPos, slot.yPos - Integer.MIN_VALUE, 18, 18), layout, slotIndex);
+        return this.addSlotElement(new Rect2D(slot.xPos, slot.yPos - Integer.MIN_VALUE, 18, 18), layout, slotIndex);
     }
 
-    public void addSlotElement(Rect2D dimensions, ILayout layout, int slotIndex) {
+    public ElementSlot addSlotElement(Rect2D dimensions, ILayout layout, int slotIndex) {
         Slot slot = this.inventorySlots.getSlot(slotIndex);
         ElementSlot element = new ElementSlot(dimensions, layout, slot);
         this.addElement(element);
         this.slotElements.put(slot, element);
+        return element;
     }
 
     @Override
@@ -199,6 +204,11 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
     @Override
     public GuiScreen asGuiScreen() {
         return this;
+    }
+
+    @Override
+    public EnumUILayer getCurrentLayer() {
+        return this.currentLayer;
     }
 
     @Override

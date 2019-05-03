@@ -75,16 +75,12 @@ public class ElementSlot implements IElement {
     }
 
     private void drawHighlight(IScreenContext screen) {
-        Rect2D rect = this.getTransformedDimensions(screen);
-        rect.setX(rect.getX() + 1);
-        rect.setY(rect.getY() + 1);
-        rect.setWidth(rect.getWidth() - 1);
-        rect.setHeight(rect.getHeight() - 1);
+        Rect2D highlightArea = this.getTransformedDimensions(screen).offset(new Rect2D(1, 1, -1, -1));
         GlStateManager.disableLighting();
         GlStateManager.disableDepthTest();
         GlStateManager.colorMask(true, true, true, false);
         int slotColor = -2130706433;
-        screen.drawRect(rect, slotColor);
+        screen.drawRect(highlightArea, slotColor);
         GlStateManager.colorMask(true, true, true, true);
         GlStateManager.enableLighting();
         GlStateManager.enableDepthTest();
@@ -124,9 +120,7 @@ public class ElementSlot implements IElement {
     }
 
     public boolean isMouseOverSlot(IScreenContext screen) {
-        Rect2D rect = this.getTransformedDimensions(screen);
-        rect.setHeight(rect.getHeight() - 1);
-        rect.setWidth(rect.getWidth() - 1);
+        Rect2D rect = this.getTransformedDimensions(screen).offsetSize(-1, -1);
         return rect.isPointInRect(screen.getMouseX(), screen.getMouseY());
     }
 

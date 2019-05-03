@@ -27,4 +27,6 @@ public interface IInternalCompoundUI {
     GuiScreen asGuiScreen();
 
     void drawTextComponent(ITextComponent component, int x, int y);
+
+    EnumUILayer getCurrentLayer();
 }

@@ -19,12 +19,8 @@ public class LayoutRelative implements ILayout {
     }
 
     @Override
-    public Rect2D getTransformedRect(IScreenContext screen, Rect2D rect2D) {
-        Rect2D out = this.relativeTo.getTransformedDimensions(screen);
-        out.setX(out.getX() + rect2D.getX());
-        out.setY(out.getY() + rect2D.getY());
-        out.setWidth(rect2D.getWidth());
-        out.setHeight(rect2D.getHeight());
-        return out;
+    public Rect2D getTransformedRect(IScreenContext screen,IElement element, Rect2D rect2D) {
+        Rect2D parentDimensions = this.relativeTo.getTransformedDimensions(screen);
+        return rect2D.offsetPosition(parentDimensions.getX(), parentDimensions.getY());
     }
 }

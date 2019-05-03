@@ -5,8 +5,8 @@ package com.tridevmc.compound.ui;
  */
 public class Rect2D {
 
-    private double x, y;
-    private double width, height;
+    private final double x, y;
+    private final double width, height;
 
     public Rect2D(double x, double y, double width, double height) {
         this.x = x;
@@ -26,32 +26,39 @@ public class Rect2D {
         return this.x;
     }
 
-    public void setX(double x) {
-        this.x = x;
-    }
-
     public double getY() {
         return this.y;
-    }
-
-    public void setY(double y) {
-        this.y = y;
     }
 
     public double getWidth() {
         return this.width;
     }
 
-    public void setWidth(double width) {
-        this.width = width;
-    }
-
     public double getHeight() {
         return this.height;
     }
 
-    public void setHeight(double height) {
-        this.height = height;
+    public Rect2D offset(Rect2D by) {
+        return new Rect2D(this.getX() + by.getX(),
+                this.getY() + by.getY(),
+                this.getWidth() + by.getWidth(),
+                this.getHeight() + by.getHeight());
+    }
+
+    public Rect2D offsetPosition(double x, double y) {
+        return this.offset(new Rect2D(x, y, 0, 0));
+    }
+
+    public Rect2D offsetSize(double width, double height) {
+        return this.offset(new Rect2D(0, 0, width, height));
+    }
+
+    public Rect2D setPosition(double x, double y) {
+        return new Rect2D(x, y, this.getWidth(), this.getHeight());
+    }
+
+    public Rect2D setSize(double width, double height) {
+        return new Rect2D(this.getX(), this.getY(), width, height);
     }
 
     public boolean isPointInRect(double x, double y) {

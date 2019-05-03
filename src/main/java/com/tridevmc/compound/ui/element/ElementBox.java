@@ -58,7 +58,7 @@ public class ElementBox implements IElement {
 
     private void drawCorners(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        Rect2D rect = this.layout.getTransformedRect(screen, this.dimensions);
+        Rect2D rect = this.layout.getTransformedRect(screen, this, this.dimensions);
         double xOff = rect.getX();
         double yOff = rect.getY();
         double width = rect.getWidth();
@@ -76,7 +76,7 @@ public class ElementBox implements IElement {
 
     private void drawConnectingLines(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        Rect2D rect = this.layout.getTransformedRect(screen, this.dimensions);
+        Rect2D rect = this.layout.getTransformedRect(screen, this, this.dimensions);
         double xOff = rect.getX();
         double yOff = rect.getY();
         double width = rect.getWidth();
@@ -96,7 +96,7 @@ public class ElementBox implements IElement {
 
     private void drawMiddle(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        Rect2D rect = this.layout.getTransformedRect(screen, this.dimensions);
+        Rect2D rect = this.layout.getTransformedRect(screen, this, this.dimensions);
         double xOff = rect.getX();
         double yOff = rect.getY();
         double width = rect.getWidth();

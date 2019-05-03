@@ -1,5 +1,6 @@
 package com.tridevmc.compound.ui.screen;
 
+import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.Rect2D;
 import com.tridevmc.compound.ui.UVData;
 import net.minecraft.client.Minecraft;
@@ -304,5 +305,11 @@ public interface IScreenContext {
      */
     float[] getRGBA(int colour);
 
+    /**
+     * Gets the layer currently being drawn on the screen.
+     *
+     * @return the current layer being drawn.
+     */
+    EnumUILayer getCurrentLayer();
 
 }
