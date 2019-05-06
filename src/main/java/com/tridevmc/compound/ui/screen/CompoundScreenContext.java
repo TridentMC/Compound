@@ -6,7 +6,6 @@ import com.tridevmc.compound.ui.Rect2D;
 import com.tridevmc.compound.ui.UVData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
@@ -170,7 +169,6 @@ public class CompoundScreenContext implements IScreenContext {
         tessellator.draw();
     }
 
-
     @Override
     public void drawTexturedRect(Rect2D rect, TextureAtlasSprite sprite) {
         this.drawTexturedRect(rect, new UVData(sprite.getMinU(), sprite.getMinV()), new UVData(sprite.getMaxU(), sprite.getMaxV()));
@@ -178,12 +176,44 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawTexturedRect(Rect2D rect, UVData uvs, float textureWidth, float textureHeight) {
-        Gui.drawModalRectWithCustomSizedTexture((int) rect.getX(), (int) rect.getY(), uvs.getU(), uvs.getV(), (int) rect.getWidth(), (int) rect.getHeight(), textureWidth, textureHeight);
+        float f = 1.0F / textureWidth;
+        float f1 = 1.0F / textureHeight;
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder bufferbuilder = tessellator.getBuffer();
+        bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
+        bufferbuilder.pos(rect.getX(), rect.getY() + rect.getHeight(), 0.0D).tex((uvs.getU() * f), ((uvs.getV() + rect.getHeight()) * f1)).endVertex();
+        bufferbuilder.pos(rect.getX() + rect.getWidth(), rect.getY() + rect.getHeight(), 0.0D).tex(((uvs.getU() + rect.getWidth()) * f), ((uvs.getV() + rect.getHeight()) * f1)).endVertex();
+        bufferbuilder.pos(rect.getX() + rect.getWidth(), rect.getY(), 0.0D).tex(((uvs.getU() + rect.getWidth()) * f), (uvs.getV() * f1)).endVertex();
+        bufferbuilder.pos(rect.getX(), rect.getY(), 0.0D).tex((uvs.getU() * f), (uvs.getV() * f1)).endVertex();
+        tessellator.draw();
     }
 
     @Override
-    public void drawScaledTiledTexturedRect(Rect2D rect, UVData uvs, int uWidth, int vHeight, float tileWidth, float tileHeight) {
-        Gui.drawScaledCustomSizeModalRect((int) rect.getX(), (int) rect.getY(), uvs.getU(), uvs.getV(), uWidth, vHeight, (int) rect.getWidth(), (int) rect.getHeight(), tileWidth, tileHeight);
+    public void drawTexturedRect(Rect2D rect, UVData uvs, int uWidth, int vHeight, float tileWidth, float tileHeight) {
+        float f = 1.0F / tileWidth;
+        float f1 = 1.0F / tileHeight;
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder bufferbuilder = tessellator.getBuffer();
+        bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
+        bufferbuilder.pos(rect.getX(), rect.getY() + rect.getHeight(), 0.0D).tex((uvs.getU() * f), ((uvs.getV() + vHeight) * f1)).endVertex();
+        bufferbuilder.pos(rect.getX() + rect.getWidth(), rect.getY() + rect.getHeight(), 0.0D).tex(((uvs.getU() + uWidth) * f), ((uvs.getV() + vHeight) * f1)).endVertex();
+        bufferbuilder.pos(rect.getX() + rect.getWidth(), rect.getY(), 0.0D).tex(((uvs.getU() + uWidth) * f), (uvs.getV() * f1)).endVertex();
+        bufferbuilder.pos(rect.getX(), rect.getY(), 0.0D).tex((uvs.getU() * f), (uvs.getV() * f1)).endVertex();
+        tessellator.draw();
+    }
+
+    @Override
+    public void drawTiledTexturedRect(Rect2D rect, UVData uvMin, UVData uvMax) {
+        float uvWidth = uvMax.getU() - uvMin.getU();
+        float uvHeight = uvMax.getV() - uvMin.getV();
+
+        for (int x = 0; x < rect.getWidth(); x += uvWidth) {
+            for (int y = 0; y < rect.getHeight(); y += uvHeight) {
+                double width = Math.min(uvWidth, rect.getWidth() - x);
+                double height = Math.min(uvHeight, rect.getHeight() - y);
+                this.drawTexturedRect(rect.offsetPosition(x, y).setSize(width, height), uvMin, new UVData(uvMin.getU() + (float) width, uvMin.getV() + (float) height));
+            }
+        }
     }
 
     @Override
@@ -281,6 +311,6 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public EnumUILayer getCurrentLayer() {
-        return ui.getCurrentLayer();
+        return this.ui.getCurrentLayer();
     }
 }

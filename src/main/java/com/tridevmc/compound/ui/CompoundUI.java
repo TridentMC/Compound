@@ -43,6 +43,7 @@ public abstract class CompoundUI extends GuiScreen implements ICompoundUI, IInte
         Minecraft mc = Minecraft.getInstance();
         this.setWorldAndResolution(mc, mc.mainWindow.getScaledWidth(), mc.mainWindow.getScaledHeight());
         this.initElements();
+        this.elements.forEach((e) -> e.initElement(this));
     }
 
     @Override
@@ -113,46 +114,45 @@ public abstract class CompoundUI extends GuiScreen implements ICompoundUI, IInte
         this.handleComponentHover(component, x, y);
     }
 
-
     @Override
     public boolean keyPressed(int key, int scanCode, int modifiers) {
-        this.keyPressListeners.forEach((l) -> l.listen(key, scanCode, modifiers));
+        this.keyPressListeners.forEach((l) -> l.listen(this.screenContext, key, scanCode, modifiers));
         return super.keyPressed(key, scanCode, modifiers);
     }
 
     @Override
     public boolean keyReleased(int key, int scanCode, int modifiers) {
-        this.keyReleaseListeners.forEach((l) -> l.listen(key, scanCode, modifiers));
+        this.keyReleaseListeners.forEach((l) -> l.listen(this.screenContext, key, scanCode, modifiers));
         return super.keyReleased(key, scanCode, modifiers);
     }
 
     @Override
     public boolean charTyped(char typedChar, int modifiers) {
-        this.charTypeListeners.forEach((l) -> l.listen(typedChar, modifiers));
+        this.charTypeListeners.forEach((l) -> l.listen(this.screenContext, typedChar, modifiers));
         return super.charTyped(typedChar, modifiers);
     }
 
     @Override
     public boolean mouseClicked(double x, double y, int button) {
-        this.mousePressListeners.forEach((l) -> l.listen(x, y, button));
+        this.mousePressListeners.forEach((l) -> l.listen(this.screenContext, x, y, button));
         return super.mouseClicked(x, y, button);
     }
 
     @Override
     public boolean mouseDragged(double x, double y, int button, double pX, double pY) {
-        this.mouseDragListeners.forEach((l) -> l.listen(x, y, button, pX, pY));
+        this.mouseDragListeners.forEach((l) -> l.listen(this.screenContext, x, y, button, pX, pY));
         return super.mouseDragged(x, y, button, pX, pY);
     }
 
     @Override
     public boolean mouseReleased(double x, double y, int button) {
-        this.mouseReleaseListeners.forEach((l) -> l.listen(x, y, button));
+        this.mouseReleaseListeners.forEach((l) -> l.listen(this.screenContext, x, y, button));
         return super.mouseReleased(x, y, button);
     }
 
     @Override
     public boolean mouseScrolled(double distance) {
-        this.mouseScrollListeners.forEach((l) -> l.listen(distance));
+        this.mouseScrollListeners.forEach((l) -> l.listen(this.screenContext, distance));
         return super.mouseScrolled(distance);
     }
 

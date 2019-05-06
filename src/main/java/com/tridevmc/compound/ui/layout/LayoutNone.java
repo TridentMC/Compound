@@ -6,7 +6,7 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 
 public class LayoutNone implements ILayout {
     @Override
-    public Rect2D getTransformedRect(IScreenContext screen, IElement element, Rect2D rect2D) {
-        return rect2D;
+    public Rect2D getTransformedRect(IScreenContext screen, IElement element, Rect2D rect) {
+        return rect;
     }
 }

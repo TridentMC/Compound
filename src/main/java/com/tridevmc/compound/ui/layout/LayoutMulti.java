@@ -20,10 +20,10 @@ public class LayoutMulti implements ILayout {
     }
 
     @Override
-    public Rect2D getTransformedRect(IScreenContext screen, IElement element, Rect2D rect2D) {
+    public Rect2D getTransformedRect(IScreenContext screen, IElement element, Rect2D rect) {
         for (ILayout layout : this.layouts) {
-            rect2D = layout.getTransformedRect(screen, element, rect2D);
+            rect = layout.getTransformedRect(screen, element, rect);
         }
-        return rect2D;
+        return rect;
     }
 }

@@ -1,8 +1,9 @@
-package com.tridevmc.compound.ui.element;
+package com.tridevmc.compound.ui.element.container;
 
 import com.tridevmc.compound.ui.ICompoundUI;
 import com.tridevmc.compound.ui.Rect2D;
 import com.tridevmc.compound.ui.UVData;
+import com.tridevmc.compound.ui.element.Element;
 import com.tridevmc.compound.ui.layout.ILayout;
 import com.tridevmc.compound.ui.layout.LayoutNone;
 import com.tridevmc.compound.ui.screen.IScreenContext;
@@ -13,11 +14,9 @@ import net.minecraft.util.ResourceLocation;
 
 import javax.annotation.Nonnull;
 
-public class ElementSlot implements IElement {
+public class ElementSlot extends Element {
 
     private static final ResourceLocation TEXTURE = new ResourceLocation("textures/gui/container/inventory.png");
-    private Rect2D dimensions;
-    private ILayout layout;
     private Slot slot;
     private boolean drawOverlay;
     private boolean drawUnderlay;
@@ -29,8 +28,7 @@ public class ElementSlot implements IElement {
     }
 
     public ElementSlot(@Nonnull Rect2D dimensions, @Nonnull ILayout layout, @Nonnull Slot slot) {
-        this.dimensions = dimensions;
-        this.layout = layout;
+        super(dimensions,layout);
         this.slot = slot;
     }
 
@@ -95,28 +93,6 @@ public class ElementSlot implements IElement {
         this.drawUnderlay = false;
         this.displayStack = this.slot.getStack();
         this.displayString = null;
-    }
-
-    @Nonnull
-    @Override
-    public Rect2D getDimensions() {
-        return this.dimensions;
-    }
-
-    @Override
-    public void setDimensions(@Nonnull Rect2D dimensions) {
-        this.dimensions = dimensions;
-    }
-
-    @Nonnull
-    @Override
-    public ILayout getLayout() {
-        return this.layout;
-    }
-
-    @Override
-    public void setLayout(@Nonnull ILayout layout) {
-        this.layout = layout;
     }
 
     public boolean isMouseOverSlot(IScreenContext screen) {

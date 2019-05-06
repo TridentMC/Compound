@@ -8,21 +8,16 @@ import com.tridevmc.compound.ui.layout.LayoutNone;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.util.ResourceLocation;
 
-import javax.annotation.Nonnull;
-
-public class ElementBox implements IElement {
+public class ElementBox extends Element {
 
     private static final ResourceLocation TEXTURE = new ResourceLocation("textures/gui/container/inventory.png");
-    private Rect2D dimensions;
-    private ILayout layout;
 
     public ElementBox(Rect2D dimensions) {
         this(dimensions, new LayoutNone());
     }
 
     public ElementBox(Rect2D dimensions, ILayout layout) {
-        this.dimensions = dimensions;
-        this.layout = layout;
+        super(dimensions, layout);
     }
 
     @Override
@@ -34,31 +29,10 @@ public class ElementBox implements IElement {
         this.drawMiddle(ui);
     }
 
-    @Nonnull
-    @Override
-    public Rect2D getDimensions() {
-        return this.dimensions;
-    }
-
-    @Override
-    public void setDimensions(@Nonnull Rect2D dimensions) {
-        this.dimensions = dimensions;
-    }
-
-    @Nonnull
-    @Override
-    public ILayout getLayout() {
-        return this.layout;
-    }
-
-    @Override
-    public void setLayout(@Nonnull ILayout layout) {
-        this.layout = layout;
-    }
 
     private void drawCorners(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        Rect2D rect = this.layout.getTransformedRect(screen, this, this.dimensions);
+        Rect2D rect = this.getTransformedDimensions(screen);
         double xOff = rect.getX();
         double yOff = rect.getY();
         double width = rect.getWidth();
@@ -76,7 +50,7 @@ public class ElementBox implements IElement {
 
     private void drawConnectingLines(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        Rect2D rect = this.layout.getTransformedRect(screen, this, this.dimensions);
+        Rect2D rect = this.getTransformedDimensions(screen);
         double xOff = rect.getX();
         double yOff = rect.getY();
         double width = rect.getWidth();
@@ -96,7 +70,7 @@ public class ElementBox implements IElement {
 
     private void drawMiddle(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        Rect2D rect = this.layout.getTransformedRect(screen, this, this.dimensions);
+        Rect2D rect = this.getTransformedDimensions(screen);
         double xOff = rect.getX();
         double yOff = rect.getY();
         double width = rect.getWidth();

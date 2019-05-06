@@ -99,7 +99,7 @@ public class LayoutGrid implements ILayout {
     }
 
     @Override
-    public Rect2D getTransformedRect(IScreenContext screen, IElement element, Rect2D rect2D) {
+    public Rect2D getTransformedRect(IScreenContext screen, IElement element, Rect2D rect) {
         if (this.lastElement == element || this.lastLayer != screen.getCurrentLayer()) {
             this.recalculateSizes();
         } else {

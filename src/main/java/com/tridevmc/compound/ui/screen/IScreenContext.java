@@ -184,7 +184,16 @@ public interface IScreenContext {
      * @param tileWidth  the width of the tile to draw.
      * @param tileHeight the height of the tile to draw.
      */
-    void drawScaledTiledTexturedRect(Rect2D rect, UVData uvs, int uWidth, int vHeight, float tileWidth, float tileHeight);
+    void drawTexturedRect(Rect2D rect, UVData uvs, int uWidth, int vHeight, float tileWidth, float tileHeight);
+
+    /**
+     * Draws a tiled textured rect on the screen matching the provided rect data.
+     *
+     * @param rect  the position and dimensions of the rect to draw.
+     * @param uvMin the minimum uv data of the texture to tile.
+     * @param uvMax the maximum uv data of the texture to tile.
+     */
+    void drawTiledTexturedRect(Rect2D rect, UVData uvMin, UVData uvMax);
 
     /**
      * Draws the tooltip for the given itemstack at the given coordinates.
