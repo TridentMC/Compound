@@ -14,6 +14,9 @@ import net.minecraft.util.ResourceLocation;
 
 import javax.annotation.Nonnull;
 
+/**
+ * A resizable slot element to add to Container UIs, must be used in conjunction with CompoundUIContainer and CompoundContainer
+ */
 public class ElementSlot extends Element {
 
     private static final ResourceLocation TEXTURE = new ResourceLocation("textures/gui/container/inventory.png");

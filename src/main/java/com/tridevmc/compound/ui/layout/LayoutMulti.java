@@ -7,6 +7,9 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 
 import java.util.List;
 
+/**
+ * A layout made up of other layouts, applied in the order they were added.
+ */
 public class LayoutMulti implements ILayout {
 
     private List<ILayout> layouts;

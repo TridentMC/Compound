@@ -61,7 +61,12 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public float getPartialTicks() {
-        return this.ui.getPartialTicks();
+        return this.getMc().getRenderPartialTicks();
+    }
+
+    @Override
+    public long getTicks() {
+        return this.ui.getTicks();
     }
 
     @Override
@@ -121,25 +126,25 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawString(String text, int x, int y, int colour) {
-        this.getMc().fontRenderer.drawString(text, x, y, colour);
+    public void drawString(String text, double x, double y, int colour) {
+        this.getMc().fontRenderer.drawString(text, (float) x, (float) y, colour);
     }
 
     @Override
-    public void drawCenteredString(String text, int x, int y, int colour) {
+    public void drawCenteredString(String text, double x, double y, int colour) {
         int stringWidth = this.getMc().fontRenderer.getStringWidth(text);
-        this.getMc().fontRenderer.drawString(text, x - (stringWidth / 2), y, colour);
+        this.getMc().fontRenderer.drawString(text, (float) x - (stringWidth / 2F), (float) y, colour);
     }
 
     @Override
-    public void drawStringWithShadow(String text, int x, int y, int colour) {
-        this.getMc().fontRenderer.drawStringWithShadow(text, x, y, colour);
+    public void drawStringWithShadow(String text, double x, double y, int colour) {
+        this.getMc().fontRenderer.drawStringWithShadow(text, (float) x, (float) y, colour);
     }
 
     @Override
-    public void drawCenteredStringWithShadow(String text, int x, int y, int colour) {
+    public void drawCenteredStringWithShadow(String text, double x, double y, int colour) {
         int stringWidth = this.getMc().fontRenderer.getStringWidth(text);
-        this.getMc().fontRenderer.drawStringWithShadow(text, x - (stringWidth / 2), y, colour);
+        this.getMc().fontRenderer.drawStringWithShadow(text, (float) x - (stringWidth / 2F), (float) y, colour);
     }
 
     @Override
@@ -158,14 +163,14 @@ public class CompoundScreenContext implements IScreenContext {
         double y = rect.getY();
         double width = rect.getWidth();
         double height = rect.getHeight();
-        float zLevel = this.ui.getZLevel();
+        double zLevel = this.ui.getZLevel();
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuffer();
         bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
-        bufferbuilder.pos(x + 0, y + height, (double) zLevel).tex((double) ((minUvs.getU() + 0) * 0.00390625F), (double) (maxUvs.getV() * 0.00390625F)).endVertex();
-        bufferbuilder.pos(x + width, y + height, (double) zLevel).tex((double) (maxUvs.getU() * 0.00390625F), (double) (maxUvs.getV() * 0.00390625F)).endVertex();
-        bufferbuilder.pos(x + width, y + 0, (double) zLevel).tex((double) (maxUvs.getU() * 0.00390625F), (double) ((minUvs.getV() + 0) * 0.00390625F)).endVertex();
-        bufferbuilder.pos(x + 0, y + 0, (double) zLevel).tex((double) ((minUvs.getU() + 0) * 0.00390625F), (double) ((minUvs.getV() + 0) * 0.00390625F)).endVertex();
+        bufferbuilder.pos(x, y + height, zLevel).tex(minUvs.getU() * 0.00390625F, maxUvs.getV() * 0.00390625F).endVertex();
+        bufferbuilder.pos(x + width, y + height, zLevel).tex(maxUvs.getU() * 0.00390625F, maxUvs.getV() * 0.00390625F).endVertex();
+        bufferbuilder.pos(x + width, y, zLevel).tex(maxUvs.getU() * 0.00390625F, minUvs.getV() * 0.00390625F).endVertex();
+        bufferbuilder.pos(x, y, zLevel).tex(minUvs.getU() * 0.00390625F, minUvs.getV() * 0.00390625F).endVertex();
         tessellator.draw();
     }
 

@@ -14,7 +14,7 @@ import java.util.List;
 
 public abstract class CompoundUI extends GuiScreen implements ICompoundUI, IInternalCompoundUI {
 
-    private float partialTicks;
+    private long ticks;
     private float mouseX, mouseY;
     private EnumUILayer currentLayer;
 
@@ -48,7 +48,6 @@ public abstract class CompoundUI extends GuiScreen implements ICompoundUI, IInte
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
-        this.partialTicks = partialTicks;
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         for (EnumUILayer layer : EnumUILayer.values()) {
@@ -57,6 +56,12 @@ public abstract class CompoundUI extends GuiScreen implements ICompoundUI, IInte
         }
 
         super.render(mouseX, mouseY, partialTicks);
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        this.ticks++;
     }
 
     @Override
@@ -80,8 +85,8 @@ public abstract class CompoundUI extends GuiScreen implements ICompoundUI, IInte
     }
 
     @Override
-    public float getPartialTicks() {
-        return this.partialTicks;
+    public long getTicks() {
+        return this.ticks;
     }
 
     @Override

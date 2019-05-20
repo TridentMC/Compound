@@ -2,6 +2,9 @@ package com.tridevmc.compound.ui;
 
 import com.google.common.base.MoreObjects;
 
+/**
+ * Used for defining UV data of rects to draw on the screen.
+ */
 public class UVData {
 
     private final float u, v;

@@ -6,7 +6,6 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 
 import javax.annotation.Nonnull;
 
-
 /**
  * A layout that makes the positioning of elements relative to the top left of the provided element.
  */
@@ -19,7 +18,7 @@ public class LayoutRelative implements ILayout {
     }
 
     @Override
-    public Rect2D getTransformedRect(IScreenContext screen,IElement element, Rect2D rect) {
+    public Rect2D getTransformedRect(IScreenContext screen, IElement element, Rect2D rect) {
         Rect2D parentDimensions = this.relativeTo.getTransformedDimensions(screen);
         return rect.offsetPosition(parentDimensions.getX(), parentDimensions.getY());
     }

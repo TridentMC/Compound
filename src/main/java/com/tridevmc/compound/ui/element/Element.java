@@ -5,6 +5,9 @@ import com.tridevmc.compound.ui.layout.ILayout;
 
 import javax.annotation.Nonnull;
 
+/**
+ * Simple base class for elements that includes some boilerplate for layouts and dimensions.
+ */
 public class Element implements IElement {
     private Rect2D dimensions;
     private ILayout layout;

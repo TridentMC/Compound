@@ -22,11 +22,12 @@ public interface IInternalCompoundUI {
 
     Minecraft getMc();
 
-    float getPartialTicks();
+    long getTicks();
 
     GuiScreen asGuiScreen();
 
     void drawTextComponent(ITextComponent component, int x, int y);
 
     EnumUILayer getCurrentLayer();
+
 }

@@ -8,6 +8,9 @@ import com.tridevmc.compound.ui.layout.LayoutNone;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.util.ResourceLocation;
 
+/**
+ * A resizable box element to add to UIs, useful for backgrounds to place elements on top of.
+ */
 public class ElementBox extends Element {
 
     private static final ResourceLocation TEXTURE = new ResourceLocation("textures/gui/container/inventory.png");

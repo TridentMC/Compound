@@ -14,6 +14,10 @@ import net.minecraft.util.text.ITextComponent;
 import java.net.URI;
 import java.util.List;
 
+/**
+ * Provides useful methods and variables for drawing a UI and it's elements.
+ * This should be used in place of any direct calls to minecraft GUI methods.
+ */
 public interface IScreenContext {
 
     /**
@@ -50,6 +54,13 @@ public interface IScreenContext {
      * @return the current partial tick value.
      */
     float getPartialTicks();
+
+    /**
+     * Gets the amount of ticks that have passed since the ui was opened.
+     *
+     * @return the amount of ticks that have passed since the ui was opened.
+     */
+    long getTicks();
 
     /**
      * Gets the active gui that's currently being displayed.
@@ -97,7 +108,7 @@ public interface IScreenContext {
      * @param y      the y position to draw the string at.
      * @param colour the colour to draw the string in.
      */
-    void drawString(String text, int x, int y, int colour);
+    void drawString(String text, double x, double y, int colour);
 
     /**
      * Draws the given string on the screen with the middle of the string centered on the given position.
@@ -107,7 +118,7 @@ public interface IScreenContext {
      * @param y      the y position to draw the string at.
      * @param colour the colour to draw the string in.
      */
-    void drawCenteredString(String text, int x, int y, int colour);
+    void drawCenteredString(String text, double x, double y, int colour);
 
     /**
      * Draws the given string on the screen with the middle of the string centered on the given position, with a drop shadow applied.
@@ -117,7 +128,7 @@ public interface IScreenContext {
      * @param y      the y position to draw the string at.
      * @param colour the colour to draw the string in.
      */
-    void drawStringWithShadow(String text, int x, int y, int colour);
+    void drawStringWithShadow(String text, double x, double y, int colour);
 
     /**
      * Draws the given string on the screen at the given position, with a drop shadow applied.
@@ -127,7 +138,7 @@ public interface IScreenContext {
      * @param y      the y position to draw the string at.
      * @param colour the colour to draw the string in.
      */
-    void drawCenteredStringWithShadow(String text, int x, int y, int colour);
+    void drawCenteredStringWithShadow(String text, double x, double y, int colour);
 
     /**
      * Draws a textured rect on the screen matching the provided rect data.

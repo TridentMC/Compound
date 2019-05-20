@@ -34,7 +34,7 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
     private static final WrappedField<ItemStack> draggedStack = WrappedField.create(GuiContainer.class, "draggedStack", "field_147012_x");
     private static final WrappedField<Integer> dragSplittingLimit = WrappedField.create(GuiContainer.class, "dragSplittingLimit", "field_146987_F");
 
-    private float partialTicks;
+    private long ticks;
     private float mouseX, mouseY;
     private EnumUILayer currentLayer;
 
@@ -49,7 +49,6 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
     private List<IMousePressListener> mousePressListeners;
     private List<IMouseReleaseListener> mouseReleaseListeners;
     private List<IMouseScrollListener> mouseScrollListeners;
-
 
     public CompoundUIContainer(CompoundContainer container) {
         super(container);
@@ -92,14 +91,25 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
         this.drawDefaultBackground();
-        this.partialTicks = partialTicks;
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         this.updateSlotStates();
         super.render(mouseX, mouseY, partialTicks);
     }
 
+    @Override
+    public void tick() {
+        super.tick();
+        this.ticks++;
+    }
+
+    /**
+     * Updates the state of all the slot elements so match the user input.
+     * <p>
+     * For internal use only.
+     */
     private void updateSlotStates() {
+        // Load some common variables using our wrapped fields.
         Slot clickSlot = clickedSlot.get(this);
         ItemStack dragStack = draggedStack.get(this);
         Integer dragLimit = dragSplittingLimit.get(this);
@@ -136,11 +146,26 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
         }
     }
 
+    /**
+     * Adds a slot element to the UI, uses the real positioning defined by the compound container.
+     *
+     * @param layout    the layout to apply to the slot element.
+     * @param slotIndex the slot index in the container that holds this slot.
+     * @return the newly created slot element.
+     */
     public ElementSlot addSlotElement(ILayout layout, int slotIndex) {
         Slot slot = this.inventorySlots.getSlot(slotIndex);
         return this.addSlotElement(new Rect2D(slot.xPos, slot.yPos - Integer.MIN_VALUE, 18, 18), layout, slotIndex);
     }
 
+    /**
+     * Adds a slot element to the UI with the given dimensions.
+     *
+     * @param dimensions the dimensions of the slot to add.
+     * @param layout     the layout to apply to the slot element.
+     * @param slotIndex  the slot index in the container that holds this slot.
+     * @return the newly created slot element.
+     */
     public ElementSlot addSlotElement(Rect2D dimensions, ILayout layout, int slotIndex) {
         Slot slot = this.inventorySlots.getSlot(slotIndex);
         ElementSlot element = new ElementSlot(dimensions, layout, slot);
@@ -183,8 +208,8 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
     }
 
     @Override
-    public float getPartialTicks() {
-        return this.partialTicks;
+    public long getTicks() {
+        return this.ticks;
     }
 
     @Override

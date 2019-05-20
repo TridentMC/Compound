@@ -10,6 +10,9 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Organizes a list of elements in a grid arrangement, useful for a grid of slots for example.
+ */
 public class LayoutGrid implements ILayout {
 
     private Rect2D area;

@@ -67,6 +67,14 @@ public interface IElement {
     }
 
     /**
+     * Called on each ui tick, useful for updating animation states.
+     *
+     * @param ui the ui that is ticking the element.
+     */
+    default void tick(ICompoundUI ui) {
+    }
+
+    /**
      * Gets the dimensions of this element.
      *
      * @return the dimensions of this element.
