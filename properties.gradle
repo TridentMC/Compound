@@ -1,7 +1,7 @@
 ext {
     // Mod Stuff
     modGroup = "com.tridevmc"
-    modVersion = "1.1.2"
+    modVersion = "1.2.0"
     modBaseName = "compound"
 
     // Forge Stuff

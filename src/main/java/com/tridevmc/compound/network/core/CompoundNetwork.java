@@ -116,7 +116,7 @@ public class CompoundNetwork {
 
         applicableMarshallers.sort(Comparator.comparingInt(
                 o -> EnumMarshallerPriority
-                        .valueOf(((ModAnnotation.EnumHolder) o.getAnnotationData().get("priority")).getValue())
+                        .valueOf(((ModAnnotation.EnumHolder) o.getAnnotationData().getOrDefault("priority", "NORMAL")).getValue())
                         .getRank()));
 
         for (ModFileScanData.AnnotationData applicableMarshaller : applicableMarshallers) {
