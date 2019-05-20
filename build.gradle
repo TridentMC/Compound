@@ -108,8 +108,18 @@ task buildConfig(type: Jar) {
     }
 }
 
+task buildUi(type: Jar) {
+    baseName = 'compound-ui'
+    from(sourceSets.main.allSource) {
+        include 'com/tridevmc/compound/ui/**'
+    }
+    from(sourceSets.main.output) {
+        include 'com/tridevmc/compound/ui/**'
+    }
+}
+
 artifacts {
-    archives buildAll, buildCore, buildGui, buildInventory, buildNetwork, buildConfig
+    archives buildAll, buildCore, buildGui, buildInventory, buildNetwork, buildConfig, buildUi
 }
 
 publishing {
@@ -149,6 +159,12 @@ publishing {
             artifactId 'compound-config'
             version project.version + versionTag
             artifact buildConfig
+        }
+        ui(MavenPublication) {
+            groupId 'com.tridevmc.compound'
+            artifactId 'compound-ui'
+            version project.version + versionTag
+            artifact buildUi
         }
     }
 }
