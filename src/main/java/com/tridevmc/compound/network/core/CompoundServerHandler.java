@@ -8,6 +8,7 @@ public class CompoundServerHandler implements ICompoundNetworkHandler {
     @Override
     public <M extends Message> void handle(M m, Context ctx) {
         m.handle(this.getPlayer(ctx));
+        ctx.setPacketHandled(true);
     }
 
     @Override

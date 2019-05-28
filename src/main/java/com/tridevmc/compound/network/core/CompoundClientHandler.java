@@ -9,6 +9,7 @@ public class CompoundClientHandler implements ICompoundNetworkHandler {
     @Override
     public <M extends Message> void handle(M m, NetworkEvent.Context ctx) {
         m.handle(this.getPlayer(ctx));
+        ctx.setPacketHandled(true);
     }
 
     @Override
