@@ -40,7 +40,7 @@ public class MessageConcept {
 
     public void toBytes(Message msg, ByteBuf target) {
         List<MessageField> booleanFields = this.messageFields.stream()
-                .filter(mf -> mf.getType() == Boolean.class).sorted(
+                .filter(mf -> mf.getType() == Boolean.class || mf.getType() == boolean.class).sorted(
                         Comparator.comparing(o -> o.getField().getName())).collect(Collectors.toList());
 
         if (!booleanFields.isEmpty()) {
@@ -52,8 +52,8 @@ public class MessageConcept {
                     currentByte = 0x00000000;
                 }
 
-                MessageField<Boolean> msgField = booleanFields.get(i);
-                Boolean fieldValue = (Boolean) msgField.getValue(msg);
+                MessageField msgField = booleanFields.get(i);
+                boolean fieldValue = (boolean) msgField.getValue(msg);
 
                 if (fieldValue) {
                     currentByte |= (1 << byteIndex);
