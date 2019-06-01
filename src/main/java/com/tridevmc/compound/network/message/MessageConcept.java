@@ -85,7 +85,7 @@ public class MessageConcept {
 
     public void fromBytes(Message msg, ByteBuf source) {
         List<MessageField> booleanFields = this.messageFields.stream()
-                .filter(mf -> mf.getType() == Boolean.class).sorted(
+                .filter(mf -> mf.getType() == Boolean.class || mf.getType() == boolean.class).sorted(
                         Comparator.comparing(o -> o.getField().getName())).collect(Collectors.toList());
 
         if (!booleanFields.isEmpty()) {
@@ -97,7 +97,7 @@ public class MessageConcept {
                     currentByte = source.readByte();
                 }
 
-                MessageField<Boolean> msgField = booleanFields.get(i);
+                MessageField msgField = booleanFields.get(i);
                 msgField.setValue(msg, (currentByte & (1 << byteIndex)) != 0);
             }
         }
