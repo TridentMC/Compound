@@ -40,7 +40,7 @@ public class MessageConcept {
 
     public void toBytes(Message msg, ByteBuf target) {
         List<MessageField> booleanFields = this.messageFields.stream()
-                .filter(mf -> mf.getType() == Boolean.class || mf.getType() == boolean.class).sorted(
+                .filter(this::isFieldBoolean).sorted(
                         Comparator.comparing(o -> o.getField().getName())).collect(Collectors.toList());
 
         if (!booleanFields.isEmpty()) {
@@ -66,7 +66,7 @@ public class MessageConcept {
         }
 
         for (MessageField msgField : this.messageFields) {
-            if (msgField.getType() != Boolean.class) {
+            if (!this.isFieldBoolean(msgField)) {
                 msgField.writeField(msg, target);
             }
         }
@@ -85,7 +85,7 @@ public class MessageConcept {
 
     public void fromBytes(Message msg, ByteBuf source) {
         List<MessageField> booleanFields = this.messageFields.stream()
-                .filter(mf -> mf.getType() == Boolean.class || mf.getType() == boolean.class).sorted(
+                .filter(this::isFieldBoolean).sorted(
                         Comparator.comparing(o -> o.getField().getName())).collect(Collectors.toList());
 
         if (!booleanFields.isEmpty()) {
@@ -103,10 +103,14 @@ public class MessageConcept {
         }
 
         for (MessageField msgField : this.messageFields) {
-            if (msgField.getType() != Boolean.class) {
+            if (!this.isFieldBoolean(msgField)) {
                 msgField.readField(msg, source);
             }
         }
+    }
+
+    private boolean isFieldBoolean(MessageField msgField) {
+        return msgField.getType() == Boolean.class || msgField.getType() == boolean.class;
     }
 
 }
