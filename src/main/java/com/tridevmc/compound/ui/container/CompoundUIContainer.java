@@ -3,6 +3,7 @@ package com.tridevmc.compound.ui.container;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.ICompoundUI;
@@ -15,24 +16,24 @@ import com.tridevmc.compound.ui.listeners.*;
 import com.tridevmc.compound.ui.screen.CompoundScreenContext;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.inventory.GuiContainer;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.inventory.Container;
-import net.minecraft.inventory.Slot;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.inventory.ContainerScreen;
+import net.minecraft.inventory.container.Container;
+import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public abstract class CompoundUIContainer extends GuiContainer implements ICompoundUI, IInternalCompoundUI {
-    private static final WrappedField<Slot> clickedSlot = WrappedField.create(GuiContainer.class, "clickedSlot", "field_147005_v");
-    private static final WrappedField<Boolean> isRightMouseClick = WrappedField.create(GuiContainer.class, "isRightMouseClick", "field_147004_w");
-    private static final WrappedField<ItemStack> draggedStack = WrappedField.create(GuiContainer.class, "draggedStack", "field_147012_x");
-    private static final WrappedField<Integer> dragSplittingLimit = WrappedField.create(GuiContainer.class, "dragSplittingLimit", "field_146987_F");
+public abstract class CompoundUIContainer<T extends CompoundContainer> extends ContainerScreen<T> implements ICompoundUI, IInternalCompoundUI {
+    private static final WrappedField<Slot> clickedSlot = WrappedField.create(ContainerScreen.class, "clickedSlot", "field_147005_v");
+    private static final WrappedField<Boolean> isRightMouseClick = WrappedField.create(ContainerScreen.class, "isRightMouseClick", "field_147004_w");
+    private static final WrappedField<ItemStack> draggedStack = WrappedField.create(ContainerScreen.class, "draggedStack", "field_147012_x");
+    private static final WrappedField<Integer> dragSplittingLimit = WrappedField.create(ContainerScreen.class, "dragSplittingLimit", "field_146987_F");
 
     private long ticks;
     private float mouseX, mouseY;
@@ -50,8 +51,8 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
     private List<IMouseReleaseListener> mouseReleaseListeners;
     private List<IMouseScrollListener> mouseScrollListeners;
 
-    public CompoundUIContainer(CompoundContainer container) {
-        super(container);
+    public CompoundUIContainer(T container) {
+        super(container, Minecraft.getInstance().player.inventory, new StringTextComponent(""));
 
         this.screenContext = new CompoundScreenContext(this);
         this.elements = Lists.newArrayList();
@@ -65,7 +66,7 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
         this.mouseScrollListeners = Lists.newArrayList();
 
         Minecraft mc = Minecraft.getInstance();
-        this.setWorldAndResolution(mc, mc.mainWindow.getScaledWidth(), mc.mainWindow.getScaledHeight());
+        this.init(mc, mc.mainWindow.getScaledWidth(), mc.mainWindow.getScaledHeight());
         this.initElements();
         this.elements.forEach((e) -> e.initElement(this));
     }
@@ -90,7 +91,7 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
 
     @Override
     public void render(int mouseX, int mouseY, float partialTicks) {
-        this.drawDefaultBackground();
+        this.renderBackground();
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         this.updateSlotStates();
@@ -114,14 +115,14 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
         ItemStack dragStack = draggedStack.get(this);
         Integer dragLimit = dragSplittingLimit.get(this);
         Boolean rightClick = isRightMouseClick.get(this);
-        for (int i1 = 0; i1 < this.inventorySlots.inventorySlots.size(); ++i1) {
-            Slot slot = this.inventorySlots.inventorySlots.get(i1);
+        for (int i1 = 0; i1 < this.getContainer().inventorySlots.size(); ++i1) {
+            Slot slot = this.getContainer().inventorySlots.get(i1);
             ElementSlot slotElement = this.slotElements.get(slot);
             if (slotElement == null)
                 continue;
 
             ItemStack slotStack = slot.getStack();
-            ItemStack playerStack = this.mc.player.inventory.getItemStack();
+            ItemStack playerStack = this.getMc().player.inventory.getItemStack();
             if (slot == clickSlot && !dragStack.isEmpty() && rightClick && !slotStack.isEmpty()) {
                 slotStack = slotStack.copy();
                 slotStack.setCount(slotStack.getCount() / 2);
@@ -130,7 +131,7 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
                     return;
                 }
 
-                if (Container.canAddItemToSlot(slot, playerStack, true) && this.inventorySlots.canDragIntoSlot(slot)) {
+                if (Container.canAddItemToSlot(slot, playerStack, true) && this.getContainer().canDragIntoSlot(slot)) {
                     slotStack = playerStack.copy();
                     slotElement.setDrawUnderlay(true);
                     Container.computeStackSize(this.dragSplittingSlots, dragLimit, slotStack, slot.getStack().isEmpty() ? 0 : slot.getStack().getCount());
@@ -154,7 +155,7 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
      * @return the newly created slot element.
      */
     public ElementSlot addSlotElement(ILayout layout, int slotIndex) {
-        Slot slot = this.inventorySlots.getSlot(slotIndex);
+        Slot slot = this.getContainer().getSlot(slotIndex);
         return this.addSlotElement(new Rect2D(slot.xPos, slot.yPos - Integer.MIN_VALUE, 18, 18), layout, slotIndex);
     }
 
@@ -167,7 +168,7 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
      * @return the newly created slot element.
      */
     public ElementSlot addSlotElement(Rect2D dimensions, ILayout layout, int slotIndex) {
-        Slot slot = this.inventorySlots.getSlot(slotIndex);
+        Slot slot = this.getContainer().getSlot(slotIndex);
         ElementSlot element = new ElementSlot(dimensions, layout, slot);
         this.addElement(element);
         this.slotElements.put(slot, element);
@@ -198,13 +199,13 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
     }
 
     @Override
-    public float getZLevel() {
-        return this.zLevel;
+    public int getBlitOffset() {
+        return this.blitOffset;
     }
 
     @Override
-    public void setZLevel(float zLevel) {
-        this.zLevel = zLevel;
+    public void setBlitOffset(int blitOffset) {
+        this.blitOffset =  blitOffset;
     }
 
     @Override
@@ -224,11 +225,11 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
 
     @Override
     public Minecraft getMc() {
-        return this.mc;
+        return this.minecraft;
     }
 
     @Override
-    public GuiScreen asGuiScreen() {
+    public Screen asGuiScreen() {
         return this;
     }
 
@@ -239,7 +240,7 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
 
     @Override
     public void drawTextComponent(ITextComponent component, int x, int y) {
-        this.handleComponentHover(component, x, y);
+        this.renderComponentHoverEffect(component, x, y);
     }
 
     @Override
@@ -279,9 +280,9 @@ public abstract class CompoundUIContainer extends GuiContainer implements ICompo
     }
 
     @Override
-    public boolean mouseScrolled(double distance) {
-        this.mouseScrollListeners.forEach((l) -> l.listen(this.screenContext, distance));
-        return super.mouseScrolled(distance);
+    public boolean mouseScrolled(double x, double y, double distance) {
+        this.mouseScrollListeners.forEach((l) -> l.listen(this.screenContext, x, y, distance));
+        return super.mouseScrolled(x, y, distance);
     }
 
     @Override

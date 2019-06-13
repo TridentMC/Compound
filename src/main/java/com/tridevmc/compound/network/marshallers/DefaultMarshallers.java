@@ -6,7 +6,7 @@ import com.google.common.collect.Maps.EntryTransformer;
 import com.tridevmc.compound.network.message.MessageField;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
@@ -90,10 +90,10 @@ public class DefaultMarshallers {
                 new Class[]{ItemStack.class}));
 
         out.add(new MarshallerMetadata(new String[]{"NBTTagCompound", "Tag", "NBT"},
-                new StaticSimpleMarshaller<NBTTagCompound>(
+                new StaticSimpleMarshaller<CompoundNBT>(
                         DefaultMarshallers::readTag,
                         DefaultMarshallers::writeTag),
-                new Class[]{NBTTagCompound.class}));
+                new Class[]{CompoundNBT.class}));
 
         out.add(new MarshallerMetadata(new String[]{"BlockPos", "Vec3i"},
                 new StaticSimpleMarshaller<BlockPos>(
@@ -129,11 +129,11 @@ public class DefaultMarshallers {
         return new PacketBuffer(buf).readString(32767);
     }
 
-    private static void writeTag(ByteBuf buf, NBTTagCompound tag) {
+    private static void writeTag(ByteBuf buf, CompoundNBT tag) {
         new PacketBuffer(buf).writeCompoundTag(tag);
     }
 
-    private static NBTTagCompound readTag(ByteBuf buf) {
+    private static CompoundNBT readTag(ByteBuf buf) {
         return new PacketBuffer(buf).readCompoundTag();
     }
 

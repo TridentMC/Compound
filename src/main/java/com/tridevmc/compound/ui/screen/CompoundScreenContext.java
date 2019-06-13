@@ -1,14 +1,14 @@
 package com.tridevmc.compound.ui.screen;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
 import com.tridevmc.compound.ui.Rect2D;
 import com.tridevmc.compound.ui.UVData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -31,7 +31,7 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     private float getZLevel() {
-        return this.ui.getZLevel();
+        return this.ui.getBlitOffset();
     }
 
     @Override
@@ -60,6 +60,11 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
+    public FontRenderer getFontRenderer() {
+        return this.getMc().fontRenderer;
+    }
+
+    @Override
     public float getPartialTicks() {
         return this.getMc().getRenderPartialTicks();
     }
@@ -70,13 +75,13 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public GuiScreen getActiveGui() {
+    public Screen getActiveGui() {
         return this.ui.asGuiScreen();
     }
 
     @Override
     public void bindTexture(ResourceLocation texture) {
-        this.getMc().textureManager.bindTexture(texture);
+        this.getMc().getTextureManager().bindTexture(texture);
     }
 
     @Override
@@ -98,7 +103,7 @@ public class CompoundScreenContext implements IScreenContext {
         float b2 = endColourUnpacked[2];
         float a2 = endColourUnpacked[3];
 
-        GlStateManager.disableTexture2D();
+        GlStateManager.disableTexture();
         GlStateManager.enableBlend();
         GlStateManager.disableAlphaTest();
         GlStateManager.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
@@ -122,7 +127,7 @@ public class CompoundScreenContext implements IScreenContext {
         GlStateManager.shadeModel(7424);
         GlStateManager.disableBlend();
         GlStateManager.enableAlphaTest();
-        GlStateManager.enableTexture2D();
+        GlStateManager.enableTexture();
     }
 
     @Override
@@ -132,19 +137,19 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawCenteredString(String text, double x, double y, int colour) {
-        int stringWidth = this.getMc().fontRenderer.getStringWidth(text);
-        this.getMc().fontRenderer.drawString(text, (float) x - (stringWidth / 2F), (float) y, colour);
+        int stringWidth = this.getFontRenderer().getStringWidth(text);
+        this.getFontRenderer().drawString(text, (float) x - (stringWidth / 2F), (float) y, colour);
     }
 
     @Override
     public void drawStringWithShadow(String text, double x, double y, int colour) {
-        this.getMc().fontRenderer.drawStringWithShadow(text, (float) x, (float) y, colour);
+        this.getFontRenderer().drawStringWithShadow(text, (float) x, (float) y, colour);
     }
 
     @Override
     public void drawCenteredStringWithShadow(String text, double x, double y, int colour) {
-        int stringWidth = this.getMc().fontRenderer.getStringWidth(text);
-        this.getMc().fontRenderer.drawStringWithShadow(text, (float) x - (stringWidth / 2F), (float) y, colour);
+        int stringWidth = this.getFontRenderer().getStringWidth(text);
+        this.getFontRenderer().drawStringWithShadow(text, (float) x - (stringWidth / 2F), (float) y, colour);
     }
 
     @Override
@@ -154,7 +159,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawTexturedRect(float x, float y, UVData minUvs, UVData maxUvs) {
-        this.ui.asGuiScreen().drawTexturedModalRect(x, y, (int) minUvs.getU(), (int) minUvs.getV(), (int) maxUvs.getU(), (int) maxUvs.getV());
+        this.drawTexturedRect(new Rect2D(x, y, maxUvs.getU() - minUvs.getU(), maxUvs.getV() - minUvs.getV()), minUvs, maxUvs);
     }
 
     @Override
@@ -163,7 +168,7 @@ public class CompoundScreenContext implements IScreenContext {
         double y = rect.getY();
         double width = rect.getWidth();
         double height = rect.getHeight();
-        double zLevel = this.ui.getZLevel();
+        double zLevel = this.ui.getBlitOffset();
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuffer();
         bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
@@ -225,14 +230,14 @@ public class CompoundScreenContext implements IScreenContext {
     public void drawTooltip(ItemStack stack, int x, int y) {
         net.minecraftforge.fml.client.config.GuiUtils.preItemToolTip(stack);
         FontRenderer font = stack.getItem().getFontRenderer(stack);
-        font = font == null ? this.getMc().fontRenderer : font;
-        this.drawTooltip(this.ui.asGuiScreen().getItemToolTip(stack), x, y, font);
+        font = font == null ? this.getFontRenderer() : font;
+        this.drawTooltip(this.ui.asGuiScreen().getTooltipFromItem(stack), x, y, font);
         net.minecraftforge.fml.client.config.GuiUtils.postItemToolTip();
     }
 
     @Override
     public void drawTooltip(String text, int x, int y) {
-        this.drawTooltip(text, x, y, this.getMc().fontRenderer);
+        this.drawTooltip(text, x, y, this.getFontRenderer());
     }
 
     @Override
@@ -242,12 +247,12 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawTooltip(List<String> lines, int x, int y) {
-        this.drawTooltip(lines, x, y, this.getMc().fontRenderer);
+        this.drawTooltip(lines, x, y, this.getFontRenderer());
     }
 
     @Override
     public void drawTooltip(List<String> lines, int x, int y, FontRenderer fontRenderer) {
-        this.ui.asGuiScreen().drawHoveringText(lines, x, y, fontRenderer);
+        this.ui.asGuiScreen().renderTooltip(lines, x, y, fontRenderer);
     }
 
     @Override
@@ -257,11 +262,11 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawItemStack(ItemStack stack, Rect2D dimensions, String altText) {
-        float oZLevel = this.ui.getZLevel();
-        this.ui.setZLevel(200F);
+        int oBlitOffset = this.ui.getBlitOffset();
+        this.ui.setBlitOffset(200);
         this.getMc().getItemRenderer().zLevel = 200.0F;
         net.minecraft.client.gui.FontRenderer font = stack.getItem().getFontRenderer(stack);
-        if (font == null) font = this.getMc().fontRenderer;
+        if (font == null) font = this.getFontRenderer();
         GlStateManager.pushMatrix();
         GlStateManager.translated(dimensions.getX(), dimensions.getY(), 0);
         GlStateManager.scaled(1D / 16D, 1D / 16D, 1);
@@ -271,7 +276,7 @@ public class CompoundScreenContext implements IScreenContext {
         this.getMc().getItemRenderer().renderItemOverlayIntoGUI(font, stack, 0, 0, altText);
         RenderHelper.disableStandardItemLighting();
         GlStateManager.popMatrix();
-        this.ui.setZLevel(oZLevel);
+        this.ui.setBlitOffset(oBlitOffset);
         this.getMc().getItemRenderer().zLevel = 0.0F;
     }
 
@@ -287,7 +292,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void sendChatMessage(String message, boolean addToChat) {
-        this.ui.asGuiScreen().sendChatMessage(message, addToChat);
+        this.ui.asGuiScreen().sendMessage(message, addToChat);
     }
 
     @Override
@@ -297,12 +302,12 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public boolean isShiftDown() {
-        return GuiScreen.isShiftKeyDown();
+        return Screen.hasShiftDown();
     }
 
     @Override
     public boolean isAltDown() {
-        return GuiScreen.isAltKeyDown();
+        return Screen.hasAltDown();
     }
 
     @Override

@@ -1,16 +1,16 @@
 package com.tridevmc.compound.ui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.util.text.ITextComponent;
 
 /**
  * Only for internal use, exposes methods and variables to screen context.
  */
 public interface IInternalCompoundUI {
-    float getZLevel();
+    int getBlitOffset();
 
-    void setZLevel(float zLevel);
+    void setBlitOffset(int blitOffset);
 
     int getWidth();
 
@@ -24,7 +24,7 @@ public interface IInternalCompoundUI {
 
     long getTicks();
 
-    GuiScreen asGuiScreen();
+    Screen asGuiScreen();
 
     void drawTextComponent(ITextComponent component, int x, int y);
 

@@ -2,12 +2,12 @@ package com.tridevmc.compound.network.message;
 
 import com.tridevmc.compound.network.core.CompoundNetwork;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.WorldServer;
+import net.minecraft.world.ServerWorld;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.common.DimensionManager;
@@ -33,7 +33,7 @@ public abstract class Message {
 
     private CompoundNetwork network;
 
-    public abstract void handle(@Nullable EntityPlayer player);
+    public abstract void handle(@Nullable PlayerEntity player);
 
     @Nonnull
     public CompoundNetwork getNetwork() {
@@ -55,7 +55,7 @@ public abstract class Message {
      *
      * @param playerPredicate the predicate that determines if the player should receive the packet.
      */
-    public void sendToMatching(@Nonnull Predicate<EntityPlayerMP> playerPredicate) {
+    public void sendToMatching(@Nonnull Predicate<ServerPlayerEntity> playerPredicate) {
         MinecraftServer server = LogicalSidedProvider.INSTANCE.get(LogicalSide.SERVER);
         server.getPlayerList().getPlayers().stream()
                 .filter(playerPredicate)
@@ -67,7 +67,7 @@ public abstract class Message {
      *
      * @param player the player to send the message to.
      */
-    public void sendTo(@Nonnull EntityPlayerMP player) {
+    public void sendTo(@Nonnull ServerPlayerEntity player) {
         this.getNetwork().getNetworkChannel().sendTo(this, player.connection.netManager, NetworkDirection.PLAY_TO_CLIENT);
     }
 
@@ -110,7 +110,7 @@ public abstract class Message {
     public void sendToAllTracking(@Nonnull DimensionType dimension, @Nonnull BlockPos pos) {
         MinecraftServer currentServer = LogicalSidedProvider.INSTANCE.get(LogicalSide.SERVER);
         // Dont force load the world because if we have to load the world then nobody is tracking this to begin with.
-        WorldServer world = DimensionManager.getWorld(currentServer, dimension, false, false);
+        ServerWorld world = DimensionManager.getWorld(currentServer, dimension, false, false);
         if (world != null) {
             Chunk chunk = world.getChunk(pos);
             this.sendToAllTracking(chunk);

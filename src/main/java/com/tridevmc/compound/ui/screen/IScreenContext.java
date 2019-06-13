@@ -5,7 +5,7 @@ import com.tridevmc.compound.ui.Rect2D;
 import com.tridevmc.compound.ui.UVData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
@@ -67,7 +67,7 @@ public interface IScreenContext {
      *
      * @return the active gui currently being displayed.
      */
-    GuiScreen getActiveGui();
+    Screen getActiveGui();
 
     /**
      * Gets the current Minecraft game instance.
@@ -75,6 +75,13 @@ public interface IScreenContext {
      * @return the game instance.
      */
     Minecraft getMc();
+
+    /**
+     * Gets the font renderer used by the game.
+     *
+     * @return the font renderer used by the game.
+     */
+    FontRenderer getFontRenderer();
 
     /**
      * Binds the given texture to the texture manager.

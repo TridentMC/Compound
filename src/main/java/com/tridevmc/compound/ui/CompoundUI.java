@@ -7,12 +7,13 @@ import com.tridevmc.compound.ui.listeners.*;
 import com.tridevmc.compound.ui.screen.CompoundScreenContext;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
 
 import java.util.List;
 
-public abstract class CompoundUI extends GuiScreen implements ICompoundUI, IInternalCompoundUI {
+public abstract class CompoundUI extends Screen implements ICompoundUI, IInternalCompoundUI {
 
     private long ticks;
     private float mouseX, mouseY;
@@ -30,6 +31,7 @@ public abstract class CompoundUI extends GuiScreen implements ICompoundUI, IInte
     private List<IMouseScrollListener> mouseScrollListeners;
 
     public CompoundUI() {
+        super(new StringTextComponent(""));
         this.screenContext = new CompoundScreenContext(this);
         this.elements = Lists.newArrayList();
         this.keyPressListeners = Lists.newArrayList();
@@ -41,7 +43,7 @@ public abstract class CompoundUI extends GuiScreen implements ICompoundUI, IInte
         this.mouseScrollListeners = Lists.newArrayList();
 
         Minecraft mc = Minecraft.getInstance();
-        this.setWorldAndResolution(mc, mc.mainWindow.getScaledWidth(), mc.mainWindow.getScaledHeight());
+        this.init(mc, mc.mainWindow.getScaledWidth(), mc.mainWindow.getScaledHeight());
         this.initElements();
         this.elements.forEach((e) -> e.initElement(this));
     }
@@ -75,13 +77,13 @@ public abstract class CompoundUI extends GuiScreen implements ICompoundUI, IInte
     }
 
     @Override
-    public float getZLevel() {
-        return this.zLevel;
+    public int getBlitOffset() {
+        return this.blitOffset;
     }
 
     @Override
-    public void setZLevel(float zLevel) {
-        this.zLevel = zLevel;
+    public void setBlitOffset(int zLevel) {
+        this.blitOffset = zLevel;
     }
 
     @Override
@@ -101,11 +103,11 @@ public abstract class CompoundUI extends GuiScreen implements ICompoundUI, IInte
 
     @Override
     public Minecraft getMc() {
-        return this.mc;
+        return this.minecraft;
     }
 
     @Override
-    public GuiScreen asGuiScreen() {
+    public Screen asGuiScreen() {
         return this;
     }
 
@@ -116,7 +118,7 @@ public abstract class CompoundUI extends GuiScreen implements ICompoundUI, IInte
 
     @Override
     public void drawTextComponent(ITextComponent component, int x, int y) {
-        this.handleComponentHover(component, x, y);
+        this.renderComponentHoverEffect(component, x, y);
     }
 
     @Override
@@ -156,9 +158,9 @@ public abstract class CompoundUI extends GuiScreen implements ICompoundUI, IInte
     }
 
     @Override
-    public boolean mouseScrolled(double distance) {
-        this.mouseScrollListeners.forEach((l) -> l.listen(this.screenContext, distance));
-        return super.mouseScrolled(distance);
+    public boolean mouseScrolled(double x, double y, double distance) {
+        this.mouseScrollListeners.forEach((l) -> l.listen(this.screenContext, x, y, distance));
+        return super.mouseScrolled(x, y, distance);
     }
 
     @Override

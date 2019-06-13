@@ -68,16 +68,6 @@ task buildCore(type: Jar) {
     }
 }
 
-task buildGui(type: Jar) {
-    baseName = 'compound-gui'
-    from(sourceSets.main.allSource) {
-        include 'com/tridevmc/compound/gui/**'
-    }
-    from(sourceSets.main.output) {
-        include 'com/tridevmc/compound/gui/**'
-    }
-}
-
 task buildInventory(type: Jar) {
     baseName = 'compound-inventory'
     from(sourceSets.main.allSource) {
@@ -119,7 +109,7 @@ task buildUi(type: Jar) {
 }
 
 artifacts {
-    archives buildAll, buildCore, buildGui, buildInventory, buildNetwork, buildConfig, buildUi
+    archives buildAll, buildCore, buildInventory, buildNetwork, buildConfig, buildUi
 }
 
 publishing {
@@ -135,12 +125,6 @@ publishing {
             artifactId 'compound-core'
             version project.version + versionTag
             artifact buildCore
-        }
-        block(MavenPublication) {
-            groupId 'com.tridevmc.compound'
-            artifactId 'compound-gui'
-            version project.version + versionTag
-            artifact buildGui
         }
         inventory(MavenPublication) {
             groupId 'com.tridevmc.compound'

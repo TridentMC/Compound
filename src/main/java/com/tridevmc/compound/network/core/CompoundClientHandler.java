@@ -2,7 +2,7 @@ package com.tridevmc.compound.network.core;
 
 import com.tridevmc.compound.network.message.Message;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraftforge.fml.network.NetworkEvent;
 
 public class CompoundClientHandler implements ICompoundNetworkHandler {
@@ -13,7 +13,7 @@ public class CompoundClientHandler implements ICompoundNetworkHandler {
     }
 
     @Override
-    public EntityPlayer getPlayer(NetworkEvent.Context ctx) {
+    public PlayerEntity getPlayer(NetworkEvent.Context ctx) {
         return Minecraft.getInstance().player;
     }
 }

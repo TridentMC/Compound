@@ -7,9 +7,9 @@ import com.tridevmc.compound.ui.layout.ILayout;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.GuiUtilRenderComponents;
+import net.minecraft.client.gui.RenderComponentsUtil;
 import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.StringTextComponent;
 
 import java.util.List;
 
@@ -79,13 +79,13 @@ public class ElementLabel extends Element {
     }
 
     public void setText(String text) {
-        this.setText(new TextComponentString(text));
+        this.setText(new StringTextComponent(text));
     }
 
     public void setText(ITextComponent text) {
         this.text = text;
 
-        this.lines = this.wrapText ? GuiUtilRenderComponents.splitText(this.text, this.getMaxWidth(), this.fontRenderer,
+        this.lines = this.wrapText ? RenderComponentsUtil.splitText(this.text, this.getMaxWidth(), this.fontRenderer,
                 false, false) : Lists.newArrayList(text);
         this.longestLineWidth = this.lines.stream()
                 .mapToInt((c) -> this.fontRenderer.getStringWidth(c.getFormattedText()))

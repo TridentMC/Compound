@@ -1,7 +1,7 @@
 package com.tridevmc.compound.network.core;
 
 import com.tridevmc.compound.network.message.Message;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraftforge.fml.network.NetworkEvent.Context;
 
 public class CompoundServerHandler implements ICompoundNetworkHandler {
@@ -12,7 +12,7 @@ public class CompoundServerHandler implements ICompoundNetworkHandler {
     }
 
     @Override
-    public EntityPlayer getPlayer(Context ctx) {
+    public PlayerEntity getPlayer(Context ctx) {
         return ctx.getSender();
     }
 }
