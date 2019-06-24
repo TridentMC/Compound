@@ -98,7 +98,7 @@ public abstract class Message {
      * @param tile the tile entity that the target clients are tracking.
      */
     public void sendToAllTracking(@Nonnull TileEntity tile) {
-        this.sendToAllTracking(tile.getWorld().getChunk(tile.getPos()));
+        this.sendToAllTracking(tile.getWorld().getChunkAt(tile.getPos()));
     }
 
     /**
@@ -112,7 +112,7 @@ public abstract class Message {
         // Dont force load the world because if we have to load the world then nobody is tracking this to begin with.
         ServerWorld world = DimensionManager.getWorld(currentServer, dimension, false, false);
         if (world != null) {
-            Chunk chunk = world.getChunk(pos);
+            Chunk chunk = world.getChunkAt(pos);
             this.sendToAllTracking(chunk);
         }
     }
