@@ -66,7 +66,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
         this.mouseScrollListeners = Lists.newArrayList();
 
         Minecraft mc = Minecraft.getInstance();
-        this.init(mc, mc.mainWindow.getScaledWidth(), mc.mainWindow.getScaledHeight());
+        this.init(mc, mc.getMainWindow().getScaledWidth(), mc.getMainWindow().getScaledHeight());
         this.initElements();
         this.elements.forEach((e) -> e.initElement(this));
     }
@@ -200,12 +200,12 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
 
     @Override
     public int getBlitOffset() {
-        return this.blitOffset;
+        return super.getBlitOffset();
     }
 
     @Override
     public void setBlitOffset(int blitOffset) {
-        this.blitOffset =  blitOffset;
+        super.setBlitOffset(blitOffset);
     }
 
     @Override

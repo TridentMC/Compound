@@ -1,6 +1,7 @@
 package com.tridevmc.compound.ui.screen;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
 import com.tridevmc.compound.ui.Rect2D;
@@ -103,11 +104,11 @@ public class CompoundScreenContext implements IScreenContext {
         float b2 = endColourUnpacked[2];
         float a2 = endColourUnpacked[3];
 
-        GlStateManager.disableTexture();
-        GlStateManager.enableBlend();
-        GlStateManager.disableAlphaTest();
-        GlStateManager.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-        GlStateManager.shadeModel(7425);
+        RenderSystem.disableTexture();
+        RenderSystem.enableBlend();
+        RenderSystem.disableAlphaTest();
+        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+        RenderSystem.shadeModel(7425);
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuffer();
         bufferbuilder.begin(7, DefaultVertexFormats.POSITION_COLOR);
@@ -124,10 +125,10 @@ public class CompoundScreenContext implements IScreenContext {
                 .color(r2, g2, b2, a2)
                 .endVertex();
         tessellator.draw();
-        GlStateManager.shadeModel(7424);
-        GlStateManager.disableBlend();
-        GlStateManager.enableAlphaTest();
-        GlStateManager.enableTexture();
+        RenderSystem.shadeModel(7424);
+        RenderSystem.disableBlend();
+        RenderSystem.enableAlphaTest();
+        RenderSystem.enableTexture();
     }
 
     @Override
@@ -191,9 +192,9 @@ public class CompoundScreenContext implements IScreenContext {
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuffer();
         bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
-        bufferbuilder.pos(rect.getX(), rect.getY() + rect.getHeight(), 0.0D).tex((uvs.getU() * f), ((uvs.getV() + rect.getHeight()) * f1)).endVertex();
-        bufferbuilder.pos(rect.getX() + rect.getWidth(), rect.getY() + rect.getHeight(), 0.0D).tex(((uvs.getU() + rect.getWidth()) * f), ((uvs.getV() + rect.getHeight()) * f1)).endVertex();
-        bufferbuilder.pos(rect.getX() + rect.getWidth(), rect.getY(), 0.0D).tex(((uvs.getU() + rect.getWidth()) * f), (uvs.getV() * f1)).endVertex();
+        bufferbuilder.pos(rect.getX(), rect.getY() + rect.getHeight(), 0.0D).tex((uvs.getU() * f), (float) ((uvs.getV() + rect.getHeight()) * f1)).endVertex();
+        bufferbuilder.pos(rect.getX() + rect.getWidth(), rect.getY() + rect.getHeight(), 0.0D).tex(((uvs.getU() + rect.getWidthF()) * f), ((uvs.getV() + rect.getHeightF()) * f1)).endVertex();
+        bufferbuilder.pos(rect.getX() + rect.getWidth(), rect.getY(), 0.0D).tex((float) ((uvs.getU() + rect.getWidth()) * f), (uvs.getV() * f1)).endVertex();
         bufferbuilder.pos(rect.getX(), rect.getY(), 0.0D).tex((uvs.getU() * f), (uvs.getV() * f1)).endVertex();
         tessellator.draw();
     }
@@ -228,11 +229,11 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawTooltip(ItemStack stack, int x, int y) {
-        net.minecraftforge.fml.client.config.GuiUtils.preItemToolTip(stack);
+        net.minecraftforge.fml.client.gui.GuiUtils.preItemToolTip(stack);
         FontRenderer font = stack.getItem().getFontRenderer(stack);
         font = font == null ? this.getFontRenderer() : font;
         this.drawTooltip(this.ui.asGuiScreen().getTooltipFromItem(stack), x, y, font);
-        net.minecraftforge.fml.client.config.GuiUtils.postItemToolTip();
+        net.minecraftforge.fml.client.gui.GuiUtils.postItemToolTip();
     }
 
     @Override
@@ -267,15 +268,15 @@ public class CompoundScreenContext implements IScreenContext {
         this.getMc().getItemRenderer().zLevel = 200.0F;
         net.minecraft.client.gui.FontRenderer font = stack.getItem().getFontRenderer(stack);
         if (font == null) font = this.getFontRenderer();
-        GlStateManager.pushMatrix();
-        GlStateManager.translated(dimensions.getX(), dimensions.getY(), 0);
-        GlStateManager.scaled(1D / 16D, 1D / 16D, 1);
-        GlStateManager.scaled(dimensions.getWidth(), dimensions.getHeight(), 1);
-        RenderHelper.enableGUIStandardItemLighting();
+        RenderSystem.pushMatrix();
+        RenderSystem.translated(dimensions.getX(), dimensions.getY(), 0);
+        RenderSystem.scaled(1D / 16D, 1D / 16D, 1);
+        RenderSystem.scaled(dimensions.getWidth(), dimensions.getHeight(), 1);
+        RenderHelper.enableStandardItemLighting();
         this.getMc().getItemRenderer().renderItemAndEffectIntoGUI(stack, 0, 0);
         this.getMc().getItemRenderer().renderItemOverlayIntoGUI(font, stack, 0, 0, altText);
         RenderHelper.disableStandardItemLighting();
-        GlStateManager.popMatrix();
+        RenderSystem.popMatrix();
         this.ui.setBlitOffset(oBlitOffset);
         this.getMc().getItemRenderer().zLevel = 0.0F;
     }

@@ -163,7 +163,7 @@ public class CompoundConfig<T> {
 
     // We need this to run first so config implementations can load their data from the injected changes.
     @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public void onConfigReloading(ModConfig.ConfigReloading e) {
+    public void onConfigReloading(ModConfig.Reloading e) {
         if (Objects.equals(e.getConfig(), this.modConfig)) {
             this.loadFields();
         }

@@ -43,7 +43,7 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
         this.mouseScrollListeners = Lists.newArrayList();
 
         Minecraft mc = Minecraft.getInstance();
-        this.init(mc, mc.mainWindow.getScaledWidth(), mc.mainWindow.getScaledHeight());
+        this.init(mc, mc.getMainWindow().getScaledWidth(), mc.getMainWindow().getScaledHeight());
         this.initElements();
         this.elements.forEach((e) -> e.initElement(this));
     }
@@ -78,12 +78,12 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
 
     @Override
     public int getBlitOffset() {
-        return this.blitOffset;
+        return super.getBlitOffset();
     }
 
     @Override
     public void setBlitOffset(int zLevel) {
-        this.blitOffset = zLevel;
+        super.setBlitOffset(zLevel);
     }
 
     @Override

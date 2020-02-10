@@ -12,6 +12,7 @@ import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.moddiscovery.ModAnnotation;
+import net.minecraftforge.fml.network.NetworkEvent;
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 import net.minecraftforge.forgespi.language.ModFileScanData;
@@ -23,6 +24,8 @@ import org.objectweb.asm.Type;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -269,12 +272,15 @@ public class CompoundNetwork {
         this.networkChannel.messageBuilder(msgClass, discriminator)
                 .encoder(this.getMsgConcept(msgClass)::toBytes)
                 .decoder(this.getMsgConcept(msgClass)::fromBytes)
-                .consumer((m, ctx) -> handler.handle(m, ctx.get()))
+                .consumer(getMessageConsumer(handler))
                 .add();
 
         NETWORKS.put(msgClass, this);
     }
 
+    private <M extends Message> BiConsumer<M, Supplier<NetworkEvent.Context>> getMessageConsumer(ICompoundNetworkHandler handler) {
+        return (m, ctx) -> handler.handle(m, ctx.get());
+    }
 
     public Logger getLogger() {
         return this.logger;
@@ -291,6 +297,5 @@ public class CompoundNetwork {
     public MessageConcept getMsgConcept(Class<? extends Message> msgClass) {
         return this.messageConcepts.get(msgClass);
     }
-
 
 }
