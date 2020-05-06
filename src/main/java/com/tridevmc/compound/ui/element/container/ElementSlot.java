@@ -1,6 +1,7 @@
 package com.tridevmc.compound.ui.element.container;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.tridevmc.compound.ui.ICompoundUI;
 import com.tridevmc.compound.ui.Rect2D;
 import com.tridevmc.compound.ui.UVData;
@@ -45,7 +46,6 @@ public class ElementSlot extends Element {
                 new UVData(7, 7), new UVData(7, 7));
         screen.drawTexturedRect(new Rect2D(rect.getX(), rect.getY(), 1, rect.getHeight() - 1),
                 new UVData(7, 7), new UVData(7, 7));
-
         screen.drawTexturedRect(new Rect2D(rect.getX() + rect.getWidth() - 1, rect.getY() + 1, 1, rect.getHeight() - 1),
                 new UVData(24, 8), new UVData(24, 8));
         screen.drawTexturedRect(new Rect2D(rect.getX() + 1, rect.getY() + rect.getHeight() - 1, rect.getWidth() - 1, 1),
@@ -77,14 +77,12 @@ public class ElementSlot extends Element {
 
     private void drawHighlight(IScreenContext screen) {
         Rect2D highlightArea = this.getTransformedDimensions(screen).offset(new Rect2D(1, 1, -1, -1));
-        GlStateManager.disableLighting();
-        GlStateManager.disableDepthTest();
-        GlStateManager.colorMask(true, true, true, false);
+        RenderSystem.disableDepthTest();
+        RenderSystem.colorMask(true, true, true, false);
         int slotColor = -2130706433;
         screen.drawRect(highlightArea, slotColor);
-        GlStateManager.colorMask(true, true, true, true);
-        GlStateManager.enableLighting();
-        GlStateManager.enableDepthTest();
+        RenderSystem.colorMask(true, true, true, true);
+        RenderSystem.enableDepthTest();
     }
 
     private void drawTooltip(IScreenContext screen) {
