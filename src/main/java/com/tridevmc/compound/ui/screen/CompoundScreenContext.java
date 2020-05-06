@@ -10,7 +10,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
@@ -18,6 +17,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Util;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraftforge.fml.client.gui.GuiUtils;
 
 import java.net.URI;
 import java.util.Collections;
@@ -229,11 +229,11 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawTooltip(ItemStack stack, int x, int y) {
-        net.minecraftforge.fml.client.gui.GuiUtils.preItemToolTip(stack);
+        GuiUtils.preItemToolTip(stack);
         FontRenderer font = stack.getItem().getFontRenderer(stack);
         font = font == null ? this.getFontRenderer() : font;
         this.drawTooltip(this.ui.asGuiScreen().getTooltipFromItem(stack), x, y, font);
-        net.minecraftforge.fml.client.gui.GuiUtils.postItemToolTip();
+        GuiUtils.postItemToolTip();
     }
 
     @Override
@@ -263,19 +263,22 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawItemStack(ItemStack stack, Rect2D dimensions, String altText) {
+        this.drawItemStack(stack, dimensions, altText, 200);
+    }
+
+    @Override
+    public void drawItemStack(ItemStack stack, Rect2D dimensions, String altText, int blitOffset) {
         int oBlitOffset = this.ui.getBlitOffset();
-        this.ui.setBlitOffset(200);
-        this.getMc().getItemRenderer().zLevel = 200.0F;
+        this.ui.setBlitOffset(blitOffset);
+        this.getMc().getItemRenderer().zLevel = blitOffset;
         net.minecraft.client.gui.FontRenderer font = stack.getItem().getFontRenderer(stack);
         if (font == null) font = this.getFontRenderer();
         RenderSystem.pushMatrix();
         RenderSystem.translated(dimensions.getX(), dimensions.getY(), 0);
         RenderSystem.scaled(1D / 16D, 1D / 16D, 1);
         RenderSystem.scaled(dimensions.getWidth(), dimensions.getHeight(), 1);
-        RenderHelper.enableStandardItemLighting();
         this.getMc().getItemRenderer().renderItemAndEffectIntoGUI(stack, 0, 0);
         this.getMc().getItemRenderer().renderItemOverlayIntoGUI(font, stack, 0, 0, altText);
-        RenderHelper.disableStandardItemLighting();
         RenderSystem.popMatrix();
         this.ui.setBlitOffset(oBlitOffset);
         this.getMc().getItemRenderer().zLevel = 0.0F;

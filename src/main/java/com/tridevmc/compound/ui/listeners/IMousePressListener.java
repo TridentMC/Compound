@@ -8,7 +8,7 @@ public interface IMousePressListener {
     /**
      * Called when a mouse button is pressed.
      *
-     * @param screen    the screen context where the event took place.
+     * @param screen the screen context where the event took place.
      * @param x      the current x position of the mouse cursor.
      * @param y      the current y position of the mouse cursor.
      * @param button the mouse button that was pressed.

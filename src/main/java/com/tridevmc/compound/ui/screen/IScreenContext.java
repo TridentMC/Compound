@@ -279,6 +279,16 @@ public interface IScreenContext {
     void drawItemStack(ItemStack stack, Rect2D dimensions, String altText);
 
     /**
+     * Draws the given itemstack on the screenw ithin the given dimensions.
+     *
+     * @param stack      the stack to draw.
+     * @param dimensions the dimensions to draw the stack within.
+     * @param altText    the text to draw if no stack count will be drawn.
+     * @param blitOffset the blit offset to draw at.
+     */
+    void drawItemStack(ItemStack stack, Rect2D dimensions, String altText, int blitOffset);
+
+    /**
      * Draws the given itemstack on the screen at the given coordinates.
      *
      * @param stack   the stack to draw.

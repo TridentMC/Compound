@@ -36,7 +36,7 @@ public class Rect2D {
         return this.width;
     }
 
-    public float getWidthF(){
+    public float getWidthF() {
         return (float) this.width;
     }
 
@@ -44,7 +44,7 @@ public class Rect2D {
         return this.height;
     }
 
-    public float getHeightF(){
+    public float getHeightF() {
         return (float) this.height;
     }
 

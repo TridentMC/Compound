@@ -1,6 +1,5 @@
 package com.tridevmc.compound.ui.element.container;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.tridevmc.compound.ui.ICompoundUI;
 import com.tridevmc.compound.ui.Rect2D;
@@ -32,7 +31,7 @@ public class ElementSlot extends Element {
     }
 
     public ElementSlot(@Nonnull Rect2D dimensions, @Nonnull ILayout layout, @Nonnull Slot slot) {
-        super(dimensions,layout);
+        super(dimensions, layout);
         this.slot = slot;
     }
 
@@ -60,16 +59,18 @@ public class ElementSlot extends Element {
 
         Rect2D rect = this.getTransformedDimensions(ui.getScreenContext());
         rect = new Rect2D(rect.getX() + 1, rect.getY() + 1, rect.getWidth() - 2, rect.getHeight() - 2);
-        ui.getScreenContext().drawItemStack(this.displayStack, rect, this.displayString);
+        RenderSystem.enableDepthTest();
+        ui.getScreenContext().drawItemStack(this.displayStack, rect, this.displayString, 100);
+
+        if (this.drawOverlay) {
+            this.drawHighlight(ui.getScreenContext());
+        }
     }
 
     @Override
     public void drawOverlay(ICompoundUI ui) {
-        if (this.drawOverlay) {
-            this.drawHighlight(ui.getScreenContext());
-            if (ui.getScreenContext().getMc().player.inventory.getItemStack().isEmpty() && this.slot.getHasStack()) {
-                this.drawTooltip(ui.getScreenContext());
-            }
+        if (this.drawOverlay && ui.getScreenContext().getMc().player.inventory.getItemStack().isEmpty() && this.slot.getHasStack()) {
+            this.drawTooltip(ui.getScreenContext());
         }
 
         this.reset();

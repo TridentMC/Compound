@@ -9,8 +9,8 @@ import com.tridevmc.compound.ui.layout.ILayout;
 import com.tridevmc.compound.ui.listeners.IMousePressListener;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.audio.SimpleSound;
-import net.minecraft.util.SoundEvents;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.SoundEvents;
 
 import java.util.List;
 

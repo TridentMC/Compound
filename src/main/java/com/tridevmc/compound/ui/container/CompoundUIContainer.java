@@ -3,7 +3,7 @@ package com.tridevmc.compound.ui.container;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.ICompoundUI;
@@ -80,13 +80,13 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
     @Override
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
         super.drawGuiContainerForegroundLayer(mouseX, mouseY);
-        GlStateManager.pushMatrix();
-        GlStateManager.translatef(-this.guiLeft, -this.guiTop, 0);
+        RenderSystem.pushMatrix();
+        RenderSystem.translatef(-this.guiLeft, -this.guiTop, 0);
         this.currentLayer = EnumUILayer.FOREGROUND;
         this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.FOREGROUND));
         this.currentLayer = EnumUILayer.OVERLAY;
         this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.OVERLAY));
-        GlStateManager.popMatrix();
+        RenderSystem.popMatrix();
     }
 
     @Override
