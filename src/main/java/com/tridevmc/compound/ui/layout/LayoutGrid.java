@@ -85,12 +85,12 @@ public class LayoutGrid implements ILayout {
         for (IElement element : this.gridElements) {
             double sizeIncrease = element.getDimensions().getWidth() + this.xPadding;
             rowHeight = Math.max(rowHeight, element.getDimensions().getHeight());
-            if (currentX + sizeIncrease > this.area.getWidth()) {
+            if (currentX + sizeIncrease > (this.area.getWidth() + this.getArea().getX())) {
                 currentY += rowHeight + this.yPadding;
                 currentX = rect.getX() + this.xPadding;
                 rowHeight = 0;
 
-                if (currentX + sizeIncrease > this.area.getWidth()) {
+                if (currentX + sizeIncrease > (this.area.getWidth() + this.getArea().getX())) {
                     // Not sure how an element got in here if its that big, but we'll just pretend it doesn't exist.
                     continue;
                 }
