@@ -1,5 +1,6 @@
 package com.tridevmc.compound.ui.screen;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.tridevmc.compound.ui.EnumUILayer;
@@ -16,10 +17,12 @@ import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Util;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.ITextProperties;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraftforge.fml.client.gui.GuiUtils;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,6 +36,11 @@ public class CompoundScreenContext implements IScreenContext {
 
     private float getZLevel() {
         return this.ui.getBlitOffset();
+    }
+
+    @Override
+    public MatrixStack getActiveStack() {
+        return this.ui.getActiveStack();
     }
 
     @Override
@@ -132,25 +140,25 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawString(String text, double x, double y, int colour) {
-        this.getMc().fontRenderer.drawString(text, (float) x, (float) y, colour);
+    public void drawString(MatrixStack stack, String text, double x, double y, int colour) {
+        this.getMc().fontRenderer.drawString(stack, text, (float) x, (float) y, colour);
     }
 
     @Override
-    public void drawCenteredString(String text, double x, double y, int colour) {
+    public void drawCenteredString(MatrixStack stack, String text, double x, double y, int colour) {
         int stringWidth = this.getFontRenderer().getStringWidth(text);
-        this.getFontRenderer().drawString(text, (float) x - (stringWidth / 2F), (float) y, colour);
+        this.getFontRenderer().drawString(stack, text, (float) x - (stringWidth / 2F), (float) y, colour);
     }
 
     @Override
-    public void drawStringWithShadow(String text, double x, double y, int colour) {
-        this.getFontRenderer().drawStringWithShadow(text, (float) x, (float) y, colour);
+    public void drawStringWithShadow(MatrixStack stack, String text, double x, double y, int colour) {
+        this.getFontRenderer().drawStringWithShadow(stack, text, (float) x, (float) y, colour);
     }
 
     @Override
-    public void drawCenteredStringWithShadow(String text, double x, double y, int colour) {
+    public void drawCenteredStringWithShadow(MatrixStack stack, String text, double x, double y, int colour) {
         int stringWidth = this.getFontRenderer().getStringWidth(text);
-        this.getFontRenderer().drawStringWithShadow(text, (float) x - (stringWidth / 2F), (float) y, colour);
+        this.getFontRenderer().drawStringWithShadow(stack, text, (float) x - (stringWidth / 2F), (float) y, colour);
     }
 
     @Override
@@ -228,37 +236,38 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawTooltip(ItemStack stack, int x, int y) {
+    public void drawTooltip(MatrixStack matrix, ItemStack stack, int x, int y) {
         GuiUtils.preItemToolTip(stack);
         FontRenderer font = stack.getItem().getFontRenderer(stack);
         font = font == null ? this.getFontRenderer() : font;
-        this.drawTooltip(this.ui.asGuiScreen().getTooltipFromItem(stack), x, y, font);
+        List<ITextProperties> tooltip = new ArrayList<>(this.ui.asGuiScreen().getTooltipFromItem(stack));
+        this.drawTooltip(matrix, tooltip, x, y, font);
         GuiUtils.postItemToolTip();
     }
 
     @Override
-    public void drawTooltip(String text, int x, int y) {
-        this.drawTooltip(text, x, y, this.getFontRenderer());
+    public void drawTooltip(MatrixStack matrix, String text, int x, int y) {
+        this.drawTooltip(matrix, text, x, y, this.getFontRenderer());
     }
 
     @Override
-    public void drawTooltip(String text, int x, int y, FontRenderer fontRenderer) {
-        this.drawTooltip(Collections.singletonList(text), x, y, fontRenderer);
+    public void drawTooltip(MatrixStack matrix, String text, int x, int y, FontRenderer fontRenderer) {
+        this.drawTooltip(matrix, new StringTextComponent(text), x, y, fontRenderer);
     }
 
     @Override
-    public void drawTooltip(List<String> lines, int x, int y) {
-        this.drawTooltip(lines, x, y, this.getFontRenderer());
+    public void drawTooltip(MatrixStack matrix, ITextProperties text, int x, int y, FontRenderer fontRenderer) {
+        this.drawTooltip(matrix, Collections.singletonList(text), x, y, fontRenderer);
     }
 
     @Override
-    public void drawTooltip(List<String> lines, int x, int y, FontRenderer fontRenderer) {
-        this.ui.asGuiScreen().renderTooltip(lines, x, y, fontRenderer);
+    public void drawTooltip(MatrixStack matrix, List<ITextProperties> lines, int x, int y, FontRenderer font) {
+        this.ui.renderTooltip(matrix, lines, x, y, font);
     }
 
     @Override
-    public void drawTooltip(ITextComponent component, int x, int y) {
-        this.ui.drawTextComponent(component, x, y);
+    public void drawTooltip(MatrixStack matrix, List<ITextProperties> lines, int x, int y) {
+        this.drawTooltip(matrix, lines, x, y, this.getFontRenderer());
     }
 
     @Override

@@ -6,11 +6,11 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.RegistryKey;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.LogicalSidedProvider;
 import net.minecraftforge.fml.network.NetworkDirection;
@@ -78,7 +78,7 @@ public abstract class Message {
      * @param pos       the coordinates of the point.
      * @param range     the range around the point that the target clients are within.
      */
-    public void sendToAllAround(@Nonnull DimensionType dimension, @Nonnull BlockPos pos, double range) {
+    public void sendToAllAround(@Nonnull RegistryKey<World> dimension, @Nonnull BlockPos pos, double range) {
         PacketDistributor.TargetPoint target = new PacketDistributor.TargetPoint(pos.getX(), pos.getY(), pos.getZ(), range, dimension);
         this.getNetwork().getNetworkChannel().send(PacketDistributor.NEAR.with(() -> target), this);
     }
@@ -107,10 +107,10 @@ public abstract class Message {
      * @param dimension the dimension the point is in.
      * @param pos       the coordinates of the point.
      */
-    public void sendToAllTracking(@Nonnull DimensionType dimension, @Nonnull BlockPos pos) {
+    public void sendToAllTracking(@Nonnull RegistryKey<World> dimension, @Nonnull BlockPos pos) {
         MinecraftServer currentServer = LogicalSidedProvider.INSTANCE.get(LogicalSide.SERVER);
         // Dont force load the world because if we have to load the world then nobody is tracking this to begin with.
-        ServerWorld world = DimensionManager.getWorld(currentServer, dimension, false, false);
+        ServerWorld world = currentServer.getWorld(dimension);
         if (world != null) {
             Chunk chunk = world.getChunkAt(pos);
             this.sendToAllTracking(chunk);
@@ -131,7 +131,7 @@ public abstract class Message {
      *
      * @param dimension the dimension this message should be sent to.
      */
-    public void sendToDimension(@Nonnull DimensionType dimension) {
+    public void sendToDimension(@Nonnull RegistryKey<World> dimension) {
         this.getNetwork().getNetworkChannel().send(PacketDistributor.DIMENSION.with(() -> dimension), this);
     }
 

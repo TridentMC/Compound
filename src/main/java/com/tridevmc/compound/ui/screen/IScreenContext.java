@@ -1,5 +1,6 @@
 package com.tridevmc.compound.ui.screen;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.Rect2D;
 import com.tridevmc.compound.ui.UVData;
@@ -9,7 +10,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.ITextProperties;
 
 import java.net.URI;
 import java.util.List;
@@ -19,6 +20,13 @@ import java.util.List;
  * This should be used in place of any direct calls to minecraft GUI methods.
  */
 public interface IScreenContext {
+
+    /**
+     * Gets the active matrix stack in use for the current draw.
+     *
+     * @return the active matrix stack for the current draw.
+     */
+    MatrixStack getActiveStack();
 
     /**
      * Gets the width of the screen.
@@ -110,42 +118,46 @@ public interface IScreenContext {
     /**
      * Draws the given string on the screen at the given position.
      *
+     * @param matrix the matrix stack.
      * @param text   the string to draw.
      * @param x      the x position to draw the string at.
      * @param y      the y position to draw the string at.
      * @param colour the colour to draw the string in.
      */
-    void drawString(String text, double x, double y, int colour);
+    void drawString(MatrixStack matrix, String text, double x, double y, int colour);
 
     /**
      * Draws the given string on the screen with the middle of the string centered on the given position.
      *
+     * @param matrix the matrix stack.
      * @param text   the string to draw.
      * @param x      the x position to draw the string at.
      * @param y      the y position to draw the string at.
      * @param colour the colour to draw the string in.
      */
-    void drawCenteredString(String text, double x, double y, int colour);
+    void drawCenteredString(MatrixStack matrix, String text, double x, double y, int colour);
 
     /**
      * Draws the given string on the screen with the middle of the string centered on the given position, with a drop shadow applied.
      *
+     * @param matrix the matrix stack.
      * @param text   the string to draw.
      * @param x      the x position to draw the string at.
      * @param y      the y position to draw the string at.
      * @param colour the colour to draw the string in.
      */
-    void drawStringWithShadow(String text, double x, double y, int colour);
+    void drawStringWithShadow(MatrixStack matrix, String text, double x, double y, int colour);
 
     /**
      * Draws the given string on the screen at the given position, with a drop shadow applied.
      *
+     * @param matrix the matrix stack.
      * @param text   the string to draw.
      * @param x      the x position to draw the string at.
      * @param y      the y position to draw the string at.
      * @param colour the colour to draw the string in.
      */
-    void drawCenteredStringWithShadow(String text, double x, double y, int colour);
+    void drawCenteredStringWithShadow(MatrixStack matrix, String text, double x, double y, int colour);
 
     /**
      * Draws a textured rect on the screen matching the provided rect data.
@@ -214,60 +226,67 @@ public interface IScreenContext {
     void drawTiledTexturedRect(Rect2D rect, UVData uvMin, UVData uvMax);
 
     /**
-     * Draws the tooltip for the given itemstack at the given coordinates.
+     * Draws the tooltip for the given itemstack.
      *
-     * @param stack the itemstack to draw the tooltip of.
-     * @param x     the x position to draw the tooltip at.
-     * @param y     the y position to draw the tooltip at.
+     * @param matrix the matrix stack.
+     * @param stack  the itemstack to draw the tooltip for.
+     * @param x      the x position to draw the tooltip at.
+     * @param y      the y position to draw the tooltip at.
      */
-    void drawTooltip(ItemStack stack, int x, int y);
+    void drawTooltip(MatrixStack matrix, ItemStack stack, int x, int y);
 
     /**
-     * Draws the given text as a tooltip at the given coordinates.
+     * Draws the given string as a toolstip on the screen.
      *
-     * @param text the text to draw.
-     * @param x    the x position to draw the tooltip at.
-     * @param y    the y position to draw the tooltip at.
+     * @param matrix the matrix stack.
+     * @param text   the text to draw .
+     * @param x      the x position to draw the tooltip at.
+     * @param y      the y position to draw the tooltip at.
      */
-    void drawTooltip(String text, int x, int y);
+    void drawTooltip(MatrixStack matrix, String text, int x, int y);
 
     /**
-     * Draws the given text as a tooltip at the given coordinates.
+     * Draws the given string as a toolstip on the screen.
      *
-     * @param text         the text to draw.
-     * @param x            the x position to draw the tooltip at.
-     * @param y            the y position to draw the tooltip at.
-     * @param fontRenderer the font renderer to use when drawing the text.
+     * @param matrix the matrix stack.
+     * @param text   the text to draw .
+     * @param x      the x position to draw the tooltip at.
+     * @param y      the y position to draw the tooltip at.
+     * @param font   the font to use when drawing.
      */
-    void drawTooltip(String text, int x, int y, FontRenderer fontRenderer);
-
-    /**
-     * Draws a multi-line tooltip from the given list of lines at the given coordinates.
-     *
-     * @param lines the text to draw, each list entry representing a new line.
-     * @param x     the x position to draw the tooltip at.
-     * @param y     the y position to draw the tooltip at.
-     */
-    void drawTooltip(List<String> lines, int x, int y);
-
-    /**
-     * Draws a multi-line tooltip from the given list of lines at the given coordinates.
-     *
-     * @param lines        the text to draw, each list entry representing a new line.
-     * @param x            the x position to draw the tooltip at.
-     * @param y            the y position to draw the tooltip at.
-     * @param fontRenderer the font renderer to use when drawing the text.
-     */
-    void drawTooltip(List<String> lines, int x, int y, FontRenderer fontRenderer);
+    void drawTooltip(MatrixStack matrix, String text, int x, int y, FontRenderer font);
 
     /**
      * Draws the appropriate tooltip for the given text component.
      *
-     * @param component the text component to draw the tooltip for.
-     * @param x         the x position to draw the tooltip at.
-     * @param y         the y position to draw the tooltip at.
+     * @param matrix the matrix stack.
+     * @param text   the text component to draw the tooltip for.
+     * @param x      the x position to draw the tooltip at.
+     * @param y      the y position to draw the tooltip at.
+     * @param font   the font to use when drawing.
      */
-    void drawTooltip(ITextComponent component, int x, int y);
+    void drawTooltip(MatrixStack matrix, ITextProperties text, int x, int y, FontRenderer font);
+
+    /**
+     * Draws a multi-line tooltip from the given list of lines at the given coordinates.
+     *
+     * @param matrix the matrix stack.
+     * @param lines  the text to draw, each list entry representing a new line.
+     * @param x      the x position to draw the tooltip at.
+     * @param y      the y position to draw the tooltip at.
+     * @param font   the font to use when drawing.
+     */
+    void drawTooltip(MatrixStack matrix, List<ITextProperties> lines, int x, int y, FontRenderer font);
+
+    /**
+     * Draws a multi-line tooltip from the given list of lines at the given coordinates.
+     *
+     * @param matrix the matrix stack.
+     * @param lines  the text to draw, each list entry representing a new line.
+     * @param x      the x position to draw the tooltip at.
+     * @param y      the y position to draw the tooltip at.
+     */
+    void drawTooltip(MatrixStack matrix, List<ITextProperties> lines, int x, int y);
 
     /**
      * Draws the given itemstack on the screen within the given dimensions.

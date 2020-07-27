@@ -9,7 +9,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.math.vector.Vector3i;
 
 import java.util.List;
 import java.util.Objects;
@@ -99,7 +99,7 @@ public class DefaultMarshallers {
                 new StaticSimpleMarshaller<BlockPos>(
                         DefaultMarshallers::readBlockPos,
                         DefaultMarshallers::writeBlockPos),
-                new Class[]{BlockPos.class, Vec3i.class}));
+                new Class[]{BlockPos.class, Vector3i.class}));
 
 
         return out;

@@ -2,19 +2,24 @@ package com.tridevmc.compound.ui;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.listeners.*;
 import com.tridevmc.compound.ui.screen.CompoundScreenContext;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.ITextProperties;
 import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.Style;
 
 import java.util.List;
 
 public abstract class CompoundUI extends Screen implements ICompoundUI, IInternalCompoundUI {
 
+    private MatrixStack activeStack;
     private long ticks;
     private float mouseX, mouseY;
     private EnumUILayer currentLayer;
@@ -49,7 +54,8 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     }
 
     @Override
-    public void render(int mouseX, int mouseY, float partialTicks) {
+    public void render(MatrixStack stack, int mouseX, int mouseY, float partialTicks) {
+        this.activeStack = stack;
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         for (EnumUILayer layer : EnumUILayer.values()) {
@@ -57,7 +63,7 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
             this.elements.forEach((e) -> e.drawLayer(this, layer));
         }
 
-        super.render(mouseX, mouseY, partialTicks);
+        super.render(stack, mouseX, mouseY, partialTicks);
     }
 
     @Override
@@ -74,6 +80,11 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     @Override
     public float getMouseY() {
         return this.mouseY;
+    }
+
+    @Override
+    public MatrixStack getActiveStack() {
+        return this.activeStack;
     }
 
     @Override
@@ -117,8 +128,13 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     }
 
     @Override
-    public void drawTextComponent(ITextComponent component, int x, int y) {
-        this.renderComponentHoverEffect(component, x, y);
+    public void renderTooltip(MatrixStack stack, List<? extends ITextProperties> lines, int x, int y, FontRenderer font) {
+        super.renderToolTip(stack, lines, x, y, font);
+    }
+
+    @Override
+    public void renderComponentHoverEffect(MatrixStack stack, Style style, int x, int y) {
+        super.renderComponentHoverEffect(stack, style, x, y);
     }
 
     @Override

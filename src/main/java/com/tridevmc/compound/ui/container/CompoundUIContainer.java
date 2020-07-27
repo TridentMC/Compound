@@ -3,6 +3,7 @@ package com.tridevmc.compound.ui.container;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.ui.EnumUILayer;
@@ -16,12 +17,14 @@ import com.tridevmc.compound.ui.listeners.*;
 import com.tridevmc.compound.ui.screen.CompoundScreenContext;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.inventory.ContainerScreen;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.ITextProperties;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
 
@@ -35,6 +38,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
     private static final WrappedField<ItemStack> draggedStack = WrappedField.create(ContainerScreen.class, "draggedStack", "field_147012_x");
     private static final WrappedField<Integer> dragSplittingLimit = WrappedField.create(ContainerScreen.class, "dragSplittingLimit", "field_146987_F");
 
+    private MatrixStack activeStack;
     private long ticks;
     private float mouseX, mouseY;
     private EnumUILayer currentLayer;
@@ -72,14 +76,14 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
     }
 
     @Override
-    protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
+    protected void drawGuiContainerBackgroundLayer(MatrixStack stack, float partialTicks, int mouseX, int mouseY) {
         this.currentLayer = EnumUILayer.BACKGROUND;
         this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.BACKGROUND));
     }
 
     @Override
-    protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
-        super.drawGuiContainerForegroundLayer(mouseX, mouseY);
+    protected void drawGuiContainerForegroundLayer(MatrixStack stack, int mouseX, int mouseY) {
+        super.drawGuiContainerForegroundLayer(stack, mouseX, mouseY);
         RenderSystem.pushMatrix();
         RenderSystem.translatef(-this.guiLeft, -this.guiTop, 0);
         this.currentLayer = EnumUILayer.FOREGROUND;
@@ -90,12 +94,13 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
     }
 
     @Override
-    public void render(int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground();
+    public void render(MatrixStack stack, int mouseX, int mouseY, float partialTicks) {
+        this.activeStack = stack;
+        this.renderBackground(stack);
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         this.updateSlotStates();
-        super.render(mouseX, mouseY, partialTicks);
+        super.render(stack, mouseX, mouseY, partialTicks);
     }
 
     @Override
@@ -199,6 +204,11 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
     }
 
     @Override
+    public MatrixStack getActiveStack() {
+        return this.activeStack;
+    }
+
+    @Override
     public int getBlitOffset() {
         return super.getBlitOffset();
     }
@@ -239,8 +249,8 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
     }
 
     @Override
-    public void drawTextComponent(ITextComponent component, int x, int y) {
-        this.renderComponentHoverEffect(component, x, y);
+    public void renderTooltip(MatrixStack stack, List<? extends ITextProperties> lines, int x, int y, FontRenderer font) {
+        super.renderToolTip(stack, lines, x, y, font);
     }
 
     @Override
