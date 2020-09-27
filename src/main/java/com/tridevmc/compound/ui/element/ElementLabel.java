@@ -3,12 +3,14 @@ package com.tridevmc.compound.ui.element;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.tridevmc.compound.ui.ICompoundUI;
-import com.tridevmc.compound.ui.Rect2D;
+import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.layout.ILayout;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.RenderComponentsUtil;
+import net.minecraft.util.IReorderingProcessor;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.ITextProperties;
 import net.minecraft.util.text.StringTextComponent;
 
@@ -21,14 +23,14 @@ public class ElementLabel extends Element {
 
     private final FontRenderer fontRenderer;
 
-    private ITextProperties text;
+    private ITextComponent text;
     private boolean drawShadow, wrapText, autoSize;
     private int maxWidth, maxHeight;
 
-    private List<ITextProperties> lines = Lists.newArrayList();
+    private List<IReorderingProcessor> lines = Lists.newArrayList();
     private int longestLineWidth;
 
-    public ElementLabel(Rect2D dimensions, ILayout layout, FontRenderer fontRenderer, boolean drawShadow, boolean wrapText, boolean autoSize, int maxWidth, int maxHeight) {
+    public ElementLabel(Rect2F dimensions, ILayout layout, FontRenderer fontRenderer, boolean drawShadow, boolean wrapText, boolean autoSize, int maxWidth, int maxHeight) {
         super(dimensions, layout);
         this.fontRenderer = fontRenderer;
         this.drawShadow = drawShadow;
@@ -38,15 +40,15 @@ public class ElementLabel extends Element {
         this.maxHeight = maxHeight;
     }
 
-    public ElementLabel(Rect2D dimensions, ILayout layout, FontRenderer fontRenderer, boolean drawShadow, boolean wrapText, boolean autoSize) {
+    public ElementLabel(Rect2F dimensions, ILayout layout, FontRenderer fontRenderer, boolean drawShadow, boolean wrapText, boolean autoSize) {
         this(dimensions, layout, fontRenderer, drawShadow, wrapText, autoSize, -1, -1);
     }
 
-    public ElementLabel(Rect2D dimensions, ILayout layout, FontRenderer fontRenderer) {
+    public ElementLabel(Rect2F dimensions, ILayout layout, FontRenderer fontRenderer) {
         this(dimensions, layout, fontRenderer, true, true, true, -1, -1);
     }
 
-    public ElementLabel(Rect2D dimensions, ILayout layout) {
+    public ElementLabel(Rect2F dimensions, ILayout layout) {
         this(dimensions, layout, Minecraft.getInstance().fontRenderer);
     }
 
@@ -54,18 +56,18 @@ public class ElementLabel extends Element {
     public void drawForeground(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
         MatrixStack activeStack = screen.getActiveStack();
-        Rect2D dimensions = this.getTransformedDimensions(screen);
+        Rect2F dimensions = this.getTransformedDimensions(screen);
 
         double nextYLevel = dimensions.getY();
-        for (ITextProperties line : this.lines) {
+        for (IReorderingProcessor line : this.lines) {
             if (nextYLevel + this.fontRenderer.FONT_HEIGHT > dimensions.getY() + dimensions.getHeight()) {
                 nextYLevel = Math.min(dimensions.getY(), dimensions.getHeight() - this.fontRenderer.FONT_HEIGHT);
             }
 
             if (this.drawShadow) {
-                screen.drawStringWithShadow(activeStack, line.getString(), dimensions.getX(), nextYLevel, 16777215);
+                screen.drawReorderingProcessorWithShadow(activeStack, line, dimensions.getX(), (float) nextYLevel);
             } else {
-                screen.drawString(activeStack, line.getString(), dimensions.getX(), nextYLevel, 16777215);
+                screen.drawReorderingProcessor(activeStack, line, dimensions.getX(), (float) nextYLevel);
             }
 
             nextYLevel += this.fontRenderer.FONT_HEIGHT;
@@ -84,12 +86,12 @@ public class ElementLabel extends Element {
         this.setText(new StringTextComponent(text));
     }
 
-    public void setText(ITextProperties text) {
+    public void setText(ITextComponent text) {
         this.text = text;
 
-        this.lines = this.wrapText ? RenderComponentsUtil.func_238505_a_(this.text, this.getMaxWidth(), this.fontRenderer) : Lists.newArrayList(text);
+        this.lines = this.wrapText ? RenderComponentsUtil.func_238505_a_(this.text, this.getMaxWidth(), this.fontRenderer) : Lists.newArrayList(text.func_241878_f());
         this.longestLineWidth = this.lines.stream()
-                .mapToInt((c) -> this.fontRenderer.getStringWidth(c.getString()))
+                .mapToInt(this.fontRenderer::func_243245_a) // getStringWidth
                 .max()
                 .orElseGet(this::getMaxWidth);
         this.resize();

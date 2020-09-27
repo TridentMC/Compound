@@ -2,7 +2,7 @@ package com.tridevmc.compound.ui.element.container;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.tridevmc.compound.ui.ICompoundUI;
-import com.tridevmc.compound.ui.Rect2D;
+import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.UVData;
 import com.tridevmc.compound.ui.element.Element;
 import com.tridevmc.compound.ui.layout.ILayout;
@@ -26,11 +26,11 @@ public class ElementSlot extends Element {
     private ItemStack displayStack;
     private String displayString;
 
-    public ElementSlot(@Nonnull Rect2D dimensions, @Nonnull Slot slot) {
+    public ElementSlot(@Nonnull Rect2F dimensions, @Nonnull Slot slot) {
         this(dimensions, new LayoutNone(), slot);
     }
 
-    public ElementSlot(@Nonnull Rect2D dimensions, @Nonnull ILayout layout, @Nonnull Slot slot) {
+    public ElementSlot(@Nonnull Rect2F dimensions, @Nonnull ILayout layout, @Nonnull Slot slot) {
         super(dimensions, layout);
         this.slot = slot;
     }
@@ -38,16 +38,16 @@ public class ElementSlot extends Element {
     @Override
     public void drawBackground(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        Rect2D rect = this.getTransformedDimensions(screen);
+        Rect2F rect = this.getTransformedDimensions(screen);
         screen.bindTexture(TEXTURE);
         screen.drawTexturedRect(rect, new UVData(8, 8), new UVData(8, 8));
-        screen.drawTexturedRect(new Rect2D(rect.getX(), rect.getY(), rect.getWidth() - 1, 1),
+        screen.drawTexturedRect(new Rect2F(rect.getX(), rect.getY(), rect.getWidth() - 1, 1),
                 new UVData(7, 7), new UVData(7, 7));
-        screen.drawTexturedRect(new Rect2D(rect.getX(), rect.getY(), 1, rect.getHeight() - 1),
+        screen.drawTexturedRect(new Rect2F(rect.getX(), rect.getY(), 1, rect.getHeight() - 1),
                 new UVData(7, 7), new UVData(7, 7));
-        screen.drawTexturedRect(new Rect2D(rect.getX() + rect.getWidth() - 1, rect.getY() + 1, 1, rect.getHeight() - 1),
+        screen.drawTexturedRect(new Rect2F(rect.getX() + rect.getWidth() - 1, rect.getY() + 1, 1, rect.getHeight() - 1),
                 new UVData(24, 8), new UVData(24, 8));
-        screen.drawTexturedRect(new Rect2D(rect.getX() + 1, rect.getY() + rect.getHeight() - 1, rect.getWidth() - 1, 1),
+        screen.drawTexturedRect(new Rect2F(rect.getX() + 1, rect.getY() + rect.getHeight() - 1, rect.getWidth() - 1, 1),
                 new UVData(24, 8), new UVData(24, 8));
     }
 
@@ -57,8 +57,8 @@ public class ElementSlot extends Element {
             this.drawHighlight(ui.getScreenContext());
         }
 
-        Rect2D rect = this.getTransformedDimensions(ui.getScreenContext());
-        rect = new Rect2D(rect.getX() + 1, rect.getY() + 1, rect.getWidth() - 2, rect.getHeight() - 2);
+        Rect2F rect = this.getTransformedDimensions(ui.getScreenContext());
+        rect = new Rect2F(rect.getX() + 1, rect.getY() + 1, rect.getWidth() - 2, rect.getHeight() - 2);
         RenderSystem.enableDepthTest();
         ui.getScreenContext().drawItemStack(this.displayStack, rect, this.displayString, 100);
 
@@ -77,7 +77,7 @@ public class ElementSlot extends Element {
     }
 
     private void drawHighlight(IScreenContext screen) {
-        Rect2D highlightArea = this.getTransformedDimensions(screen).offset(new Rect2D(1, 1, -1, -1));
+        Rect2F highlightArea = this.getTransformedDimensions(screen).offset(new Rect2F(1, 1, -1, -1));
         RenderSystem.disableDepthTest();
         RenderSystem.colorMask(true, true, true, false);
         int slotColor = -2130706433;
@@ -98,7 +98,7 @@ public class ElementSlot extends Element {
     }
 
     public boolean isMouseOverSlot(IScreenContext screen) {
-        Rect2D rect = this.getTransformedDimensions(screen).offsetSize(-1, -1);
+        Rect2F rect = this.getTransformedDimensions(screen).offsetSize(-1, -1);
         return rect.isPointInRect(screen.getMouseX(), screen.getMouseY());
     }
 

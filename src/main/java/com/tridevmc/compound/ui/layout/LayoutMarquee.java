@@ -1,6 +1,6 @@
 package com.tridevmc.compound.ui.layout;
 
-import com.tridevmc.compound.ui.Rect2D;
+import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 
@@ -11,18 +11,18 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
  */
 public class LayoutMarquee implements ILayout {
     private long lastTick = -1;
-    private double lastPosition, currentPosition;
-    private double movementSpeed = 1D;
+    private float lastPosition, currentPosition;
+    private float movementSpeed = 1F;
 
     public LayoutMarquee() {
     }
 
-    public LayoutMarquee(double movementSpeed) {
+    public LayoutMarquee(float movementSpeed) {
         this.movementSpeed = movementSpeed;
     }
 
     @Override
-    public Rect2D getTransformedRect(IScreenContext screen, IElement element, Rect2D rect) {
+    public Rect2F getTransformedRect(IScreenContext screen, IElement element, Rect2F rect) {
         if (screen.getTicks() != this.lastTick) {
             this.lastTick = screen.getTicks();
             this.updatePosition(this.currentPosition + this.movementSpeed);
@@ -33,11 +33,11 @@ public class LayoutMarquee implements ILayout {
             this.lastPosition = this.currentPosition - this.movementSpeed;
         }
 
-        double x = this.lastPosition + ((this.currentPosition - this.lastPosition) * screen.getPartialTicks());
+        float x = this.lastPosition + ((this.currentPosition - this.lastPosition) * screen.getPartialTicks());
         return rect.setPosition(x, rect.getY());
     }
 
-    private void updatePosition(double newPosition) {
+    private void updatePosition(float newPosition) {
         this.lastPosition = this.currentPosition;
         this.currentPosition = newPosition;
     }

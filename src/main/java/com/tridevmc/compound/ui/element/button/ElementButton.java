@@ -2,7 +2,7 @@ package com.tridevmc.compound.ui.element.button;
 
 import com.google.common.collect.Lists;
 import com.tridevmc.compound.ui.ICompoundUI;
-import com.tridevmc.compound.ui.Rect2D;
+import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.UVData;
 import com.tridevmc.compound.ui.element.Element;
 import com.tridevmc.compound.ui.layout.ILayout;
@@ -25,7 +25,7 @@ public class ElementButton extends Element {
     private List<IButtonPressListener> pressListeners;
     private List<IButtonHoverListener> hoverListeners;
 
-    public ElementButton(Rect2D dimensions, ILayout layout) {
+    public ElementButton(Rect2F dimensions, ILayout layout) {
         super(dimensions, layout);
         this.isEnabled = true;
         this.isVisible = true;
@@ -37,7 +37,7 @@ public class ElementButton extends Element {
     @Override
     public void drawBackground(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        Rect2D dimensions = this.getTransformedDimensions(screen);
+        Rect2F dimensions = this.getTransformedDimensions(screen);
         double mouseX = screen.getMouseX();
         double mouseY = screen.getMouseY();
         if (dimensions.isPointInRect(mouseX, mouseY) && this.canPress()) {
@@ -80,46 +80,46 @@ public class ElementButton extends Element {
 
     private void drawCorners(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        Rect2D rect = this.getTransformedDimensions(screen);
+        Rect2F rect = this.getTransformedDimensions(screen);
         UVData uvData = this.getUvData();
-        double xOff = rect.getX();
-        double yOff = rect.getY();
-        double width = rect.getWidth();
-        double height = rect.getHeight();
+        float xOff = rect.getX();
+        float yOff = rect.getY();
+        float width = rect.getWidth();
+        float height = rect.getHeight();
 
         // top-left -> top-right -> bottom-left -> bottom-right
-        screen.drawTexturedRect(new Rect2D(xOff, yOff, 3, 3), uvData);
-        screen.drawTexturedRect(new Rect2D(xOff + width - 3, yOff, 3, 3),
+        screen.drawTexturedRect(new Rect2F(xOff, yOff, 3, 3), uvData);
+        screen.drawTexturedRect(new Rect2F(xOff + width - 3, yOff, 3, 3),
                 new UVData(uvData.getU() + 197, uvData.getV()));
-        screen.drawTexturedRect(new Rect2D(xOff, yOff + height - 3, 3, 3),
+        screen.drawTexturedRect(new Rect2F(xOff, yOff + height - 3, 3, 3),
                 new UVData(uvData.getU(), uvData.getV() + 17));
-        screen.drawTexturedRect(new Rect2D(xOff + width - 3, yOff + height - 3, 3, 3),
+        screen.drawTexturedRect(new Rect2F(xOff + width - 3, yOff + height - 3, 3, 3),
                 new UVData(uvData.getU() + 197, uvData.getV() + 17));
     }
 
     private void drawConnectingLines(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        Rect2D rect = this.getTransformedDimensions(screen);
+        Rect2F rect = this.getTransformedDimensions(screen);
         UVData uvData = this.getUvData();
-        double xOff = rect.getX();
-        double yOff = rect.getY();
-        double width = rect.getWidth();
-        double height = rect.getHeight();
+        float xOff = rect.getX();
+        float yOff = rect.getY();
+        float width = rect.getWidth();
+        float height = rect.getHeight();
 
         // left -> right -> top -> bottom
-        screen.drawTiledTexturedRect(new Rect2D(xOff, yOff + 3, 3, height - 6),
+        screen.drawTiledTexturedRect(new Rect2F(xOff, yOff + 3, 3, height - 6),
                 new UVData(uvData.getU(), uvData.getV() + 3),
                 new UVData(uvData.getU() + 3, uvData.getV() + 17));
 
-        screen.drawTiledTexturedRect(new Rect2D(xOff + width - 3, yOff + 3, 3, height - 6),
+        screen.drawTiledTexturedRect(new Rect2F(xOff + width - 3, yOff + 3, 3, height - 6),
                 new UVData(uvData.getU() + 197, uvData.getV() + 3),
                 new UVData(uvData.getU() + 200, uvData.getV() + 17));
 
-        screen.drawTiledTexturedRect(new Rect2D(xOff + 3, yOff, width - 6, 3),
+        screen.drawTiledTexturedRect(new Rect2F(xOff + 3, yOff, width - 6, 3),
                 new UVData(uvData.getU() + 3, uvData.getV()),
                 new UVData(uvData.getU() + 197, uvData.getV() + 3));
 
-        screen.drawTiledTexturedRect(new Rect2D(xOff + 3, yOff + height - 3, width - 6, 3),
+        screen.drawTiledTexturedRect(new Rect2F(xOff + 3, yOff + height - 3, width - 6, 3),
                 new UVData(uvData.getU() + 3, uvData.getV() + 17),
                 new UVData(uvData.getU() + 197, uvData.getV() + 20));
 
@@ -127,14 +127,14 @@ public class ElementButton extends Element {
 
     private void drawMiddle(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        Rect2D rect = this.getTransformedDimensions(screen);
+        Rect2F rect = this.getTransformedDimensions(screen);
         UVData uvData = this.getUvData();
-        double xOff = rect.getX();
-        double yOff = rect.getY();
-        double width = rect.getWidth();
-        double height = rect.getHeight();
+        float xOff = rect.getX();
+        float yOff = rect.getY();
+        float width = rect.getWidth();
+        float height = rect.getHeight();
 
-        screen.drawTiledTexturedRect(new Rect2D(xOff + 3, yOff + 3, width - 6, height - 6),
+        screen.drawTiledTexturedRect(new Rect2F(xOff + 3, yOff + 3, width - 6, height - 6),
                 new UVData(uvData.getU() + 3, uvData.getV() + 3),
                 new UVData(uvData.getU() + 197, uvData.getV() + 17));
     }
@@ -175,7 +175,7 @@ public class ElementButton extends Element {
         if (button != 0)
             return;
 
-        Rect2D dimensions = this.getTransformedDimensions(screen);
+        Rect2F dimensions = this.getTransformedDimensions(screen);
         if (dimensions.isPointInRect(x, y) && this.canPress()) {
             if (!this.isHovered) {
                 this.hoverListeners.forEach((l) -> l.onButtonHover(x, y, true));

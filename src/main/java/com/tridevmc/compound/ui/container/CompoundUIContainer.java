@@ -9,7 +9,7 @@ import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.ICompoundUI;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
-import com.tridevmc.compound.ui.Rect2D;
+import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.element.container.ElementSlot;
 import com.tridevmc.compound.ui.layout.ILayout;
@@ -17,14 +17,11 @@ import com.tridevmc.compound.ui.listeners.*;
 import com.tridevmc.compound.ui.screen.CompoundScreenContext;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.inventory.ContainerScreen;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.ITextProperties;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
 
@@ -83,7 +80,6 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
 
     @Override
     protected void drawGuiContainerForegroundLayer(MatrixStack stack, int mouseX, int mouseY) {
-        super.drawGuiContainerForegroundLayer(stack, mouseX, mouseY);
         RenderSystem.pushMatrix();
         RenderSystem.translatef(-this.guiLeft, -this.guiTop, 0);
         this.currentLayer = EnumUILayer.FOREGROUND;
@@ -161,7 +157,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
      */
     public ElementSlot addSlotElement(ILayout layout, int slotIndex) {
         Slot slot = this.getContainer().getSlot(slotIndex);
-        return this.addSlotElement(new Rect2D(slot.xPos, slot.yPos - Integer.MIN_VALUE, 18, 18), layout, slotIndex);
+        return this.addSlotElement(new Rect2F(slot.xPos, slot.yPos - Integer.MIN_VALUE, 18, 18), layout, slotIndex);
     }
 
     /**
@@ -172,7 +168,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
      * @param slotIndex  the slot index in the container that holds this slot.
      * @return the newly created slot element.
      */
-    public ElementSlot addSlotElement(Rect2D dimensions, ILayout layout, int slotIndex) {
+    public ElementSlot addSlotElement(Rect2F dimensions, ILayout layout, int slotIndex) {
         Slot slot = this.getContainer().getSlot(slotIndex);
         ElementSlot element = new ElementSlot(dimensions, layout, slot);
         this.addElement(element);
@@ -194,12 +190,12 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
     }
 
     @Override
-    public float getMouseX() {
+    public double getMouseX() {
         return this.mouseX;
     }
 
     @Override
-    public float getMouseY() {
+    public double getMouseY() {
         return this.mouseY;
     }
 
@@ -246,11 +242,6 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
     @Override
     public EnumUILayer getCurrentLayer() {
         return this.currentLayer;
-    }
-
-    @Override
-    public void renderTooltip(MatrixStack stack, List<? extends ITextProperties> lines, int x, int y, FontRenderer font) {
-        super.renderToolTip(stack, lines, x, y, font);
     }
 
     @Override

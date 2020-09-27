@@ -3,7 +3,7 @@ package com.tridevmc.compound.ui.layout;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.tridevmc.compound.ui.EnumUILayer;
-import com.tridevmc.compound.ui.Rect2D;
+import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 
@@ -15,16 +15,16 @@ import java.util.Map;
  */
 public class LayoutGrid implements ILayout {
 
-    private Rect2D area;
+    private Rect2F area;
     private boolean isFlexible;
-    private double xPadding, yPadding;
+    private float xPadding, yPadding;
 
     private List<IElement> gridElements;
-    private Map<IElement, Rect2D> cachedElementDimensions;
+    private Map<IElement, Rect2F> cachedElementDimensions;
     private EnumUILayer lastLayer;
     private IElement lastElement;
 
-    public LayoutGrid(Rect2D area, boolean isFlexible, double xPadding, double yPadding) {
+    public LayoutGrid(Rect2F area, boolean isFlexible, float xPadding, float yPadding) {
         this.area = area;
         this.isFlexible = isFlexible;
         this.xPadding = xPadding;
@@ -34,11 +34,11 @@ public class LayoutGrid implements ILayout {
         this.cachedElementDimensions = Maps.newHashMap();
     }
 
-    public LayoutGrid(Rect2D area, boolean isFlexible) {
+    public LayoutGrid(Rect2F area, boolean isFlexible) {
         this(area, isFlexible, 0, 0);
     }
 
-    public LayoutGrid(Rect2D area) {
+    public LayoutGrid(Rect2F area) {
         this(area, false);
     }
 
@@ -58,17 +58,17 @@ public class LayoutGrid implements ILayout {
         return this.gridElements.remove(element);
     }
 
-    public void setArea(Rect2D area) {
+    public void setArea(Rect2F area) {
         this.area = area;
     }
 
-    public Rect2D getArea() {
+    public Rect2F getArea() {
         return this.area;
     }
 
     private void resizeForElement(IElement element) {
-        double w = Math.max(this.area.getWidth(), element.getDimensions().getWidth() + (this.xPadding * 2));
-        double h = Math.max(this.area.getHeight(), element.getDimensions().getHeight() + (this.yPadding * 2));
+        float w = Math.max(this.area.getWidth(), element.getDimensions().getWidth() + (this.xPadding * 2));
+        float h = Math.max(this.area.getHeight(), element.getDimensions().getHeight() + (this.yPadding * 2));
         this.setArea(this.area.setSize(w, h));
     }
 
@@ -76,14 +76,14 @@ public class LayoutGrid implements ILayout {
         if (this.isFlexible) {
             this.gridElements.forEach(this::resizeForElement);
         }
-        Rect2D rect = this.area;
+        Rect2F rect = this.area;
         this.cachedElementDimensions.clear();
 
-        double currentX = rect.getX() + this.xPadding;
-        double currentY = rect.getY() + this.yPadding;
-        double rowHeight = 0;
+       float currentX = rect.getX() + this.xPadding;
+       float currentY = rect.getY() + this.yPadding;
+       float rowHeight = 0;
         for (IElement element : this.gridElements) {
-            double sizeIncrease = element.getDimensions().getWidth() + this.xPadding;
+            float sizeIncrease = element.getDimensions().getWidth() + this.xPadding;
             rowHeight = Math.max(rowHeight, element.getDimensions().getHeight());
             if (currentX + sizeIncrease > (this.area.getWidth() + this.getArea().getX())) {
                 currentY += rowHeight + this.yPadding;
@@ -102,7 +102,7 @@ public class LayoutGrid implements ILayout {
     }
 
     @Override
-    public Rect2D getTransformedRect(IScreenContext screen, IElement element, Rect2D rect) {
+    public Rect2F getTransformedRect(IScreenContext screen, IElement element, Rect2F rect) {
         if (this.lastElement == element || this.lastLayer != screen.getCurrentLayer()) {
             this.recalculateSizes();
         } else {

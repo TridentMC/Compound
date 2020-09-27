@@ -5,7 +5,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
-import com.tridevmc.compound.ui.Rect2D;
+import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.UVData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
@@ -15,15 +15,11 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.IReorderingProcessor;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Util;
-import net.minecraft.util.text.ITextProperties;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraftforge.fml.client.gui.GuiUtils;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class CompoundScreenContext implements IScreenContext {
@@ -54,12 +50,12 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public float getMouseX() {
+    public double getMouseX() {
         return this.ui.getMouseX();
     }
 
     @Override
-    public float getMouseY() {
+    public double getMouseY() {
         return this.ui.getMouseY();
     }
 
@@ -94,12 +90,12 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawRect(Rect2D rect, int colour) {
+    public void drawRect(Rect2F rect, int colour) {
         this.drawGradientRect(rect, colour, colour);
     }
 
     @Override
-    public void drawGradientRect(Rect2D rect, int startColour, int endColour) {
+    public void drawGradientRect(Rect2F rect, int startColour, int endColour) {
         float[] startColourUnpacked = this.getRGBA(startColour);
         float r1 = startColourUnpacked[0];
         float g1 = startColourUnpacked[1];
@@ -140,39 +136,39 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawString(MatrixStack stack, String text, double x, double y, int colour) {
-        this.getMc().fontRenderer.drawString(stack, text, (float) x, (float) y, colour);
+    public void drawReorderingProcessor(MatrixStack matrix, IReorderingProcessor processor, float x, float y) {
+        this.getFontRenderer().func_238422_b_(matrix, processor, x, y, 16777215);
     }
 
     @Override
-    public void drawCenteredString(MatrixStack stack, String text, double x, double y, int colour) {
-        int stringWidth = this.getFontRenderer().getStringWidth(text);
-        this.getFontRenderer().drawString(stack, text, (float) x - (stringWidth / 2F), (float) y, colour);
+    public void drawCenteredReorderingProcessor(MatrixStack matrix, IReorderingProcessor processor, float x, float y) {
+        int stringWidth = this.getFontRenderer().func_243245_a(processor);
+        this.drawReorderingProcessor(matrix, processor, x - (stringWidth / 2F), y);
     }
 
     @Override
-    public void drawStringWithShadow(MatrixStack stack, String text, double x, double y, int colour) {
-        this.getFontRenderer().drawStringWithShadow(stack, text, (float) x, (float) y, colour);
+    public void drawReorderingProcessorWithShadow(MatrixStack matrix, IReorderingProcessor processor, float x, float y) {
+        this.getFontRenderer().func_238407_a_(matrix, processor, x, y, 16777215);
     }
 
     @Override
-    public void drawCenteredStringWithShadow(MatrixStack stack, String text, double x, double y, int colour) {
-        int stringWidth = this.getFontRenderer().getStringWidth(text);
-        this.getFontRenderer().drawStringWithShadow(stack, text, (float) x - (stringWidth / 2F), (float) y, colour);
+    public void drawCenteredReorderingProcessorWithShadow(MatrixStack matrix, IReorderingProcessor processor, float x, float y) {
+        int stringWidth = this.getFontRenderer().func_243245_a(processor);
+        this.drawReorderingProcessorWithShadow(matrix, processor, x - (stringWidth / 2F), y);
     }
 
     @Override
-    public void drawTexturedRect(Rect2D rect, UVData uvs) {
+    public void drawTexturedRect(Rect2F rect, UVData uvs) {
         this.drawTexturedRect(rect, uvs, new UVData(uvs.getU() + (float) rect.getWidth(), uvs.getV() + (float) rect.getHeight()));
     }
 
     @Override
     public void drawTexturedRect(float x, float y, UVData minUvs, UVData maxUvs) {
-        this.drawTexturedRect(new Rect2D(x, y, maxUvs.getU() - minUvs.getU(), maxUvs.getV() - minUvs.getV()), minUvs, maxUvs);
+        this.drawTexturedRect(new Rect2F(x, y, maxUvs.getU() - minUvs.getU(), maxUvs.getV() - minUvs.getV()), minUvs, maxUvs);
     }
 
     @Override
-    public void drawTexturedRect(Rect2D rect, UVData minUvs, UVData maxUvs) {
+    public void drawTexturedRect(Rect2F rect, UVData minUvs, UVData maxUvs) {
         double x = rect.getX();
         double y = rect.getY();
         double width = rect.getWidth();
@@ -189,26 +185,26 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawTexturedRect(Rect2D rect, TextureAtlasSprite sprite) {
+    public void drawTexturedRect(Rect2F rect, TextureAtlasSprite sprite) {
         this.drawTexturedRect(rect, new UVData(sprite.getMinU(), sprite.getMinV()), new UVData(sprite.getMaxU(), sprite.getMaxV()));
     }
 
     @Override
-    public void drawTexturedRect(Rect2D rect, UVData uvs, float textureWidth, float textureHeight) {
+    public void drawTexturedRect(Rect2F rect, UVData uvs, float textureWidth, float textureHeight) {
         float f = 1.0F / textureWidth;
         float f1 = 1.0F / textureHeight;
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuffer();
         bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
         bufferbuilder.pos(rect.getX(), rect.getY() + rect.getHeight(), 0.0D).tex((uvs.getU() * f), (float) ((uvs.getV() + rect.getHeight()) * f1)).endVertex();
-        bufferbuilder.pos(rect.getX() + rect.getWidth(), rect.getY() + rect.getHeight(), 0.0D).tex(((uvs.getU() + rect.getWidthF()) * f), ((uvs.getV() + rect.getHeightF()) * f1)).endVertex();
+        bufferbuilder.pos(rect.getX() + rect.getWidth(), rect.getY() + rect.getHeight(), 0.0D).tex(((uvs.getU() + rect.getWidth()) * f), ((uvs.getV() + rect.getHeight()) * f1)).endVertex();
         bufferbuilder.pos(rect.getX() + rect.getWidth(), rect.getY(), 0.0D).tex((float) ((uvs.getU() + rect.getWidth()) * f), (uvs.getV() * f1)).endVertex();
         bufferbuilder.pos(rect.getX(), rect.getY(), 0.0D).tex((uvs.getU() * f), (uvs.getV() * f1)).endVertex();
         tessellator.draw();
     }
 
     @Override
-    public void drawTexturedRect(Rect2D rect, UVData uvs, int uWidth, int vHeight, float tileWidth, float tileHeight) {
+    public void drawTexturedRect(Rect2F rect, UVData uvs, int uWidth, int vHeight, float tileWidth, float tileHeight) {
         float f = 1.0F / tileWidth;
         float f1 = 1.0F / tileHeight;
         Tessellator tessellator = Tessellator.getInstance();
@@ -222,61 +218,31 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawTiledTexturedRect(Rect2D rect, UVData uvMin, UVData uvMax) {
+    public void drawTiledTexturedRect(Rect2F rect, UVData uvMin, UVData uvMax) {
         float uvWidth = uvMax.getU() - uvMin.getU();
         float uvHeight = uvMax.getV() - uvMin.getV();
 
         for (int x = 0; x < rect.getWidth(); x += uvWidth) {
             for (int y = 0; y < rect.getHeight(); y += uvHeight) {
-                double width = Math.min(uvWidth, rect.getWidth() - x);
-                double height = Math.min(uvHeight, rect.getHeight() - y);
+                float width = Math.min(uvWidth, rect.getWidth() - x);
+                float height = Math.min(uvHeight, rect.getHeight() - y);
                 this.drawTexturedRect(rect.offsetPosition(x, y).setSize(width, height), uvMin, new UVData(uvMin.getU() + (float) width, uvMin.getV() + (float) height));
             }
         }
     }
 
     @Override
-    public void drawTooltip(MatrixStack matrix, ItemStack stack, int x, int y) {
-        GuiUtils.preItemToolTip(stack);
-        FontRenderer font = stack.getItem().getFontRenderer(stack);
-        font = font == null ? this.getFontRenderer() : font;
-        List<ITextProperties> tooltip = new ArrayList<>(this.ui.asGuiScreen().getTooltipFromItem(stack));
-        this.drawTooltip(matrix, tooltip, x, y, font);
-        GuiUtils.postItemToolTip();
+    public void drawProcessorAsTooltip(MatrixStack matrix, List<IReorderingProcessor> processors, int x, int y, FontRenderer font) {
+        this.ui.asGuiScreen().renderToolTip(matrix, processors, x, y, font);
     }
 
     @Override
-    public void drawTooltip(MatrixStack matrix, String text, int x, int y) {
-        this.drawTooltip(matrix, text, x, y, this.getFontRenderer());
-    }
-
-    @Override
-    public void drawTooltip(MatrixStack matrix, String text, int x, int y, FontRenderer fontRenderer) {
-        this.drawTooltip(matrix, new StringTextComponent(text), x, y, fontRenderer);
-    }
-
-    @Override
-    public void drawTooltip(MatrixStack matrix, ITextProperties text, int x, int y, FontRenderer fontRenderer) {
-        this.drawTooltip(matrix, Collections.singletonList(text), x, y, fontRenderer);
-    }
-
-    @Override
-    public void drawTooltip(MatrixStack matrix, List<ITextProperties> lines, int x, int y, FontRenderer font) {
-        this.ui.renderTooltip(matrix, lines, x, y, font);
-    }
-
-    @Override
-    public void drawTooltip(MatrixStack matrix, List<ITextProperties> lines, int x, int y) {
-        this.drawTooltip(matrix, lines, x, y, this.getFontRenderer());
-    }
-
-    @Override
-    public void drawItemStack(ItemStack stack, Rect2D dimensions, String altText) {
+    public void drawItemStack(ItemStack stack, Rect2F dimensions, String altText) {
         this.drawItemStack(stack, dimensions, altText, 200);
     }
 
     @Override
-    public void drawItemStack(ItemStack stack, Rect2D dimensions, String altText, int blitOffset) {
+    public void drawItemStack(ItemStack stack, Rect2F dimensions, String altText, int blitOffset) {
         int oBlitOffset = this.ui.getBlitOffset();
         this.ui.setBlitOffset(blitOffset);
         this.getMc().getItemRenderer().zLevel = blitOffset;
@@ -295,7 +261,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawItemStack(ItemStack stack, int x, int y, String altText) {
-        this.drawItemStack(stack, new Rect2D(x, y, 16, 16), altText);
+        this.drawItemStack(stack, new Rect2F(x, y, 16, 16), altText);
     }
 
     @Override

@@ -10,8 +10,7 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.ITextProperties;
+import net.minecraft.util.IReorderingProcessor;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.Style;
 
@@ -21,7 +20,7 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
 
     private MatrixStack activeStack;
     private long ticks;
-    private float mouseX, mouseY;
+    private double mouseX, mouseY;
     private EnumUILayer currentLayer;
 
     private CompoundScreenContext screenContext;
@@ -73,12 +72,12 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     }
 
     @Override
-    public float getMouseX() {
+    public double getMouseX() {
         return this.mouseX;
     }
 
     @Override
-    public float getMouseY() {
+    public double getMouseY() {
         return this.mouseY;
     }
 
@@ -128,8 +127,8 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     }
 
     @Override
-    public void renderTooltip(MatrixStack stack, List<? extends ITextProperties> lines, int x, int y, FontRenderer font) {
-        super.renderToolTip(stack, lines, x, y, font);
+    public void renderToolTip(MatrixStack stack, List<? extends IReorderingProcessor> lines, int x, int y, FontRenderer font) {
+        super.renderToolTip(stack, lines, x, y,font);
     }
 
     @Override

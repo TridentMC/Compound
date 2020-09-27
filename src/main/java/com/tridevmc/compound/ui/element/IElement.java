@@ -2,7 +2,7 @@ package com.tridevmc.compound.ui.element;
 
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.ICompoundUI;
-import com.tridevmc.compound.ui.Rect2D;
+import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.layout.ILayout;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 
@@ -80,14 +80,14 @@ public interface IElement {
      * @return the dimensions of this element.
      */
     @Nonnull
-    Rect2D getDimensions();
+    Rect2F getDimensions();
 
     /**
      * Changes the dimensions of the element to the given rect.
      *
      * @param dimensions the new dimensions of the element.
      */
-    void setDimensions(@Nonnull Rect2D dimensions);
+    void setDimensions(@Nonnull Rect2F dimensions);
 
     /**
      * Gets the UI layout of this element.
@@ -110,7 +110,7 @@ public interface IElement {
      * @param screen the screen to pass to the layout.
      * @return the transformed rect for this element.
      */
-    default Rect2D getTransformedDimensions(IScreenContext screen) {
+    default Rect2F getTransformedDimensions(IScreenContext screen) {
         return this.getLayout().getTransformedRect(screen, this, this.getDimensions());
     }
 

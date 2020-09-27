@@ -1,6 +1,6 @@
 package com.tridevmc.compound.ui.layout;
 
-import com.tridevmc.compound.ui.Rect2D;
+import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 
@@ -24,11 +24,11 @@ public class LayoutCentered implements ILayout {
     }
 
     @Override
-    public Rect2D getTransformedRect(IScreenContext screen, IElement element, Rect2D rect) {
-        double width = screen.getWidth();
-        double height = screen.getHeight();
+    public Rect2F getTransformedRect(IScreenContext screen, IElement element, Rect2F rect) {
+        float width = screen.getWidth();
+        float height = screen.getHeight();
         if (this.parent != null) {
-            Rect2D parentDimensions = this.parent.getTransformedDimensions(screen);
+            Rect2F parentDimensions = this.parent.getTransformedDimensions(screen);
             width = parentDimensions.getWidth();
             height = parentDimensions.getHeight();
         }

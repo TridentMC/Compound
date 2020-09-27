@@ -5,47 +5,39 @@ import com.google.common.base.MoreObjects;
 /**
  * Defines a 2D area on the screen, used for UI element positioning.
  */
-public class Rect2D {
+public class Rect2F {
 
-    private final double x, y;
-    private final double width, height;
+    private final float x, y;
+    private final float width, height;
 
-    public Rect2D(double x, double y, double width, double height) {
+    public Rect2F(float x, float y, float width, float height) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
     }
 
-    public Rect2D(Rect2D rect2D) {
-        this.x = rect2D.x;
-        this.y = rect2D.y;
-        this.width = rect2D.width;
-        this.height = rect2D.height;
+    public Rect2F(Rect2F rect2F) {
+        this.x = rect2F.x;
+        this.y = rect2F.y;
+        this.width = rect2F.width;
+        this.height = rect2F.height;
     }
 
-    public double getX() {
+    public float getX() {
         return this.x;
     }
 
-    public double getY() {
+    public float getY() {
         return this.y;
     }
 
-    public double getWidth() {
+    public float getWidth() {
         return this.width;
     }
 
-    public float getWidthF() {
-        return (float) this.width;
-    }
-
-    public double getHeight() {
+    public float getHeight() {
         return this.height;
-    }
-
-    public float getHeightF() {
-        return (float) this.height;
     }
 
     /**
@@ -54,8 +46,8 @@ public class Rect2D {
      * @param by the offset to apply to this rect.
      * @return the new offset rect.
      */
-    public Rect2D offset(Rect2D by) {
-        return new Rect2D(this.getX() + by.getX(),
+    public Rect2F offset(Rect2F by) {
+        return new Rect2F(this.getX() + by.getX(),
                 this.getY() + by.getY(),
                 this.getWidth() + by.getWidth(),
                 this.getHeight() + by.getHeight());
@@ -68,8 +60,8 @@ public class Rect2D {
      * @param y the y coordinate to offset by.
      * @return the new offset rect.
      */
-    public Rect2D offsetPosition(double x, double y) {
-        return this.offset(new Rect2D(x, y, 0, 0));
+    public Rect2F offsetPosition(float x, float y) {
+        return this.offset(new Rect2F(x, y, 0, 0));
     }
 
     /**
@@ -79,8 +71,8 @@ public class Rect2D {
      * @param height the height to offset by.
      * @return the new offset rect.
      */
-    public Rect2D offsetSize(double width, double height) {
-        return this.offset(new Rect2D(0, 0, width, height));
+    public Rect2F offsetSize(float width, float height) {
+        return this.offset(new Rect2F(0, 0, width, height));
     }
 
     /**
@@ -90,8 +82,8 @@ public class Rect2D {
      * @param y the y position of the new rect.
      * @return the new rect in the new position.
      */
-    public Rect2D setPosition(double x, double y) {
-        return new Rect2D(x, y, this.getWidth(), this.getHeight());
+    public Rect2F setPosition(float x, float y) {
+        return new Rect2F(x, y, this.getWidth(), this.getHeight());
     }
 
     /**
@@ -101,8 +93,8 @@ public class Rect2D {
      * @param height the height of the new rect.
      * @return the new rect with the new dimensions.
      */
-    public Rect2D setSize(double width, double height) {
-        return new Rect2D(this.getX(), this.getY(), width, height);
+    public Rect2F setSize(float width, float height) {
+        return new Rect2F(this.getX(), this.getY(), width, height);
     }
 
     /**

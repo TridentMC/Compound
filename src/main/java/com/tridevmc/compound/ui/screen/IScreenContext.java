@@ -1,18 +1,25 @@
 package com.tridevmc.compound.ui.screen;
 
+import com.google.common.collect.Lists;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.tridevmc.compound.ui.EnumUILayer;
-import com.tridevmc.compound.ui.Rect2D;
+import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.UVData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.IReorderingProcessor;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.ITextProperties;
+import net.minecraft.util.text.Color;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraftforge.fml.client.gui.GuiUtils;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -47,14 +54,14 @@ public interface IScreenContext {
      *
      * @return the current x coordinate of the mouse.
      */
-    float getMouseX();
+    double getMouseX();
 
     /**
      * Gets the current y coordinate of the mouse on the screen.
      *
      * @return the current y coordinate of the mouse.
      */
-    float getMouseY();
+    double getMouseY();
 
     /**
      * Gets the partial tick value for the current frame.
@@ -104,7 +111,7 @@ public interface IScreenContext {
      * @param rect   the position and dimensions of the rect to draw.
      * @param colour the colour of the rect to draw.
      */
-    void drawRect(Rect2D rect, int colour);
+    void drawRect(Rect2F rect, int colour);
 
     /**
      * Draws a solid gradient rect on the screen matching the provided rect data.
@@ -113,7 +120,7 @@ public interface IScreenContext {
      * @param startColour the colour at the beginning of the gradient.
      * @param endColour   the colour at the end of the gradient.
      */
-    void drawGradientRect(Rect2D rect, int startColour, int endColour);
+    void drawGradientRect(Rect2F rect, int startColour, int endColour);
 
     /**
      * Draws the given string on the screen at the given position.
@@ -124,7 +131,9 @@ public interface IScreenContext {
      * @param y      the y position to draw the string at.
      * @param colour the colour to draw the string in.
      */
-    void drawString(MatrixStack matrix, String text, double x, double y, int colour);
+    default void drawString(MatrixStack matrix, String text, float x, float y, int colour) {
+        this.drawText(matrix, new StringTextComponent(text).modifyStyle(s -> s.setColor(Color.fromInt(colour))), x, y);
+    }
 
     /**
      * Draws the given string on the screen with the middle of the string centered on the given position.
@@ -135,7 +144,9 @@ public interface IScreenContext {
      * @param y      the y position to draw the string at.
      * @param colour the colour to draw the string in.
      */
-    void drawCenteredString(MatrixStack matrix, String text, double x, double y, int colour);
+    default void drawCenteredString(MatrixStack matrix, String text, float x, float y, int colour) {
+        this.drawCenteredText(matrix, new StringTextComponent(text).modifyStyle(s -> s.setColor(Color.fromInt(colour))), x, y);
+    }
 
     /**
      * Draws the given string on the screen with the middle of the string centered on the given position, with a drop shadow applied.
@@ -146,7 +157,9 @@ public interface IScreenContext {
      * @param y      the y position to draw the string at.
      * @param colour the colour to draw the string in.
      */
-    void drawStringWithShadow(MatrixStack matrix, String text, double x, double y, int colour);
+    default void drawStringWithShadow(MatrixStack matrix, String text, float x, float y, int colour) {
+        this.drawTextWithShadow(matrix, new StringTextComponent(text).modifyStyle(s -> s.setColor(Color.fromInt(colour))), x, y);
+    }
 
     /**
      * Draws the given string on the screen at the given position, with a drop shadow applied.
@@ -157,7 +170,97 @@ public interface IScreenContext {
      * @param y      the y position to draw the string at.
      * @param colour the colour to draw the string in.
      */
-    void drawCenteredStringWithShadow(MatrixStack matrix, String text, double x, double y, int colour);
+    default void drawCenteredStringWithShadow(MatrixStack matrix, String text, float x, float y, int colour) {
+        this.drawCenteredTextWithShadow(matrix, new StringTextComponent(text).modifyStyle(style -> style.setColor(Color.fromInt(colour))), x, y);
+    }
+
+    /**
+     * Draws the given text component on the screen at the given position.
+     *
+     * @param matrix the matrix stack.
+     * @param text   the component to draw.
+     * @param x      the x position to draw the string at.
+     * @param y      the y position to draw the string at.
+     */
+    default void drawText(MatrixStack matrix, ITextComponent text, float x, float y) {
+        this.drawReorderingProcessor(matrix, text.func_241878_f(), x, y);
+    }
+
+    /**
+     * Draws the given text component on the screen with the middle of the string centered on the given position.
+     *
+     * @param matrix the matrix stack.
+     * @param text   the text to draw.
+     * @param x      the x position to draw the string at.
+     * @param y      the y position to draw the string at.
+     */
+    default void drawCenteredText(MatrixStack matrix, ITextComponent text, float x, float y) {
+        this.drawCenteredReorderingProcessor(matrix, text.func_241878_f(), x, y);
+    }
+
+    /**
+     * Draws the given text component on the screen with the middle of the string centered on the given position, with a drop shadow applied.
+     *
+     * @param matrix the matrix stack.
+     * @param text   the text to draw.
+     * @param x      the x position to draw the string at.
+     * @param y      the y position to draw the string at.
+     */
+    default void drawTextWithShadow(MatrixStack matrix, ITextComponent text, float x, float y) {
+        this.drawReorderingProcessorWithShadow(matrix, text.func_241878_f(), x, y);
+    }
+
+    /**
+     * Draws the given text component on the screen at the given position, with a drop shadow applied.
+     *
+     * @param matrix the matrix stack.
+     * @param text   the text to draw.
+     * @param x      the x position to draw the string at.
+     * @param y      the y position to draw the string at.
+     */
+    default void drawCenteredTextWithShadow(MatrixStack matrix, ITextComponent text, float x, float y) {
+        this.drawCenteredReorderingProcessorWithShadow(matrix, text.func_241878_f(), x, y);
+    }
+
+    /**
+     * Draws the given text component on the screen at the given position.
+     *
+     * @param matrix    the matrix stack.
+     * @param processor the processor to draw.
+     * @param x         the x position to draw the string at.
+     * @param y         the y position to draw the string at.
+     */
+    void drawReorderingProcessor(MatrixStack matrix, IReorderingProcessor processor, float x, float y);
+
+    /**
+     * Draws the given text component on the screen with the middle of the string centered on the given position.
+     *
+     * @param matrix    the matrix stack.
+     * @param processor the processor to draw.
+     * @param x         the x position to draw the string at.
+     * @param y         the y position to draw the string at.
+     */
+    void drawCenteredReorderingProcessor(MatrixStack matrix, IReorderingProcessor processor, float x, float y);
+
+    /**
+     * Draws the given text component on the screen with the middle of the string centered on the given position, with a drop shadow applied.
+     *
+     * @param matrix    the matrix stack.
+     * @param processor the processor to draw.
+     * @param x         the x position to draw the string at.
+     * @param y         the y position to draw the string at.
+     */
+    void drawReorderingProcessorWithShadow(MatrixStack matrix, IReorderingProcessor processor, float x, float y);
+
+    /**
+     * Draws the given text component on the screen at the given position, with a drop shadow applied.
+     *
+     * @param matrix    the matrix stack.
+     * @param processor the processor to draw.
+     * @param x         the x position to draw the string at.
+     * @param y         the y position to draw the string at.
+     */
+    void drawCenteredReorderingProcessorWithShadow(MatrixStack matrix, IReorderingProcessor processor, float x, float y);
 
     /**
      * Draws a textured rect on the screen matching the provided rect data.
@@ -165,7 +268,7 @@ public interface IScreenContext {
      * @param rect the position and dimensions of the rect to draw.
      * @param uvs  the uv data for the rect.
      */
-    void drawTexturedRect(Rect2D rect, UVData uvs);
+    void drawTexturedRect(Rect2F rect, UVData uvs);
 
     /**
      * Draws a textured rect on the screen matching the provided rect data.
@@ -184,7 +287,7 @@ public interface IScreenContext {
      * @param minUvs the minimum uvs for the rect.
      * @param maxUvs the maximum uvs for the rect.
      */
-    void drawTexturedRect(Rect2D rect, UVData minUvs, UVData maxUvs);
+    void drawTexturedRect(Rect2F rect, UVData minUvs, UVData maxUvs);
 
     /**
      * Draws a textured rect on the screen matching the provided rect data.
@@ -192,7 +295,7 @@ public interface IScreenContext {
      * @param rect   the position and dimensions of the rect to draw.
      * @param sprite the sprite to draw on the screen, used for gathering uv data.
      */
-    void drawTexturedRect(Rect2D rect, TextureAtlasSprite sprite);
+    void drawTexturedRect(Rect2F rect, TextureAtlasSprite sprite);
 
     /**
      * Draws a textured rect on the screen matching the provided rect data.
@@ -202,7 +305,7 @@ public interface IScreenContext {
      * @param textureWidth  the width of the texture that is being drawn.
      * @param textureHeight the height of the texture that is being drawn.
      */
-    void drawTexturedRect(Rect2D rect, UVData uvs, float textureWidth, float textureHeight);
+    void drawTexturedRect(Rect2F rect, UVData uvs, float textureWidth, float textureHeight);
 
     /**
      * Draws a scaled, tiled, and textured rect on the screen matching the provided rect data.
@@ -214,7 +317,7 @@ public interface IScreenContext {
      * @param tileWidth  the width of the tile to draw.
      * @param tileHeight the height of the tile to draw.
      */
-    void drawTexturedRect(Rect2D rect, UVData uvs, int uWidth, int vHeight, float tileWidth, float tileHeight);
+    void drawTexturedRect(Rect2F rect, UVData uvs, int uWidth, int vHeight, float tileWidth, float tileHeight);
 
     /**
      * Draws a tiled textured rect on the screen matching the provided rect data.
@@ -223,7 +326,7 @@ public interface IScreenContext {
      * @param uvMin the minimum uv data of the texture to tile.
      * @param uvMax the maximum uv data of the texture to tile.
      */
-    void drawTiledTexturedRect(Rect2D rect, UVData uvMin, UVData uvMax);
+    void drawTiledTexturedRect(Rect2F rect, UVData uvMin, UVData uvMax);
 
     /**
      * Draws the tooltip for the given itemstack.
@@ -233,7 +336,14 @@ public interface IScreenContext {
      * @param x      the x position to draw the tooltip at.
      * @param y      the y position to draw the tooltip at.
      */
-    void drawTooltip(MatrixStack matrix, ItemStack stack, int x, int y);
+    default void drawTooltip(MatrixStack matrix, ItemStack stack, int x, int y) {
+        GuiUtils.preItemToolTip(stack);
+        FontRenderer font = stack.getItem().getFontRenderer(stack);
+        font = font == null ? this.getFontRenderer() : font;
+        List<ITextComponent> tooltip = stack.getTooltip(this.getMc().player, this.getMc().gameSettings.advancedItemTooltips ? ITooltipFlag.TooltipFlags.ADVANCED : ITooltipFlag.TooltipFlags.NORMAL);
+        this.drawTooltip(matrix, tooltip, x, y, font);
+        GuiUtils.postItemToolTip();
+    }
 
     /**
      * Draws the given string as a toolstip on the screen.
@@ -243,7 +353,9 @@ public interface IScreenContext {
      * @param x      the x position to draw the tooltip at.
      * @param y      the y position to draw the tooltip at.
      */
-    void drawTooltip(MatrixStack matrix, String text, int x, int y);
+    default void drawTooltip(MatrixStack matrix, String text, int x, int y) {
+        this.drawTooltip(matrix, new StringTextComponent(text), x, y, getFontRenderer());
+    }
 
     /**
      * Draws the given string as a toolstip on the screen.
@@ -254,7 +366,21 @@ public interface IScreenContext {
      * @param y      the y position to draw the tooltip at.
      * @param font   the font to use when drawing.
      */
-    void drawTooltip(MatrixStack matrix, String text, int x, int y, FontRenderer font);
+    default void drawTooltip(MatrixStack matrix, String text, int x, int y, FontRenderer font) {
+        this.drawTooltip(matrix, new StringTextComponent(text), x, y, font);
+    }
+
+    /**
+     * Draws a multi-line tooltip from the given list of lines at the given coordinates.
+     *
+     * @param matrix the matrix stack.
+     * @param text   the text component to draw the tooltip for.
+     * @param x      the x position to draw the tooltip at.
+     * @param y      the y position to draw the tooltip at.
+     */
+    default void drawTooltip(MatrixStack matrix, ITextComponent text, int x, int y) {
+        this.drawTooltip(matrix, text, x, y, this.getFontRenderer());
+    }
 
     /**
      * Draws the appropriate tooltip for the given text component.
@@ -265,7 +391,21 @@ public interface IScreenContext {
      * @param y      the y position to draw the tooltip at.
      * @param font   the font to use when drawing.
      */
-    void drawTooltip(MatrixStack matrix, ITextProperties text, int x, int y, FontRenderer font);
+    default void drawTooltip(MatrixStack matrix, ITextComponent text, int x, int y, FontRenderer font) {
+        this.drawTooltip(matrix, Collections.singletonList(text), x, y, font);
+    }
+
+    /**
+     * Draws a multi-line tooltip from the given list of lines at the given coordinates.
+     *
+     * @param matrix the matrix stack.
+     * @param lines  the text to draw, each list entry representing a new line.
+     * @param x      the x position to draw the tooltip at.
+     * @param y      the y position to draw the tooltip at.
+     */
+    default void drawTooltip(MatrixStack matrix, List<ITextComponent> lines, int x, int y) {
+        this.drawTooltip(matrix, lines, x, y, this.getFontRenderer());
+    }
 
     /**
      * Draws a multi-line tooltip from the given list of lines at the given coordinates.
@@ -276,17 +416,45 @@ public interface IScreenContext {
      * @param y      the y position to draw the tooltip at.
      * @param font   the font to use when drawing.
      */
-    void drawTooltip(MatrixStack matrix, List<ITextProperties> lines, int x, int y, FontRenderer font);
+    default void drawTooltip(MatrixStack matrix, List<ITextComponent> lines, int x, int y, FontRenderer font) {
+        this.drawProcessorAsTooltip(matrix, Lists.transform(lines, ITextComponent::func_241878_f), x, y, font);
+    }
 
     /**
-     * Draws a multi-line tooltip from the given list of lines at the given coordinates.
+     * Draws the appropriate tooltip for the given processor.
      *
-     * @param matrix the matrix stack.
-     * @param lines  the text to draw, each list entry representing a new line.
-     * @param x      the x position to draw the tooltip at.
-     * @param y      the y position to draw the tooltip at.
+     * @param matrix    the matrix stack.
+     * @param processor the processor to draw the tooltip for.
+     * @param x         the x position to draw the tooltip at.
+     * @param y         the y position to draw the tooltip at.
      */
-    void drawTooltip(MatrixStack matrix, List<ITextProperties> lines, int x, int y);
+    default void drawProcessorAsTooltip(MatrixStack matrix, IReorderingProcessor processor, int x, int y) {
+        this.drawProcessorAsTooltip(matrix, processor, x, y, this.getFontRenderer());
+    }
+
+    /**
+     * Draws the appropriate tooltip for the given processor.
+     *
+     * @param matrix    the matrix stack.
+     * @param processor the processor to draw the tooltip for.
+     * @param x         the x position to draw the tooltip at.
+     * @param y         the y position to draw the tooltip at.
+     * @param font      the font to use when drawing.
+     */
+    default void drawProcessorAsTooltip(MatrixStack matrix, IReorderingProcessor processor, int x, int y, FontRenderer font) {
+        this.drawProcessorAsTooltip(matrix, Collections.singletonList(processor), x, y, font);
+    }
+
+    /**
+     * Draws a multi-line tooltip from the given list of processors at the given coordinates.
+     *
+     * @param matrix     the matrix stack.
+     * @param processors the processors to draw, each list entry representing a new line.
+     * @param x          the x position to draw the tooltip at.
+     * @param y          the y position to draw the tooltip at.
+     * @param font       the font to use when drawing.
+     */
+    void drawProcessorAsTooltip(MatrixStack matrix, List<IReorderingProcessor> processors, int x, int y, FontRenderer font);
 
     /**
      * Draws the given itemstack on the screen within the given dimensions.
@@ -295,7 +463,7 @@ public interface IScreenContext {
      * @param dimensions the dimensions to draw the stack within.
      * @param altText    the text to draw if no stack count will be drawn.
      */
-    void drawItemStack(ItemStack stack, Rect2D dimensions, String altText);
+    void drawItemStack(ItemStack stack, Rect2F dimensions, String altText);
 
     /**
      * Draws the given itemstack on the screenw ithin the given dimensions.
@@ -305,7 +473,7 @@ public interface IScreenContext {
      * @param altText    the text to draw if no stack count will be drawn.
      * @param blitOffset the blit offset to draw at.
      */
-    void drawItemStack(ItemStack stack, Rect2D dimensions, String altText, int blitOffset);
+    void drawItemStack(ItemStack stack, Rect2F dimensions, String altText, int blitOffset);
 
     /**
      * Draws the given itemstack on the screen at the given coordinates.

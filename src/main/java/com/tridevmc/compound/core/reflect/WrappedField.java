@@ -2,6 +2,8 @@ package com.tridevmc.compound.core.reflect;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -12,10 +14,10 @@ import java.lang.reflect.Type;
  */
 public class WrappedField<T> {
 
-    private Field field;
-    private boolean isStatic;
+    private final Field field;
+    private final boolean isStatic;
 
-    private WrappedField(Field field) {
+    private WrappedField(@Nonnull Field field) {
         this.field = field;
         this.isStatic = Modifier.isStatic(field.getModifiers());
     }
@@ -26,8 +28,8 @@ public class WrappedField<T> {
      * @param field the real field.
      * @return a WrappedField representing the given field.
      */
-    public static <T> WrappedField<T> create(Field field) {
-        return new WrappedField<T>(field);
+    public static <T> WrappedField<T> create(@Nonnull Field field) {
+        return new WrappedField<>(field);
     }
 
     /**
@@ -37,8 +39,10 @@ public class WrappedField<T> {
      * @param fieldName the field name to search.
      * @return a WrappedField representing the field that was found.
      */
-    public static <T> WrappedField<T> create(Class clazz, String fieldName) {
-        return new WrappedField<T>(FieldUtils.getField(clazz, fieldName, true));
+    @Nullable
+    public static <T> WrappedField<T> create(Class<?> clazz, String fieldName) {
+        Field f = FieldUtils.getField(clazz, fieldName, true);
+        return f == null ? null : new WrappedField<>(FieldUtils.getField(clazz, fieldName, true));
     }
 
     /**
@@ -48,7 +52,8 @@ public class WrappedField<T> {
      * @param fieldNames the possible names of the field.
      * @return a WrappedField representing the field that was found.
      */
-    public static <T> WrappedField<T> create(Class clazz, String... fieldNames) {
+    @Nullable
+    public static <T> WrappedField<T> create(Class<?> clazz, String... fieldNames) {
         Field f = null;
         for (String fieldName : fieldNames) {
             if (f != null) {
@@ -57,7 +62,7 @@ public class WrappedField<T> {
             f = FieldUtils.getDeclaredField(clazz, fieldName, true);
         }
 
-        return new WrappedField<T>(f);
+        return f == null ? null : new WrappedField<>(f);
     }
 
     /**
@@ -95,6 +100,7 @@ public class WrappedField<T> {
      * @param force  whether to force access to get the type.
      * @return the type of the field on the given target.
      */
+    @SuppressWarnings("unchecked") // We already know that the field type is correct.
     public T get(Object target, boolean force) {
         try {
             if (this.isStatic) {
@@ -103,8 +109,7 @@ public class WrappedField<T> {
                 return (T) FieldUtils.readField(this.field, target, force);
             }
         } catch (IllegalAccessException e) {
-            throw new RuntimeException(
-                    String.format("Failed to read value of field %s", this.field.getName()), e);
+            throw new RuntimeException(String.format("Failed to read value of field %s", this.field.getName()), e);
         }
     }
 
@@ -133,8 +138,7 @@ public class WrappedField<T> {
                 FieldUtils.writeField(this.field, target, value, force);
             }
         } catch (IllegalAccessException e) {
-            throw new RuntimeException(
-                    String.format("Failed to write type of field %s", this.field.getName()), e);
+            throw new RuntimeException(String.format("Failed to write type of field %s", this.field.getName()), e);
         }
     }
 
@@ -188,10 +192,10 @@ public class WrappedField<T> {
      * Delegates to method in Field class.
      *
      * @param annotationClass the class of the annotation.
-     * @param <T>             the type of annotation to receive
+     * @param <A>             the type of annotation to receive
      * @return the annotation of the given type and class.
      */
-    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
+    public <A extends Annotation> A getAnnotation(Class<A> annotationClass) {
         return this.field.getAnnotation(annotationClass);
     }
 
@@ -201,10 +205,10 @@ public class WrappedField<T> {
      * Delegates to method in Field class.
      *
      * @param annotationClass the class of the desired annotations.
-     * @param <T>             the type of annotation to receive.
+     * @param <A>             the type of annotation to receive.
      * @return an array of matching annotations.
      */
-    public <T extends Annotation> T[] getAnnotationsByType(Class<T> annotationClass) {
+    public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationClass) {
         return this.field.getAnnotationsByType(annotationClass);
     }
 

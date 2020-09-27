@@ -1,7 +1,7 @@
 package com.tridevmc.compound.ui.layout;
 
 import com.google.common.collect.Lists;
-import com.tridevmc.compound.ui.Rect2D;
+import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 
@@ -23,7 +23,7 @@ public class LayoutMulti implements ILayout {
     }
 
     @Override
-    public Rect2D getTransformedRect(IScreenContext screen, IElement element, Rect2D rect) {
+    public Rect2F getTransformedRect(IScreenContext screen, IElement element, Rect2F rect) {
         for (ILayout layout : this.layouts) {
             rect = layout.getTransformedRect(screen, element, rect);
         }

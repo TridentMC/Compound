@@ -2,7 +2,7 @@ package com.tridevmc.compound.ui.element;
 
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.ICompoundUI;
-import com.tridevmc.compound.ui.Rect2D;
+import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.UVData;
 import com.tridevmc.compound.ui.layout.ILayout;
 import com.tridevmc.compound.ui.screen.IScreenContext;
@@ -14,7 +14,7 @@ public class ElementImage extends Element {
     private final UVData min, max;
     private final EnumUILayer layer;
 
-    public ElementImage(Rect2D dimensions, ILayout layout, ResourceLocation textureLocation, Rect2D textureDimensions, EnumUILayer layer) {
+    public ElementImage(Rect2F dimensions, ILayout layout, ResourceLocation textureLocation, Rect2F textureDimensions, EnumUILayer layer) {
         super(dimensions, layout);
         this.textureLocation = textureLocation;
         this.min = new UVData((float) textureDimensions.getX(), (float) textureDimensions.getY());
@@ -27,7 +27,7 @@ public class ElementImage extends Element {
     public void drawLayer(ICompoundUI ui, EnumUILayer layer) {
         if (this.layer == layer) {
             IScreenContext context = ui.getScreenContext();
-            Rect2D dimensions = this.getTransformedDimensions(context);
+            Rect2F dimensions = this.getTransformedDimensions(context);
             context.bindTexture(this.textureLocation);
             context.drawTexturedRect(dimensions, min, max);
         }
