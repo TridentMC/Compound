@@ -9,11 +9,11 @@ buildscript {
     }
 }
 
-apply from: "properties.gradle"
+plugins {
+    id 'org.cadixdev.licenser' version '0.5.0'
+}
 
-//plugins {
-//    id 'net.minecrell.licenser' version '0.3'
-//}
+apply from: "properties.gradle"
 
 apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
@@ -29,9 +29,10 @@ ext.versionTag = ''
 
 sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
 
-//license { TODO: Re-enable this, just disabling to test ci.
-//    header = project.file('HEADER')
-//}
+license {
+    header = project.file('LICENSE-HEADER')
+    include '**/*.java'
+}
 
 minecraft {
     mappings channel: 'snapshot', version: mappingsVersion
