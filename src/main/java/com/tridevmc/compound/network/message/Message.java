@@ -84,7 +84,7 @@ public abstract class Message {
      * @param player the player to send the message to.
      */
     public void sendTo(@Nonnull ServerPlayerEntity player) {
-        this.getNetwork().getNetworkChannel().sendTo(this, player.connection.netManager, NetworkDirection.PLAY_TO_CLIENT);
+        this.getNetwork().getNetworkChannel().sendTo(this, player.connection.connection, NetworkDirection.PLAY_TO_CLIENT);
     }
 
     /**
@@ -114,7 +114,7 @@ public abstract class Message {
      * @param tile the tile entity that the target clients are tracking.
      */
     public void sendToAllTracking(@Nonnull TileEntity tile) {
-        this.sendToAllTracking(tile.getWorld().getChunkAt(tile.getPos()));
+        this.sendToAllTracking(tile.getLevel().getChunkAt(tile.getBlockPos()));
     }
 
     /**
@@ -126,7 +126,7 @@ public abstract class Message {
     public void sendToAllTracking(@Nonnull RegistryKey<World> dimension, @Nonnull BlockPos pos) {
         MinecraftServer currentServer = LogicalSidedProvider.INSTANCE.get(LogicalSide.SERVER);
         // Dont force load the world because if we have to load the world then nobody is tracking this to begin with.
-        ServerWorld world = currentServer.getWorld(dimension);
+        ServerWorld world = currentServer.getLevel(dimension);
         if (world != null) {
             Chunk chunk = world.getChunkAt(pos);
             this.sendToAllTracking(chunk);

@@ -197,7 +197,7 @@ public class ElementButton extends Element {
                 this.hoverListeners.forEach((l) -> l.onButtonHover(x, y, true));
                 this.isHovered = true;
             }
-            screen.getMc().getSoundHandler().play(SimpleSound.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            screen.getMc().getSoundManager().play(SimpleSound.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
             this.pressListeners.forEach((l) -> l.onButtonPress(x, y));
         }
     }

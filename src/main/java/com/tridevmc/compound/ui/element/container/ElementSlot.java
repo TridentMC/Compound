@@ -85,7 +85,7 @@ public class ElementSlot extends Element {
 
     @Override
     public void drawOverlay(ICompoundUI ui) {
-        if (this.drawOverlay && ui.getScreenContext().getMc().player.inventory.getItemStack().isEmpty() && this.slot.getHasStack()) {
+        if (this.drawOverlay && ui.getScreenContext().getMc().player.inventory.getCarried().isEmpty() && this.slot.hasItem()) {
             this.drawTooltip(ui.getScreenContext());
         }
 
@@ -109,7 +109,7 @@ public class ElementSlot extends Element {
     private void reset() {
         this.drawOverlay = false;
         this.drawUnderlay = false;
-        this.displayStack = this.slot.getStack();
+        this.displayStack = this.slot.getItem();
         this.displayString = null;
     }
 

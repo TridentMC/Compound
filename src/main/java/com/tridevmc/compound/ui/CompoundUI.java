@@ -63,7 +63,7 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
         this.mouseScrollListeners = Lists.newArrayList();
 
         Minecraft mc = Minecraft.getInstance();
-        this.init(mc, mc.getMainWindow().getScaledWidth(), mc.getMainWindow().getScaledHeight());
+        this.init(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
         this.initElements();
         this.elements.forEach((e) -> e.initElement(this));
     }

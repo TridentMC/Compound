@@ -1,0 +1,11 @@
+ext {
+    compoundModules = [
+            [taskName: "buildAll", artifactName: "compound-all", publicationName: "all", sources: "com/tridevmc/compound/**"],
+            [taskName: "buildCore", artifactName: "compound-core", publicationName: "core", sources: "com/tridevmc/compound/core/**"],
+            [taskName: "buildInventory", artifactName: "compound-inventory", publicationName: "inventory", sources: "com/tridevmc/compound/inventory/**"],
+            [taskName: "buildNetwork", artifactName: "compound-network", publicationName: "network", sources: "com/tridevmc/compound/network/**"],
+            [taskName: "buildConfig", artifactName: "compound-config", publicationName: "config", sources: "com/tridevmc/compound/config/**"],
+            [taskName: "buildUI", artifactName: "compound-ui", publicationName: "ui", sources: "com/tridevmc/compound/ui/**"]
+    ]
+}
+

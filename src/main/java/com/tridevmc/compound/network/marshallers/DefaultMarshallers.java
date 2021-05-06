@@ -138,19 +138,19 @@ public class DefaultMarshallers {
     }
 
     private static void writeString(ByteBuf buf, String str) {
-        new PacketBuffer(buf).writeString(str);
+        new PacketBuffer(buf).writeUtf(str);
     }
 
     private static String readString(ByteBuf buf) {
-        return new PacketBuffer(buf).readString(32767);
+        return new PacketBuffer(buf).readUtf(32767);
     }
 
     private static void writeTag(ByteBuf buf, CompoundNBT tag) {
-        new PacketBuffer(buf).writeCompoundTag(tag);
+        new PacketBuffer(buf).writeNbt(tag);
     }
 
     private static CompoundNBT readTag(ByteBuf buf) {
-        return new PacketBuffer(buf).readCompoundTag();
+        return new PacketBuffer(buf).readNbt();
     }
 
     private static void writeItemStack(ByteBuf buf, ItemStack stack) {
@@ -158,15 +158,15 @@ public class DefaultMarshallers {
     }
 
     private static ItemStack readItemStack(ByteBuf buf) {
-        return new PacketBuffer(buf).readItemStack();
+        return new PacketBuffer(buf).readItem();
     }
 
     private static BlockPos readBlockPos(ByteBuf buf) {
-        return BlockPos.fromLong(readVarLong(buf));
+        return BlockPos.of(readVarLong(buf));
     }
 
     private static void writeBlockPos(ByteBuf buf, BlockPos value) {
-        writeVarLong(buf, value.toLong());
+        writeVarLong(buf, value.asLong());
     }
 
     private static class SimpleMarshaller<T> extends Marshaller<T> {

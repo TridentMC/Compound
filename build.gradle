@@ -1,11 +1,10 @@
 buildscript {
     repositories {
-        maven { url = 'https://files.minecraftforge.net/maven' }
-        jcenter()
+        maven { url = 'https://maven.minecraftforge.net' }
         mavenCentral()
     }
     dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '4.1.+', changing: true
     }
 }
 
@@ -17,17 +16,14 @@ apply from: "properties.gradle"
 
 apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
-
 apply plugin: 'maven-publish'
-
-// === CHANGE BELOW HERE === //
 
 version = modVersion
 group = modGroup
 archivesBaseName = modBaseName
 ext.versionTag = ''
 
-sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
+java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 
 license {
     header = project.file('LICENSE-HEADER')
@@ -35,7 +31,7 @@ license {
 }
 
 minecraft {
-    mappings channel: 'snapshot', version: mappingsVersion
+    mappings channel: mappingsChannel, version: mappingsVersion
 }
 
 dependencies {
@@ -46,110 +42,51 @@ if (file('private.gradle').exists()) {
     apply from: 'private.gradle'
 }
 
-// Borrowed from concrete
-// (https://github.com/elytra/concrete)
+def registerModule(LinkedHashMap<String, String> moduleData) {
+    def defaultManifestAttributes = ["Specification-Title"     : "Compound",
+                                 "Specification-Vendor"    : "Trident",
+                                 "Implementation-Title"    : project.name,
+                                 "Implementation-Version"  : "${version}",
+                                 "Implementation-Vendor"   : "Trident",
+                                 "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                                 "FMLModType"              : "LIBRARY"]
 
-task buildAll(type: Jar) {
-    baseName = 'compound-all'
-    from(sourceSets.main.allSource) {
-        include 'com/tridevmc/compound/**'
-    }
-    from(sourceSets.main.output) {
-        include 'com/tridevmc/compound/**'
-    }
-}
-
-task buildCore(type: Jar) {
-    baseName = 'compound-core'
-    from(sourceSets.main.allSource) {
-        include 'com/tridevmc/compound/core/**'
-    }
-    from(sourceSets.main.output) {
-        include 'com/tridevmc/compound/core/**'
-    }
-}
-
-task buildInventory(type: Jar) {
-    baseName = 'compound-inventory'
-    from(sourceSets.main.allSource) {
-        include 'com/tridevmc/compound/inventory/**'
-    }
-    from(sourceSets.main.output) {
-        include 'com/tridevmc/compound/inventory/**'
-    }
-}
-
-task buildNetwork(type: Jar) {
-    baseName = 'compound-network'
-    from(sourceSets.main.allSource) {
-        include 'com/tridevmc/compound/network/**'
-    }
-    from(sourceSets.main.output) {
-        include 'com/tridevmc/compound/network/**'
-    }
-}
-
-task buildConfig(type: Jar) {
-    baseName = 'compound-config'
-    from(sourceSets.main.allSource) {
-        include 'com/tridevmc/compound/config/**'
-    }
-    from(sourceSets.main.output) {
-        include 'com/tridevmc/compound/config/**'
-    }
-}
-
-task buildUi(type: Jar) {
-    baseName = 'compound-ui'
-    from(sourceSets.main.allSource) {
-        include 'com/tridevmc/compound/ui/**'
-    }
-    from(sourceSets.main.output) {
-        include 'com/tridevmc/compound/ui/**'
-    }
-}
-
-artifacts {
-    archives buildAll, buildCore, buildInventory, buildNetwork, buildConfig, buildUi
-}
-
-publishing {
-    publications {
-        all(MavenPublication) {
-            groupId 'com.tridevmc.compound'
-            artifactId 'compound-all'
-            version project.version + versionTag
-            artifact buildAll
+    def binaryJar = tasks.register(moduleData.taskName, Jar) {
+        baseName = moduleData.artifactName
+        from(sourceSets.main.output) {
+            include moduleData.sources
         }
-        core(MavenPublication) {
-            groupId 'com.tridevmc.compound'
-            artifactId 'compound-core'
-            version project.version + versionTag
-            artifact buildCore
-        }
-        inventory(MavenPublication) {
-            groupId 'com.tridevmc.compound'
-            artifactId 'compound-inventory'
-            version project.version + versionTag
-            artifact buildInventory
-        }
-        network(MavenPublication) {
-            groupId 'com.tridevmc.compound'
-            artifactId 'compound-network'
-            version project.version + versionTag
-            artifact buildNetwork
-        }
-        config(MavenPublication) {
-            groupId 'com.tridevmc.compound'
-            artifactId 'compound-config'
-            version project.version + versionTag
-            artifact buildConfig
-        }
-        ui(MavenPublication) {
-            groupId 'com.tridevmc.compound'
-            artifactId 'compound-ui'
-            version project.version + versionTag
-            artifact buildUi
+        manifest {
+            attributes(defaultManifestAttributes)
         }
     }
+    def sourcesJar = tasks.register(moduleData.taskName + "Sources", Jar) {
+        baseName = moduleData.artifactName
+        classifier = 'sources'
+        from(sourceSets.main.allSource) {
+            include moduleData.sources
+        }
+        manifest {
+            attributes(defaultManifestAttributes)
+        }
+    }
+
+    artifacts.add("archives", binaryJar)
+    artifacts.add("archives", sourcesJar)
+
+    publishing.publications.create(moduleData.publicationName, MavenPublication) {
+        groupId 'com.tridevmc.compound'
+        artifactId moduleData.artifactName
+        version project.version + versionTag
+        artifact binaryJar
+        artifact sourcesJar
+    }
 }
+
+apply from: "modules.gradle"
+
+compoundModules.each { LinkedHashMap<String, String> moduleData ->
+    registerModule(moduleData)
+}
+
+publish.dependsOn('reobfJar')

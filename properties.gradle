@@ -5,6 +5,7 @@ ext {
     modBaseName = "compound"
 
     // Forge Stuff
-    forgeVersion = "1.16.5-36.0.22"
-    mappingsVersion = "20201028-1.16.3"
+    forgeVersion = "1.16.5-36.1.16"
+    mappingsChannel = "official"
+    mappingsVersion = "1.16.5"
 }

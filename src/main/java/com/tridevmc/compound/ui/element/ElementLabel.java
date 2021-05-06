@@ -65,7 +65,7 @@ public class ElementLabel extends Element {
     }
 
     public ElementLabel(Rect2F dimensions, ILayout layout) {
-        this(dimensions, layout, Minecraft.getInstance().fontRenderer);
+        this(dimensions, layout, Minecraft.getInstance().font);
     }
 
     @Override
@@ -76,8 +76,8 @@ public class ElementLabel extends Element {
 
         double nextYLevel = dimensions.getY();
         for (IReorderingProcessor line : this.lines) {
-            if (nextYLevel + this.fontRenderer.FONT_HEIGHT > dimensions.getY() + dimensions.getHeight()) {
-                nextYLevel = Math.min(dimensions.getY(), dimensions.getHeight() - this.fontRenderer.FONT_HEIGHT);
+            if (nextYLevel + this.fontRenderer.lineHeight > dimensions.getY() + dimensions.getHeight()) {
+                nextYLevel = Math.min(dimensions.getY(), dimensions.getHeight() - this.fontRenderer.lineHeight);
             }
 
             if (this.drawShadow) {
@@ -86,14 +86,14 @@ public class ElementLabel extends Element {
                 screen.drawReorderingProcessor(activeStack, line, dimensions.getX(), (float) nextYLevel);
             }
 
-            nextYLevel += this.fontRenderer.FONT_HEIGHT;
+            nextYLevel += this.fontRenderer.lineHeight;
         }
     }
 
     private void resize() {
         if (this.autoSize) {
             int newWidth = Math.min(this.getMaxWidth(), this.longestLineWidth);
-            int newHeight = Math.min(this.getMaxHeight(), this.lines.size() * (this.fontRenderer.FONT_HEIGHT + 2));
+            int newHeight = Math.min(this.getMaxHeight(), this.lines.size() * (this.fontRenderer.lineHeight + 2));
             this.setDimensions(this.getDimensions().setSize(newWidth, newHeight));
         }
     }
@@ -105,9 +105,9 @@ public class ElementLabel extends Element {
     public void setText(ITextComponent text) {
         this.text = text;
 
-        this.lines = this.wrapText ? RenderComponentsUtil.func_238505_a_(this.text, this.getMaxWidth(), this.fontRenderer) : Lists.newArrayList(text.func_241878_f());
+        this.lines = this.wrapText ? RenderComponentsUtil.wrapComponents(this.text, this.getMaxWidth(), this.fontRenderer) : Lists.newArrayList(text.getVisualOrderText());
         this.longestLineWidth = this.lines.stream()
-                .mapToInt(this.fontRenderer::func_243245_a) // getStringWidth
+                .mapToInt(this.fontRenderer::width) // getStringWidth
                 .max()
                 .orElseGet(this::getMaxWidth);
         this.resize();
