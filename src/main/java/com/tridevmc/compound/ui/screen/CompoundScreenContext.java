@@ -87,7 +87,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public float getPartialTicks() {
-        return this.getMc().getDeltaFrameTime();
+        return this.getMc().getFrameTime();
     }
 
     @Override

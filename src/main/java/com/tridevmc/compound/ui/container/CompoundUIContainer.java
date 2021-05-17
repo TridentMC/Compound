@@ -195,14 +195,21 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
 
     @Override
     protected boolean isHovering(int x, int y, int width, int height, double mouseX, double mouseY) {
-        // A hack, not a clever one. Just a hack.
-        Optional<Slot> matchingSlot = this.slotElements.keySet().stream()
+        /*
+         * When the base screen checks if the mouse is over a slot it passes the x and y of the slot instance.
+         *
+         * Because the slot positions are set off screen by the CompoundContainer we can use this
+         * to match the position to the appropriate slot element.
+         *
+         * Once the element is found we can check if we're hovering on it and pass that result back to the base class
+         * which will then register that we're selecting the correct slot.
+         */
+        return this.slotElements.keySet().stream()
                 .filter((s) -> s.x == x && s.y == y)
-                .findFirst();
-
-        return matchingSlot.map(slot -> this.slotElements.get(slot)
-                .getTransformedDimensions(this.screenContext)
-                .isPointInRect(mouseX, mouseY))
+                .findFirst()
+                .map(slot -> this.slotElements.get(slot)
+                        .getTransformedDimensions(this.screenContext)
+                        .isPointInRect(mouseX, mouseY))
                 .orElseGet(() -> super.isHovering(x, y, width, height, mouseX, mouseY));
     }
 

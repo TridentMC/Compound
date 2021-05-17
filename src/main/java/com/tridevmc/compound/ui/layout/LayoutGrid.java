@@ -74,12 +74,12 @@ public class LayoutGrid implements ILayout {
         return this.gridElements.remove(element);
     }
 
-    public void setArea(Rect2F area) {
-        this.area = area;
-    }
-
     public Rect2F getArea() {
         return this.area;
+    }
+
+    public void setArea(Rect2F area) {
+        this.area = area;
     }
 
     private void resizeForElement(IElement element) {
@@ -95,9 +95,9 @@ public class LayoutGrid implements ILayout {
         Rect2F rect = this.area;
         this.cachedElementDimensions.clear();
 
-       float currentX = rect.getX() + this.xPadding;
-       float currentY = rect.getY() + this.yPadding;
-       float rowHeight = 0;
+        float currentX = rect.getX() + this.xPadding;
+        float currentY = rect.getY() + this.yPadding;
+        float rowHeight = 0;
         for (IElement element : this.gridElements) {
             float sizeIncrease = element.getDimensions().getWidth() + this.xPadding;
             rowHeight = Math.max(rowHeight, element.getDimensions().getHeight());

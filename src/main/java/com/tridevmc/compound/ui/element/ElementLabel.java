@@ -98,6 +98,10 @@ public class ElementLabel extends Element {
         }
     }
 
+    public ITextProperties getText() {
+        return this.text;
+    }
+
     public void setText(String text) {
         this.setText(new StringTextComponent(text));
     }
@@ -111,10 +115,6 @@ public class ElementLabel extends Element {
                 .max()
                 .orElseGet(this::getMaxWidth);
         this.resize();
-    }
-
-    public ITextProperties getText() {
-        return this.text;
     }
 
     private int getMaxWidth() {

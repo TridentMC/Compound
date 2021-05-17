@@ -144,7 +144,7 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
 
     @Override
     public void renderToolTip(MatrixStack stack, List<? extends IReorderingProcessor> lines, int x, int y, FontRenderer font) {
-        super.renderToolTip(stack, lines, x, y,font);
+        super.renderToolTip(stack, lines, x, y, font);
     }
 
     @Override
