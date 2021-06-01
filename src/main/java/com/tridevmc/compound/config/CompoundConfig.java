@@ -64,7 +64,6 @@ public class CompoundConfig<T> {
         this.configInstance = type.newInstance();
         this.configType = this.genConfigType();
         this.objectSerializers = Sets.newHashSet();
-        this.objectSerializers.add(new ForgeRegistryEntrySerializer());
 
         Pair<Object, ForgeConfigSpec> configure = new ForgeConfigSpec.Builder().configure(this::loadConfig);
         this.forgeConfig = configure.getRight();
@@ -123,6 +122,7 @@ public class CompoundConfig<T> {
 
     private CompoundConfig loadConfig(ForgeConfigSpec.Builder builder) {
         if (this.objectSerializers.isEmpty()) {
+            this.objectSerializers.add(new ForgeRegistryEntrySerializer());
             List<ModFileScanData> modScanData = ModList.get().getAllScanData();
             ArrayList<ModFileScanData.AnnotationData> annotationData = Lists.newArrayList();
             String annotationName = RegisteredConfigObjectSerializer.class.getName();
