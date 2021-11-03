@@ -17,18 +17,18 @@
 package com.tridevmc.compound.network.core;
 
 import com.tridevmc.compound.network.message.Message;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraftforge.fml.network.NetworkEvent.Context;
+import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.fmllegacy.network.NetworkEvent;
 
 public class CompoundServerHandler implements ICompoundNetworkHandler {
     @Override
-    public <M extends Message> void handle(M m, Context ctx) {
+    public <M extends Message> void handle(M m, NetworkEvent.Context ctx) {
         m.handle(this.getPlayer(ctx));
         ctx.setPacketHandled(true);
     }
 
     @Override
-    public PlayerEntity getPlayer(Context ctx) {
+    public Player getPlayer(NetworkEvent.Context ctx) {
         return ctx.getSender();
     }
 }

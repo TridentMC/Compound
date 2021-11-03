@@ -24,11 +24,12 @@ import com.tridevmc.compound.ui.element.Element;
 import com.tridevmc.compound.ui.layout.ILayout;
 import com.tridevmc.compound.ui.listeners.IMousePressListener;
 import com.tridevmc.compound.ui.screen.IScreenContext;
-import net.minecraft.client.audio.SimpleSound;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.SoundEvents;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 
 import java.util.List;
+
 
 /**
  * A resizable button element to add to UIs, add hover and press listeners to add functionality.
@@ -197,7 +198,7 @@ public class ElementButton extends Element {
                 this.hoverListeners.forEach((l) -> l.onButtonHover(x, y, true));
                 this.isHovered = true;
             }
-            screen.getMc().getSoundManager().play(SimpleSound.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            screen.getMc().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
             this.pressListeners.forEach((l) -> l.onButtonPress(x, y));
         }
     }

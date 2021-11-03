@@ -19,7 +19,7 @@ package com.tridevmc.compound.network.message;
 import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.network.marshallers.Marshaller;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.FriendlyByteBuf;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Array;
@@ -58,7 +58,7 @@ public class MessageField<T> {
 
         if (this.field.getType().isArray()) {
             T[] values = (T[]) this.getValue(msg);
-            new PacketBuffer(target).writeVarInt(values.length);
+            new FriendlyByteBuf(target).writeVarInt(values.length);
             for (T value : values) {
                 this.getMarshaller().writeTo(this, target, value);
             }
@@ -74,7 +74,7 @@ public class MessageField<T> {
         }
 
         if (this.field.getType().isArray()) {
-            int size = new PacketBuffer(source).readVarInt();
+            int size = new FriendlyByteBuf(source).readVarInt();
 
             T[] values = (T[]) Array.newInstance(this.field.getType(), size);
             for (int i = 0; i < size; i++) {

@@ -17,13 +17,14 @@
 package com.tridevmc.compound.network.core;
 
 import com.tridevmc.compound.network.message.Message;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraftforge.fml.network.NetworkEvent.Context;
+import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.fmllegacy.network.NetworkEvent;
+
 
 public interface ICompoundNetworkHandler {
 
-    <M extends Message> void handle(M m, Context ctx);
+    <M extends Message> void handle(M m, NetworkEvent.Context ctx);
 
-    PlayerEntity getPlayer(Context ctx);
+    Player getPlayer(NetworkEvent.Context ctx);
 
 }

@@ -22,7 +22,7 @@ import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.UVData;
 import com.tridevmc.compound.ui.layout.ILayout;
 import com.tridevmc.compound.ui.screen.IScreenContext;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 
 public class ElementImage extends Element {
 

@@ -18,7 +18,7 @@ package com.tridevmc.compound.network.message;
 
 import com.tridevmc.compound.network.core.CompoundNetwork;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.fml.LogicalSide;
 
 import java.util.ArrayList;
@@ -50,7 +50,7 @@ public class MessageConcept {
         return this.messageSide;
     }
 
-    public void toBytes(Message msg, PacketBuffer target) {
+    public void toBytes(Message msg, FriendlyByteBuf target) {
         this.toBytes(msg, target.capacity(target.capacity()));
     }
 
@@ -88,7 +88,7 @@ public class MessageConcept {
         }
     }
 
-    public <M extends Message> M fromBytes(PacketBuffer source) {
+    public <M extends Message> M fromBytes(FriendlyByteBuf source) {
         Message msg = null;
         try {
             msg = this.messageClass.newInstance();

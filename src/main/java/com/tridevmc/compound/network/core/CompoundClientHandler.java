@@ -18,8 +18,9 @@ package com.tridevmc.compound.network.core;
 
 import com.tridevmc.compound.network.message.Message;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.fmllegacy.network.NetworkEvent;
+
 
 public class CompoundClientHandler implements ICompoundNetworkHandler {
     @Override
@@ -29,7 +30,7 @@ public class CompoundClientHandler implements ICompoundNetworkHandler {
     }
 
     @Override
-    public PlayerEntity getPlayer(NetworkEvent.Context ctx) {
+    public Player getPlayer(NetworkEvent.Context ctx) {
         return Minecraft.getInstance().player;
     }
 }

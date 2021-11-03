@@ -18,23 +18,35 @@ package com.tridevmc.compound.ui;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.platform.Lighting;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.listeners.*;
 import com.tridevmc.compound.ui.screen.CompoundScreenContext;
 import com.tridevmc.compound.ui.screen.IScreenContext;
+import net.minecraft.CrashReport;
+import net.minecraft.ReportedException;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.util.IReorderingProcessor;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.Style;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.block.model.ItemTransforms;
+import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
 
 public abstract class CompoundUI extends Screen implements ICompoundUI, IInternalCompoundUI {
 
-    private MatrixStack activeStack;
+    private PoseStack activeStack;
     private long ticks;
     private double mouseX, mouseY;
     private EnumUILayer currentLayer;
@@ -51,7 +63,7 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     private List<IMouseScrollListener> mouseScrollListeners;
 
     public CompoundUI() {
-        super(new StringTextComponent(""));
+        super(new TextComponent(""));
         this.screenContext = new CompoundScreenContext(this);
         this.elements = Lists.newArrayList();
         this.keyPressListeners = Lists.newArrayList();
@@ -69,7 +81,7 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     }
 
     @Override
-    public void render(MatrixStack stack, int mouseX, int mouseY, float partialTicks) {
+    public void render(PoseStack stack, int mouseX, int mouseY, float partialTicks) {
         this.activeStack = stack;
         this.mouseX = mouseX;
         this.mouseY = mouseY;
@@ -98,7 +110,7 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     }
 
     @Override
-    public MatrixStack getActiveStack() {
+    public PoseStack getActiveStack() {
         return this.activeStack;
     }
 
@@ -143,12 +155,12 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     }
 
     @Override
-    public void renderToolTip(MatrixStack stack, List<? extends IReorderingProcessor> lines, int x, int y, FontRenderer font) {
-        super.renderToolTip(stack, lines, x, y,font);
+    public void renderTooltip(PoseStack stack, List<? extends FormattedCharSequence> lines, int x, int y, Font font) {
+        super.renderTooltip(stack, lines, x, y, font);
     }
 
     @Override
-    public void renderComponentHoverEffect(MatrixStack stack, Style style, int x, int y) {
+    public void renderComponentHoverEffect(PoseStack stack, Style style, int x, int y) {
         super.renderComponentHoverEffect(stack, style, x, y);
     }
 

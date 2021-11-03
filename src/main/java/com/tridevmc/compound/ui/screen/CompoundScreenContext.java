@@ -16,24 +16,22 @@
 
 package com.tridevmc.compound.ui.screen;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.*;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
 import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.UVData;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.IReorderingProcessor;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.Util;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.client.RenderProperties;
 
 import java.net.URI;
 import java.util.List;
@@ -51,7 +49,7 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public MatrixStack getActiveStack() {
+    public PoseStack getActiveStack() {
         return this.ui.getActiveStack();
     }
 
@@ -81,7 +79,7 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public FontRenderer getFontRenderer() {
+    public Font getFont() {
         return this.getMc().font;
     }
 
@@ -102,7 +100,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void bindTexture(ResourceLocation texture) {
-        this.getMc().getTextureManager().bind(texture);
+        RenderSystem.setShaderTexture(0, texture);
     }
 
     @Override
@@ -124,14 +122,15 @@ public class CompoundScreenContext implements IScreenContext {
         float b2 = endColourUnpacked[2];
         float a2 = endColourUnpacked[3];
 
+        RenderSystem.enableDepthTest();
         RenderSystem.disableTexture();
         RenderSystem.enableBlend();
-        RenderSystem.disableAlphaTest();
-        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-        RenderSystem.shadeModel(7425);
-        Tessellator tessellator = Tessellator.getInstance();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        
+        Tesselator tessellator = Tesselator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuilder();
-        bufferbuilder.begin(7, DefaultVertexFormats.POSITION_COLOR);
+        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         bufferbuilder.vertex(rect.getX() + rect.getWidth(), rect.getY(), this.getZLevel())
                 .color(r1, g1, b1, a1)
                 .endVertex();
@@ -145,32 +144,30 @@ public class CompoundScreenContext implements IScreenContext {
                 .color(r2, g2, b2, a2)
                 .endVertex();
         tessellator.end();
-        RenderSystem.shadeModel(7424);
         RenderSystem.disableBlend();
-        RenderSystem.enableAlphaTest();
         RenderSystem.enableTexture();
     }
 
     @Override
-    public void drawReorderingProcessor(MatrixStack matrix, IReorderingProcessor processor, float x, float y) {
-        this.getFontRenderer().draw(matrix, processor, x, y, 16777215);
+    public void drawFormattedCharSequence(PoseStack matrix, FormattedCharSequence processor, float x, float y) {
+        this.getFont().draw(matrix, processor, x, y, 16777215);
     }
 
     @Override
-    public void drawCenteredReorderingProcessor(MatrixStack matrix, IReorderingProcessor processor, float x, float y) {
-        int stringWidth = this.getFontRenderer().width(processor);
-        this.drawReorderingProcessor(matrix, processor, x - (stringWidth / 2F), y);
+    public void drawCenteredFormattedCharSequence(PoseStack matrix, FormattedCharSequence processor, float x, float y) {
+        int stringWidth = this.getFont().width(processor);
+        this.drawFormattedCharSequence(matrix, processor, x - (stringWidth / 2F), y);
     }
 
     @Override
-    public void drawReorderingProcessorWithShadow(MatrixStack matrix, IReorderingProcessor processor, float x, float y) {
-        this.getFontRenderer().drawShadow(matrix, processor, x, y, 16777215);
+    public void drawFormattedCharSequenceWithShadow(PoseStack matrix, FormattedCharSequence processor, float x, float y) {
+        this.getFont().drawShadow(matrix, processor, x, y, 16777215);
     }
 
     @Override
-    public void drawCenteredReorderingProcessorWithShadow(MatrixStack matrix, IReorderingProcessor processor, float x, float y) {
-        int stringWidth = this.getFontRenderer().width(processor);
-        this.drawReorderingProcessorWithShadow(matrix, processor, x - (stringWidth / 2F), y);
+    public void drawCenteredFormattedCharSequenceWithShadow(PoseStack matrix, FormattedCharSequence processor, float x, float y) {
+        int stringWidth = this.getFont().width(processor);
+        this.drawFormattedCharSequenceWithShadow(matrix, processor, x - (stringWidth / 2F), y);
     }
 
     @Override
@@ -190,9 +187,11 @@ public class CompoundScreenContext implements IScreenContext {
         double width = rect.getWidth();
         double height = rect.getHeight();
         double zLevel = this.ui.getBlitOffset();
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder bufferbuilder = tessellator.getBuilder();
-        bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        Tesselator tessellator = Tesselator.getInstance();
+        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
+        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
         bufferbuilder.vertex(x, y + height, zLevel).uv(minUvs.getU() * 0.00390625F, maxUvs.getV() * 0.00390625F).endVertex();
         bufferbuilder.vertex(x + width, y + height, zLevel).uv(maxUvs.getU() * 0.00390625F, maxUvs.getV() * 0.00390625F).endVertex();
         bufferbuilder.vertex(x + width, y, zLevel).uv(maxUvs.getU() * 0.00390625F, minUvs.getV() * 0.00390625F).endVertex();
@@ -202,6 +201,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawTexturedRect(Rect2F rect, TextureAtlasSprite sprite) {
+        RenderSystem.setShaderTexture(0, sprite.atlas().location());
         this.drawTexturedRect(rect, new UVData(sprite.getU0(), sprite.getV0()), new UVData(sprite.getU1(), sprite.getV1()));
     }
 
@@ -209,9 +209,11 @@ public class CompoundScreenContext implements IScreenContext {
     public void drawTexturedRect(Rect2F rect, UVData uvs, float textureWidth, float textureHeight) {
         float f = 1.0F / textureWidth;
         float f1 = 1.0F / textureHeight;
-        Tessellator tessellator = Tessellator.getInstance();
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        Tesselator tessellator = Tesselator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuilder();
-        bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
+        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
         bufferbuilder.vertex(rect.getX(), rect.getY() + rect.getHeight(), 0.0D).uv((uvs.getU() * f), (float) ((uvs.getV() + rect.getHeight()) * f1)).endVertex();
         bufferbuilder.vertex(rect.getX() + rect.getWidth(), rect.getY() + rect.getHeight(), 0.0D).uv(((uvs.getU() + rect.getWidth()) * f), ((uvs.getV() + rect.getHeight()) * f1)).endVertex();
         bufferbuilder.vertex(rect.getX() + rect.getWidth(), rect.getY(), 0.0D).uv((float) ((uvs.getU() + rect.getWidth()) * f), (uvs.getV() * f1)).endVertex();
@@ -223,9 +225,11 @@ public class CompoundScreenContext implements IScreenContext {
     public void drawTexturedRect(Rect2F rect, UVData uvs, int uWidth, int vHeight, float tileWidth, float tileHeight) {
         float f = 1.0F / tileWidth;
         float f1 = 1.0F / tileHeight;
-        Tessellator tessellator = Tessellator.getInstance();
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        Tesselator tessellator = Tesselator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuilder();
-        bufferbuilder.begin(7, DefaultVertexFormats.POSITION_TEX);
+        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
         bufferbuilder.vertex(rect.getX(), rect.getY() + rect.getHeight(), 0.0D).uv((uvs.getU() * f), ((uvs.getV() + vHeight) * f1)).endVertex();
         bufferbuilder.vertex(rect.getX() + rect.getWidth(), rect.getY() + rect.getHeight(), 0.0D).uv(((uvs.getU() + uWidth) * f), ((uvs.getV() + vHeight) * f1)).endVertex();
         bufferbuilder.vertex(rect.getX() + rect.getWidth(), rect.getY(), 0.0D).uv(((uvs.getU() + uWidth) * f), (uvs.getV() * f1)).endVertex();
@@ -248,8 +252,8 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawProcessorAsTooltip(MatrixStack matrix, List<IReorderingProcessor> processors, int x, int y, FontRenderer font) {
-        this.ui.asGuiScreen().renderToolTip(matrix, processors, x, y, font);
+    public void drawProcessorAsTooltip(PoseStack poseStack, List<FormattedCharSequence> processors, int x, int y, Font font) {
+        this.ui.asGuiScreen().renderTooltip(poseStack, processors, x, y, font);
     }
 
     @Override
@@ -262,15 +266,16 @@ public class CompoundScreenContext implements IScreenContext {
         int oBlitOffset = this.ui.getBlitOffset();
         this.ui.setBlitOffset(blitOffset);
         this.getMc().getItemRenderer().blitOffset = blitOffset;
-        net.minecraft.client.gui.FontRenderer font = stack.getItem().getFontRenderer(stack);
-        if (font == null) font = this.getFontRenderer();
-        RenderSystem.pushMatrix();
-        RenderSystem.translated(dimensions.getX(), dimensions.getY(), 0);
-        RenderSystem.scaled(1D / 16D, 1D / 16D, 1);
-        RenderSystem.scaled(dimensions.getWidth(), dimensions.getHeight(), 1);
+        Font font = RenderProperties.get(stack).getFont(stack);
+        if (font == null) font = this.getFont();
+        PoseStack poseStack = RenderSystem.getModelViewStack();
+        poseStack.pushPose();
+        poseStack.translate(dimensions.getX(), dimensions.getY(), 0);
+        poseStack.scale(1F / 16F, 1F / 16F, 1);
+        poseStack.scale(dimensions.getWidth(), dimensions.getHeight(), 1);
         this.getMc().getItemRenderer().renderAndDecorateItem(stack, 0, 0);
         this.getMc().getItemRenderer().renderGuiItemDecorations(font, stack, 0, 0, altText);
-        RenderSystem.popMatrix();
+        poseStack.popPose();
         this.ui.setBlitOffset(oBlitOffset);
         this.getMc().getItemRenderer().blitOffset = 0.0F;
     }

@@ -17,9 +17,9 @@
 package com.tridevmc.compound.ui.container;
 
 import com.tridevmc.compound.core.reflect.WrappedField;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.inventory.container.Slot;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.inventory.Slot;
 
 import javax.annotation.Nullable;
 
@@ -27,11 +27,11 @@ import javax.annotation.Nullable;
  * Base class for any containers that will be used with a Compound UI.
  * Includes basic functionality to locate slots off the screen so they can be rendered as elements instead.
  */
-public abstract class CompoundContainer extends Container {
+public abstract class CompoundContainerMenu extends AbstractContainerMenu {
 
     private static final WrappedField<Integer> SLOT_YPOS = WrappedField.create(Slot.class, "y", "field_75221_f");
 
-    protected CompoundContainer(@Nullable ContainerType<?> type, int id) {
+    protected CompoundContainerMenu(@Nullable MenuType<?> type, int id) {
         super(type, id);
     }
 

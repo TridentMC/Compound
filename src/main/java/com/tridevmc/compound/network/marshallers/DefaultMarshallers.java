@@ -21,11 +21,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps.EntryTransformer;
 import com.tridevmc.compound.network.message.MessageField;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.vector.Vector3i;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
 import java.util.Objects;
@@ -105,60 +105,60 @@ public class DefaultMarshallers {
                 DefaultMarshallers::writeItemStack),
                 new Class[]{ItemStack.class}));
 
-        out.add(new MarshallerMetadata(new String[]{"NBTTagCompound", "Tag", "NBT"},
-                new StaticSimpleMarshaller<CompoundNBT>(
+        out.add(new MarshallerMetadata(new String[]{"CompoundTag", "NBTTagCompound", "Tag", "NBT"},
+                new StaticSimpleMarshaller<CompoundTag>(
                         DefaultMarshallers::readTag,
                         DefaultMarshallers::writeTag),
-                new Class[]{CompoundNBT.class}));
+                new Class[]{CompoundTag.class}));
 
         out.add(new MarshallerMetadata(new String[]{"BlockPos", "Vec3i"},
                 new StaticSimpleMarshaller<BlockPos>(
                         DefaultMarshallers::readBlockPos,
                         DefaultMarshallers::writeBlockPos),
-                new Class[]{BlockPos.class, Vector3i.class}));
+                new Class[]{BlockPos.class, Vec3i.class}));
 
 
         return out;
     }
 
     private static void writeVarInt(ByteBuf buf, int toWrite) {
-        new PacketBuffer(buf).writeVarInt(toWrite);
+        new FriendlyByteBuf(buf).writeVarInt(toWrite);
     }
 
     private static int readVarInt(ByteBuf buf) {
-        return new PacketBuffer(buf).readVarInt();
+        return new FriendlyByteBuf(buf).readVarInt();
     }
 
     private static void writeVarLong(ByteBuf buf, long toWrite) {
-        new PacketBuffer(buf).writeVarLong(toWrite);
+        new FriendlyByteBuf(buf).writeVarLong(toWrite);
     }
 
     private static long readVarLong(ByteBuf buf) {
-        return new PacketBuffer(buf).readVarLong();
+        return new FriendlyByteBuf(buf).readVarLong();
     }
 
     private static void writeString(ByteBuf buf, String str) {
-        new PacketBuffer(buf).writeUtf(str);
+        new FriendlyByteBuf(buf).writeUtf(str);
     }
 
     private static String readString(ByteBuf buf) {
-        return new PacketBuffer(buf).readUtf(32767);
+        return new FriendlyByteBuf(buf).readUtf(32767);
     }
 
-    private static void writeTag(ByteBuf buf, CompoundNBT tag) {
-        new PacketBuffer(buf).writeNbt(tag);
+    private static void writeTag(ByteBuf buf, CompoundTag tag) {
+        new FriendlyByteBuf(buf).writeNbt(tag);
     }
 
-    private static CompoundNBT readTag(ByteBuf buf) {
-        return new PacketBuffer(buf).readNbt();
+    private static CompoundTag readTag(ByteBuf buf) {
+        return new FriendlyByteBuf(buf).readNbt();
     }
 
     private static void writeItemStack(ByteBuf buf, ItemStack stack) {
-        new PacketBuffer(buf).writeItemStack(stack, false);
+        new FriendlyByteBuf(buf).writeItemStack(stack, false);
     }
 
     private static ItemStack readItemStack(ByteBuf buf) {
-        return new PacketBuffer(buf).readItem();
+        return new FriendlyByteBuf(buf).readItem();
     }
 
     private static BlockPos readBlockPos(ByteBuf buf) {

@@ -24,11 +24,12 @@ import com.tridevmc.compound.ui.element.Element;
 import com.tridevmc.compound.ui.layout.ILayout;
 import com.tridevmc.compound.ui.layout.LayoutNone;
 import com.tridevmc.compound.ui.screen.IScreenContext;
-import net.minecraft.inventory.container.Slot;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nonnull;
+
 
 /**
  * A resizable slot element to add to Container UIs, must be used in conjunction with CompoundUIContainer and CompoundContainer
@@ -85,7 +86,8 @@ public class ElementSlot extends Element {
 
     @Override
     public void drawOverlay(ICompoundUI ui) {
-        if (this.drawOverlay && ui.getScreenContext().getMc().player.inventory.getCarried().isEmpty() && this.slot.hasItem()) {
+        var screenContext = ui.getScreenContext();
+        if (this.drawOverlay && screenContext.getMc().player.containerMenu.getCarried().isEmpty() && this.slot.hasItem()) {
             this.drawTooltip(ui.getScreenContext());
         }
 

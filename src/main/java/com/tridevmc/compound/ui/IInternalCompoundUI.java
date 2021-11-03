@@ -16,16 +16,19 @@
 
 package com.tridevmc.compound.ui;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Only for internal use, exposes methods and variables to screen context.
  */
 public interface IInternalCompoundUI {
 
-    MatrixStack getActiveStack();
+    PoseStack getActiveStack();
 
     int getBlitOffset();
 
@@ -46,5 +49,4 @@ public interface IInternalCompoundUI {
     Screen asGuiScreen();
 
     EnumUILayer getCurrentLayer();
-
 }

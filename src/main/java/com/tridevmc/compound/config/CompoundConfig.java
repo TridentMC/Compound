@@ -26,6 +26,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.event.config.ModConfigEvent;
 import net.minecraftforge.fml.javafmlmod.FMLModContainer;
 import net.minecraftforge.forgespi.language.ModFileScanData;
 import org.apache.commons.lang3.tuple.Pair;
@@ -127,8 +128,8 @@ public class CompoundConfig<T> {
             ArrayList<ModFileScanData.AnnotationData> annotationData = Lists.newArrayList();
             String annotationName = RegisteredConfigObjectSerializer.class.getName();
 
-            modScanData.forEach((m) -> m.getAnnotations().stream().filter(a -> Objects.equals(a.getAnnotationType().getClassName(), annotationName)).forEach(a -> {
-                Map<String, Object> annotationInfo = a.getAnnotationData();
+            modScanData.forEach((m) -> m.getAnnotations().stream().filter(a -> Objects.equals(a.annotationType().getClassName(), annotationName)).forEach(a -> {
+                Map<String, Object> annotationInfo = a.annotationData();
                 String modId = (String) annotationInfo.get("value");
                 if (Objects.equals(modId, this.getModId())) {
                     annotationData.add(a);
@@ -137,21 +138,21 @@ public class CompoundConfig<T> {
 
             this.objectSerializers.addAll(annotationData.stream().map(data -> {
                 try {
-                    return (IConfigObjectSerializer) Class.forName(data.getClassType().getClassName()).newInstance();
+                    return (IConfigObjectSerializer) Class.forName(data.targetType().name()).newInstance();
                 } catch (InstantiationException e) {
                     throw new RuntimeException(String.format(
                             "Failed to instantiate %s, is there an empty constructor?",
-                            data.getMemberName()),
+                            data.memberName()),
                             e);
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException(String.format(
                             "Failed to instantiate %s, is there a public empty constructor?",
-                            data.getMemberName()),
+                            data.memberName()),
                             e);
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException(String.format(
                             "Unable to find class: \"%s\" for registered marshaller.",
-                            data.getMemberName()),
+                            data.memberName()),
                             e);
                 }
             }).filter(Objects::nonNull).collect(Collectors.toSet()));
@@ -179,14 +180,14 @@ public class CompoundConfig<T> {
 
     // We need this to run first so config implementations can load their data from the injected changes.
     @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public void onConfigReloading(ModConfig.Reloading e) {
+    public void onConfigReloading(ModConfigEvent.Reloading e) {
         if (Objects.equals(e.getConfig(), this.modConfig)) {
             this.loadFields();
         }
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public void onConfigLoading(ModConfig.Loading e) {
+    public void onConfigLoading(ModConfigEvent.Loading e) {
         if (Objects.equals(e.getConfig(), this.modConfig)) {
             this.loadFields();
         }

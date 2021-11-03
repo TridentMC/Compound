@@ -17,20 +17,20 @@
 package com.tridevmc.compound.network.message;
 
 import com.tridevmc.compound.network.core.CompoundNetwork;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.RegistryKey;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.fml.LogicalSide;
-import net.minecraftforge.fml.LogicalSidedProvider;
-import net.minecraftforge.fml.network.NetworkDirection;
-import net.minecraftforge.fml.network.PacketDistributor;
+import net.minecraftforge.fmllegacy.LogicalSidedProvider;
+import net.minecraftforge.fmllegacy.network.NetworkDirection;
+import net.minecraftforge.fmllegacy.network.PacketDistributor;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -49,7 +49,7 @@ public abstract class Message {
 
     private CompoundNetwork network;
 
-    public abstract void handle(@Nullable PlayerEntity player);
+    public abstract void handle(@Nullable Player player);
 
     @Nonnull
     public CompoundNetwork getNetwork() {
@@ -71,7 +71,7 @@ public abstract class Message {
      *
      * @param playerPredicate the predicate that determines if the player should receive the packet.
      */
-    public void sendToMatching(@Nonnull Predicate<ServerPlayerEntity> playerPredicate) {
+    public void sendToMatching(@Nonnull Predicate<ServerPlayer> playerPredicate) {
         MinecraftServer server = LogicalSidedProvider.INSTANCE.get(LogicalSide.SERVER);
         server.getPlayerList().getPlayers().stream()
                 .filter(playerPredicate)
@@ -83,7 +83,7 @@ public abstract class Message {
      *
      * @param player the player to send the message to.
      */
-    public void sendTo(@Nonnull ServerPlayerEntity player) {
+    public void sendTo(@Nonnull ServerPlayer player) {
         this.getNetwork().getNetworkChannel().sendTo(this, player.connection.connection, NetworkDirection.PLAY_TO_CLIENT);
     }
 
@@ -94,7 +94,7 @@ public abstract class Message {
      * @param pos       the coordinates of the point.
      * @param range     the range around the point that the target clients are within.
      */
-    public void sendToAllAround(@Nonnull RegistryKey<World> dimension, @Nonnull BlockPos pos, double range) {
+    public void sendToAllAround(@Nonnull ResourceKey<Level> dimension, @Nonnull BlockPos pos, double range) {
         PacketDistributor.TargetPoint target = new PacketDistributor.TargetPoint(pos.getX(), pos.getY(), pos.getZ(), range, dimension);
         this.getNetwork().getNetworkChannel().send(PacketDistributor.NEAR.with(() -> target), this);
     }
@@ -113,7 +113,7 @@ public abstract class Message {
      *
      * @param tile the tile entity that the target clients are tracking.
      */
-    public void sendToAllTracking(@Nonnull TileEntity tile) {
+    public void sendToAllTracking(@Nonnull BlockEntity tile) {
         this.sendToAllTracking(tile.getLevel().getChunkAt(tile.getBlockPos()));
     }
 
@@ -123,12 +123,12 @@ public abstract class Message {
      * @param dimension the dimension the point is in.
      * @param pos       the coordinates of the point.
      */
-    public void sendToAllTracking(@Nonnull RegistryKey<World> dimension, @Nonnull BlockPos pos) {
+    public void sendToAllTracking(@Nonnull ResourceKey<Level> dimension, @Nonnull BlockPos pos) {
         MinecraftServer currentServer = LogicalSidedProvider.INSTANCE.get(LogicalSide.SERVER);
-        // Dont force load the world because if we have to load the world then nobody is tracking this to begin with.
-        ServerWorld world = currentServer.getLevel(dimension);
-        if (world != null) {
-            Chunk chunk = world.getChunkAt(pos);
+        // Dont force load the level because if we have to load the level then nobody is tracking this to begin with.
+        ServerLevel level = currentServer.getLevel(dimension);
+        if (level != null) {
+            LevelChunk chunk = level.getChunkAt(pos);
             this.sendToAllTracking(chunk);
         }
     }
@@ -138,7 +138,7 @@ public abstract class Message {
      *
      * @param chunk the chunk that the target clients are tracking.
      */
-    public void sendToAllTracking(@Nonnull Chunk chunk) {
+    public void sendToAllTracking(@Nonnull LevelChunk chunk) {
         this.getNetwork().getNetworkChannel().send(PacketDistributor.TRACKING_CHUNK.with(() -> chunk), this);
     }
 
@@ -147,7 +147,7 @@ public abstract class Message {
      *
      * @param dimension the dimension this message should be sent to.
      */
-    public void sendToDimension(@Nonnull RegistryKey<World> dimension) {
+    public void sendToDimension(@Nonnull ResourceKey<Level> dimension) {
         this.getNetwork().getNetworkChannel().send(PacketDistributor.DIMENSION.with(() -> dimension), this);
     }
 

@@ -19,8 +19,8 @@ package com.tridevmc.compound.ui.container;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.ICompoundUI;
@@ -32,27 +32,26 @@ import com.tridevmc.compound.ui.layout.ILayout;
 import com.tridevmc.compound.ui.listeners.*;
 import com.tridevmc.compound.ui.screen.CompoundScreenContext;
 import com.tridevmc.compound.ui.screen.IScreenContext;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.inventory.ContainerScreen;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.Slot;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TextFormatting;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public abstract class CompoundUIContainer<T extends CompoundContainer> extends ContainerScreen<T> implements ICompoundUI, IInternalCompoundUI {
-    private static final WrappedField<Slot> clickedSlot = WrappedField.create(ContainerScreen.class, "clickedSlot", "field_147005_v");
-    private static final WrappedField<Boolean> isSplittingStack = WrappedField.create(ContainerScreen.class, "isSplittingStack", "field_147004_w");
-    private static final WrappedField<ItemStack> draggingItem = WrappedField.create(ContainerScreen.class, "draggingItem", "field_147012_x");
-    private static final WrappedField<Integer> quickCraftingType = WrappedField.create(ContainerScreen.class, "quickCraftingType", "field_146987_F");
+public abstract class CompoundUIContainer<T extends CompoundContainerMenu> extends AbstractContainerScreen<T> implements ICompoundUI, IInternalCompoundUI {
+    private static final WrappedField<Slot> clickedSlot = WrappedField.create(AbstractContainerScreen.class, "clickedSlot", "field_147005_v");
+    private static final WrappedField<Boolean> isSplittingStack = WrappedField.create(AbstractContainerScreen.class, "isSplittingStack", "field_147004_w");
+    private static final WrappedField<ItemStack> draggingItem = WrappedField.create(AbstractContainerScreen.class, "draggingItem", "field_147012_x");
+    private static final WrappedField<Integer> quickCraftingType = WrappedField.create(AbstractContainerScreen.class, "quickCraftingType", "field_146987_F");
 
-    private MatrixStack activeStack;
+    private PoseStack activeStack;
     private long ticks;
     private float mouseX, mouseY;
     private EnumUILayer currentLayer;
@@ -70,7 +69,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
     private List<IMouseScrollListener> mouseScrollListeners;
 
     public CompoundUIContainer(T container) {
-        super(container, Minecraft.getInstance().player.inventory, new StringTextComponent(""));
+        super(container, Minecraft.getInstance().player.getInventory(), new TextComponent(""));
 
         this.screenContext = new CompoundScreenContext(this);
         this.elements = Lists.newArrayList();
@@ -90,24 +89,25 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
     }
 
     @Override
-    protected void renderBg(MatrixStack stack, float partialTicks, int mouseX, int mouseY) {
+    protected void renderBg(PoseStack stack, float partialTicks, int mouseX, int mouseY) {
         this.currentLayer = EnumUILayer.BACKGROUND;
         this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.BACKGROUND));
     }
 
     @Override
-    protected void renderLabels(MatrixStack stack, int mouseX, int mouseY) {
-        RenderSystem.pushMatrix();
-        RenderSystem.translatef(-this.leftPos, -this.topPos, 0);
+    protected void renderLabels(PoseStack stack, int mouseX, int mouseY) {
+        var poseStack = RenderSystem.getModelViewStack();
+        poseStack.pushPose();
+        poseStack.translate(-this.leftPos, -this.topPos, 0);
         this.currentLayer = EnumUILayer.FOREGROUND;
         this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.FOREGROUND));
         this.currentLayer = EnumUILayer.OVERLAY;
         this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.OVERLAY));
-        RenderSystem.popMatrix();
+        poseStack.popPose();
     }
 
     @Override
-    public void render(MatrixStack stack, int mouseX, int mouseY, float partialTicks) {
+    public void render(PoseStack stack, int mouseX, int mouseY, float partialTicks) {
         this.activeStack = stack;
         this.renderBackground(stack);
         this.mouseX = mouseX;
@@ -117,8 +117,8 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
     }
 
     @Override
-    public void tick() {
-        super.tick();
+    public void containerTick() {
+        super.containerTick();
         this.ticks++;
     }
 
@@ -140,22 +140,22 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
                 continue;
 
             ItemStack slotStack = slot.getItem();
-            ItemStack playerStack = this.getMc().player.inventory.getCarried();
+            ItemStack playerStack = this.getMc().player.containerMenu.getCarried();
             if (slot == clickSlot && !dragItem.isEmpty() && splittingStack && !slotStack.isEmpty()) {
                 slotStack = slotStack.copy();
-                slotStack.setCount(MathHelper.ceil((float) slotStack.getCount() / 2.0F));
+                slotStack.setCount(slotStack.getCount() / 2);
             } else if (this.isQuickCrafting && this.quickCraftSlots.contains(slot) && !playerStack.isEmpty()) {
                 if (this.quickCraftSlots.size() == 1) {
                     return;
                 }
 
-                if (Container.canItemQuickReplace(slot, playerStack, true) && this.getMenu().canDragTo(slot)) {
+                if (AbstractContainerMenu.canItemQuickReplace(slot, playerStack, true) && this.getMenu().canDragTo(slot)) {
                     slotStack = playerStack.copy();
                     slotElement.setDrawUnderlay(true);
-                    Container.getQuickCraftSlotCount(this.quickCraftSlots, quickCraftType, slotStack, slot.getItem().isEmpty() ? 0 : slot.getItem().getCount());
+                    AbstractContainerMenu.getQuickCraftSlotCount(this.quickCraftSlots, quickCraftType, slotStack, slot.getItem().isEmpty() ? 0 : slot.getItem().getCount());
                     int size = Math.min(slotStack.getMaxStackSize(), slot.getMaxStackSize(slotStack));
                     if (slotStack.getCount() > size) {
-                        slotElement.setDisplayString(TextFormatting.YELLOW.toString() + size);
+                        slotElement.setDisplayString(ChatFormatting.YELLOW.toString() + size);
                         slotStack.setCount(size);
                     }
                 }
@@ -201,8 +201,8 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
                 .findFirst();
 
         return matchingSlot.map(slot -> this.slotElements.get(slot)
-                .getTransformedDimensions(this.screenContext)
-                .isPointInRect(mouseX, mouseY))
+                        .getTransformedDimensions(this.screenContext)
+                        .isPointInRect(mouseX, mouseY))
                 .orElseGet(() -> super.isHovering(x, y, width, height, mouseX, mouseY));
     }
 
@@ -217,7 +217,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainer> extends C
     }
 
     @Override
-    public MatrixStack getActiveStack() {
+    public PoseStack getActiveStack() {
         return this.activeStack;
     }
 

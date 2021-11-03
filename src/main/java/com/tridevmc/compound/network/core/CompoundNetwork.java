@@ -23,14 +23,14 @@ import com.tridevmc.compound.network.message.Message;
 import com.tridevmc.compound.network.message.MessageConcept;
 import com.tridevmc.compound.network.message.MessageField;
 import com.tridevmc.compound.network.message.RegisteredMessage;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.moddiscovery.ModAnnotation;
-import net.minecraftforge.fml.network.NetworkEvent;
-import net.minecraftforge.fml.network.NetworkRegistry;
-import net.minecraftforge.fml.network.simple.SimpleChannel;
+import net.minecraftforge.fmllegacy.network.NetworkEvent;
+import net.minecraftforge.fmllegacy.network.NetworkRegistry;
+import net.minecraftforge.fmllegacy.network.simple.SimpleChannel;
 import net.minecraftforge.forgespi.language.ModFileScanData;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.logging.log4j.LogManager;
@@ -43,6 +43,7 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
 
 /**
  * CompoundNetwork is used for the creation and management of networks.
@@ -135,7 +136,7 @@ public class CompoundNetwork {
 
         applicableMarshallers.sort(Comparator.comparingInt(
                 o -> {
-                    ModAnnotation.EnumHolder enumHolder = (ModAnnotation.EnumHolder) o.getAnnotationData().getOrDefault("priority", null);
+                    ModAnnotation.EnumHolder enumHolder = (ModAnnotation.EnumHolder) o.annotationData().getOrDefault("priority", null);
                     EnumMarshallerPriority priority = enumHolder == null ? EnumMarshallerPriority.NORMAL : EnumMarshallerPriority.valueOf(enumHolder.getValue());
                     return priority.getRank();
                 }));
@@ -144,31 +145,31 @@ public class CompoundNetwork {
             Marshaller marshaller = null;
 
             try {
-                marshaller = (Marshaller) Class.forName(applicableMarshaller.getMemberName())
+                marshaller = (Marshaller) Class.forName(applicableMarshaller.memberName())
                         .newInstance();
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(String.format(
                         "Unable to find class: \"%s\" for registered marshaller.",
-                        applicableMarshaller.getMemberName()),
+                        applicableMarshaller.memberName()),
                         e);
             } catch (ClassCastException e) {
                 throw new RuntimeException(String.format(
                         "Class: \"%s\" annotated with RegisteredMarshaller does not extend Marshaller.",
-                        applicableMarshaller.getMemberName()),
+                        applicableMarshaller.memberName()),
                         e);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(String.format(
                         "Failed to instantiate %s, is there a public empty constructor?",
-                        applicableMarshaller.getMemberName()),
+                        applicableMarshaller.memberName()),
                         e);
             } catch (InstantiationException e) {
                 throw new RuntimeException(String.format(
                         "Failed to instantiate %s",
-                        applicableMarshaller.getMemberName()),
+                        applicableMarshaller.memberName()),
                         e);
             }
 
-            Map<String, Object> annotationInfo = applicableMarshaller.getAnnotationData();
+            Map<String, Object> annotationInfo = applicableMarshaller.annotationData();
             ArrayList<String> ids = (ArrayList<String>) annotationInfo.get("ids");
             ArrayList<Type> acceptedTypes = (ArrayList<Type>) annotationInfo.get("acceptedTypes");
 
@@ -194,7 +195,7 @@ public class CompoundNetwork {
 
         int currentDiscriminator = 0;
         for (ModFileScanData.AnnotationData registeredMessage : applicableMessages) {
-            Map<String, Object> annotationInfo = registeredMessage.getAnnotationData();
+            Map<String, Object> annotationInfo = registeredMessage.annotationData();
 
             String networkChannel = (String) annotationInfo.get("channel");
 
@@ -205,22 +206,22 @@ public class CompoundNetwork {
                 Class<? extends Message> msgClass;
                 try {
                     msgClass = (Class<? extends Message>) Class
-                            .forName(registeredMessage.getMemberName());
+                            .forName(registeredMessage.memberName());
                     msgClass.getConstructor();
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException(String.format(
                             "Unable to find class: %s for registered message.",
-                            registeredMessage.getMemberName()),
+                            registeredMessage.memberName()),
                             e);
                 } catch (ClassCastException e) {
                     throw new RuntimeException(String.format(
                             "Class \"%s\" annotated with RegisteredMessage does not extend Message.",
-                            registeredMessage.getMemberName()),
+                            registeredMessage.memberName()),
                             e);
                 } catch (NoSuchMethodException e) {
                     throw new RuntimeException(String.format(
                             "Class \"%s\" does not have an empty constructor available, this is required for networking.",
-                            registeredMessage.getMemberName()),
+                            registeredMessage.memberName()),
                             e);
                 }
 
@@ -236,8 +237,8 @@ public class CompoundNetwork {
         ArrayList<ModFileScanData.AnnotationData> out = Lists.newArrayList();
         String annotationName = annotation.getName();
 
-        modScanData.forEach((m) -> m.getAnnotations().stream().filter(a -> Objects.equals(a.getAnnotationType().getClassName(), annotationName)).forEach(a -> {
-            Map<String, Object> annotationInfo = a.getAnnotationData();
+        modScanData.forEach((m) -> m.getAnnotations().stream().filter(a -> Objects.equals(a.annotationType().getClassName(), annotationName)).forEach(a -> {
+            Map<String, Object> annotationInfo = a.annotationData();
             String channel = (String) annotationInfo.get("channel");
             if (Objects.equals(channel, this.name)) {
                 out.add(a);

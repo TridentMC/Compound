@@ -16,13 +16,15 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.tridevmc.compound.ui.ICompoundUI;
 import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.UVData;
 import com.tridevmc.compound.ui.layout.ILayout;
 import com.tridevmc.compound.ui.layout.LayoutNone;
 import com.tridevmc.compound.ui.screen.IScreenContext;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+
 
 /**
  * A resizable box element to add to UIs, useful for backgrounds to place elements on top of.
@@ -47,7 +49,6 @@ public class ElementBox extends Element {
         this.drawConnectingLines(ui);
         this.drawMiddle(ui);
     }
-
 
     private void drawCorners(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
