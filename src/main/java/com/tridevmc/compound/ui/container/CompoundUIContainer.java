@@ -96,14 +96,14 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
 
     @Override
     protected void renderLabels(PoseStack stack, int mouseX, int mouseY) {
-        var poseStack = RenderSystem.getModelViewStack();
-        poseStack.pushPose();
-        poseStack.translate(-this.leftPos, -this.topPos, 0);
+        PoseStack modelStack = RenderSystem.getModelViewStack();
+        modelStack.pushPose();
+        modelStack.translate(-this.leftPos, -this.topPos, 0);
         this.currentLayer = EnumUILayer.FOREGROUND;
         this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.FOREGROUND));
         this.currentLayer = EnumUILayer.OVERLAY;
         this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.OVERLAY));
-        poseStack.popPose();
+        modelStack.popPose();
     }
 
     @Override

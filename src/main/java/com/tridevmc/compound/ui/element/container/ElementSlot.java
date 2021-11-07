@@ -29,6 +29,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nonnull;
+import java.util.Objects;
 
 
 /**
@@ -76,7 +77,6 @@ public class ElementSlot extends Element {
 
         Rect2F rect = this.getTransformedDimensions(ui.getScreenContext());
         rect = new Rect2F(rect.getX() + 1, rect.getY() + 1, rect.getWidth() - 2, rect.getHeight() - 2);
-        RenderSystem.enableDepthTest();
         ui.getScreenContext().drawItemStack(this.displayStack, rect, this.displayString, 100);
 
         if (this.drawOverlay) {
@@ -87,7 +87,7 @@ public class ElementSlot extends Element {
     @Override
     public void drawOverlay(ICompoundUI ui) {
         var screenContext = ui.getScreenContext();
-        if (this.drawOverlay && screenContext.getMc().player.containerMenu.getCarried().isEmpty() && this.slot.hasItem()) {
+        if (this.drawOverlay && Objects.requireNonNull(screenContext.getMc().player).containerMenu.getCarried().isEmpty() && this.slot.hasItem()) {
             this.drawTooltip(ui.getScreenContext());
         }
 

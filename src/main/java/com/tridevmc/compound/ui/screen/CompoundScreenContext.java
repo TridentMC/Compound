@@ -273,9 +273,11 @@ public class CompoundScreenContext implements IScreenContext {
         poseStack.translate(dimensions.getX(), dimensions.getY(), 0);
         poseStack.scale(1F / 16F, 1F / 16F, 1);
         poseStack.scale(dimensions.getWidth(), dimensions.getHeight(), 1);
+        RenderSystem.applyModelViewMatrix();
         this.getMc().getItemRenderer().renderAndDecorateItem(stack, 0, 0);
         this.getMc().getItemRenderer().renderGuiItemDecorations(font, stack, 0, 0, altText);
         poseStack.popPose();
+        RenderSystem.applyModelViewMatrix();
         this.ui.setBlitOffset(oBlitOffset);
         this.getMc().getItemRenderer().blitOffset = 0.0F;
     }
