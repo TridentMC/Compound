@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 - 2021 TridentMC
+ * Copyright 2018 - 2022 TridentMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,7 @@ package com.tridevmc.compound.network.core;
 
 import com.tridevmc.compound.network.message.Message;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.fmllegacy.network.NetworkEvent;
-
+import net.minecraftforge.network.NetworkEvent;
 
 public interface ICompoundNetworkHandler {
 

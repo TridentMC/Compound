@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 - 2021 TridentMC
+ * Copyright 2018 - 2022 TridentMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,14 +45,13 @@ import java.util.stream.Collectors;
  * @param <T> the class of the configuration object.
  */
 public class CompoundConfig<T> {
-
     static final Map<Object, CompoundConfig> KNOWN_CONFIGS = Maps.newHashMap();
     private static final Logger LOG = LogManager.getLogger("CompoundConfig");
     private final CompoundModConfig modConfig;
     private final String modId;
     private final ModConfig.Type configType;
     private final ForgeConfigSpec forgeConfig;
-    private final Set<IConfigObjectSerializer> objectSerializers;
+    private final Set<IConfigFieldSerializer> objectSerializers;
 
     private final Class<T> configClass;
     private final T configInstance;
@@ -65,6 +64,7 @@ public class CompoundConfig<T> {
         this.configInstance = type.newInstance();
         this.configType = this.genConfigType();
         this.objectSerializers = Sets.newHashSet();
+        this.objectSerializers.addAll(Arrays.stream(InternalRegistryEntrySerializer.DEFAULT_SERIALIZERS).toList());
         this.objectSerializers.add(new ForgeRegistryEntrySerializer());
 
         Pair<Object, ForgeConfigSpec> configure = new ForgeConfigSpec.Builder().configure(this::loadConfig);
@@ -218,8 +218,8 @@ public class CompoundConfig<T> {
     }
 
     @Nullable
-    protected IConfigObjectSerializer getSerializerFor(Class fieldType) {
-        Optional<IConfigObjectSerializer> serializer = this.objectSerializers.stream()
+    protected <F> IConfigFieldSerializer<F> getSerializerFor(ConfigField<F> fieldType) {
+        Optional<IConfigFieldSerializer> serializer = this.objectSerializers.stream()
                 .filter((s) -> s.accepts(fieldType))
                 .findFirst();
         return serializer.orElse(null);

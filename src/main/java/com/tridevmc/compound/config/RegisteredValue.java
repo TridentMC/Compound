@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 - 2021 TridentMC
+ * Copyright 2018 - 2022 TridentMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,19 @@
  * limitations under the License.
  */
 
-package com.tridevmc.compound.core.registration;
+package com.tridevmc.compound.config;
 
-import net.minecraftforge.event.RegistryEvent;
-import net.minecraftforge.registries.IForgeRegistryEntry;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public interface IRegistrator<T extends IForgeRegistryEntry<T>> {
-    void registerObjects(RegistryEvent.Register<T> registry);
+/**
+ * Used to specify the registry that stores the value of the annotated field.
+ * Must be the name of a valid Forge Registry, for example "blocks" or "minecraft:blocks".
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+public @interface RegisteredValue {
+    String value();
 }

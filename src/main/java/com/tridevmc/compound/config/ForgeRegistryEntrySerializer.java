@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 - 2021 TridentMC
+ * Copyright 2018 - 2022 TridentMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,26 +17,39 @@
 package com.tridevmc.compound.config;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.registries.IForgeRegistry;
-import net.minecraftforge.registries.IForgeRegistryEntry;
-import net.minecraftforge.registries.RegistryManager;
 
-public class ForgeRegistryEntrySerializer implements IConfigObjectSerializer<IForgeRegistryEntry> {
+public class ForgeRegistryEntrySerializer<T> implements IConfigFieldSerializer<T> {
 
     @Override
-    public String toString(Class fieldType, IForgeRegistryEntry value) {
-        IForgeRegistry registry = RegistryManager.ACTIVE.getRegistry(fieldType);
-        return registry.getKey(value).toString();
+    public String toString(ConfigField<T> field, T value) {
+        if (field.getRegistry() == null) {
+            throw new NullPointerException("Unable to find valid registry with name " + field.getRegistryName().toString());
+        } else {
+            var key = field.getRegistry().getKey(value);
+            if (key == null) {
+                throw new NullPointerException("Unable to find valid key for value " + value.toString());
+            } else {
+                return key.toString();
+            }
+        }
     }
 
     @Override
-    public IForgeRegistryEntry fromString(Class fieldType, String value) {
-        IForgeRegistry registry = RegistryManager.ACTIVE.getRegistry(fieldType);
-        return registry.getValue(new ResourceLocation(value));
+    public T fromString(ConfigField<T> field, String value) {
+        if (field.getRegistry() == null) {
+            throw new NullPointerException("Unable to find valid registry with name " + field.getRegistryName().toString());
+        } else {
+            T registeredValue = field.getRegistry().getValue(new ResourceLocation(value));
+            if (registeredValue == null) {
+                throw new NullPointerException("Unable to find valid value for key " + value);
+            } else {
+                return registeredValue;
+            }
+        }
     }
 
     @Override
-    public boolean accepts(Class clazz) {
-        return IForgeRegistryEntry.class.isAssignableFrom(clazz);
+    public boolean accepts(ConfigField<T> field) {
+        return field.getRegistryName() != null;
     }
 }

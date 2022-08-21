@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 - 2021 TridentMC
+ * Copyright 2018 - 2022 TridentMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraftforge.fml.LogicalSide;
-import net.minecraftforge.fmllegacy.LogicalSidedProvider;
-import net.minecraftforge.fmllegacy.network.NetworkDirection;
-import net.minecraftforge.fmllegacy.network.PacketDistributor;
+import net.minecraftforge.network.NetworkDirection;
+import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -72,7 +71,7 @@ public abstract class Message {
      * @param playerPredicate the predicate that determines if the player should receive the packet.
      */
     public void sendToMatching(@Nonnull Predicate<ServerPlayer> playerPredicate) {
-        MinecraftServer server = LogicalSidedProvider.INSTANCE.get(LogicalSide.SERVER);
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         server.getPlayerList().getPlayers().stream()
                 .filter(playerPredicate)
                 .forEach(this::sendTo);
@@ -124,8 +123,8 @@ public abstract class Message {
      * @param pos       the coordinates of the point.
      */
     public void sendToAllTracking(@Nonnull ResourceKey<Level> dimension, @Nonnull BlockPos pos) {
-        MinecraftServer currentServer = LogicalSidedProvider.INSTANCE.get(LogicalSide.SERVER);
-        // Dont force load the level because if we have to load the level then nobody is tracking this to begin with.
+        MinecraftServer currentServer = ServerLifecycleHooks.getCurrentServer();
+        // Don't force load the level because if we have to load the level then nobody is tracking this to begin with.
         ServerLevel level = currentServer.getLevel(dimension);
         if (level != null) {
             LevelChunk chunk = level.getChunkAt(pos);

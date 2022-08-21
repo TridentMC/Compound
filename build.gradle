@@ -1,29 +1,18 @@
-buildscript {
-    repositories {
-        maven { url = 'https://maven.minecraftforge.net' }
-        mavenCentral()
-    }
-    dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
-    }
-}
-
 plugins {
+    id 'eclipse'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '5.1.+'
     id 'org.cadixdev.licenser' version '0.6.1'
 }
 
 apply from: "properties.gradle"
-
-apply plugin: 'net.minecraftforge.gradle'
-apply plugin: 'eclipse'
-apply plugin: 'maven-publish'
 
 version = modVersion
 group = modGroup
 archivesBaseName = modBaseName
 ext.versionTag = ''
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(16)
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 license {
     header = project.file('LICENSE-HEADER')
@@ -87,6 +76,10 @@ apply from: "modules.gradle"
 
 compoundModules.each { LinkedHashMap<String, String> moduleData ->
     registerModule(moduleData)
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
 }
 
 publish.dependsOn('reobfJar')

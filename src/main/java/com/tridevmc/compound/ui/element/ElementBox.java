@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 - 2021 TridentMC
+ * Copyright 2018 - 2022 TridentMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.tridevmc.compound.ui.ICompoundUI;
 import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.UVData;

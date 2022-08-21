@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 - 2021 TridentMC
+ * Copyright 2018 - 2022 TridentMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,10 +28,10 @@ import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.moddiscovery.ModAnnotation;
-import net.minecraftforge.fmllegacy.network.NetworkEvent;
-import net.minecraftforge.fmllegacy.network.NetworkRegistry;
-import net.minecraftforge.fmllegacy.network.simple.SimpleChannel;
 import net.minecraftforge.forgespi.language.ModFileScanData;
+import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.simple.SimpleChannel;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -289,7 +289,7 @@ public class CompoundNetwork {
         this.networkChannel.messageBuilder(msgClass, discriminator)
                 .encoder(this.getMsgConcept(msgClass)::toBytes)
                 .decoder(this.getMsgConcept(msgClass)::fromBytes)
-                .consumer(getMessageConsumer(handler))
+                .consumerMainThread(getMessageConsumer(handler))
                 .add();
 
         NETWORKS.put(msgClass, this);

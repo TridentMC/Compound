@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 - 2021 TridentMC
+ * Copyright 2018 - 2022 TridentMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,9 +95,9 @@ public class LayoutGrid implements ILayout {
         Rect2F rect = this.area;
         this.cachedElementDimensions.clear();
 
-       float currentX = rect.getX() + this.xPadding;
-       float currentY = rect.getY() + this.yPadding;
-       float rowHeight = 0;
+        float currentX = rect.getX() + this.xPadding;
+        float currentY = rect.getY() + this.yPadding;
+        float rowHeight = 0;
         for (IElement element : this.gridElements) {
             float sizeIncrease = element.getDimensions().getWidth() + this.xPadding;
             rowHeight = Math.max(rowHeight, element.getDimensions().getHeight());

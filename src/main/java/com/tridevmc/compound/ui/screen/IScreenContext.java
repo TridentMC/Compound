@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 - 2021 TridentMC
+ * Copyright 2018 - 2022 TridentMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,19 +22,15 @@ import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.UVData;
 import net.minecraft.client.Minecraft;
-
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraftforge.client.RenderProperties;
-import net.minecraftforge.fmlclient.gui.GuiUtils;
-
+import net.minecraftforge.client.ForgeHooksClient;
 
 import java.net.URI;
 import java.util.Collections;
@@ -150,7 +146,7 @@ public interface IScreenContext {
      * @param colour the colour to draw the string in.
      */
     default void drawString(PoseStack matrix, String text, float x, float y, int colour) {
-        this.drawText(matrix, new TextComponent(text).withStyle(s -> s.withColor(colour)), x, y);
+        this.drawText(matrix, Component.translatable(text).withStyle(s -> s.withColor(colour)), x, y);
     }
 
     /**
@@ -163,7 +159,7 @@ public interface IScreenContext {
      * @param colour the colour to draw the string in.
      */
     default void drawCenteredString(PoseStack matrix, String text, float x, float y, int colour) {
-        this.drawCenteredText(matrix, new TextComponent(text).withStyle(s -> s.withColor(colour)), x, y);
+        this.drawCenteredText(matrix, Component.translatable(text).withStyle(s -> s.withColor(colour)), x, y);
     }
 
     /**
@@ -176,7 +172,7 @@ public interface IScreenContext {
      * @param colour the colour to draw the string in.
      */
     default void drawStringWithShadow(PoseStack matrix, String text, float x, float y, int colour) {
-        this.drawTextWithShadow(matrix, new TextComponent(text).withStyle(s -> s.withColor(colour)), x, y);
+        this.drawTextWithShadow(matrix, Component.translatable(text).withStyle(s -> s.withColor(colour)), x, y);
     }
 
     /**
@@ -189,7 +185,7 @@ public interface IScreenContext {
      * @param colour the colour to draw the string in.
      */
     default void drawCenteredStringWithShadow(PoseStack matrix, String text, float x, float y, int colour) {
-        this.drawCenteredTextWithShadow(matrix, new TextComponent(text).withStyle(style -> style.withColor(colour)), x, y);
+        this.drawCenteredTextWithShadow(matrix, Component.translatable(text).withStyle(style -> style.withColor(colour)), x, y);
     }
 
     /**
@@ -350,52 +346,50 @@ public interface IScreenContext {
      * Draws the tooltip for the given itemstack.
      *
      * @param poseStack the matrix stack.
-     * @param stack  the itemstack to draw the tooltip for.
-     * @param x      the x position to draw the tooltip at.
-     * @param y      the y position to draw the tooltip at.
+     * @param stack     the itemstack to draw the tooltip for.
+     * @param x         the x position to draw the tooltip at.
+     * @param y         the y position to draw the tooltip at.
      */
     @SuppressWarnings("removal") // They're not gone yet and there's no suitable replacement.
     default void drawTooltip(PoseStack poseStack, ItemStack stack, int x, int y) {
-        GuiUtils.preItemToolTip(stack);
-        Font font = RenderProperties.get(stack).getFont(stack);
+        Font font = ForgeHooksClient.getTooltipFont(null, stack, getFont());
         font = font == null ? this.getFont() : font;
         List<Component> tooltip = stack.getTooltipLines(this.getMc().player, this.getMc().options.advancedItemTooltips ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
         this.drawTooltip(poseStack, tooltip, x, y, font);
-        GuiUtils.postItemToolTip();
     }
 
     /**
-     * Draws the given string as a toolstip on the screen.
+     * Draws the given string as a tooltip on the screen.
      *
      * @param poseStack the matrix stack.
-     * @param text   the text to draw .
-     * @param x      the x position to draw the tooltip at.
-     * @param y      the y position to draw the tooltip at.
+     * @param text      the text to draw .
+     * @param x         the x position to draw the tooltip at.
+     * @param y         the y position to draw the tooltip at.
      */
     default void drawTooltip(PoseStack poseStack, String text, int x, int y) {
-        this.drawTooltip(poseStack, new TextComponent(text), x, y, getFont());
+        this.drawTooltip(poseStack, Component.translatable(text), x, y, getFont());
     }
 
     /**
-     * Draws the given string as a toolstip on the screen.
+     * Draws the given string as a tooltip on the screen.
      *
      * @param poseStack the matrix stack.
-     * @param text   the text to draw .
-     * @param x      the x position to draw the tooltip at.
-     * @param y      the y position to draw the tooltip at.
-     * @param font   the font to use when drawing.
+     * @param text      the text to draw .
+     * @param x         the x position to draw the tooltip at.
+     * @param y         the y position to draw the tooltip at.
+     * @param font      the font to use when drawing.
      */
     default void drawTooltip(PoseStack poseStack, String text, int x, int y, Font font) {
-        this.drawTooltip(poseStack, new TextComponent(text), x, y, font);
+        this.drawTooltip(poseStack, Component.translatable(text), x, y, font);
     }
 
     /**
      * Draws a multi-line tooltip from the given list of lines at the given coordinates.
      *
      * @param poseStack the matrix stack.
-     * @param text   the text component to draw the tooltip for.
-     * @param x      the x position to draw the tooltip at.
-     * @param y      the y position to draw the tooltip at.
+     * @param text      the text component to draw the tooltip for.
+     * @param x         the x position to draw the tooltip at.
+     * @param y         the y position to draw the tooltip at.
      */
     default void drawTooltip(PoseStack poseStack, Component text, int x, int y) {
         this.drawTooltip(poseStack, text, x, y, this.getFont());
@@ -405,10 +399,10 @@ public interface IScreenContext {
      * Draws the appropriate tooltip for the given text component.
      *
      * @param poseStack the matrix stack.
-     * @param text   the text component to draw the tooltip for.
-     * @param x      the x position to draw the tooltip at.
-     * @param y      the y position to draw the tooltip at.
-     * @param font   the font to use when drawing.
+     * @param text      the text component to draw the tooltip for.
+     * @param x         the x position to draw the tooltip at.
+     * @param y         the y position to draw the tooltip at.
+     * @param font      the font to use when drawing.
      */
     default void drawTooltip(PoseStack poseStack, Component text, int x, int y, Font font) {
         this.drawTooltip(poseStack, Collections.singletonList(text), x, y, font);
@@ -418,9 +412,9 @@ public interface IScreenContext {
      * Draws a multi-line tooltip from the given list of lines at the given coordinates.
      *
      * @param poseStack the matrix stack.
-     * @param lines  the text to draw, each list entry representing a new line.
-     * @param x      the x position to draw the tooltip at.
-     * @param y      the y position to draw the tooltip at.
+     * @param lines     the text to draw, each list entry representing a new line.
+     * @param x         the x position to draw the tooltip at.
+     * @param y         the y position to draw the tooltip at.
      */
     default void drawTooltip(PoseStack poseStack, List<Component> lines, int x, int y) {
         this.drawTooltip(poseStack, lines, x, y, this.getFont());
@@ -430,10 +424,10 @@ public interface IScreenContext {
      * Draws a multi-line tooltip from the given list of lines at the given coordinates.
      *
      * @param poseStack the matrix stack.
-     * @param lines  the text to draw, each list entry representing a new line.
-     * @param x      the x position to draw the tooltip at.
-     * @param y      the y position to draw the tooltip at.
-     * @param font   the font to use when drawing.
+     * @param lines     the text to draw, each list entry representing a new line.
+     * @param x         the x position to draw the tooltip at.
+     * @param y         the y position to draw the tooltip at.
+     * @param font      the font to use when drawing.
      */
     default void drawTooltip(PoseStack poseStack, List<Component> lines, int x, int y, Font font) {
         this.drawProcessorAsTooltip(poseStack, Lists.transform(lines, Component::getVisualOrderText), x, y, font);
@@ -442,7 +436,7 @@ public interface IScreenContext {
     /**
      * Draws the appropriate tooltip for the given processor.
      *
-     * @param poseStack    the matrix stack.
+     * @param poseStack the matrix stack.
      * @param processor the processor to draw the tooltip for.
      * @param x         the x position to draw the tooltip at.
      * @param y         the y position to draw the tooltip at.
@@ -454,7 +448,7 @@ public interface IScreenContext {
     /**
      * Draws the appropriate tooltip for the given processor.
      *
-     * @param poseStack    the matrix stack.
+     * @param poseStack the matrix stack.
      * @param processor the processor to draw the tooltip for.
      * @param x         the x position to draw the tooltip at.
      * @param y         the y position to draw the tooltip at.
@@ -467,7 +461,7 @@ public interface IScreenContext {
     /**
      * Draws a multi-line tooltip from the given list of processors at the given coordinates.
      *
-     * @param poseStack     the matrix stack.
+     * @param poseStack  the matrix stack.
      * @param processors the processors to draw, each list entry representing a new line.
      * @param x          the x position to draw the tooltip at.
      * @param y          the y position to draw the tooltip at.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 - 2021 TridentMC
+ * Copyright 2018 - 2022 TridentMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -69,7 +69,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     private List<IMouseScrollListener> mouseScrollListeners;
 
     public CompoundUIContainer(T container) {
-        super(container, Minecraft.getInstance().player.getInventory(), new TextComponent(""));
+        super(container, Minecraft.getInstance().player.getInventory(), Component.empty());
 
         this.screenContext = new CompoundScreenContext(this);
         this.elements = Lists.newArrayList();

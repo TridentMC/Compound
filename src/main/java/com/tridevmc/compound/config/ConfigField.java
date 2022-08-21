@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 - 2021 TridentMC
+ * Copyright 2018 - 2022 TridentMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,15 @@ package com.tridevmc.compound.config;
 
 import com.google.common.collect.Maps;
 import com.tridevmc.compound.core.reflect.WrappedField;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Tuple;
 import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.registries.IForgeRegistry;
+import net.minecraftforge.registries.RegistryManager;
 import org.apache.commons.lang3.ArrayUtils;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
@@ -31,9 +35,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class ConfigField {
+public class ConfigField<T> {
 
-    private static final Map<Class, EnumFieldType> TYPE_MAP = Maps.newHashMap();
+    private static final Map<Class<?>, EnumFieldType> TYPE_MAP = Maps.newHashMap();
 
     static {
         TYPE_MAP.put(Integer.class, EnumFieldType.INTEGER);
@@ -50,21 +54,23 @@ public class ConfigField {
     }
 
     @Nonnull
-    private final WrappedField field;
-    private final Class fieldType;
-    private final IConfigObjectSerializer serializer;
-    private final CompoundConfig config;
+    private final WrappedField<T> field;
+    private final Class<T> fieldType;
+    private final IConfigFieldSerializer<T> serializer;
+    private final CompoundConfig<Object> config;
     private final EnumFieldType type;
     private final Object defaultValue;
     private final Object minValue, maxValue;
+    private final ResourceLocation registryName;
     private final String name;
     private final String comment;
     private final String langKey;
     private final boolean requiresWorldRestart;
     private final boolean isValueArray;
-    private ForgeConfigSpec.ConfigValue value;
+    private ForgeConfigSpec.ConfigValue<T> specValue;
+    private IForgeRegistry<T> registry;
 
-    protected ConfigField(CompoundConfig config, @Nonnull WrappedField field) {
+    protected ConfigField(CompoundConfig<Object> config, @Nonnull WrappedField<T> field) {
         this.field = field;
         this.config = config;
         this.type = TYPE_MAP.computeIfAbsent(field.getType(), aClass -> {
@@ -87,57 +93,76 @@ public class ConfigField {
         // Special case for arrays and lists as they're not the same type of object.
         this.isValueArray = field.getType().isArray() || List.class.isAssignableFrom(field.getType());
 
-        Class fieldType = field.getType();
+        Class<?> fieldType = field.getType();
         if (fieldType.isArray()) {
             fieldType = fieldType.getComponentType();
         } else if (List.class.isAssignableFrom(fieldType)) {
             fieldType = (Class) ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
         }
 
-        this.fieldType = fieldType;
-        this.serializer = config.getSerializerFor(this.fieldType);
+        this.fieldType = (Class<T>) fieldType;
+        this.serializer = config.getSerializerFor(this);
         this.defaultValue = this.genDefaultValue();
-        Tuple<Object, Object> rangeData = this.getRangeData();
+        Tuple<Object, Object> rangeData = this.generateRangeData();
         this.minValue = rangeData.getA();
         this.maxValue = rangeData.getB();
+        this.registryName = this.generateRegistryName();
     }
 
-    private Tuple<Object, Object> getRangeData() {
+    private Tuple<Object, Object> generateRangeData() {
         if (this.field.isAnnotationPresent(RangedInt.class)) {
-            RangedInt annotation = (RangedInt) this.field.getAnnotation(RangedInt.class);
+            var annotation = this.field.getAnnotation(RangedInt.class);
             return new Tuple<>(annotation.min(), annotation.max());
         } else if (this.field.isAnnotationPresent(RangedDouble.class)) {
-            RangedDouble annotation = (RangedDouble) this.field.getAnnotation(RangedDouble.class);
+            var annotation = this.field.getAnnotation(RangedDouble.class);
             return new Tuple<>(annotation.min(), annotation.max());
         } else if (this.fieldType.isAnnotationPresent(RangedLong.class)) {
-            RangedLong annotation = (RangedLong) this.field.getAnnotation(RangedLong.class);
+            var annotation = this.field.getAnnotation(RangedLong.class);
             return new Tuple<>(annotation.min(), annotation.max());
         } else {
-            switch (this.type) {
-                case INTEGER:
-                    return new Tuple<>(Integer.MIN_VALUE, Integer.MAX_VALUE);
-                case DOUBLE:
-                    return new Tuple<>(Double.MIN_VALUE, Double.MAX_VALUE);
-                default:
-                    return new Tuple<>(Long.MIN_VALUE, Long.MAX_VALUE);
-            }
+            return switch (this.type) {
+                case INTEGER -> new Tuple<>(Integer.MIN_VALUE, Integer.MAX_VALUE);
+                case DOUBLE -> new Tuple<>(Double.MIN_VALUE, Double.MAX_VALUE);
+                default -> new Tuple<>(Long.MIN_VALUE, Long.MAX_VALUE);
+            };
         }
+    }
+
+    @Nullable
+    private ResourceLocation generateRegistryName() {
+        if (this.field.isAnnotationPresent(RegisteredValue.class)) {
+            var annotation = this.field.getAnnotation(RegisteredValue.class);
+            return new ResourceLocation(annotation.value());
+        }
+        return null;
+    }
+
+    @Nullable
+    protected IForgeRegistry<T> getRegistry() {
+        if (this.registry == null && this.registryName != null) {
+            this.registry = RegistryManager.ACTIVE.getRegistry(this.registryName);
+        }
+        return this.registry;
+    }
+
+    protected ResourceLocation getRegistryName() {
+        return this.registryName;
     }
 
     private Object genDefaultValue() {
         Object value = this.field.get(this.config.getConfigInstance(), true);
 
-        Class fieldType = this.field.getType();
+        Class<T> fieldType = this.field.getType();
         if (fieldType.isArray()) {
             value = this.toObject(value);
         }
 
         if (this.serializer != null) {
             if (this.type == EnumFieldType.LIST) {
-                List values = (List) value;
-                value = values.stream().map((o) -> this.serializer.toString(this.fieldType, o)).collect(Collectors.toList());
+                var values = (List) value;
+                value = values.stream().map((o) -> this.serializer.toString(this, (T) o)).collect(Collectors.toList());
             } else {
-                value = this.serializer.toString(this.fieldType, value);
+                value = this.serializer.toString(this, (T) value);
             }
         }
 
@@ -146,58 +171,37 @@ public class ConfigField {
 
     public void addToSpec(ForgeConfigSpec.Builder builder) {
         builder = builder.comment(this.getComment()).translation(this.getLangKey());
-        if (this.requiresWorldRestart())
-            builder = builder.worldRestart();
-
+        if (this.requiresWorldRestart()) builder = builder.worldRestart();
         switch (this.type) {
-            case INTEGER:
-                this.value = builder.defineInRange(this.getName(),
-                        (int) this.getDefaultValue(),
-                        (int) this.minValue,
-                        (int) this.maxValue);
-                break;
-            case LONG:
-                this.value = builder.defineInRange(this.getName(),
-                        (long) this.getDefaultValue(),
-                        (long) this.minValue,
-                        (long) this.maxValue);
-                break;
-            case DOUBLE:
-                this.value = builder.defineInRange(this.getName(),
-                        (double) this.getDefaultValue(),
-                        (double) this.minValue,
-                        (double) this.maxValue);
-                break;
-            case BOOLEAN:
-                this.value = builder.define(this.getName(), (boolean) this.getDefaultValue());
-                break;
-            case ENUM:
-                this.value = builder.defineEnum(this.getName(), (Enum) this.getDefaultValue());
-                break;
-            case LIST:
-                this.value = builder.defineList(this.getName(), (List<?>) this.getDefaultValue(), (o) -> true);
-                break;
-            case OBJECT:
-                this.value = builder.define(this.getName(), this.getDefaultValue());
-                break;
+            case INTEGER ->
+                    this.specValue = (ForgeConfigSpec.ConfigValue<T>) builder.defineInRange(this.getName(), (int) this.getDefaultValue(), (int) this.minValue, (int) this.maxValue);
+            case LONG ->
+                    this.specValue = (ForgeConfigSpec.ConfigValue<T>) builder.defineInRange(this.getName(), (long) this.getDefaultValue(), (long) this.minValue, (long) this.maxValue);
+            case DOUBLE ->
+                    this.specValue = (ForgeConfigSpec.ConfigValue<T>) builder.defineInRange(this.getName(), (double) this.getDefaultValue(), (double) this.minValue, (double) this.maxValue);
+            case BOOLEAN ->
+                    this.specValue = (ForgeConfigSpec.ConfigValue<T>) builder.define(this.getName(), (boolean) this.getDefaultValue());
+            case ENUM -> this.specValue = builder.defineEnum(this.getName(), (Enum) this.getDefaultValue());
+            case LIST ->
+                    this.specValue = (ForgeConfigSpec.ConfigValue<T>) builder.defineList(this.getName(), (List<?>) this.getDefaultValue(), (o) -> true);
+            case OBJECT ->
+                    this.specValue = (ForgeConfigSpec.ConfigValue<T>) builder.define(this.getName(), this.getDefaultValue());
         }
     }
 
     public void loadField() {
         if (this.isValueArray()) {
             // Value arrays are always stored as a list internally, we adjust the value to match the field type later.
-            List newValue = (List) this.value.get();
+            var newValue = (List) this.getConfigSpecValue();
             if (this.serializer != null && newValue.stream().allMatch((o) -> o instanceof String)) {
-                newValue = (List) newValue.stream()
-                        .map((o) -> this.serializer.fromString(this.fieldType, (String) o))
-                        .collect(Collectors.toList());
+                newValue = (List) newValue.stream().map((o) -> this.serializer.fromString(this, (String) o)).collect(Collectors.toList());
             }
 
             this.setListValue(newValue);
         } else {
-            Object newValue = this.value.get();
+            T newValue = this.getConfigSpecValue();
             if (this.serializer != null && newValue instanceof String) {
-                newValue = this.serializer.fromString(this.fieldType, (String) newValue);
+                newValue = this.serializer.fromString(this, (String) newValue);
             }
 
             this.getField().set(this.config.getConfigInstance(), newValue);
@@ -205,8 +209,7 @@ public class ConfigField {
     }
 
     private Object toPrimitive(Object values) {
-        if (values == null)
-            return values;
+        if (values == null) return null;
         Class<?> clazz = values.getClass().getComponentType();
         if (!clazz.isPrimitive()) {
             if (Boolean.class.equals(clazz)) {
@@ -221,8 +224,7 @@ public class ConfigField {
     }
 
     private Object toObject(Object values) {
-        if (values == null)
-            return values;
+        if (values == null) return null;
         Class<?> clazz = values.getClass().getComponentType();
         if (clazz.isPrimitive()) {
             if (int.class.equals(clazz)) {
@@ -249,24 +251,32 @@ public class ConfigField {
             IntStream.range(0, values.size()).forEach(i -> Array.set(valueArray, i, values.get(i)));
 
             if (this.getField().getType().getComponentType().isPrimitive()) {
-                this.getField().set(configInstance, this.toPrimitive(valueArray));
+                this.getField().set(configInstance, (T) this.toPrimitive(valueArray));
             } else {
-                this.getField().set(configInstance, valueArray);
+                this.getField().set(configInstance, (T) valueArray);
             }
         } else {
-            List valueList = (List) this.getField().get(configInstance);
+            var valueList = (List) this.getField().get(configInstance);
             valueList.clear();
             valueList.addAll(values);
         }
     }
 
+    private <V> V getConfigSpecValue() {
+        return (V) this.specValue.get();
+    }
+
     @Nonnull
-    public WrappedField getField() {
+    public WrappedField<T> getField() {
         return this.field;
     }
 
     public boolean isValueArray() {
         return this.isValueArray;
+    }
+
+    public Class<T> getFieldType() {
+        return fieldType;
     }
 
     public String getName() {
@@ -290,13 +300,7 @@ public class ConfigField {
     }
 
     private enum EnumFieldType {
-        INTEGER,
-        LONG,
-        DOUBLE,
-        BOOLEAN,
-        ENUM,
-        OBJECT,
-        LIST
+        INTEGER, LONG, DOUBLE, BOOLEAN, ENUM, OBJECT, LIST
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 - 2021 TridentMC
+ * Copyright 2018 - 2022 TridentMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,15 @@
 
 package com.tridevmc.compound.config;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Used to define custom serialization steps for objects used in configs.
  * Register with {@link RegisteredConfigObjectSerializer}
  *
  * @param <T> the type of object to serialize.
  */
-public interface IConfigObjectSerializer<T> {
+public interface IConfigObjectSerializer<T> extends IConfigFieldSerializer<T> {
 
     /**
      * Convert the given value to a string to be de-serialized later.
@@ -31,7 +33,7 @@ public interface IConfigObjectSerializer<T> {
      * @param value     the value to convert to a string.
      * @return the value converted to a string.
      */
-    String toString(Class fieldType, T value);
+    String toString(Class<T> fieldType, T value);
 
     /**
      * Convert the given string back into an object.
@@ -40,7 +42,7 @@ public interface IConfigObjectSerializer<T> {
      * @param value     the previously serialized object to deserialize.
      * @return the de-serialized object.
      */
-    T fromString(Class fieldType, String value);
+    T fromString(Class<T> fieldType, String value);
 
     /**
      * Determines if the given class can be serialized by this serializer.
@@ -48,5 +50,20 @@ public interface IConfigObjectSerializer<T> {
      * @param clazz the class to check against.
      * @return true if the class can be serialized by this serializer, false otherwise.
      */
-    boolean accepts(Class clazz);
+    boolean accepts(Class<?> clazz);
+
+    @Override
+    default String toString(@NotNull ConfigField<T> field, T value) {
+        return toString(field.getFieldType(), value);
+    }
+
+    @Override
+    default T fromString(ConfigField<T> field, String value) {
+        return fromString(field.getFieldType(), value);
+    }
+
+    @Override
+    default boolean accepts(ConfigField<T> field) {
+        return accepts(field.getFieldType());
+    }
 }

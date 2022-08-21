@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 - 2021 TridentMC
+ * Copyright 2018 - 2022 TridentMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,10 +28,11 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.client.RenderProperties;
+import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 
 import java.net.URI;
 import java.util.List;
@@ -127,7 +128,7 @@ public class CompoundScreenContext implements IScreenContext {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        
+
         Tesselator tessellator = Tesselator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuilder();
         bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
@@ -266,7 +267,7 @@ public class CompoundScreenContext implements IScreenContext {
         int oBlitOffset = this.ui.getBlitOffset();
         this.ui.setBlitOffset(blitOffset);
         this.getMc().getItemRenderer().blitOffset = blitOffset;
-        Font font = RenderProperties.get(stack).getFont(stack);
+        Font font = IClientItemExtensions.of(stack).getFont(stack, IClientItemExtensions.FontContext.TOOLTIP);
         if (font == null) font = this.getFont();
         PoseStack poseStack = RenderSystem.getModelViewStack();
         poseStack.pushPose();
@@ -294,7 +295,10 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void sendChatMessage(String message, boolean addToChat) {
-        this.ui.asGuiScreen().sendMessage(message, addToChat);
+        var player = this.getMc().player;
+        if (player != null) {
+            this.getMc().player.displayClientMessage(Component.translatable(message), !addToChat);
+        }
     }
 
     @Override

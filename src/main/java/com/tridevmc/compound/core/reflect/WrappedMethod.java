@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 - 2021 TridentMC
+ * Copyright 2018 - 2022 TridentMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -183,7 +183,7 @@ public class WrappedMethod<T> {
      * @param clazz the annotation type.
      * @return the annotation.
      */
-    public <T extends Annotation> T getAnnotation(Class<T> clazz) {
+    public <A extends Annotation> A getAnnotation(Class<A> clazz) {
         return this.method.getAnnotation(clazz);
     }
 
@@ -204,7 +204,7 @@ public class WrappedMethod<T> {
      * @param clazz the type of annotation.
      * @return an array of matching annotations on the method.
      */
-    public <T extends Annotation> T[] getAnnotationsByType(Class<T> clazz) {
+    public <A extends Annotation> A[] getAnnotationsByType(Class<A> clazz) {
         return this.method.getAnnotationsByType(clazz);
     }
 

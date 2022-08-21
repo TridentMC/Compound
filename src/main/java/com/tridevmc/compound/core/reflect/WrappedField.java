@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 - 2021 TridentMC
+ * Copyright 2018 - 2022 TridentMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -187,8 +187,8 @@ public class WrappedField<T> {
      *
      * @return the field's type.
      */
-    public Class<?> getType() {
-        return this.field.getType();
+    public Class<T> getType() {
+        return (Class<T>) this.field.getType();
     }
 
     /**
