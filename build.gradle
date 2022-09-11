@@ -38,7 +38,7 @@ def registerModule(LinkedHashMap<String, String> moduleData) {
                                  "Implementation-Version"  : "${version}",
                                  "Implementation-Vendor"   : "Trident",
                                  "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-                                 "FMLModType"              : "LIBRARY"]
+                                 "FMLModType"              : "GAMELIBRARY"]
 
     def binaryJar = tasks.register(moduleData.taskName, Jar) {
         baseName = moduleData.artifactName
