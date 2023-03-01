@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
  * @param <T> the class of the configuration object.
  */
 public class CompoundConfig<T> {
+
     static final Map<Object, CompoundConfig> KNOWN_CONFIGS = Maps.newHashMap();
     private static final Logger LOG = LogManager.getLogger("CompoundConfig");
     private final CompoundModConfig modConfig;
@@ -224,4 +225,5 @@ public class CompoundConfig<T> {
                 .findFirst();
         return serializer.orElse(null);
     }
+
 }

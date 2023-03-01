@@ -125,7 +125,20 @@ public interface IScreenContext {
      * @param rect   the position and dimensions of the rect to draw.
      * @param colour the colour of the rect to draw.
      */
-    void drawRect(Rect2F rect, int colour);
+    default void drawRect(Rect2F rect, int colour) {
+        this.drawRect(rect, colour, this.getActiveGui().getBlitOffset());
+    }
+
+    /**
+     * Draws a solid single colour rect on the screen matching the provided rect data.
+     *
+     * @param rect   the position and dimensions of the rect to draw.
+     * @param colour the colour of the rect to draw.
+     * @param zLevel the z level to draw the rect at.
+     */
+    default void drawRect(Rect2F rect, int colour, int zLevel) {
+        this.drawGradientRect(rect, colour, colour, zLevel);
+    }
 
     /**
      * Draws a solid gradient rect on the screen matching the provided rect data.
@@ -134,7 +147,19 @@ public interface IScreenContext {
      * @param startColour the colour at the beginning of the gradient.
      * @param endColour   the colour at the end of the gradient.
      */
-    void drawGradientRect(Rect2F rect, int startColour, int endColour);
+    default void drawGradientRect(Rect2F rect, int startColour, int endColour) {
+        this.drawGradientRect(rect, startColour, endColour, this.getActiveGui().getBlitOffset());
+    }
+
+    /**
+     * Draws a solid gradient rect on the screen matching the provided rect data.
+     *
+     * @param rect        the position and dimensions of the rect to draw.
+     * @param startColour the colour at the beginning of the gradient.
+     * @param endColour   the colour at the end of the gradient.
+     * @param zLevel      the z level to draw the rect at.
+     */
+    void drawGradientRect(Rect2F rect, int startColour, int endColour, int zLevel);
 
     /**
      * Draws the given string on the screen at the given position.

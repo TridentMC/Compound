@@ -23,6 +23,7 @@ import net.minecraftforge.network.NetworkEvent;
 
 
 public class CompoundClientHandler implements ICompoundNetworkHandler {
+
     @Override
     public <M extends Message> void handle(M m, NetworkEvent.Context ctx) {
         m.handle(this.getPlayer(ctx));
@@ -33,4 +34,5 @@ public class CompoundClientHandler implements ICompoundNetworkHandler {
     public Player getPlayer(NetworkEvent.Context ctx) {
         return Minecraft.getInstance().player;
     }
+
 }

@@ -192,6 +192,7 @@ public class DefaultMarshallers {
         public void writeTo(ByteBuf buf, T obj) {
             this.writeMethod.transformEntry(buf, obj);
         }
+
     }
 
     private static class StaticSimpleMarshaller<T> extends Marshaller<T> {
@@ -217,6 +218,7 @@ public class DefaultMarshallers {
         public void writeTo(ByteBuf buf, T obj) {
             this.writeMethod.accept(buf, obj);
         }
+
     }
 
     private static class EnumMarshaller<T extends Enum> extends Marshaller<T> {
@@ -235,6 +237,7 @@ public class DefaultMarshallers {
         public void writeTo(ByteBuf buf, T obj) {
             buf.writeInt(obj.ordinal());
         }
+
     }
 
 

@@ -105,12 +105,7 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawRect(Rect2F rect, int colour) {
-        this.drawGradientRect(rect, colour, colour);
-    }
-
-    @Override
-    public void drawGradientRect(Rect2F rect, int startColour, int endColour) {
+    public void drawGradientRect(Rect2F rect, int startColour, int endColour, int zLevel) {
         float[] startColourUnpacked = this.getRGBA(startColour);
         float r1 = startColourUnpacked[0];
         float g1 = startColourUnpacked[1];
@@ -123,30 +118,29 @@ public class CompoundScreenContext implements IScreenContext {
         float b2 = endColourUnpacked[2];
         float a2 = endColourUnpacked[3];
 
-        RenderSystem.enableDepthTest();
-        RenderSystem.disableTexture();
         RenderSystem.enableBlend();
+        RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
         Tesselator tessellator = Tesselator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuilder();
         bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        bufferbuilder.vertex(rect.getX() + rect.getWidth(), rect.getY(), this.getZLevel())
+        bufferbuilder.vertex(rect.getX() + rect.getWidth(), rect.getY(), zLevel)
                 .color(r1, g1, b1, a1)
                 .endVertex();
-        bufferbuilder.vertex(rect.getX(), rect.getY(), this.getZLevel())
+        bufferbuilder.vertex(rect.getX(), rect.getY(), zLevel)
                 .color(r1, g1, b1, a1)
                 .endVertex();
-        bufferbuilder.vertex(rect.getX(), rect.getY() + rect.getHeight(), this.getZLevel())
+        bufferbuilder.vertex(rect.getX(), rect.getY() + rect.getHeight(), zLevel)
                 .color(r2, g2, b2, a2)
                 .endVertex();
-        bufferbuilder.vertex(rect.getX() + rect.getWidth(), rect.getY() + rect.getHeight(), this.getZLevel())
+        bufferbuilder.vertex(rect.getX() + rect.getWidth(), rect.getY() + rect.getHeight(), zLevel)
                 .color(r2, g2, b2, a2)
                 .endVertex();
         tessellator.end();
-        RenderSystem.disableBlend();
         RenderSystem.enableTexture();
+        RenderSystem.disableBlend();
     }
 
     @Override
@@ -202,7 +196,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawTexturedRect(Rect2F rect, TextureAtlasSprite sprite) {
-        RenderSystem.setShaderTexture(0, sprite.atlas().location());
+        RenderSystem.setShaderTexture(0, sprite.contents().name());
         this.drawTexturedRect(rect, new UVData(sprite.getU0(), sprite.getV0()), new UVData(sprite.getU1(), sprite.getV1()));
     }
 
@@ -265,6 +259,7 @@ public class CompoundScreenContext implements IScreenContext {
     @Override
     public void drawItemStack(ItemStack stack, Rect2F dimensions, String altText, int blitOffset) {
         int oBlitOffset = this.ui.getBlitOffset();
+        float oMCBlitOffset = this.getMc().getItemRenderer().blitOffset;
         this.ui.setBlitOffset(blitOffset);
         this.getMc().getItemRenderer().blitOffset = blitOffset;
         Font font = IClientItemExtensions.of(stack).getFont(stack, IClientItemExtensions.FontContext.TOOLTIP);
@@ -278,9 +273,9 @@ public class CompoundScreenContext implements IScreenContext {
         this.getMc().getItemRenderer().renderAndDecorateItem(stack, 0, 0);
         this.getMc().getItemRenderer().renderGuiItemDecorations(font, stack, 0, 0, altText);
         poseStack.popPose();
-        RenderSystem.applyModelViewMatrix();
         this.ui.setBlitOffset(oBlitOffset);
-        this.getMc().getItemRenderer().blitOffset = 0.0F;
+        this.getMc().getItemRenderer().blitOffset = oMCBlitOffset;
+        RenderSystem.applyModelViewMatrix();
     }
 
     @Override
@@ -329,4 +324,5 @@ public class CompoundScreenContext implements IScreenContext {
     public EnumUILayer getCurrentLayer() {
         return this.ui.getCurrentLayer();
     }
+
 }

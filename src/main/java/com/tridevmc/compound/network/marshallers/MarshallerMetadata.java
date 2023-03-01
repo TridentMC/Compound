@@ -32,4 +32,5 @@ public class MarshallerMetadata {
         this.marshaller = marshaller;
         this.acceptedTypes = acceptedTypes;
     }
+
 }

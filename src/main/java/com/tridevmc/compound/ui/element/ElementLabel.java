@@ -131,4 +131,5 @@ public class ElementLabel extends Element {
             return (int) this.getDimensions().getHeight();
         }
     }
+
 }

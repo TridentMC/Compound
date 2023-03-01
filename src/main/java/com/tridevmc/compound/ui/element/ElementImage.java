@@ -48,4 +48,5 @@ public class ElementImage extends Element {
             context.drawTexturedRect(dimensions, min, max);
         }
     }
+
 }

@@ -248,4 +248,5 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     public void addListener(IMouseScrollListener listener) {
         this.mouseScrollListeners.add(listener);
     }
+
 }

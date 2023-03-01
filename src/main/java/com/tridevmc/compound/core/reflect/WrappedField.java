@@ -261,4 +261,5 @@ public class WrappedField<T> {
     public boolean isAnnotationPresent(Class<? extends Annotation> annotationClass) {
         return this.field.isAnnotationPresent(annotationClass);
     }
+
 }

@@ -76,4 +76,5 @@ public abstract class Marshaller<T> {
     public final MessageField<T> getMessageField(Field field) {
         return new MessageField<T>(this, field);
     }
+
 }

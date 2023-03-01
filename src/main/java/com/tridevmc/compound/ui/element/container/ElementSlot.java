@@ -72,7 +72,7 @@ public class ElementSlot extends Element {
     @Override
     public void drawForeground(ICompoundUI ui) {
         if (this.drawUnderlay) {
-            this.drawHighlight(ui.getScreenContext());
+            this.drawHighlightUnderlay(ui.getScreenContext());
         }
 
         Rect2F rect = this.getTransformedDimensions(ui.getScreenContext());
@@ -80,7 +80,7 @@ public class ElementSlot extends Element {
         ui.getScreenContext().drawItemStack(this.displayStack, rect, this.displayString, 100);
 
         if (this.drawOverlay) {
-            this.drawHighlight(ui.getScreenContext());
+            this.drawHighlightOverlay(ui.getScreenContext());
         }
     }
 
@@ -94,14 +94,20 @@ public class ElementSlot extends Element {
         this.reset();
     }
 
-    private void drawHighlight(IScreenContext screen) {
+    private void drawHighlightOverlay(IScreenContext screen) {
         Rect2F highlightArea = this.getTransformedDimensions(screen).offset(new Rect2F(1, 1, -1, -1));
         RenderSystem.disableDepthTest();
         RenderSystem.colorMask(true, true, true, false);
         int slotColor = -2130706433;
-        screen.drawRect(highlightArea, slotColor);
+        screen.drawRect(highlightArea, slotColor, 0);
         RenderSystem.colorMask(true, true, true, true);
         RenderSystem.enableDepthTest();
+    }
+
+    private void drawHighlightUnderlay(IScreenContext screen) {
+        Rect2F highlightArea = this.getTransformedDimensions(screen).offset(new Rect2F(1, 1, -1, -1));
+        int slotColor = -2130706433;
+        screen.drawRect(highlightArea, slotColor, 100);
     }
 
     private void drawTooltip(IScreenContext screen) {
@@ -135,4 +141,5 @@ public class ElementSlot extends Element {
     public void setDrawUnderlay(boolean drawUnderlay) {
         this.drawUnderlay = drawUnderlay;
     }
+
 }

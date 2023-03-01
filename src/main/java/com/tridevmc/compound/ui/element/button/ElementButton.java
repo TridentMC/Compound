@@ -35,6 +35,7 @@ import java.util.List;
  * A resizable button element to add to UIs, add hover and press listeners to add functionality.
  */
 public class ElementButton extends Element {
+
     private static final ResourceLocation TEXTURE = new ResourceLocation("textures/gui/widgets.png");
     private boolean isEnabled;
     private boolean isVisible;
@@ -206,4 +207,5 @@ public class ElementButton extends Element {
     private boolean canPress() {
         return this.isVisible && this.isEnabled;
     }
+
 }

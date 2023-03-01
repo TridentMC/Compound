@@ -52,4 +52,5 @@ public class ForgeRegistryEntrySerializer<T> implements IConfigFieldSerializer<T
     public boolean accepts(ConfigField<T> field) {
         return field.getRegistryName() != null;
     }
+
 }

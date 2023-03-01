@@ -109,4 +109,5 @@ public class MessageField<T> {
     private boolean isNull(Message msg) {
         return this.getField().get(msg) == null;
     }
+
 }

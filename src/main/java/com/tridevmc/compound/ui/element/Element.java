@@ -25,6 +25,7 @@ import javax.annotation.Nonnull;
  * Simple base class for elements that includes some boilerplate for layouts and dimensions.
  */
 public class Element implements IElement {
+
     private Rect2F dimensions;
     private ILayout layout;
 
@@ -54,4 +55,5 @@ public class Element implements IElement {
     public void setLayout(@Nonnull ILayout layout) {
         this.layout = layout;
     }
+
 }

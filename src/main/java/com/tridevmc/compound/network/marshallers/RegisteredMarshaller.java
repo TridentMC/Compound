@@ -56,4 +56,5 @@ public @interface RegisteredMarshaller {
      * @return an array of accepted classes that match the annotated marshaller.
      */
     Class[] acceptedTypes();
+
 }

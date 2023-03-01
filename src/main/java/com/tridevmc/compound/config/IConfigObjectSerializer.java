@@ -66,4 +66,5 @@ public interface IConfigObjectSerializer<T> extends IConfigFieldSerializer<T> {
     default boolean accepts(ConfigField<T> field) {
         return accepts(field.getFieldType());
     }
+
 }

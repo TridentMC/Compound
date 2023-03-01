@@ -46,4 +46,5 @@ public interface IInternalCompoundUI {
     Screen asGuiScreen();
 
     EnumUILayer getCurrentLayer();
+
 }

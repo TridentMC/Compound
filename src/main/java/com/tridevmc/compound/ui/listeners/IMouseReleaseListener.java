@@ -20,6 +20,7 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 
 @FunctionalInterface
 public interface IMouseReleaseListener {
+
     /**
      * Called when a mouse button is released.
      *
@@ -29,4 +30,5 @@ public interface IMouseReleaseListener {
      * @param button the mouse button that was released.
      */
     void listen(IScreenContext screen, double x, double y, int button);
+
 }

@@ -46,4 +46,5 @@ public @interface RegisteredMessage {
      * @return the destination for the annotated message.
      */
     LogicalSide destination();
+
 }

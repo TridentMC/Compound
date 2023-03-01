@@ -17,6 +17,7 @@
 package com.tridevmc.compound.config;
 
 public interface IConfigFieldSerializer<T> {
+
     /**
      * Convert the given value to a string to be de-serialized later.
      *
@@ -42,4 +43,5 @@ public interface IConfigFieldSerializer<T> {
      * @return true if the field can be serialized by this serializer, false otherwise.
      */
     boolean accepts(ConfigField<T> field);
+
 }

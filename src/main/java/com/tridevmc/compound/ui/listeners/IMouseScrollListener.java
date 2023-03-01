@@ -20,6 +20,7 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 
 @FunctionalInterface
 public interface IMouseScrollListener {
+
     /**
      * Called when the scroll wheel is moved.
      *
@@ -29,4 +30,5 @@ public interface IMouseScrollListener {
      * @param distance the distance that the scroll wheel moved.
      */
     void listen(IScreenContext screen, double x, double y, double distance);
+
 }

@@ -124,4 +124,5 @@ public class InternalRegistryEntrySerializer<T> implements IConfigObjectSerializ
     public boolean accepts(Class<?> clazz) {
         return registryType.isAssignableFrom(clazz);
     }
+
 }

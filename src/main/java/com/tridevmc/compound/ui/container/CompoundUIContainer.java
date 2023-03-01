@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.Optional;
 
 public abstract class CompoundUIContainer<T extends CompoundContainerMenu> extends AbstractContainerScreen<T> implements ICompoundUI, IInternalCompoundUI {
+
     private static final WrappedField<Slot> clickedSlot = WrappedField.create(AbstractContainerScreen.class, "clickedSlot", "field_147005_v");
     private static final WrappedField<Boolean> isSplittingStack = WrappedField.create(AbstractContainerScreen.class, "isSplittingStack", "field_147004_w");
     private static final WrappedField<ItemStack> draggingItem = WrappedField.create(AbstractContainerScreen.class, "draggingItem", "field_147012_x");
@@ -99,11 +100,13 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
         PoseStack modelStack = RenderSystem.getModelViewStack();
         modelStack.pushPose();
         modelStack.translate(-this.leftPos, -this.topPos, 0);
+        RenderSystem.applyModelViewMatrix();
         this.currentLayer = EnumUILayer.FOREGROUND;
         this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.FOREGROUND));
         this.currentLayer = EnumUILayer.OVERLAY;
         this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.OVERLAY));
         modelStack.popPose();
+        RenderSystem.applyModelViewMatrix();
     }
 
     @Override

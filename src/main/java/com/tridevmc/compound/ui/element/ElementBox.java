@@ -98,4 +98,5 @@ public class ElementBox extends Element {
         screen.drawTexturedRect(new Rect2F(xOff + 4, yOff + 4, width - 8, height - 8),
                 new UVData(4, 4), new UVData(5, 5));
     }
+
 }

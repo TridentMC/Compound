@@ -127,4 +127,5 @@ public class LayoutGrid implements ILayout {
         }
         return this.cachedElementDimensions.getOrDefault(element, element.getDimensions());
     }
+
 }

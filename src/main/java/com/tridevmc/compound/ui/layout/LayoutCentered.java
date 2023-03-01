@@ -52,4 +52,5 @@ public class LayoutCentered implements ILayout {
         return rect.offsetPosition(this.horizontal ? (width / 2) - (rect.getWidth() / 2) : 0,
                 this.vertical ? (height / 2) - (rect.getHeight() / 2) : 0);
     }
+
 }

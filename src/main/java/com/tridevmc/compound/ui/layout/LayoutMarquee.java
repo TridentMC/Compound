@@ -26,6 +26,7 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
  * There's literally no reason anyone should ever use this, it's just a useful test of the layout system.
  */
 public class LayoutMarquee implements ILayout {
+
     private long lastTick = -1;
     private float lastPosition, currentPosition;
     private float movementSpeed = 1F;
@@ -57,4 +58,5 @@ public class LayoutMarquee implements ILayout {
         this.lastPosition = this.currentPosition;
         this.currentPosition = newPosition;
     }
+
 }

@@ -37,15 +37,9 @@ public interface IElement {
      */
     default void drawLayer(ICompoundUI ui, EnumUILayer layer) {
         switch (layer) {
-            case BACKGROUND:
-                this.drawBackground(ui);
-                break;
-            case FOREGROUND:
-                this.drawForeground(ui);
-                break;
-            case OVERLAY:
-                this.drawOverlay(ui);
-                break;
+            case BACKGROUND -> this.drawBackground(ui);
+            case FOREGROUND -> this.drawForeground(ui);
+            case OVERLAY -> this.drawOverlay(ui);
         }
     }
 

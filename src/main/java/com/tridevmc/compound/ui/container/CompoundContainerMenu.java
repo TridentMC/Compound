@@ -41,4 +41,5 @@ public abstract class CompoundContainerMenu extends AbstractContainerMenu {
         SLOT_YPOS.set(slotIn, Integer.MIN_VALUE + slotIn.y);
         return super.addSlot(slotIn);
     }
+
 }

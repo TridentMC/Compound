@@ -238,4 +238,5 @@ public class WrappedMethod<T> {
     public boolean isAnnotationPresent(Class<? extends Annotation> clazz) {
         return this.method.isAnnotationPresent(clazz);
     }
+
 }
