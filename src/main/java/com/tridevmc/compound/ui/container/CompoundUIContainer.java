@@ -225,16 +225,6 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     }
 
     @Override
-    public int getBlitOffset() {
-        return super.getBlitOffset();
-    }
-
-    @Override
-    public void setBlitOffset(int blitOffset) {
-        super.setBlitOffset(blitOffset);
-    }
-
-    @Override
     public long getTicks() {
         return this.ticks;
     }

@@ -27,10 +27,6 @@ public interface IInternalCompoundUI {
 
     PoseStack getActiveStack();
 
-    int getBlitOffset();
-
-    void setBlitOffset(int blitOffset);
-
     int getWidth();
 
     int getHeight();

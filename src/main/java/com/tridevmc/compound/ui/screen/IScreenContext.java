@@ -126,7 +126,7 @@ public interface IScreenContext {
      * @param colour the colour of the rect to draw.
      */
     default void drawRect(Rect2F rect, int colour) {
-        this.drawRect(rect, colour, this.getActiveGui().getBlitOffset());
+        this.drawRect(rect, colour, 0);
     }
 
     /**
@@ -148,7 +148,7 @@ public interface IScreenContext {
      * @param endColour   the colour at the end of the gradient.
      */
     default void drawGradientRect(Rect2F rect, int startColour, int endColour) {
-        this.drawGradientRect(rect, startColour, endColour, this.getActiveGui().getBlitOffset());
+        this.drawGradientRect(rect, startColour, endColour, 0);
     }
 
     /**
@@ -307,7 +307,9 @@ public interface IScreenContext {
      * @param rect the position and dimensions of the rect to draw.
      * @param uvs  the uv data for the rect.
      */
-    void drawTexturedRect(Rect2F rect, UVData uvs);
+    default void drawTexturedRect(Rect2F rect, UVData uvs) {
+        this.drawTexturedRect(rect, uvs, 0);
+    }
 
     /**
      * Draws a textured rect on the screen matching the provided rect data.
@@ -317,7 +319,9 @@ public interface IScreenContext {
      * @param minUvs the minimum uvs for the rect.
      * @param maxUvs the maximum uvs for the rect.
      */
-    void drawTexturedRect(float x, float y, UVData minUvs, UVData maxUvs);
+    default void drawTexturedRect(float x, float y, UVData minUvs, UVData maxUvs) {
+        this.drawTexturedRect(x, y, minUvs, maxUvs, 0);
+    }
 
     /**
      * Draws a textured rect on the screen matching the provided rect data.
@@ -326,7 +330,9 @@ public interface IScreenContext {
      * @param minUvs the minimum uvs for the rect.
      * @param maxUvs the maximum uvs for the rect.
      */
-    void drawTexturedRect(Rect2F rect, UVData minUvs, UVData maxUvs);
+    default void drawTexturedRect(Rect2F rect, UVData minUvs, UVData maxUvs) {
+        this.drawTexturedRect(rect, minUvs, maxUvs, 0);
+    }
 
     /**
      * Draws a textured rect on the screen matching the provided rect data.
@@ -334,7 +340,9 @@ public interface IScreenContext {
      * @param rect   the position and dimensions of the rect to draw.
      * @param sprite the sprite to draw on the screen, used for gathering uv data.
      */
-    void drawTexturedRect(Rect2F rect, TextureAtlasSprite sprite);
+    default void drawTexturedRect(Rect2F rect, TextureAtlasSprite sprite) {
+        this.drawTexturedRect(rect, sprite, 0);
+    }
 
     /**
      * Draws a textured rect on the screen matching the provided rect data.
@@ -344,7 +352,9 @@ public interface IScreenContext {
      * @param textureWidth  the width of the texture that is being drawn.
      * @param textureHeight the height of the texture that is being drawn.
      */
-    void drawTexturedRect(Rect2F rect, UVData uvs, float textureWidth, float textureHeight);
+    default void drawTexturedRect(Rect2F rect, UVData uvs, float textureWidth, float textureHeight) {
+        this.drawTexturedRect(rect, uvs, textureWidth, textureHeight, 0);
+    }
 
     /**
      * Draws a scaled, tiled, and textured rect on the screen matching the provided rect data.
@@ -356,7 +366,9 @@ public interface IScreenContext {
      * @param tileWidth  the width of the tile to draw.
      * @param tileHeight the height of the tile to draw.
      */
-    void drawTexturedRect(Rect2F rect, UVData uvs, int uWidth, int vHeight, float tileWidth, float tileHeight);
+    default void drawTexturedRect(Rect2F rect, UVData uvs, int uWidth, int vHeight, float tileWidth, float tileHeight) {
+        this.drawTexturedRect(rect, uvs, uWidth, vHeight, tileWidth, tileHeight, 0);
+    }
 
     /**
      * Draws a tiled textured rect on the screen matching the provided rect data.
@@ -365,7 +377,76 @@ public interface IScreenContext {
      * @param uvMin the minimum uv data of the texture to tile.
      * @param uvMax the maximum uv data of the texture to tile.
      */
-    void drawTiledTexturedRect(Rect2F rect, UVData uvMin, UVData uvMax);
+    default void drawTiledTexturedRect(Rect2F rect, UVData uvMin, UVData uvMax) {
+        this.drawTiledTexturedRect(rect, uvMin, uvMax, 0);
+    }
+
+    /**
+     * Draws a textured rect on the screen matching the provided rect data.
+     *
+     * @param rect   the position and dimensions of the rect to draw.
+     * @param uvs    the uv data for the rect.
+     * @param zLevel the z level to draw the rect at.
+     */
+    void drawTexturedRect(Rect2F rect, UVData uvs, int zLevel);
+
+    /**
+     * Draws a textured rect on the screen matching the provided rect data.
+     *
+     * @param x      the x coordinate to draw the rect at.
+     * @param y      the y coordinate to draw the rect at.
+     * @param minUvs the minimum uvs for the rect.
+     * @param maxUvs the maximum uvs for the rect.
+     */
+    void drawTexturedRect(float x, float y, UVData minUvs, UVData maxUvs, int zLevel);
+
+    /**
+     * Draws a textured rect on the screen matching the provided rect data.
+     *
+     * @param rect   the position and dimensions of the rect to draw.
+     * @param minUvs the minimum uvs for the rect.
+     * @param maxUvs the maximum uvs for the rect.
+     */
+    void drawTexturedRect(Rect2F rect, UVData minUvs, UVData maxUvs, int zLevel);
+
+    /**
+     * Draws a textured rect on the screen matching the provided rect data.
+     *
+     * @param rect   the position and dimensions of the rect to draw.
+     * @param sprite the sprite to draw on the screen, used for gathering uv data.
+     */
+    void drawTexturedRect(Rect2F rect, TextureAtlasSprite sprite, int zLevel);
+
+    /**
+     * Draws a textured rect on the screen matching the provided rect data.
+     *
+     * @param rect          the position and dimensions of the rect to draw.
+     * @param uvs           the uv data for the rect.
+     * @param textureWidth  the width of the texture that is being drawn.
+     * @param textureHeight the height of the texture that is being drawn.
+     */
+    void drawTexturedRect(Rect2F rect, UVData uvs, float textureWidth, float textureHeight, int zLevel);
+
+    /**
+     * Draws a scaled, tiled, and textured rect on the screen matching the provided rect data.
+     *
+     * @param rect       the position and dimensions of the rect to draw.
+     * @param uvs        the uv data for the rect.
+     * @param uWidth     the width of the uv map.
+     * @param vHeight    the height of the uv map.
+     * @param tileWidth  the width of the tile to draw.
+     * @param tileHeight the height of the tile to draw.
+     */
+    void drawTexturedRect(Rect2F rect, UVData uvs, int uWidth, int vHeight, float tileWidth, float tileHeight, int zLevel);
+
+    /**
+     * Draws a tiled textured rect on the screen matching the provided rect data.
+     *
+     * @param rect  the position and dimensions of the rect to draw.
+     * @param uvMin the minimum uv data of the texture to tile.
+     * @param uvMax the maximum uv data of the texture to tile.
+     */
+    void drawTiledTexturedRect(Rect2F rect, UVData uvMin, UVData uvMax, int zLevel);
 
     /**
      * Draws the tooltip for the given itemstack.
@@ -375,9 +456,8 @@ public interface IScreenContext {
      * @param x         the x position to draw the tooltip at.
      * @param y         the y position to draw the tooltip at.
      */
-    @SuppressWarnings("removal") // They're not gone yet and there's no suitable replacement.
     default void drawTooltip(PoseStack poseStack, ItemStack stack, int x, int y) {
-        Font font = ForgeHooksClient.getTooltipFont(null, stack, getFont());
+        @SuppressWarnings("UnstableApiUsage") var font = ForgeHooksClient.getTooltipFont(null, stack, getFont());
         font = font == null ? this.getFont() : font;
         List<Component> tooltip = stack.getTooltipLines(this.getMc().player, this.getMc().options.advancedItemTooltips ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
         this.drawTooltip(poseStack, tooltip, x, y, font);

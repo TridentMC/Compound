@@ -51,7 +51,7 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     private List<IMouseScrollListener> mouseScrollListeners;
 
     public CompoundUI() {
-        super(Component.translatable(""));
+        super(Component.literal(""));
         this.screenContext = new CompoundScreenContext(this);
         this.elements = Lists.newArrayList();
         this.keyPressListeners = Lists.newArrayList();
@@ -100,16 +100,6 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     @Override
     public PoseStack getActiveStack() {
         return this.activeStack;
-    }
-
-    @Override
-    public int getBlitOffset() {
-        return super.getBlitOffset();
-    }
-
-    @Override
-    public void setBlitOffset(int zLevel) {
-        super.setBlitOffset(zLevel);
     }
 
     @Override
