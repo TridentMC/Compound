@@ -111,7 +111,7 @@ public class ElementSlot extends Element {
     }
 
     private void drawTooltip(IScreenContext screen) {
-        screen.drawTooltip(screen.getActiveStack(), this.displayStack, (int) screen.getMouseX(), (int) screen.getMouseY());
+        screen.drawTooltip(this.displayStack, (int) screen.getMouseX(), (int) screen.getMouseY());
     }
 
     private void reset() {

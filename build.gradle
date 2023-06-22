@@ -1,7 +1,7 @@
 plugins {
     id 'eclipse'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '5.1.+'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
     id 'org.cadixdev.licenser' version '0.6.1'
 }
 
@@ -41,7 +41,7 @@ def registerModule(LinkedHashMap<String, String> moduleData) {
                                      "FMLModType"              : "GAMELIBRARY"]
 
     def binaryJar = tasks.register(moduleData.taskName, Jar) {
-        baseName = moduleData.artifactName
+        archiveBaseName = moduleData.artifactName
         from(sourceSets.main.output) {
             include moduleData.sources
         }
@@ -50,8 +50,8 @@ def registerModule(LinkedHashMap<String, String> moduleData) {
         }
     }
     def sourcesJar = tasks.register(moduleData.taskName + "Sources", Jar) {
-        baseName = moduleData.artifactName
-        classifier = 'sources'
+        archiveBaseName = moduleData.artifactName
+        archiveClassifier = 'sources'
         from(sourceSets.main.allSource) {
             include moduleData.sources
         }

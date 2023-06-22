@@ -25,6 +25,7 @@ import com.tridevmc.compound.ui.screen.CompoundScreenContext;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -69,8 +70,8 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     }
 
     @Override
-    public void render(PoseStack stack, int mouseX, int mouseY, float partialTicks) {
-        this.activeStack = stack;
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        this.activeStack = graphics.pose();
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         for (EnumUILayer layer : EnumUILayer.values()) {
@@ -78,7 +79,7 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
             this.elements.forEach((e) -> e.drawLayer(this, layer));
         }
 
-        super.render(stack, mouseX, mouseY, partialTicks);
+        super.render(graphics, mouseX, mouseY, partialTicks);
     }
 
     @Override
@@ -130,16 +131,6 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     @Override
     public EnumUILayer getCurrentLayer() {
         return this.currentLayer;
-    }
-
-    @Override
-    public void renderTooltip(PoseStack stack, List<? extends FormattedCharSequence> lines, int x, int y, Font font) {
-        super.renderTooltip(stack, lines, x, y, font);
-    }
-
-    @Override
-    public void renderComponentHoverEffect(PoseStack stack, Style style, int x, int y) {
-        super.renderComponentHoverEffect(stack, style, x, y);
     }
 
     @Override

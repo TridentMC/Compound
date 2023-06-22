@@ -34,12 +34,14 @@ import com.tridevmc.compound.ui.screen.CompoundScreenContext;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
@@ -52,7 +54,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     private static final WrappedField<ItemStack> draggingItem = WrappedField.create(AbstractContainerScreen.class, "draggingItem", "field_147012_x");
     private static final WrappedField<Integer> quickCraftingType = WrappedField.create(AbstractContainerScreen.class, "quickCraftingType", "field_146987_F");
 
-    private PoseStack activeStack;
+    private GuiGraphics activeGuiGraphics;
     private long ticks;
     private float mouseX, mouseY;
     private EnumUILayer currentLayer;
@@ -83,40 +85,41 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
         this.mouseReleaseListeners = Lists.newArrayList();
         this.mouseScrollListeners = Lists.newArrayList();
 
-        Minecraft mc = Minecraft.getInstance();
+        var mc = Minecraft.getInstance();
         this.init(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
         this.initElements();
         this.elements.forEach((e) -> e.initElement(this));
     }
 
+
     @Override
-    protected void renderBg(PoseStack stack, float partialTicks, int mouseX, int mouseY) {
+    protected void renderBg(GuiGraphics gg, float partialTicks, int mouseX, int mouseY) {
         this.currentLayer = EnumUILayer.BACKGROUND;
         this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.BACKGROUND));
     }
 
     @Override
-    protected void renderLabels(PoseStack stack, int mouseX, int mouseY) {
-        PoseStack modelStack = RenderSystem.getModelViewStack();
+    protected void renderLabels(GuiGraphics gg, int mouseX, int mouseY) {
+        var modelStack = RenderSystem.getModelViewStack();
         modelStack.pushPose();
         modelStack.translate(-this.leftPos, -this.topPos, 0);
         RenderSystem.applyModelViewMatrix();
         this.currentLayer = EnumUILayer.FOREGROUND;
         this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.FOREGROUND));
-        this.currentLayer = EnumUILayer.OVERLAY;
-        this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.OVERLAY));
         modelStack.popPose();
         RenderSystem.applyModelViewMatrix();
     }
 
     @Override
-    public void render(PoseStack stack, int mouseX, int mouseY, float partialTicks) {
-        this.activeStack = stack;
-        this.renderBackground(stack);
+    public void render(@NotNull GuiGraphics gg, int mouseX, int mouseY, float partialTicks) {
+        this.activeGuiGraphics = gg;
+        this.renderBackground(gg);
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         this.updateSlotStates();
-        super.render(stack, mouseX, mouseY, partialTicks);
+        super.render(gg, mouseX, mouseY, partialTicks);
+        this.currentLayer = EnumUILayer.OVERLAY;
+        this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.OVERLAY));
     }
 
     @Override
@@ -132,38 +135,39 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
      */
     private void updateSlotStates() {
         // Load some common variables using our wrapped fields.
-        Slot clickSlot = clickedSlot.get(this);
-        ItemStack dragItem = draggingItem.get(this);
-        Integer quickCraftType = quickCraftingType.get(this);
-        Boolean splittingStack = isSplittingStack.get(this);
+        var clickSlot = clickedSlot.get(this);
+        var dragItem = draggingItem.get(this);
+        var quickCraftType = quickCraftingType.get(this);
+        var splittingStack = isSplittingStack.get(this);
         for (int i1 = 0; i1 < this.getMenu().slots.size(); ++i1) {
-            Slot slot = this.getMenu().slots.get(i1);
-            ElementSlot slotElement = this.slotElements.get(slot);
+            var slot = this.getMenu().slots.get(i1);
+            var slotElement = this.slotElements.get(slot);
             if (slotElement == null)
                 continue;
 
-            ItemStack slotStack = slot.getItem();
-            ItemStack playerStack = this.getMc().player.containerMenu.getCarried();
-            if (slot == clickSlot && !dragItem.isEmpty() && splittingStack && !slotStack.isEmpty()) {
-                slotStack = slotStack.copy();
-                slotStack.setCount(slotStack.getCount() / 2);
+            var displayStack = slot.getItem();
+            var playerStack = this.getMc().player.containerMenu.getCarried();
+            if (slot == clickSlot && !dragItem.isEmpty() && splittingStack && !displayStack.isEmpty()) {
+                displayStack = displayStack.copy();
+                displayStack.setCount(displayStack.getCount() / 2);
             } else if (this.isQuickCrafting && this.quickCraftSlots.contains(slot) && !playerStack.isEmpty()) {
                 if (this.quickCraftSlots.size() == 1) {
                     return;
                 }
 
                 if (AbstractContainerMenu.canItemQuickReplace(slot, playerStack, true) && this.getMenu().canDragTo(slot)) {
-                    slotStack = playerStack.copy();
+                    displayStack = playerStack.copy();
                     slotElement.setDrawUnderlay(true);
-                    AbstractContainerMenu.getQuickCraftSlotCount(this.quickCraftSlots, quickCraftType, slotStack, slot.getItem().isEmpty() ? 0 : slot.getItem().getCount());
-                    int size = Math.min(slotStack.getMaxStackSize(), slot.getMaxStackSize(slotStack));
-                    if (slotStack.getCount() > size) {
-                        slotElement.setDisplayString(ChatFormatting.YELLOW.toString() + size);
-                        slotStack.setCount(size);
+                    var maxSize = Math.min(playerStack.getMaxStackSize(), slot.getMaxStackSize(playerStack));
+                    var existingSlotContent = slot.getItem().isEmpty() ? 0 : slot.getItem().getCount();
+                    var quickCraftPlaceCount = AbstractContainerMenu.getQuickCraftPlaceCount(this.quickCraftSlots, quickCraftType, playerStack) + existingSlotContent;
+                    if (quickCraftPlaceCount > maxSize) {
+                        slotElement.setDisplayString(ChatFormatting.YELLOW.toString() + maxSize);
                     }
+                    displayStack = displayStack.copyWithCount(quickCraftPlaceCount);
                 }
             }
-            slotElement.setDisplayStack(slotStack);
+            slotElement.setDisplayStack(displayStack);
             slotElement.setDrawOverlay(slot.isActive() && slotElement.isMouseOverSlot(this.screenContext));
         }
     }
@@ -176,7 +180,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
      * @return the newly created slot element.
      */
     public ElementSlot addSlotElement(ILayout layout, int slotIndex) {
-        Slot slot = this.getMenu().getSlot(slotIndex);
+        var slot = this.getMenu().getSlot(slotIndex);
         return this.addSlotElement(new Rect2F(slot.x, slot.y - Integer.MIN_VALUE, 18, 18), layout, slotIndex);
     }
 
@@ -189,8 +193,8 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
      * @return the newly created slot element.
      */
     public ElementSlot addSlotElement(Rect2F dimensions, ILayout layout, int slotIndex) {
-        Slot slot = this.getMenu().getSlot(slotIndex);
-        ElementSlot element = new ElementSlot(dimensions, layout, slot);
+        var slot = this.getMenu().getSlot(slotIndex);
+        var element = new ElementSlot(dimensions, layout, slot);
         this.addElement(element);
         this.slotElements.put(slot, element);
         return element;
@@ -199,7 +203,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     @Override
     protected boolean isHovering(int x, int y, int width, int height, double mouseX, double mouseY) {
         // A hack, not a clever one. Just a hack.
-        Optional<Slot> matchingSlot = this.slotElements.keySet().stream()
+        var matchingSlot = this.slotElements.keySet().stream()
                 .filter((s) -> s.x == x && s.y == y)
                 .findFirst();
 
@@ -220,8 +224,13 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     }
 
     @Override
+    public GuiGraphics getActiveGuiGraphics() {
+        return this.activeGuiGraphics;
+    }
+
+    @Override
     public PoseStack getActiveStack() {
-        return this.activeStack;
+        return this.getActiveGuiGraphics() != null ? this.getActiveGuiGraphics().pose() : null;
     }
 
     @Override

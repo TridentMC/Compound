@@ -70,7 +70,6 @@ public class ElementLabel extends Element {
     @Override
     public void drawForeground(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        PoseStack activeStack = screen.getActiveStack();
         Rect2F dimensions = this.getTransformedDimensions(screen);
 
         double nextYLevel = dimensions.getY();
@@ -80,9 +79,9 @@ public class ElementLabel extends Element {
             }
 
             if (this.drawShadow) {
-                screen.drawFormattedCharSequenceWithShadow(activeStack, line, dimensions.getX(), (float) nextYLevel);
+                screen.drawFormattedCharSequenceWithShadow(line, dimensions.getX(), (float) nextYLevel);
             } else {
-                screen.drawFormattedCharSequence(activeStack, line, dimensions.getX(), (float) nextYLevel);
+                screen.drawFormattedCharSequence(line, dimensions.getX(), (float) nextYLevel);
             }
 
             nextYLevel += this.fontRenderer.lineHeight;

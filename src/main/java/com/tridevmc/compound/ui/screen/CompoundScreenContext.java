@@ -17,7 +17,10 @@
 package com.tridevmc.compound.ui.screen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
 import com.tridevmc.compound.ui.Rect2F;
@@ -31,11 +34,13 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
 public class CompoundScreenContext implements IScreenContext {
 
@@ -140,25 +145,25 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawFormattedCharSequence(PoseStack matrix, FormattedCharSequence processor, float x, float y) {
-        this.getFont().draw(matrix, processor, x, y, 16777215);
+    public void drawFormattedCharSequence(FormattedCharSequence processor, float x, float y) {
+        this.ui.getActiveGuiGraphics().drawString(this.getFont(), processor, x, y, 16777215, false);
     }
 
     @Override
-    public void drawCenteredFormattedCharSequence(PoseStack matrix, FormattedCharSequence processor, float x, float y) {
+    public void drawCenteredFormattedCharSequence(FormattedCharSequence processor, float x, float y) {
         int stringWidth = this.getFont().width(processor);
-        this.drawFormattedCharSequence(matrix, processor, x - (stringWidth / 2F), y);
+        this.drawFormattedCharSequence(processor, x - (stringWidth / 2F), y);
     }
 
     @Override
-    public void drawFormattedCharSequenceWithShadow(PoseStack matrix, FormattedCharSequence processor, float x, float y) {
-        this.getFont().drawShadow(matrix, processor, x, y, 16777215);
+    public void drawFormattedCharSequenceWithShadow(FormattedCharSequence processor, float x, float y) {
+        this.ui.getActiveGuiGraphics().drawString(this.getFont(), processor, x, y, -1, true);
     }
 
     @Override
-    public void drawCenteredFormattedCharSequenceWithShadow(PoseStack matrix, FormattedCharSequence processor, float x, float y) {
+    public void drawCenteredFormattedCharSequenceWithShadow(FormattedCharSequence processor, float x, float y) {
         int stringWidth = this.getFont().width(processor);
-        this.drawFormattedCharSequenceWithShadow(matrix, processor, x - (stringWidth / 2F), y);
+        this.drawFormattedCharSequenceWithShadow(processor, x - (stringWidth / 2F), y);
     }
 
     @Override
@@ -245,8 +250,13 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawProcessorAsTooltip(PoseStack poseStack, List<FormattedCharSequence> processors, int x, int y, Font font) {
-        this.ui.asGuiScreen().renderTooltip(poseStack, processors, x, y, font);
+    public void drawTooltip(List<Component> tooltip, int x, int y, Optional<TooltipComponent> extraComponents, Font font) {
+        this.ui.getActiveGuiGraphics().renderTooltip(font, tooltip, extraComponents, x, y);
+    }
+
+    @Override
+    public void drawProcessorAsTooltip(List<FormattedCharSequence> processors, int x, int y, Font font) {
+        this.ui.getActiveGuiGraphics().renderTooltip(font, processors, x, y);
     }
 
     @Override
@@ -266,8 +276,8 @@ public class CompoundScreenContext implements IScreenContext {
         poseStack.pushPose();
         poseStack.translate(0, 0, blitOffset);
         RenderSystem.applyModelViewMatrix();
-        this.getMc().getItemRenderer().renderAndDecorateItem(poseStack, stack, 0, 0);
-        this.getMc().getItemRenderer().renderGuiItemDecorations(poseStack, font, stack, 0, 0, altText);
+        this.ui.getActiveGuiGraphics().renderItem(stack, 0, 0);
+        this.ui.getActiveGuiGraphics().renderItemDecorations(font, stack, 0, 0, altText);
         poseStack.popPose();
         poseStack.popPose();
         RenderSystem.applyModelViewMatrix();

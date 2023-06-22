@@ -28,6 +28,7 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraftforge.client.ForgeHooksClient;
@@ -35,6 +36,7 @@ import net.minecraftforge.client.ForgeHooksClient;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Provides useful methods and variables for drawing a UI and it's elements.
@@ -164,142 +166,130 @@ public interface IScreenContext {
     /**
      * Draws the given string on the screen at the given position.
      *
-     * @param matrix the matrix stack.
      * @param text   the string to draw.
      * @param x      the x position to draw the string at.
      * @param y      the y position to draw the string at.
      * @param colour the colour to draw the string in.
      */
-    default void drawString(PoseStack matrix, String text, float x, float y, int colour) {
-        this.drawText(matrix, Component.translatable(text).withStyle(s -> s.withColor(colour)), x, y);
+    default void drawString(String text, float x, float y, int colour) {
+        this.drawText(Component.translatable(text).withStyle(s -> s.withColor(colour)), x, y);
     }
 
     /**
      * Draws the given string on the screen with the middle of the string centered on the given position.
      *
-     * @param matrix the matrix stack.
      * @param text   the string to draw.
      * @param x      the x position to draw the string at.
      * @param y      the y position to draw the string at.
      * @param colour the colour to draw the string in.
      */
-    default void drawCenteredString(PoseStack matrix, String text, float x, float y, int colour) {
-        this.drawCenteredText(matrix, Component.translatable(text).withStyle(s -> s.withColor(colour)), x, y);
+    default void drawCenteredString(String text, float x, float y, int colour) {
+        this.drawCenteredText(Component.translatable(text).withStyle(s -> s.withColor(colour)), x, y);
     }
 
     /**
      * Draws the given string on the screen with the middle of the string centered on the given position, with a drop shadow applied.
      *
-     * @param matrix the matrix stack.
      * @param text   the string to draw.
      * @param x      the x position to draw the string at.
      * @param y      the y position to draw the string at.
      * @param colour the colour to draw the string in.
      */
-    default void drawStringWithShadow(PoseStack matrix, String text, float x, float y, int colour) {
-        this.drawTextWithShadow(matrix, Component.translatable(text).withStyle(s -> s.withColor(colour)), x, y);
+    default void drawStringWithShadow(String text, float x, float y, int colour) {
+        this.drawTextWithShadow(Component.translatable(text).withStyle(s -> s.withColor(colour)), x, y);
     }
 
     /**
      * Draws the given string on the screen at the given position, with a drop shadow applied.
      *
-     * @param matrix the matrix stack.
      * @param text   the string to draw.
      * @param x      the x position to draw the string at.
      * @param y      the y position to draw the string at.
      * @param colour the colour to draw the string in.
      */
-    default void drawCenteredStringWithShadow(PoseStack matrix, String text, float x, float y, int colour) {
-        this.drawCenteredTextWithShadow(matrix, Component.translatable(text).withStyle(style -> style.withColor(colour)), x, y);
+    default void drawCenteredStringWithShadow(String text, float x, float y, int colour) {
+        this.drawCenteredTextWithShadow(Component.translatable(text).withStyle(style -> style.withColor(colour)), x, y);
     }
 
     /**
      * Draws the given text component on the screen at the given position.
      *
-     * @param matrix the matrix stack.
-     * @param text   the component to draw.
-     * @param x      the x position to draw the string at.
-     * @param y      the y position to draw the string at.
+     * @param text the component to draw.
+     * @param x    the x position to draw the string at.
+     * @param y    the y position to draw the string at.
      */
-    default void drawText(PoseStack matrix, Component text, float x, float y) {
-        this.drawFormattedCharSequence(matrix, text.getVisualOrderText(), x, y);
+    default void drawText(Component text, float x, float y) {
+        this.drawFormattedCharSequence(text.getVisualOrderText(), x, y);
     }
 
     /**
      * Draws the given text component on the screen with the middle of the string centered on the given position.
      *
-     * @param matrix the matrix stack.
-     * @param text   the text to draw.
-     * @param x      the x position to draw the string at.
-     * @param y      the y position to draw the string at.
+     * @param text the text to draw.
+     * @param x    the x position to draw the string at.
+     * @param y    the y position to draw the string at.
      */
-    default void drawCenteredText(PoseStack matrix, Component text, float x, float y) {
-        this.drawCenteredFormattedCharSequence(matrix, text.getVisualOrderText(), x, y);
+    default void drawCenteredText(Component text, float x, float y) {
+        this.drawCenteredFormattedCharSequence(text.getVisualOrderText(), x, y);
     }
 
     /**
      * Draws the given text component on the screen with the middle of the string centered on the given position, with a drop shadow applied.
      *
-     * @param matrix the matrix stack.
-     * @param text   the text to draw.
-     * @param x      the x position to draw the string at.
-     * @param y      the y position to draw the string at.
+     * @param text the text to draw.
+     * @param x    the x position to draw the string at.
+     * @param y    the y position to draw the string at.
      */
-    default void drawTextWithShadow(PoseStack matrix, Component text, float x, float y) {
-        this.drawFormattedCharSequenceWithShadow(matrix, text.getVisualOrderText(), x, y);
+    default void drawTextWithShadow(Component text, float x, float y) {
+        this.drawFormattedCharSequenceWithShadow(text.getVisualOrderText(), x, y);
     }
 
     /**
      * Draws the given text component on the screen at the given position, with a drop shadow applied.
      *
-     * @param matrix the matrix stack.
-     * @param text   the text to draw.
-     * @param x      the x position to draw the string at.
-     * @param y      the y position to draw the string at.
+     * @param text the text to draw.
+     * @param x    the x position to draw the string at.
+     * @param y    the y position to draw the string at.
      */
-    default void drawCenteredTextWithShadow(PoseStack matrix, Component text, float x, float y) {
-        this.drawCenteredFormattedCharSequenceWithShadow(matrix, text.getVisualOrderText(), x, y);
+    default void drawCenteredTextWithShadow(Component text, float x, float y) {
+        this.drawCenteredFormattedCharSequenceWithShadow(text.getVisualOrderText(), x, y);
     }
 
     /**
      * Draws the given text component on the screen at the given position.
      *
-     * @param matrix    the matrix stack.
      * @param processor the processor to draw.
      * @param x         the x position to draw the string at.
      * @param y         the y position to draw the string at.
      */
-    void drawFormattedCharSequence(PoseStack matrix, FormattedCharSequence processor, float x, float y);
+    void drawFormattedCharSequence(FormattedCharSequence processor, float x, float y);
 
     /**
      * Draws the given text component on the screen with the middle of the string centered on the given position.
      *
-     * @param matrix    the matrix stack.
      * @param processor the processor to draw.
      * @param x         the x position to draw the string at.
      * @param y         the y position to draw the string at.
      */
-    void drawCenteredFormattedCharSequence(PoseStack matrix, FormattedCharSequence processor, float x, float y);
+    void drawCenteredFormattedCharSequence(FormattedCharSequence processor, float x, float y);
 
     /**
      * Draws the given text component on the screen with the middle of the string centered on the given position, with a drop shadow applied.
      *
-     * @param matrix    the matrix stack.
      * @param processor the processor to draw.
      * @param x         the x position to draw the string at.
      * @param y         the y position to draw the string at.
      */
-    void drawFormattedCharSequenceWithShadow(PoseStack matrix, FormattedCharSequence processor, float x, float y);
+    void drawFormattedCharSequenceWithShadow(FormattedCharSequence processor, float x, float y);
 
     /**
      * Draws the given text component on the screen at the given position, with a drop shadow applied.
      *
-     * @param matrix    the matrix stack.
      * @param processor the processor to draw.
      * @param x         the x position to draw the string at.
      * @param y         the y position to draw the string at.
      */
-    void drawCenteredFormattedCharSequenceWithShadow(PoseStack matrix, FormattedCharSequence processor, float x, float y);
+    void drawCenteredFormattedCharSequenceWithShadow(FormattedCharSequence processor, float x, float y);
 
     /**
      * Draws a textured rect on the screen matching the provided rect data.
@@ -451,128 +441,127 @@ public interface IScreenContext {
     /**
      * Draws the tooltip for the given itemstack.
      *
-     * @param poseStack the matrix stack.
-     * @param stack     the itemstack to draw the tooltip for.
-     * @param x         the x position to draw the tooltip at.
-     * @param y         the y position to draw the tooltip at.
+     * @param stack the itemstack to draw the tooltip for.
+     * @param x     the x position to draw the tooltip at.
+     * @param y     the y position to draw the tooltip at.
      */
-    default void drawTooltip(PoseStack poseStack, ItemStack stack, int x, int y) {
-        @SuppressWarnings("UnstableApiUsage") var font = ForgeHooksClient.getTooltipFont(null, stack, getFont());
-        font = font == null ? this.getFont() : font;
-        List<Component> tooltip = stack.getTooltipLines(this.getMc().player, this.getMc().options.advancedItemTooltips ? TooltipFlag.Default.ADVANCED : TooltipFlag.Default.NORMAL);
-        this.drawTooltip(poseStack, tooltip, x, y, font);
+    default void drawTooltip(ItemStack stack, int x, int y) {
+        List<Component> tooltip = Screen.getTooltipFromItem(getMc(), stack);
+        this.drawTooltip(tooltip, x, y, stack.getTooltipImage(), this.getFont());
+    }
+
+    /**
+     * Draws the tooltip for the given itemstack, along with any extra components.
+     *
+     * @param tooltip         the tooltip to draw.
+     * @param x               the x position to draw the tooltip at.
+     * @param y               the y position to draw the tooltip at.
+     * @param extraComponents the extra components to draw.
+     * @param font            the font to use when drawing.
+     */
+    void drawTooltip(List<Component> tooltip, int x, int y, @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<TooltipComponent> extraComponents, Font font);
+
+    /**
+     * Draws the given string as a tooltip on the screen.
+     *
+     * @param text the text to draw .
+     * @param x    the x position to draw the tooltip at.
+     * @param y    the y position to draw the tooltip at.
+     */
+    default void drawTooltip(String text, int x, int y) {
+        this.drawTooltip(Component.translatable(text), x, y, getFont());
     }
 
     /**
      * Draws the given string as a tooltip on the screen.
      *
-     * @param poseStack the matrix stack.
-     * @param text      the text to draw .
-     * @param x         the x position to draw the tooltip at.
-     * @param y         the y position to draw the tooltip at.
+     * @param text the text to draw .
+     * @param x    the x position to draw the tooltip at.
+     * @param y    the y position to draw the tooltip at.
+     * @param font the font to use when drawing.
      */
-    default void drawTooltip(PoseStack poseStack, String text, int x, int y) {
-        this.drawTooltip(poseStack, Component.translatable(text), x, y, getFont());
-    }
-
-    /**
-     * Draws the given string as a tooltip on the screen.
-     *
-     * @param poseStack the matrix stack.
-     * @param text      the text to draw .
-     * @param x         the x position to draw the tooltip at.
-     * @param y         the y position to draw the tooltip at.
-     * @param font      the font to use when drawing.
-     */
-    default void drawTooltip(PoseStack poseStack, String text, int x, int y, Font font) {
-        this.drawTooltip(poseStack, Component.translatable(text), x, y, font);
+    default void drawTooltip(String text, int x, int y, Font font) {
+        this.drawTooltip(Component.translatable(text), x, y, font);
     }
 
     /**
      * Draws a multi-line tooltip from the given list of lines at the given coordinates.
      *
-     * @param poseStack the matrix stack.
-     * @param text      the text component to draw the tooltip for.
-     * @param x         the x position to draw the tooltip at.
-     * @param y         the y position to draw the tooltip at.
+     * @param text the text component to draw the tooltip for.
+     * @param x    the x position to draw the tooltip at.
+     * @param y    the y position to draw the tooltip at.
      */
-    default void drawTooltip(PoseStack poseStack, Component text, int x, int y) {
-        this.drawTooltip(poseStack, text, x, y, this.getFont());
+    default void drawTooltip(Component text, int x, int y) {
+        this.drawTooltip(text, x, y, this.getFont());
     }
 
     /**
      * Draws the appropriate tooltip for the given text component.
      *
-     * @param poseStack the matrix stack.
-     * @param text      the text component to draw the tooltip for.
-     * @param x         the x position to draw the tooltip at.
-     * @param y         the y position to draw the tooltip at.
-     * @param font      the font to use when drawing.
+     * @param text the text component to draw the tooltip for.
+     * @param x    the x position to draw the tooltip at.
+     * @param y    the y position to draw the tooltip at.
+     * @param font the font to use when drawing.
      */
-    default void drawTooltip(PoseStack poseStack, Component text, int x, int y, Font font) {
-        this.drawTooltip(poseStack, Collections.singletonList(text), x, y, font);
+    default void drawTooltip(Component text, int x, int y, Font font) {
+        this.drawTooltip(Collections.singletonList(text), x, y, font);
     }
 
     /**
      * Draws a multi-line tooltip from the given list of lines at the given coordinates.
      *
-     * @param poseStack the matrix stack.
-     * @param lines     the text to draw, each list entry representing a new line.
-     * @param x         the x position to draw the tooltip at.
-     * @param y         the y position to draw the tooltip at.
+     * @param lines the text to draw, each list entry representing a new line.
+     * @param x     the x position to draw the tooltip at.
+     * @param y     the y position to draw the tooltip at.
      */
-    default void drawTooltip(PoseStack poseStack, List<Component> lines, int x, int y) {
-        this.drawTooltip(poseStack, lines, x, y, this.getFont());
+    default void drawTooltip(List<Component> lines, int x, int y) {
+        this.drawTooltip(lines, x, y, this.getFont());
     }
 
     /**
      * Draws a multi-line tooltip from the given list of lines at the given coordinates.
      *
-     * @param poseStack the matrix stack.
-     * @param lines     the text to draw, each list entry representing a new line.
-     * @param x         the x position to draw the tooltip at.
-     * @param y         the y position to draw the tooltip at.
-     * @param font      the font to use when drawing.
+     * @param lines the text to draw, each list entry representing a new line.
+     * @param x     the x position to draw the tooltip at.
+     * @param y     the y position to draw the tooltip at.
+     * @param font  the font to use when drawing.
      */
-    default void drawTooltip(PoseStack poseStack, List<Component> lines, int x, int y, Font font) {
-        this.drawProcessorAsTooltip(poseStack, Lists.transform(lines, Component::getVisualOrderText), x, y, font);
+    default void drawTooltip(List<Component> lines, int x, int y, Font font) {
+        this.drawProcessorAsTooltip(Lists.transform(lines, Component::getVisualOrderText), x, y, font);
     }
 
     /**
      * Draws the appropriate tooltip for the given processor.
      *
-     * @param poseStack the matrix stack.
      * @param processor the processor to draw the tooltip for.
      * @param x         the x position to draw the tooltip at.
      * @param y         the y position to draw the tooltip at.
      */
-    default void drawProcessorAsTooltip(PoseStack poseStack, FormattedCharSequence processor, int x, int y) {
-        this.drawProcessorAsTooltip(poseStack, processor, x, y, this.getFont());
+    default void drawProcessorAsTooltip(FormattedCharSequence processor, int x, int y) {
+        this.drawProcessorAsTooltip(processor, x, y, this.getFont());
     }
 
     /**
      * Draws the appropriate tooltip for the given processor.
      *
-     * @param poseStack the matrix stack.
      * @param processor the processor to draw the tooltip for.
      * @param x         the x position to draw the tooltip at.
      * @param y         the y position to draw the tooltip at.
      * @param font      the font to use when drawing.
      */
-    default void drawProcessorAsTooltip(PoseStack poseStack, FormattedCharSequence processor, int x, int y, Font font) {
-        this.drawProcessorAsTooltip(poseStack, Collections.singletonList(processor), x, y, font);
+    default void drawProcessorAsTooltip(FormattedCharSequence processor, int x, int y, Font font) {
+        this.drawProcessorAsTooltip(Collections.singletonList(processor), x, y, font);
     }
 
     /**
      * Draws a multi-line tooltip from the given list of processors at the given coordinates.
      *
-     * @param poseStack  the matrix stack.
      * @param processors the processors to draw, each list entry representing a new line.
      * @param x          the x position to draw the tooltip at.
      * @param y          the y position to draw the tooltip at.
      * @param font       the font to use when drawing.
      */
-    void drawProcessorAsTooltip(PoseStack poseStack, List<FormattedCharSequence> processors, int x, int y, Font font);
+    void drawProcessorAsTooltip(List<FormattedCharSequence> processors, int x, int y, Font font);
 
     /**
      * Draws the given itemstack on the screen within the given dimensions.
