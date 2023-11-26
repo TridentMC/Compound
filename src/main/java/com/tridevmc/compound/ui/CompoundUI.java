@@ -24,12 +24,9 @@ import com.tridevmc.compound.ui.listeners.*;
 import com.tridevmc.compound.ui.screen.CompoundScreenContext;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
-import net.minecraft.util.FormattedCharSequence;
 
 import java.util.List;
 
@@ -170,9 +167,9 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     }
 
     @Override
-    public boolean mouseScrolled(double x, double y, double distance) {
-        this.mouseScrollListeners.forEach((l) -> l.listen(this.screenContext, x, y, distance));
-        return super.mouseScrolled(x, y, distance);
+    public boolean mouseScrolled(double x, double y, double scrollX, double scrollY) {
+        this.mouseScrollListeners.forEach((l) -> l.listen(this.screenContext, x, y, scrollX, scrollY));
+        return super.mouseScrolled(x, y, scrollX, scrollY);
     }
 
     @Override

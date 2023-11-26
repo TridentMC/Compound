@@ -113,7 +113,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     @Override
     public void render(@NotNull GuiGraphics gg, int mouseX, int mouseY, float partialTicks) {
         this.activeGuiGraphics = gg;
-        this.renderBackground(gg);
+        this.renderBackground(gg, mouseX, mouseY, partialTicks);
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         this.updateSlotStates();
@@ -300,9 +300,9 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     }
 
     @Override
-    public boolean mouseScrolled(double x, double y, double distance) {
-        this.mouseScrollListeners.forEach((l) -> l.listen(this.screenContext, x, y, distance));
-        return super.mouseScrolled(x, y, distance);
+    public boolean mouseScrolled(double x, double y, double scrollX, double scrollY) {
+        this.mouseScrollListeners.forEach((l) -> l.listen(this.screenContext, x, y, scrollX, scrollY));
+        return super.mouseScrolled(x, y, scrollX, scrollY);
     }
 
     @Override

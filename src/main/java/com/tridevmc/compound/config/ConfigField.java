@@ -18,11 +18,11 @@ package com.tridevmc.compound.config;
 
 import com.google.common.collect.Maps;
 import com.tridevmc.compound.core.reflect.WrappedField;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Tuple;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.registries.IForgeRegistry;
-import net.minecraftforge.registries.RegistryManager;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.ArrayUtils;
 
 import javax.annotation.Nonnull;
@@ -67,8 +67,8 @@ public class ConfigField<T> {
     private final String langKey;
     private final boolean requiresWorldRestart;
     private final boolean isValueArray;
-    private ForgeConfigSpec.ConfigValue<T> specValue;
-    private IForgeRegistry<T> registry;
+    private ModConfigSpec.ConfigValue<T> specValue;
+    private Registry<T> registry;
 
     protected ConfigField(CompoundConfig<Object> config, @Nonnull WrappedField<T> field) {
         this.field = field;
@@ -138,9 +138,9 @@ public class ConfigField<T> {
     }
 
     @Nullable
-    protected IForgeRegistry<T> getRegistry() {
+    protected Registry<T> getRegistry() {
         if (this.registry == null && this.registryName != null) {
-            this.registry = RegistryManager.ACTIVE.getRegistry(this.registryName);
+            this.registry = (Registry<T>) BuiltInRegistries.REGISTRY.get(this.registryName);
         }
         return this.registry;
     }
@@ -169,23 +169,23 @@ public class ConfigField<T> {
         return value;
     }
 
-    public void addToSpec(ForgeConfigSpec.Builder builder) {
+    public void addToSpec(ModConfigSpec.Builder builder) {
         builder = builder.comment(this.getComment()).translation(this.getLangKey());
         if (this.requiresWorldRestart()) builder = builder.worldRestart();
         switch (this.type) {
             case INTEGER ->
-                    this.specValue = (ForgeConfigSpec.ConfigValue<T>) builder.defineInRange(this.getName(), (int) this.getDefaultValue(), (int) this.minValue, (int) this.maxValue);
+                    this.specValue = (ModConfigSpec.ConfigValue<T>) builder.defineInRange(this.getName(), (int) this.getDefaultValue(), (int) this.minValue, (int) this.maxValue);
             case LONG ->
-                    this.specValue = (ForgeConfigSpec.ConfigValue<T>) builder.defineInRange(this.getName(), (long) this.getDefaultValue(), (long) this.minValue, (long) this.maxValue);
+                    this.specValue = (ModConfigSpec.ConfigValue<T>) builder.defineInRange(this.getName(), (long) this.getDefaultValue(), (long) this.minValue, (long) this.maxValue);
             case DOUBLE ->
-                    this.specValue = (ForgeConfigSpec.ConfigValue<T>) builder.defineInRange(this.getName(), (double) this.getDefaultValue(), (double) this.minValue, (double) this.maxValue);
+                    this.specValue = (ModConfigSpec.ConfigValue<T>) builder.defineInRange(this.getName(), (double) this.getDefaultValue(), (double) this.minValue, (double) this.maxValue);
             case BOOLEAN ->
-                    this.specValue = (ForgeConfigSpec.ConfigValue<T>) builder.define(this.getName(), (boolean) this.getDefaultValue());
+                    this.specValue = (ModConfigSpec.ConfigValue<T>) builder.define(this.getName(), (boolean) this.getDefaultValue());
             case ENUM -> this.specValue = builder.defineEnum(this.getName(), (Enum) this.getDefaultValue());
             case LIST ->
-                    this.specValue = (ForgeConfigSpec.ConfigValue<T>) builder.defineList(this.getName(), (List<?>) this.getDefaultValue(), (o) -> true);
+                    this.specValue = (ModConfigSpec.ConfigValue<T>) builder.defineList(this.getName(), (List<?>) this.getDefaultValue(), (o) -> true);
             case OBJECT ->
-                    this.specValue = (ForgeConfigSpec.ConfigValue<T>) builder.define(this.getName(), this.getDefaultValue());
+                    this.specValue = (ModConfigSpec.ConfigValue<T>) builder.define(this.getName(), this.getDefaultValue());
         }
     }
 

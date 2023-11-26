@@ -18,6 +18,8 @@ package com.tridevmc.compound.config;
 
 import net.minecraft.core.Registry;
 import net.minecraft.core.particles.ParticleType;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
@@ -48,64 +50,62 @@ import net.minecraft.world.level.levelgen.feature.foliageplacers.FoliagePlacerTy
 import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProviderType;
 import net.minecraft.world.level.levelgen.feature.treedecorators.TreeDecoratorType;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.common.world.BiomeModifier;
-import net.minecraftforge.common.world.StructureModifier;
-import net.minecraftforge.fluids.FluidType;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.IForgeRegistry;
-import net.minecraftforge.registries.RegistryManager;
-import net.minecraftforge.registries.holdersets.HolderSetType;
+import net.neoforged.neoforge.common.world.BiomeModifier;
+import net.neoforged.neoforge.common.world.StructureModifier;
+import net.neoforged.neoforge.fluids.FluidType;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
+import net.neoforged.neoforge.registries.holdersets.HolderSetType;
 
 public class InternalRegistryEntrySerializer<T> implements IConfigObjectSerializer<T> {
 
     protected static final InternalRegistryEntrySerializer<?>[] DEFAULT_SERIALIZERS = new InternalRegistryEntrySerializer[]{
-            new InternalRegistryEntrySerializer<>(Block.class, ForgeRegistries.Keys.BLOCKS),
-            new InternalRegistryEntrySerializer<>(Fluid.class, ForgeRegistries.Keys.FLUIDS),
-            new InternalRegistryEntrySerializer<>(Item.class, ForgeRegistries.Keys.ITEMS),
-            new InternalRegistryEntrySerializer<>(MobEffect.class, ForgeRegistries.Keys.MOB_EFFECTS),
-            new InternalRegistryEntrySerializer<>(Potion.class, ForgeRegistries.Keys.POTIONS),
-            new InternalRegistryEntrySerializer<>(Attribute.class, ForgeRegistries.Keys.ATTRIBUTES),
-            new InternalRegistryEntrySerializer<>(StatType.class, ForgeRegistries.Keys.STAT_TYPES),
-            new InternalRegistryEntrySerializer<>(SoundEvent.class, ForgeRegistries.Keys.SOUND_EVENTS),
-            new InternalRegistryEntrySerializer<>(Enchantment.class, ForgeRegistries.Keys.ENCHANTMENTS),
-            new InternalRegistryEntrySerializer<>(EntityType.class, ForgeRegistries.Keys.ENTITY_TYPES),
-            new InternalRegistryEntrySerializer<>(PaintingVariant.class, ForgeRegistries.Keys.PAINTING_VARIANTS),
-            new InternalRegistryEntrySerializer<>(ParticleType.class, ForgeRegistries.Keys.PARTICLE_TYPES),
-            new InternalRegistryEntrySerializer<>(MenuType.class, ForgeRegistries.Keys.MENU_TYPES),
-            new InternalRegistryEntrySerializer<>(BlockEntityType.class, ForgeRegistries.Keys.BLOCK_ENTITY_TYPES),
-            new InternalRegistryEntrySerializer<>(RecipeType.class, ForgeRegistries.Keys.RECIPE_TYPES),
-            new InternalRegistryEntrySerializer<>(RecipeSerializer.class, ForgeRegistries.Keys.RECIPE_SERIALIZERS),
-            new InternalRegistryEntrySerializer<>(VillagerProfession.class, ForgeRegistries.Keys.VILLAGER_PROFESSIONS),
-            new InternalRegistryEntrySerializer<>(PoiType.class, ForgeRegistries.Keys.POI_TYPES),
-            new InternalRegistryEntrySerializer<>(MemoryModuleType.class, ForgeRegistries.Keys.MEMORY_MODULE_TYPES),
-            new InternalRegistryEntrySerializer<>(SensorType.class, ForgeRegistries.Keys.SENSOR_TYPES),
-            new InternalRegistryEntrySerializer<>(Schedule.class, ForgeRegistries.Keys.SCHEDULES),
-            new InternalRegistryEntrySerializer<>(Activity.class, ForgeRegistries.Keys.ACTIVITIES),
-            new InternalRegistryEntrySerializer<>(WorldCarver.class, ForgeRegistries.Keys.WORLD_CARVERS),
-            new InternalRegistryEntrySerializer<>(Feature.class, ForgeRegistries.Keys.FEATURES),
-            new InternalRegistryEntrySerializer<>(ChunkStatus.class, ForgeRegistries.Keys.CHUNK_STATUS),
-            new InternalRegistryEntrySerializer<>(BlockStateProviderType.class, ForgeRegistries.Keys.BLOCK_STATE_PROVIDER_TYPES),
-            new InternalRegistryEntrySerializer<>(FoliagePlacerType.class, ForgeRegistries.Keys.FOLIAGE_PLACER_TYPES),
-            new InternalRegistryEntrySerializer<>(TreeDecoratorType.class, ForgeRegistries.Keys.TREE_DECORATOR_TYPES),
-            new InternalRegistryEntrySerializer<>(Biome.class, ForgeRegistries.Keys.BIOMES),
-            new InternalRegistryEntrySerializer<>(FluidType.class, ForgeRegistries.Keys.FLUID_TYPES),
-            new InternalRegistryEntrySerializer<>(HolderSetType.class, ForgeRegistries.Keys.HOLDER_SET_TYPES),
-            new InternalRegistryEntrySerializer<>(BiomeModifier.class, ForgeRegistries.Keys.BIOME_MODIFIERS),
-            new InternalRegistryEntrySerializer<>(StructureModifier.class, ForgeRegistries.Keys.STRUCTURE_MODIFIERS)
+            new InternalRegistryEntrySerializer<>(Block.class, Registries.BLOCK),
+            new InternalRegistryEntrySerializer<>(Fluid.class, Registries.FLUID),
+            new InternalRegistryEntrySerializer<>(Item.class, Registries.ITEM),
+            new InternalRegistryEntrySerializer<>(MobEffect.class, Registries.MOB_EFFECT),
+            new InternalRegistryEntrySerializer<>(Potion.class, Registries.POTION),
+            new InternalRegistryEntrySerializer<>(Attribute.class, Registries.ATTRIBUTE),
+            new InternalRegistryEntrySerializer<>(StatType.class, Registries.STAT_TYPE),
+            new InternalRegistryEntrySerializer<>(SoundEvent.class, Registries.SOUND_EVENT),
+            new InternalRegistryEntrySerializer<>(Enchantment.class, Registries.ENCHANTMENT),
+            new InternalRegistryEntrySerializer<>(EntityType.class, Registries.ENTITY_TYPE),
+            new InternalRegistryEntrySerializer<>(PaintingVariant.class, Registries.PAINTING_VARIANT),
+            new InternalRegistryEntrySerializer<>(ParticleType.class, Registries.PARTICLE_TYPE),
+            new InternalRegistryEntrySerializer<>(MenuType.class, Registries.MENU),
+            new InternalRegistryEntrySerializer<>(BlockEntityType.class, Registries.BLOCK_ENTITY_TYPE),
+            new InternalRegistryEntrySerializer<>(RecipeType.class, Registries.RECIPE_TYPE),
+            new InternalRegistryEntrySerializer<>(RecipeSerializer.class, Registries.RECIPE_SERIALIZER),
+            new InternalRegistryEntrySerializer<>(VillagerProfession.class, Registries.VILLAGER_PROFESSION),
+            new InternalRegistryEntrySerializer<>(PoiType.class, Registries.POINT_OF_INTEREST_TYPE),
+            new InternalRegistryEntrySerializer<>(MemoryModuleType.class, Registries.MEMORY_MODULE_TYPE),
+            new InternalRegistryEntrySerializer<>(SensorType.class, Registries.SENSOR_TYPE),
+            new InternalRegistryEntrySerializer<>(Schedule.class, Registries.SCHEDULE),
+            new InternalRegistryEntrySerializer<>(Activity.class, Registries.ACTIVITY),
+            new InternalRegistryEntrySerializer<>(WorldCarver.class, Registries.CARVER),
+            new InternalRegistryEntrySerializer<>(Feature.class, Registries.FEATURE),
+            new InternalRegistryEntrySerializer<>(ChunkStatus.class, Registries.CHUNK_STATUS),
+            new InternalRegistryEntrySerializer<>(BlockStateProviderType.class, Registries.BLOCK_STATE_PROVIDER_TYPE),
+            new InternalRegistryEntrySerializer<>(FoliagePlacerType.class, Registries.FOLIAGE_PLACER_TYPE),
+            new InternalRegistryEntrySerializer<>(TreeDecoratorType.class, Registries.TREE_DECORATOR_TYPE),
+            new InternalRegistryEntrySerializer<>(Biome.class, Registries.BIOME),
+            new InternalRegistryEntrySerializer<>(FluidType.class, NeoForgeRegistries.Keys.FLUID_TYPES),
+            new InternalRegistryEntrySerializer<>(HolderSetType.class, NeoForgeRegistries.Keys.HOLDER_SET_TYPES),
+            new InternalRegistryEntrySerializer<>(BiomeModifier.class, NeoForgeRegistries.Keys.BIOME_MODIFIER_SERIALIZERS),
+            new InternalRegistryEntrySerializer<>(StructureModifier.class, NeoForgeRegistries.Keys.STRUCTURE_MODIFIER_SERIALIZERS)
     };
 
     private final Class<?> registryType;
     private final ResourceKey<Registry<T>> registryKey;
-    private IForgeRegistry<T> registry;
+    private Registry<T> registry;
 
     public InternalRegistryEntrySerializer(Class<?> registryType, ResourceKey<Registry<T>> registryKey) {
         this.registryType = registryType;
         this.registryKey = registryKey;
     }
 
-    private IForgeRegistry<T> getRegistry() {
+    private Registry<T> getRegistry() {
         if (this.registry == null) {
-            this.registry = RegistryManager.ACTIVE.getRegistry(this.registryKey);
+            this.registry = (Registry<T>) BuiltInRegistries.REGISTRY.get(this.registryKey.location());
         }
         return this.registry;
     }
@@ -117,7 +117,7 @@ public class InternalRegistryEntrySerializer<T> implements IConfigObjectSerializ
 
     @Override
     public T fromString(Class<T> fieldType, String value) {
-        return this.getRegistry().getValue(new ResourceLocation(value));
+        return this.getRegistry().get(new ResourceLocation(value));
     }
 
     @Override

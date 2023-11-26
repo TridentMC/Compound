@@ -19,7 +19,7 @@ package com.tridevmc.compound.network.message;
 import com.tridevmc.compound.network.core.CompoundNetwork;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.fml.LogicalSide;
+import net.neoforged.fml.LogicalSide;
 
 import java.util.ArrayList;
 import java.util.Comparator;

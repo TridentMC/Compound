@@ -16,7 +16,7 @@
 
 package com.tridevmc.compound.network.message;
 
-import net.minecraftforge.fml.LogicalSide;
+import net.neoforged.fml.LogicalSide;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

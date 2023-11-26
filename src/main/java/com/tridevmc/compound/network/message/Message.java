@@ -27,9 +27,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PlayNetworkDirection;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -83,7 +83,7 @@ public abstract class Message {
      * @param player the player to send the message to.
      */
     public void sendTo(@Nonnull ServerPlayer player) {
-        this.getNetwork().getNetworkChannel().sendTo(this, player.connection.connection, NetworkDirection.PLAY_TO_CLIENT);
+        this.getNetwork().getNetworkChannel().sendTo(this, player.connection.connection, PlayNetworkDirection.PLAY_TO_CLIENT);
     }
 
     /**

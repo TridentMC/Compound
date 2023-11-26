@@ -19,7 +19,7 @@ package com.tridevmc.compound.network.core;
 import com.tridevmc.compound.network.message.Message;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.NetworkEvent;
 
 
 public class CompoundClientHandler implements ICompoundNetworkHandler {

@@ -24,14 +24,15 @@ import com.tridevmc.compound.network.message.MessageConcept;
 import com.tridevmc.compound.network.message.MessageField;
 import com.tridevmc.compound.network.message.RegisteredMessage;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.fml.LogicalSide;
-import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.loading.moddiscovery.ModAnnotation;
-import net.minecraftforge.forgespi.language.ModFileScanData;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.neoforged.fml.LogicalSide;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.moddiscovery.ModAnnotation;
+import net.neoforged.neoforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.NetworkRegistry;
+import net.neoforged.neoforge.network.simple.MessageFunctions;
+import net.neoforged.neoforge.network.simple.SimpleChannel;
+import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -295,8 +296,8 @@ public class CompoundNetwork {
         NETWORKS.put(msgClass, this);
     }
 
-    private <M extends Message> BiConsumer<M, Supplier<NetworkEvent.Context>> getMessageConsumer(ICompoundNetworkHandler handler) {
-        return (m, ctx) -> handler.handle(m, ctx.get());
+    private <M extends Message> MessageFunctions.MessageConsumer<M> getMessageConsumer(ICompoundNetworkHandler handler) {
+        return handler::handle;
     }
 
     public Logger getLogger() {

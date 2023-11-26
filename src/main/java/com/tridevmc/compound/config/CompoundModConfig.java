@@ -16,8 +16,8 @@
 
 package com.tridevmc.compound.config;
 
-import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.fml.config.ModConfig;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.config.ModConfig;
 
 public class CompoundModConfig extends ModConfig {
 

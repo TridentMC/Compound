@@ -20,15 +20,15 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.tridevmc.compound.core.reflect.WrappedField;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.fml.javafmlmod.FMLModContainer;
-import net.minecraftforge.forgespi.language.ModFileScanData;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.fml.javafmlmod.FMLModContainer;
+import net.neoforged.neoforge.common.ModConfigSpec;
+import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -51,7 +51,7 @@ public class CompoundConfig<T> {
     private final CompoundModConfig modConfig;
     private final String modId;
     private final ModConfig.Type configType;
-    private final ForgeConfigSpec forgeConfig;
+    private final ModConfigSpec forgeConfig;
     private final Set<IConfigFieldSerializer> objectSerializers;
 
     private final Class<T> configClass;
@@ -68,7 +68,7 @@ public class CompoundConfig<T> {
         this.objectSerializers.addAll(Arrays.stream(InternalRegistryEntrySerializer.DEFAULT_SERIALIZERS).toList());
         this.objectSerializers.add(new ForgeRegistryEntrySerializer());
 
-        Pair<Object, ForgeConfigSpec> configure = new ForgeConfigSpec.Builder().configure(this::loadConfig);
+        Pair<Object, ModConfigSpec> configure = new ModConfigSpec.Builder().configure(this::loadConfig);
         this.forgeConfig = configure.getRight();
 
         if (container instanceof FMLModContainer) {
@@ -123,7 +123,7 @@ public class CompoundConfig<T> {
         }
     }
 
-    private CompoundConfig loadConfig(ForgeConfigSpec.Builder builder) {
+    private CompoundConfig loadConfig(ModConfigSpec.Builder builder) {
         if (this.objectSerializers.isEmpty()) {
             List<ModFileScanData> modScanData = ModList.get().getAllScanData();
             ArrayList<ModFileScanData.AnnotationData> annotationData = Lists.newArrayList();
@@ -202,7 +202,7 @@ public class CompoundConfig<T> {
         return this.modId;
     }
 
-    protected ForgeConfigSpec getForgeConfig() {
+    protected ModConfigSpec getForgeConfig() {
         return this.forgeConfig;
     }
 

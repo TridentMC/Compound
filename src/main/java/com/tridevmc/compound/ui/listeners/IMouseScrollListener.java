@@ -27,8 +27,9 @@ public interface IMouseScrollListener {
      * @param screen   the screen context where the event took place.
      * @param x        the current x position of the mouse cursor.
      * @param y        the current y position of the mouse cursor.
-     * @param distance the distance that the scroll wheel moved.
+     * @param scrollX the distance that the scroll wheel moved on the x-axis.
+     * @param scrollY the distance that the scroll wheel moved on the y-axis.
      */
-    void listen(IScreenContext screen, double x, double y, double distance);
+    void listen(IScreenContext screen, double x, double y, double scrollX, double scrollY);
 
 }

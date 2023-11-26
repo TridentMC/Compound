@@ -39,7 +39,7 @@ public class ForgeRegistryEntrySerializer<T> implements IConfigFieldSerializer<T
         if (field.getRegistry() == null) {
             throw new NullPointerException("Unable to find valid registry with name " + field.getRegistryName().toString());
         } else {
-            T registeredValue = field.getRegistry().getValue(new ResourceLocation(value));
+            T registeredValue = field.getRegistry().get(new ResourceLocation(value));
             if (registeredValue == null) {
                 throw new NullPointerException("Unable to find valid value for key " + value);
             } else {
