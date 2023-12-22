@@ -50,10 +50,6 @@ public class MessageConcept {
         return this.messageSide;
     }
 
-    public void toBytes(Message msg, FriendlyByteBuf target) {
-        this.toBytes(msg, target.capacity(target.capacity()));
-    }
-
     public void toBytes(Message msg, ByteBuf target) {
         List<MessageField> booleanFields = this.messageFields.stream()
                 .filter(this::isFieldBoolean).sorted(
