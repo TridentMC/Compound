@@ -3,121 +3,141 @@ package com.tridevmc.compound.ui.sprite;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 
 /**
- * Implementation of {@link IScreenSpriteWriter} that tiles the sprite within the given dimensions.
+ * Implementation of {@link IScreenSpriteWriter} that draws a nine-slice sprite within the given dimensions.
  */
 public class ScreenSpriteWriterNineSlice implements IScreenSpriteWriter {
 
-    public ScreenSpriteWriterNineSlice(float leftBorder, float rightBorder, float topBorder, float bottomBorder) {
+    public ScreenSpriteWriterNineSlice(int leftBorder, int rightBorder, int topBorder, int bottomBorder) {
         this.leftBorder = leftBorder;
         this.rightBorder = rightBorder;
         this.topBorder = topBorder;
         this.bottomBorder = bottomBorder;
     }
 
-    private final float leftBorder, rightBorder, topBorder, bottomBorder;
+    private final int leftBorder, rightBorder, topBorder, bottomBorder;
 
     @Override
     public void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height, int zLevel) {
-        screen.bindTexture(sprite);
-        var minU = sprite.getMinU();
-        var minV = sprite.getMinV();
-        var maxU = sprite.getMaxU();
-        var maxV = sprite.getMaxV();
-        var spriteWidth = sprite.getWidth();
-        var spriteHeight = sprite.getHeight();
-        var leftWidth = leftBorder;
-        var rightWidth = rightBorder;
-        var topHeight = topBorder;
-        var bottomHeight = bottomBorder;
-        var centerWidth = width - leftWidth - rightWidth;
-        var centerHeight = height - topHeight - bottomHeight;
-        var centerMinU = sprite.getU(leftWidth);
-        var centerMinV = sprite.getV(topHeight);
-        var centerMaxU = sprite.getU(leftWidth + centerWidth);
-        var centerMaxV = sprite.getV(topHeight + centerHeight);
-
+        // Draw all the corners first
         // Top left
-        screen.drawTexturedRect(
-                x, y, leftWidth, topHeight,
-                minU, minV,
-                sprite.getU(leftWidth), sprite.getV(topHeight),
+        screen.drawRectUsingSprite(
+                sprite,
+                x, y,
+                leftBorder, topBorder,
+                0, 0,
+                leftBorder, topBorder,
                 zLevel
         );
 
         // Top right
-        screen.drawTexturedRect(
-                x + leftWidth + centerWidth, y, rightWidth, topHeight,
-                sprite.getU(spriteWidth - rightWidth), minV,
-                maxU, sprite.getV(topHeight),
+        screen.drawRectUsingSprite(
+                sprite,
+                x + width - rightBorder, y,
+                rightBorder, topBorder,
+                sprite.getWidthInPixels() - rightBorder, 0,
+                sprite.getWidthInPixels(), topBorder,
                 zLevel
         );
 
         // Bottom left
-        screen.drawTexturedRect(
-                x, y + topHeight + centerHeight, leftWidth, bottomHeight,
-                minU, sprite.getV(spriteHeight - bottomHeight),
-                sprite.getU(leftWidth), maxV,
+        screen.drawRectUsingSprite(
+                sprite,
+                x, y + height - bottomBorder,
+                leftBorder, bottomBorder,
+                0, sprite.getHeightInPixels() - bottomBorder,
+                leftBorder, sprite.getHeightInPixels(),
                 zLevel
         );
 
         // Bottom right
-        screen.drawTexturedRect(
-                x + leftWidth + centerWidth, y + topHeight + centerHeight, rightWidth, bottomHeight,
-                sprite.getU(spriteWidth - rightWidth), sprite.getV(spriteHeight - bottomHeight),
-                maxU, maxV,
+        screen.drawRectUsingSprite(
+                sprite,
+                x + width - rightBorder, y + height - bottomBorder,
+                rightBorder, bottomBorder,
+                sprite.getWidthInPixels() - rightBorder, sprite.getHeightInPixels() - bottomBorder,
+                sprite.getWidthInPixels(), sprite.getHeightInPixels(),
                 zLevel
         );
 
+        // Draw the top and bottom edges
         // Top
-        for (int i = 0; i < centerWidth; i++) {
-            screen.drawTexturedRect(
-                    x + leftWidth + i, y, 1, topHeight,
-                    centerMinU + i / centerWidth * (centerMaxU - centerMinU), minV,
-                    centerMinU + (i + 1) / centerWidth * (centerMaxU - centerMinU), sprite.getV(topHeight),
+        var maxSegmentWidth = sprite.getWidthInPixels() - leftBorder - rightBorder;
+        var effectiveWidth = width - leftBorder - rightBorder;
+        var segmentCount = (int) Math.ceil(effectiveWidth / maxSegmentWidth);
+        for (int i = 0; i < segmentCount; i++) {
+            var segmentWidth = Math.min(effectiveWidth - (i * maxSegmentWidth), maxSegmentWidth);
+            screen.drawRectUsingSprite(
+                    sprite,
+                    x + leftBorder + (i * maxSegmentWidth), y,
+                    segmentWidth, topBorder,
+                    leftBorder, 0,
+                    leftBorder + segmentWidth, topBorder,
                     zLevel
             );
         }
 
         // Bottom
-        for (int i = 0; i < centerWidth; i++) {
-            screen.drawTexturedRect(
-                    x + leftWidth + i, y + topHeight + centerHeight, 1, bottomHeight,
-                    centerMinU + i / centerWidth * (centerMaxU - centerMinU), sprite.getV(spriteHeight - bottomHeight),
-                    centerMinU + (i + 1) / centerWidth * (centerMaxU - centerMinU), maxV,
+        for (int i = 0; i < segmentCount; i++) {
+            var segmentWidth = Math.min(effectiveWidth - (i * maxSegmentWidth), maxSegmentWidth);
+            screen.drawRectUsingSprite(
+                    sprite,
+                    x + leftBorder + (i * maxSegmentWidth), y + height - bottomBorder,
+                    segmentWidth, bottomBorder,
+                    leftBorder, sprite.getHeightInPixels() - bottomBorder,
+                    leftBorder + segmentWidth, sprite.getHeightInPixels(),
                     zLevel
             );
         }
 
+        // Draw the left and right edges
         // Left
-        for (int i = 0; i < centerHeight; i++) {
-            screen.drawTexturedRect(
-                    x, y + topHeight + i, leftWidth, 1,
-                    minU, centerMinV + i / centerHeight * (centerMaxV - centerMinV),
-                    sprite.getU(leftWidth), centerMinV + (i + 1) / centerHeight * (centerMaxV - centerMinV),
+        var maxSegmentHeight = sprite.getHeightInPixels() - topBorder - bottomBorder;
+        var effectiveHeight = height - topBorder - bottomBorder;
+        var segmentHeightCount = (int) Math.ceil(effectiveHeight / maxSegmentHeight);
+        for (int i = 0; i < segmentHeightCount; i++) {
+            var segmentHeight = Math.min(effectiveHeight - (i * maxSegmentHeight), maxSegmentHeight);
+            screen.drawRectUsingSprite(
+                    sprite,
+                    x, y + topBorder + (i * maxSegmentHeight),
+                    leftBorder, segmentHeight,
+                    0, topBorder,
+                    leftBorder, topBorder + segmentHeight,
                     zLevel
             );
         }
 
         // Right
-        for (int i = 0; i < centerHeight; i++) {
-            screen.drawTexturedRect(
-                    x + leftWidth + centerWidth, y + topHeight + i, rightWidth, 1,
-                    sprite.getU(spriteWidth - rightWidth), centerMinV + i / centerHeight * (centerMaxV - centerMinV),
-                    maxU, centerMinV + (i + 1) / centerHeight * (centerMaxV - centerMinV),
+        for (int i = 0; i < segmentHeightCount; i++) {
+            var segmentHeight = Math.min(effectiveHeight - (i * maxSegmentHeight), maxSegmentHeight);
+            screen.drawRectUsingSprite(
+                    sprite,
+                    x + width - rightBorder, y + topBorder + (i * maxSegmentHeight),
+                    rightBorder, segmentHeight,
+                    sprite.getWidthInPixels() - rightBorder, topBorder,
+                    sprite.getWidthInPixels(), topBorder + segmentHeight,
                     zLevel
             );
         }
 
-        // Center (finally)
-        for (int i = 0; i < centerWidth; i++) {
-            for (int j = 0; j < centerHeight; j++) {
-                screen.drawTexturedRect(
-                        x + leftWidth + i, y + topHeight + j, 1, 1,
-                        centerMinU + i / centerWidth * (centerMaxU - centerMinU), centerMinV + j / centerHeight * (centerMaxV - centerMinV),
-                        centerMinU + (i + 1) / centerWidth * (centerMaxU - centerMinU), centerMinV + (j + 1) / centerHeight * (centerMaxV - centerMinV),
+        // Draw the center
+        var centerWidth = width - leftBorder - rightBorder;
+        var centerHeight = height - topBorder - bottomBorder;
+        var horizontalSegmentCount = (int) Math.ceil(centerWidth / maxSegmentWidth);
+        var verticalSegmentCount = (int) Math.ceil(centerHeight / maxSegmentHeight);
+        for (int i = 0; i < horizontalSegmentCount; i++) {
+            var segmentWidth = Math.min(centerWidth - (i * maxSegmentWidth), maxSegmentWidth);
+            for (int j = 0; j < verticalSegmentCount; j++) {
+                var segmentHeight = Math.min(centerHeight - (j * maxSegmentHeight), maxSegmentHeight);
+                screen.drawRectUsingSprite(
+                        sprite,
+                        x + leftBorder + (i * maxSegmentWidth), y + topBorder + (j * maxSegmentHeight),
+                        segmentWidth, segmentHeight,
+                        leftBorder, topBorder,
+                        leftBorder + segmentWidth, topBorder + segmentHeight,
                         zLevel
                 );
             }
         }
     }
+
 }

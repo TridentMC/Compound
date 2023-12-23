@@ -110,7 +110,7 @@ public interface IScreenContext extends IPrimitiveScreenContext {
      * @param rect   the position and dimensions of the rect to draw.
      */
     default void drawSprite(IScreenSprite sprite, Rect2F rect, int zLevel) {
-        this.drawSprite(rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), sprite, zLevel);
+        this.drawSprite(sprite, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), zLevel);
     }
 
     /**
@@ -133,6 +133,31 @@ public interface IScreenContext extends IPrimitiveScreenContext {
      */
     default void drawRectUsingSprite(IScreenSprite sprite, Rect2F rect, UVData uv, int zLevel) {
         this.drawRectUsingSprite(sprite, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), uv.getU(), uv.getV(), zLevel);
+    }
+
+    /**
+     * Draws a textured rect on the screen matching the provided rect data using the given sprite for calculating uv data.
+     *
+     * @param sprite the sprite to draw on the screen, used for gathering uv data and determining tiling behaviour.
+     * @param rect   the position and dimensions of the rect to draw.
+     * @param minUvs the minimum uvs for the rect.
+     * @param maxUvs the maximum uvs for the rect.
+     */
+    default void drawRectUsingSprite(IScreenSprite sprite, Rect2F rect, UVData minUvs, UVData maxUvs) {
+        this.drawRectUsingSprite(sprite, rect, minUvs, maxUvs, 0);
+    }
+
+    /**
+     * Draws a textured rect on the screen matching the provided rect data using the given sprite for calculating uv data.
+     *
+     * @param sprite the sprite to draw on the screen, used for gathering uv data and determining tiling behaviour.
+     * @param rect   the position and dimensions of the rect to draw.
+     * @param minUvs the minimum uvs for the rect.
+     * @param maxUvs the maximum uvs for the rect.
+     * @param zLevel the z level to draw the rect at.
+     */
+    default void drawRectUsingSprite(IScreenSprite sprite, Rect2F rect, UVData minUvs, UVData maxUvs, int zLevel) {
+        this.drawRectUsingSprite(sprite, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), minUvs.getU(), minUvs.getV(), maxUvs.getU(), maxUvs.getV(), zLevel);
     }
 
     /**

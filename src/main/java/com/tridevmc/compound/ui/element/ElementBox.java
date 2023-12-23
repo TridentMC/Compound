@@ -22,6 +22,7 @@ import com.tridevmc.compound.ui.UVData;
 import com.tridevmc.compound.ui.layout.ILayout;
 import com.tridevmc.compound.ui.layout.LayoutNone;
 import com.tridevmc.compound.ui.screen.IScreenContext;
+import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import net.minecraft.resources.ResourceLocation;
 
 
@@ -30,7 +31,7 @@ import net.minecraft.resources.ResourceLocation;
  */
 public class ElementBox extends Element {
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation("textures/gui/container/inventory.png");
+    private static final IScreenSprite INVENTORY_SPRITE = IScreenSprite.ofAssetLocation(new ResourceLocation("textures/gui/container/inventory.png"), 256, 256);
 
     public ElementBox(Rect2F dimensions) {
         this(dimensions, new LayoutNone());
@@ -44,7 +45,6 @@ public class ElementBox extends Element {
     public void drawBackground(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
 
-        screen.bindTexture(TEXTURE);
         this.drawCorners(ui);
         this.drawConnectingLines(ui);
         this.drawMiddle(ui);
@@ -59,12 +59,12 @@ public class ElementBox extends Element {
         float height = rect.getHeight();
 
         // top-left -> top-right -> bottom-left -> bottom-right
-        screen.drawTexturedRect(new Rect2F(xOff, yOff, 4, 4), new UVData(0, 0), new UVData(4, 4));
-        screen.drawTexturedRect(new Rect2F(xOff + width - 4, yOff, 4, 4),
+        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff, yOff, 4, 4), new UVData(0, 0), new UVData(4, 4));
+        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff + width - 4, yOff, 4, 4),
                 new UVData(172, 0), new UVData(176, 4));
-        screen.drawTexturedRect(new Rect2F(xOff, yOff + height - 4, 4, 4),
+        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff, yOff + height - 4, 4, 4),
                 new UVData(0, 162), new UVData(4, 166));
-        screen.drawTexturedRect(new Rect2F(xOff + width - 4, yOff + height - 4, 4, 4),
+        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff + width - 4, yOff + height - 4, 4, 4),
                 new UVData(172, 162), new UVData(176, 166));
     }
 
@@ -77,13 +77,13 @@ public class ElementBox extends Element {
         float height = rect.getHeight();
 
         // left -> right -> up -> down
-        screen.drawTexturedRect(new Rect2F(xOff, yOff + 4, 4, height - 8),
+        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff, yOff + 4, 4, height - 8),
                 new UVData(0, 4), new UVData(4, 5));
-        screen.drawTexturedRect(new Rect2F(xOff + width - 4, yOff + 4, 4, height - 8),
+        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff + width - 4, yOff + 4, 4, height - 8),
                 new UVData(172, 4), new UVData(176, 5));
-        screen.drawTexturedRect(new Rect2F(xOff + 4, yOff, width - 8, 4),
+        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff + 4, yOff, width - 8, 4),
                 new UVData(4, 0), new UVData(5, 4));
-        screen.drawTexturedRect(new Rect2F(xOff + 4, yOff + height - 4, width - 8, 4),
+        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff + 4, yOff + height - 4, width - 8, 4),
                 new UVData(4, 162), new UVData(5, 166));
 
     }
@@ -96,7 +96,7 @@ public class ElementBox extends Element {
         float width = rect.getWidth();
         float height = rect.getHeight();
 
-        screen.drawTexturedRect(new Rect2F(xOff + 4, yOff + 4, width - 8, height - 8),
+        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff + 4, yOff + 4, width - 8, height - 8),
                 new UVData(4, 4), new UVData(5, 5));
     }
 

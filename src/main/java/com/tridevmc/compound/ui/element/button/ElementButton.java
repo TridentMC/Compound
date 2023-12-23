@@ -123,7 +123,7 @@ public class ElementButton extends Element {
         if (button != 0)
             return;
 
-        Rect2F dimensions = this.getDrawnDimensions(screen);
+        Rect2F dimensions = this.getScreenspaceDimensions(screen);
         if (dimensions.isPointInRect(x, y) && this.canPress()) {
             if (!this.isHovered) {
                 this.hoverListeners.forEach((l) -> l.onButtonHover(x, y, true));

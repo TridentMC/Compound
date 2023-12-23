@@ -11,8 +11,8 @@ public class ScreenSpriteWriterStretch implements IScreenSpriteWriter {
 
     @Override
     public void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height, int zLevel) {
-        screen.bindTexture(sprite);
-        screen.drawTexturedRect(
+        screen.drawRectUsingSprite(
+                sprite,
                 x, y,
                 width, height,
                 sprite.getMinU(), sprite.getMinV(),

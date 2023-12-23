@@ -17,12 +17,7 @@ public interface IScreenSpriteWriter {
             case TILE -> new ScreenSpriteWriterTile();
             case NINE_SLICE -> {
                 var scale = (GuiSpriteScaling.NineSlice) scaling;
-                var border = scale.border();
-                if (border.left() == border.right() && border.top() == border.bottom() && border.left() == border.top()) {
-                    yield new ScreenSpriteWriterBorderedBox(border.left());
-                } else {
-                    yield new ScreenSpriteWriterNineSlice(border.left(), border.right(), border.top(), border.bottom());
-                }
+                yield new ScreenSpriteWriterNineSlice(scale.border().left(), scale.border().right(), scale.border().top(), scale.border().bottom());
             }
         };
     }

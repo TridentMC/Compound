@@ -11,19 +11,23 @@ public class ScreenSpriteWriterTile implements IScreenSpriteWriter {
 
     @Override
     public void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height, int zLevel) {
-        screen.bindTexture(sprite);
-        var spriteWidth = sprite.getWidth();
-        var spriteHeight = sprite.getHeight();
-        int xTiles = (int) Math.ceil(width / spriteWidth);
-        int yTiles = (int) Math.ceil(height / spriteHeight);
+        var spriteWidth = sprite.getWidthInPixels();
+        var spriteHeight = sprite.getHeightInPixels();
+        var horizontalTiles = (int) Math.ceil(width / spriteWidth);
+        var verticalTiles = (int) Math.ceil(height / spriteHeight);
 
-        for (int xTile = 0; xTile < xTiles; xTile++) {
-            for (int yTile = 0; yTile < yTiles; yTile++) {
-                var tileX = x + (xTile * spriteWidth);
-                var tileY = y + (yTile * spriteHeight);
-                var tileWidth = Math.min(width - (xTile * spriteWidth), spriteWidth);
-                var tileHeight = Math.min(height - (yTile * spriteHeight), spriteHeight);
-                screen.drawRectUsingSprite(sprite, tileX, tileY, tileWidth, tileHeight, 0, 0, zLevel);
+        for (int h = 0; h < horizontalTiles; h++) {
+            for (int v = 0; v < verticalTiles; v++) {
+                var tileX = x + (h * spriteWidth);
+                var tileY = y + (v * spriteHeight);
+                var tileWidth = Math.min(width - (h * spriteWidth), spriteWidth);
+                var tileHeight = Math.min(height - (v * spriteHeight), spriteHeight);
+                screen.drawRectUsingSprite(sprite,
+                        tileX, tileY,
+                        0, 0,
+                        tileWidth, tileHeight,
+                        zLevel
+                );
             }
         }
     }

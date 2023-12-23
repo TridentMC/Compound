@@ -18,7 +18,7 @@ public interface IScreenSprite {
      * @return a new screen sprite.
      */
     public static IScreenSprite of(TextureAtlasSprite sprite, IScreenSpriteWriter writer) {
-        var location = sprite.contents().name();
+        var location = sprite.atlasLocation();
         var minU = sprite.getU0();
         var minV = sprite.getV0();
         var maxU = sprite.getU1();
@@ -52,6 +52,16 @@ public interface IScreenSprite {
             @Override
             public float getMaxV() {
                 return maxV;
+            }
+
+            @Override
+            public int getWidthInPixels() {
+                return sprite.contents().width();
+            }
+
+            @Override
+            public int getHeightInPixels() {
+                return sprite.contents().height();
             }
         };
     }
@@ -90,21 +100,31 @@ public interface IScreenSprite {
 
             @Override
             public float getMinU() {
-                return 0;
+                return 0F;
             }
 
             @Override
             public float getMinV() {
-                return 0;
+                return 0F;
             }
 
             @Override
             public float getMaxU() {
-                return width;
+                return 1F;
             }
 
             @Override
             public float getMaxV() {
+                return 1F;
+            }
+
+            @Override
+            public int getWidthInPixels() {
+                return width;
+            }
+
+            @Override
+            public int getHeightInPixels() {
                 return height;
             }
         };
@@ -148,6 +168,20 @@ public interface IScreenSprite {
     float getMaxV();
 
     /**
+     * Gets the width of the sprite in pixels.
+     *
+     * @return the width of the sprite in pixels.
+     */
+    int getWidthInPixels();
+
+    /**
+     * Gets the height of the sprite in pixels.
+     *
+     * @return the height of the sprite in pixels.
+     */
+    int getHeightInPixels();
+
+    /**
      * Gets the width of the sprite.
      *
      * @return the width of the sprite.
@@ -172,7 +206,8 @@ public interface IScreenSprite {
      * @return the sprite U coordinate at the given U coordinate.
      */
     default float getU(float u) {
-        return this.getMinU() + (this.getMaxU() - this.getMinU()) * u / this.getWidth();
+        var scale = this.getWidth() / this.getWidthInPixels();
+        return this.getMinU() + (u * scale);
     }
 
     /**
@@ -182,7 +217,8 @@ public interface IScreenSprite {
      * @return the sprite V coordinate at the given V coordinate.
      */
     default float getV(float v) {
-        return this.getMinV() + (this.getMaxV() - this.getMinV()) * v / this.getHeight();
+        var scale = this.getHeight() / this.getHeightInPixels();
+        return this.getMinV() + (v * scale);
     }
 
 

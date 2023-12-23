@@ -24,6 +24,9 @@ import com.tridevmc.compound.ui.element.Element;
 import com.tridevmc.compound.ui.layout.ILayout;
 import com.tridevmc.compound.ui.layout.LayoutNone;
 import com.tridevmc.compound.ui.screen.IScreenContext;
+import com.tridevmc.compound.ui.sprite.IScreenSprite;
+import com.tridevmc.compound.ui.sprite.ScreenSpriteWriterNineSlice;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -37,7 +40,9 @@ import java.util.Objects;
  */
 public class ElementSlot extends Element {
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation("textures/gui/container/inventory.png");
+    private static final IScreenSprite SLOT_SPRITE = IScreenSprite.of(Minecraft.getInstance().getGuiSprites().getSprite(new ResourceLocation("container/slot")), new ScreenSpriteWriterNineSlice(
+            1, 1, 1, 1
+    ));
     private Slot slot;
     private boolean drawOverlay;
     private boolean drawUnderlay;
@@ -57,16 +62,7 @@ public class ElementSlot extends Element {
     public void drawBackground(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
         Rect2F rect = this.getDrawnDimensions(screen);
-        screen.bindTexture(TEXTURE);
-        screen.drawTexturedRect(rect, new UVData(8, 8), new UVData(8, 8));
-        screen.drawTexturedRect(new Rect2F(rect.getX(), rect.getY(), rect.getWidth() - 1, 1),
-                new UVData(7, 7), new UVData(7, 7));
-        screen.drawTexturedRect(new Rect2F(rect.getX(), rect.getY(), 1, rect.getHeight() - 1),
-                new UVData(7, 7), new UVData(7, 7));
-        screen.drawTexturedRect(new Rect2F(rect.getX() + rect.getWidth() - 1, rect.getY() + 1, 1, rect.getHeight() - 1),
-                new UVData(24, 8), new UVData(24, 8));
-        screen.drawTexturedRect(new Rect2F(rect.getX() + 1, rect.getY() + rect.getHeight() - 1, rect.getWidth() - 1, 1),
-                new UVData(24, 8), new UVData(24, 8));
+        screen.drawSprite(SLOT_SPRITE, rect);
     }
 
     @Override

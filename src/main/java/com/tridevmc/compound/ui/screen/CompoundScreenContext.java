@@ -126,10 +126,10 @@ public class CompoundScreenContext implements IScreenContext {
         var tessellator = Tesselator.getInstance();
         var bufferbuilder = Tesselator.getInstance().getBuilder();
         bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bufferbuilder.vertex(pose, (float) x, (float) (y + height), zLevel).uv(minU * 0.00390625F, maxV * 0.00390625F).endVertex();
-        bufferbuilder.vertex(pose, (float) (x + width), (float) (y + height), zLevel).uv(maxU * 0.00390625F, maxV * 0.00390625F).endVertex();
-        bufferbuilder.vertex(pose, (float) (x + width), (float) y, zLevel).uv(maxU * 0.00390625F, minV * 0.00390625F).endVertex();
-        bufferbuilder.vertex(pose, (float) x, (float) y, zLevel).uv(minU * 0.00390625F, minV * 0.00390625F).endVertex();
+        bufferbuilder.vertex(pose, (float) x, (float) (y + height), zLevel).uv(minU, maxV).endVertex();
+        bufferbuilder.vertex(pose, (float) (x + width), (float) (y + height), zLevel).uv(maxU, maxV).endVertex();
+        bufferbuilder.vertex(pose, (float) (x + width), (float) y, zLevel).uv(maxU, minV).endVertex();
+        bufferbuilder.vertex(pose, (float) x, (float) y, zLevel).uv(minU, minV).endVertex();
         tessellator.end();
     }
 

@@ -348,27 +348,27 @@ public interface IPrimitiveScreenContext {
     /**
      * Draws a textured rect on the screen matching the provided rect data using the given sprite, utilizing the writer to draw the sprite.
      *
+     * @param sprite the sprite to draw on the screen, used for gathering uv data and binding the texture.
      * @param x      the x coordinate to draw the rect at.
      * @param y      the y coordinate to draw the rect at.
      * @param width  the width of the rect to draw.
      * @param height the height of the rect to draw.
-     * @param sprite the sprite to draw on the screen, used for gathering uv data and binding the texture.
      */
-    default void drawSprite(float x, float y, float width, float height, IScreenSprite sprite) {
+    default void drawSprite(IScreenSprite sprite, float x, float y, float width, float height) {
         sprite.getWriter().drawSprite(asScreenContext(), sprite, x, y, width, height, 0);
     }
 
     /**
      * Draws a textured rect on the screen matching the provided rect data using the given sprite, utilizing the writer to draw the sprite.
      *
+     * @param sprite the sprite to draw on the screen, used for gathering uv data and binding the texture.
      * @param x      the x coordinate to draw the rect at.
      * @param y      the y coordinate to draw the rect at.
      * @param width  the width of the rect to draw.
      * @param height the height of the rect to draw.
-     * @param sprite the sprite to draw on the screen, used for gathering uv data and binding the texture.
      * @param zLevel the z level to draw the rect at.
      */
-    default void drawSprite(float x, float y, float width, float height, IScreenSprite sprite, int zLevel) {
+    default void drawSprite(IScreenSprite sprite, float x, float y, float width, float height, int zLevel) {
         sprite.getWriter().drawSprite(asScreenContext(), sprite, x, y, width, height, zLevel);
     }
 
@@ -400,8 +400,26 @@ public interface IPrimitiveScreenContext {
      * @param zLevel the z level to draw the rect at.
      */
     default void drawRectUsingSprite(IScreenSprite sprite, float x, float y, float width, float height, float u, float v, int zLevel) {
+        this.drawRectUsingSprite(sprite, x, y, width, height, u, v, u + width, v + height, zLevel);
+    }
+
+    /**
+     * Draws a textured rect on the screen matching the provided rect data using the given sprite, utilizing the sprite to gather UV data and bind the texture.
+     *
+     * @param sprite the sprite to draw on the screen, used for gathering uv data and binding the texture.
+     * @param x      the x coordinate to draw the rect at.
+     * @param y      the y coordinate to draw the rect at.
+     * @param width  the width of the rect to draw.
+     * @param height the height of the rect to draw.
+     * @param minU   the minimum u coordinate of the texture to draw.
+     * @param minV   the minimum v coordinate of the texture to draw.
+     * @param maxU   the maximum u coordinate of the texture to draw.
+     * @param maxV   the maximum v coordinate of the texture to draw.
+     * @param zLevel the z level to draw the rect at.
+     */
+    default void drawRectUsingSprite(IScreenSprite sprite, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV, int zLevel) {
         this.bindTexture(sprite);
-        this.drawTexturedRect(x, y, width, height, sprite.getU(u), sprite.getV(v), sprite.getU(u + width), sprite.getV(v + height), zLevel);
+        this.drawTexturedRect(x, y, width, height, sprite.getU(minU), sprite.getV(minV), sprite.getU(maxU), sprite.getV(maxV), zLevel);
     }
 
     /**
