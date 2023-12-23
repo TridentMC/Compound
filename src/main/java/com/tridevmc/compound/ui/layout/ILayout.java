@@ -26,14 +26,26 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 public interface ILayout {
 
     /**
-     * Transforms the given rect to match the layout requirements.
+     * Transforms the given rect into screenspace, this is used to determine the position of the element on the screen.
      *
      * @param screen  the screen that the element is being drawn on.
      * @param element the element that
      * @param rect    the rect to transform.
      * @return the transformed rect.
      */
-    Rect2F getTransformedRect(IScreenContext screen, IElement element, Rect2F rect);
+    Rect2F getScreenspaceRect(IScreenContext screen, IElement element, Rect2F rect);
+
+    /**
+     * Gets the rect used for drawing the element on the screen, allows the layout to effectively overwrite the position of an element even when the element uses a managed matrix stack.
+     *
+     * @param screen  the screen that the element is being drawn on.
+     * @param element the element that is being drawn.
+     * @param rect    the rect that is being drawn.
+     * @return the rect to draw the element at.
+     */
+    default Rect2F getDrawnRect(IScreenContext screen, IElement element, Rect2F rect) {
+        return !element.useManagedMatrix() ? this.getScreenspaceRect(screen, element, rect) : rect;
+    }
 
     /**
      * Applies the layout to the active matrix stack, pushes and pops are expected to be handled by the caller.
@@ -42,7 +54,7 @@ public interface ILayout {
      * @param element the element that is being drawn.
      */
     default void applyToMatrix(IScreenContext screen, IElement element) {
-        var origin = this.getTransformedRect(screen, element, element.getDimensions());
+        var origin = this.getScreenspaceRect(screen, element, element.getDimensions().setPosition(0, 0));
 
         screen.getActiveStack().translate(origin.getX(), origin.getY(), 0);
     }

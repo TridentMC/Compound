@@ -218,7 +218,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
                 .findFirst();
 
         return matchingSlot.map(slot -> this.slotElements.get(slot)
-                        .getDrawnDimensions(this.screenContext)
+                        .getScreenspaceDimensions(this.screenContext)
                         .isPointInRect(mouseX, mouseY))
                 .orElseGet(() -> super.isHovering(x, y, width, height, mouseX, mouseY));
     }

@@ -40,7 +40,7 @@ public class LayoutCentered implements ILayout {
     }
 
     @Override
-    public Rect2F getTransformedRect(IScreenContext screen, IElement element, Rect2F rect) {
+    public Rect2F getScreenspaceRect(IScreenContext screen, IElement element, Rect2F rect) {
         float width = screen.getWidth();
         float height = screen.getHeight();
         if (this.parent != null) {

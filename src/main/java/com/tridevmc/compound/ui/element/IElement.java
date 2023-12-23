@@ -135,11 +135,7 @@ public interface IElement {
      * @return the transformed rect for this element.
      */
     default Rect2F getDrawnDimensions(IScreenContext screen) {
-        if (!this.useManagedMatrix()) {
-            return this.getLayout().getTransformedRect(screen, this, this.getDimensions());
-        } else {
-            return this.getDimensions();
-        }
+        return this.getLayout().getDrawnRect(screen, this, this.getDimensions());
     }
 
     /**
@@ -149,7 +145,7 @@ public interface IElement {
      * @return the transformed rect for this element.
      */
     default Rect2F getScreenspaceDimensions(IScreenContext screen) {
-        return this.getLayout().getTransformedRect(screen, this, this.getDimensions());
+        return this.getLayout().getScreenspaceRect(screen, this, this.getDimensions());
     }
 
 }

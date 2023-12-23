@@ -39,9 +39,17 @@ public class LayoutMulti implements ILayout {
     }
 
     @Override
-    public Rect2F getTransformedRect(IScreenContext screen, IElement element, Rect2F rect) {
+    public Rect2F getDrawnRect(IScreenContext screen, IElement element, Rect2F rect) {
         for (ILayout layout : this.layouts) {
-            rect = layout.getTransformedRect(screen, element, rect);
+            rect = layout.getDrawnRect(screen, element, rect);
+        }
+        return rect;
+    }
+
+    @Override
+    public Rect2F getScreenspaceRect(IScreenContext screen, IElement element, Rect2F rect) {
+        for (ILayout layout : this.layouts) {
+            rect = layout.getScreenspaceRect(screen, element, rect);
         }
         return rect;
     }

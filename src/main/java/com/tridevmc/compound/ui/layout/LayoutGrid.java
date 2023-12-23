@@ -118,7 +118,7 @@ public class LayoutGrid implements ILayout {
     }
 
     @Override
-    public Rect2F getTransformedRect(IScreenContext screen, IElement element, Rect2F rect) {
+    public Rect2F getScreenspaceRect(IScreenContext screen, IElement element, Rect2F rect) {
         if (this.lastElement == element || this.lastLayer != screen.getCurrentLayer()) {
             this.recalculateSizes();
         } else {
@@ -128,4 +128,12 @@ public class LayoutGrid implements ILayout {
         return this.cachedElementDimensions.getOrDefault(element, element.getDimensions());
     }
 
+    @Override
+    public Rect2F getDrawnRect(IScreenContext screen, IElement element, Rect2F rect) {
+        if (!element.useManagedMatrix()) {
+            return this.getScreenspaceRect(screen, element, rect);
+        } else {
+            return rect.setPosition(0, 0);
+        }
+    }
 }
