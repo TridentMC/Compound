@@ -141,9 +141,4 @@ public class ElementSlot extends Element {
     public void setDrawUnderlay(boolean drawUnderlay) {
         this.drawUnderlay = drawUnderlay;
     }
-
-    @Override
-    public boolean useManagedMatrix() {
-        return true;
-    }
 }
