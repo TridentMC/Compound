@@ -141,4 +141,10 @@ public class ElementSlot extends Element {
     public void setDrawUnderlay(boolean drawUnderlay) {
         this.drawUnderlay = drawUnderlay;
     }
+
+    @Override
+    public boolean useManagedMatrix() {
+        // Slots can't use a managed matrix because they have to draw labels and tooltips directly to the screen using the mouse position.
+        return false;
+    }
 }
