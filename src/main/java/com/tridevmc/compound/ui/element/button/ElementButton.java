@@ -19,11 +19,11 @@ package com.tridevmc.compound.ui.element.button;
 import com.google.common.collect.Lists;
 import com.tridevmc.compound.ui.ICompoundUI;
 import com.tridevmc.compound.ui.Rect2F;
-import com.tridevmc.compound.ui.UVData;
 import com.tridevmc.compound.ui.element.Element;
 import com.tridevmc.compound.ui.layout.ILayout;
 import com.tridevmc.compound.ui.listeners.IMousePressListener;
 import com.tridevmc.compound.ui.screen.IScreenContext;
+import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
@@ -36,12 +36,14 @@ import java.util.List;
  */
 public class ElementButton extends Element {
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation("textures/gui/widgets.png");
+    private static final ResourceLocation ENABLED_TEXTURE_LOCATION = new ResourceLocation("widget/button");
+    private static final ResourceLocation DISABLED_TEXTURE_LOCATION = new ResourceLocation("widget/button_disabled");
+    private static final ResourceLocation HIGHLIGHTED_TEXTURE_LOCATION = new ResourceLocation("widget/button_highlighted");
     private boolean isEnabled;
     private boolean isVisible;
     private boolean isHovered;
-    private List<IButtonPressListener> pressListeners;
-    private List<IButtonHoverListener> hoverListeners;
+    private final List<IButtonPressListener> pressListeners;
+    private final List<IButtonHoverListener> hoverListeners;
 
     public ElementButton(Rect2F dimensions, ILayout layout) {
         super(dimensions, layout);
@@ -55,7 +57,7 @@ public class ElementButton extends Element {
     @Override
     public void drawBackground(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        Rect2F dimensions = this.getTransformedDimensions(screen);
+        Rect2F dimensions = this.getScreenspaceDimensions(screen);
         double mouseX = screen.getMouseX();
         double mouseY = screen.getMouseY();
         if (dimensions.isPointInRect(mouseX, mouseY) && this.canPress()) {
@@ -71,90 +73,18 @@ public class ElementButton extends Element {
         }
 
         if (this.isVisible()) {
-            screen.bindTexture(TEXTURE);
-            this.drawCorners(ui);
-            this.drawConnectingLines(ui);
-            this.drawMiddle(ui);
+            var sprite = switch (this.getButtonState()) {
+                case ENABLED -> IScreenSprite.of(ENABLED_TEXTURE_LOCATION);
+                case DISABLED -> IScreenSprite.of(DISABLED_TEXTURE_LOCATION);
+                case HIGHLIGHTED -> IScreenSprite.of(HIGHLIGHTED_TEXTURE_LOCATION);
+            };
+            screen.drawSprite(sprite, this.getDrawnDimensions(screen));
         }
     }
 
     @Override
     public void initElement(ICompoundUI ui) {
         ui.addListener((IMousePressListener) this::onMousePress);
-    }
-
-    private UVData getUvData() {
-        int uvX = 0, uvY = 46;
-
-        if (this.isEnabled()) {
-            uvY += 20;
-            if (this.isHovered) {
-                uvY += 20;
-            }
-        }
-
-        return new UVData(uvX, uvY);
-    }
-
-    private void drawCorners(ICompoundUI ui) {
-        IScreenContext screen = ui.getScreenContext();
-        Rect2F rect = this.getTransformedDimensions(screen);
-        UVData uvData = this.getUvData();
-        float xOff = rect.getX();
-        float yOff = rect.getY();
-        float width = rect.getWidth();
-        float height = rect.getHeight();
-
-        // top-left -> top-right -> bottom-left -> bottom-right
-        screen.drawTexturedRect(new Rect2F(xOff, yOff, 3, 3), uvData);
-        screen.drawTexturedRect(new Rect2F(xOff + width - 3, yOff, 3, 3),
-                new UVData(uvData.getU() + 197, uvData.getV()));
-        screen.drawTexturedRect(new Rect2F(xOff, yOff + height - 3, 3, 3),
-                new UVData(uvData.getU(), uvData.getV() + 17));
-        screen.drawTexturedRect(new Rect2F(xOff + width - 3, yOff + height - 3, 3, 3),
-                new UVData(uvData.getU() + 197, uvData.getV() + 17));
-    }
-
-    private void drawConnectingLines(ICompoundUI ui) {
-        IScreenContext screen = ui.getScreenContext();
-        Rect2F rect = this.getTransformedDimensions(screen);
-        UVData uvData = this.getUvData();
-        float xOff = rect.getX();
-        float yOff = rect.getY();
-        float width = rect.getWidth();
-        float height = rect.getHeight();
-
-        // left -> right -> top -> bottom
-        screen.drawTiledTexturedRect(new Rect2F(xOff, yOff + 3, 3, height - 6),
-                new UVData(uvData.getU(), uvData.getV() + 3),
-                new UVData(uvData.getU() + 3, uvData.getV() + 17));
-
-        screen.drawTiledTexturedRect(new Rect2F(xOff + width - 3, yOff + 3, 3, height - 6),
-                new UVData(uvData.getU() + 197, uvData.getV() + 3),
-                new UVData(uvData.getU() + 200, uvData.getV() + 17));
-
-        screen.drawTiledTexturedRect(new Rect2F(xOff + 3, yOff, width - 6, 3),
-                new UVData(uvData.getU() + 3, uvData.getV()),
-                new UVData(uvData.getU() + 197, uvData.getV() + 3));
-
-        screen.drawTiledTexturedRect(new Rect2F(xOff + 3, yOff + height - 3, width - 6, 3),
-                new UVData(uvData.getU() + 3, uvData.getV() + 17),
-                new UVData(uvData.getU() + 197, uvData.getV() + 20));
-
-    }
-
-    private void drawMiddle(ICompoundUI ui) {
-        IScreenContext screen = ui.getScreenContext();
-        Rect2F rect = this.getTransformedDimensions(screen);
-        UVData uvData = this.getUvData();
-        float xOff = rect.getX();
-        float yOff = rect.getY();
-        float width = rect.getWidth();
-        float height = rect.getHeight();
-
-        screen.drawTiledTexturedRect(new Rect2F(xOff + 3, yOff + 3, width - 6, height - 6),
-                new UVData(uvData.getU() + 3, uvData.getV() + 3),
-                new UVData(uvData.getU() + 197, uvData.getV() + 17));
     }
 
     public void addPressListener(IButtonPressListener listener) {
@@ -193,7 +123,7 @@ public class ElementButton extends Element {
         if (button != 0)
             return;
 
-        Rect2F dimensions = this.getTransformedDimensions(screen);
+        Rect2F dimensions = this.getDrawnDimensions(screen);
         if (dimensions.isPointInRect(x, y) && this.canPress()) {
             if (!this.isHovered) {
                 this.hoverListeners.forEach((l) -> l.onButtonHover(x, y, true));
@@ -206,6 +136,22 @@ public class ElementButton extends Element {
 
     private boolean canPress() {
         return this.isVisible && this.isEnabled;
+    }
+
+    private ButtonState getButtonState() {
+        if (!this.isEnabled) {
+            return ButtonState.DISABLED;
+        } else if (this.isHovered) {
+            return ButtonState.HIGHLIGHTED;
+        } else {
+            return ButtonState.ENABLED;
+        }
+    }
+
+    private enum ButtonState {
+        ENABLED,
+        DISABLED,
+        HIGHLIGHTED
     }
 
 }

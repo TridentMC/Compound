@@ -115,12 +115,40 @@ public interface IElement {
     void setLayout(@Nonnull ILayout layout);
 
     /**
+     * Determines if the element should rely on the layout to manipulate the matrix stack before rendering instead of
+     * transforming our dimensions directly.
+     *
+     * @return true if the element should use the layout to manipulate the matrix stack.
+     */
+    default boolean useManagedMatrix() {
+        return true;
+    }
+
+    /**
+     * Gets the drawn dimensions of the element, this is the dimensions that are used to draw the element on the screen.
+     * If the element is using a managed matrix, this will be the transformed dimensions of the element, otherwise it
+     * will be the same as the elements dimensions.
+     * <p>
+     * If you need to check the actual rendered dimensions of the element, use {@link #getScreenspaceDimensions(IScreenContext)}.
+     *
+     * @param screen the screen to pass to the layout.
+     * @return the transformed rect for this element.
+     */
+    default Rect2F getDrawnDimensions(IScreenContext screen) {
+        if (!this.useManagedMatrix()) {
+            return this.getLayout().getTransformedRect(screen, this, this.getDimensions());
+        } else {
+            return this.getDimensions();
+        }
+    }
+
+    /**
      * Uses the layout of the element to get the actual position of the element on the screen.
      *
      * @param screen the screen to pass to the layout.
      * @return the transformed rect for this element.
      */
-    default Rect2F getTransformedDimensions(IScreenContext screen) {
+    default Rect2F getScreenspaceDimensions(IScreenContext screen) {
         return this.getLayout().getTransformedRect(screen, this, this.getDimensions());
     }
 

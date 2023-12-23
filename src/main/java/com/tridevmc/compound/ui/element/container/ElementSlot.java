@@ -56,7 +56,7 @@ public class ElementSlot extends Element {
     @Override
     public void drawBackground(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        Rect2F rect = this.getTransformedDimensions(screen);
+        Rect2F rect = this.getDrawnDimensions(screen);
         screen.bindTexture(TEXTURE);
         screen.drawTexturedRect(rect, new UVData(8, 8), new UVData(8, 8));
         screen.drawTexturedRect(new Rect2F(rect.getX(), rect.getY(), rect.getWidth() - 1, 1),
@@ -75,7 +75,7 @@ public class ElementSlot extends Element {
             this.drawHighlightUnderlay(ui.getScreenContext());
         }
 
-        Rect2F rect = this.getTransformedDimensions(ui.getScreenContext());
+        Rect2F rect = this.getDrawnDimensions(ui.getScreenContext());
         rect = new Rect2F(rect.getX() + 1, rect.getY() + 1, rect.getWidth() - 2, rect.getHeight() - 2);
         ui.getScreenContext().drawItemStack(this.displayStack, rect, this.displayString, 100);
 
@@ -95,7 +95,7 @@ public class ElementSlot extends Element {
     }
 
     private void drawHighlightOverlay(IScreenContext screen) {
-        Rect2F highlightArea = this.getTransformedDimensions(screen).offset(new Rect2F(1, 1, -1, -1));
+        Rect2F highlightArea = this.getDrawnDimensions(screen).offset(new Rect2F(1, 1, -1, -1));
         RenderSystem.disableDepthTest();
         RenderSystem.colorMask(true, true, true, false);
         int slotColor = -2130706433;
@@ -105,7 +105,7 @@ public class ElementSlot extends Element {
     }
 
     private void drawHighlightUnderlay(IScreenContext screen) {
-        Rect2F highlightArea = this.getTransformedDimensions(screen).offset(new Rect2F(1, 1, -1, -1));
+        Rect2F highlightArea = this.getDrawnDimensions(screen).offset(new Rect2F(1, 1, -1, -1));
         int slotColor = -2130706433;
         screen.drawRect(highlightArea, slotColor, 100);
     }
@@ -122,7 +122,7 @@ public class ElementSlot extends Element {
     }
 
     public boolean isMouseOverSlot(IScreenContext screen) {
-        Rect2F rect = this.getTransformedDimensions(screen).offsetSize(-1, -1);
+        Rect2F rect = this.getScreenspaceDimensions(screen).offsetSize(-1, -1);
         return rect.isPointInRect(screen.getMouseX(), screen.getMouseY());
     }
 

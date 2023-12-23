@@ -71,9 +71,18 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
         this.activeStack = graphics.pose();
         this.mouseX = mouseX;
         this.mouseY = mouseY;
-        for (EnumUILayer layer : EnumUILayer.values()) {
+        for (var layer : EnumUILayer.values()) {
             this.currentLayer = layer;
-            this.elements.forEach((e) -> e.drawLayer(this, layer));
+            this.elements.forEach((e) -> {
+                if (e.useManagedMatrix()) {
+                    this.activeStack.pushPose();
+                    e.getLayout().applyToMatrix(this.screenContext, e);
+                    e.drawLayer(this, layer);
+                    this.activeStack.popPose();
+                } else {
+                    e.drawLayer(this, layer);
+                }
+            });
         }
 
         super.render(graphics, mouseX, mouseY, partialTicks);

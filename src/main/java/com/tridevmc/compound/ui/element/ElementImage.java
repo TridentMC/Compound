@@ -43,7 +43,7 @@ public class ElementImage extends Element {
     public void drawLayer(ICompoundUI ui, EnumUILayer layer) {
         if (this.layer == layer) {
             IScreenContext context = ui.getScreenContext();
-            Rect2F dimensions = this.getTransformedDimensions(context);
+            Rect2F dimensions = this.getDrawnDimensions(context);
             context.bindTexture(this.textureLocation);
             context.drawTexturedRect(dimensions, min, max);
         }

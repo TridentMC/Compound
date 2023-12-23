@@ -91,11 +91,21 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
         this.elements.forEach((e) -> e.initElement(this));
     }
 
+    void renderElement(IElement element, EnumUILayer layer) {
+        if (element.useManagedMatrix()) {
+            this.getActiveStack().pushPose();
+            element.getLayout().applyToMatrix(this.screenContext, element);
+            element.drawLayer(this, layer);
+            this.getActiveStack().popPose();
+        } else {
+            element.drawLayer(this, layer);
+        }
+    }
 
     @Override
     protected void renderBg(GuiGraphics gg, float partialTicks, int mouseX, int mouseY) {
         this.currentLayer = EnumUILayer.BACKGROUND;
-        this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.BACKGROUND));
+        this.elements.forEach(e->renderElement(e, EnumUILayer.BACKGROUND));
     }
 
     @Override
@@ -105,7 +115,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
         modelStack.translate(-this.leftPos, -this.topPos, 0);
         RenderSystem.applyModelViewMatrix();
         this.currentLayer = EnumUILayer.FOREGROUND;
-        this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.FOREGROUND));
+        this.elements.forEach((e) -> renderElement(e, EnumUILayer.FOREGROUND));
         modelStack.popPose();
         RenderSystem.applyModelViewMatrix();
     }
@@ -119,7 +129,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
         this.updateSlotStates();
         super.render(gg, mouseX, mouseY, partialTicks);
         this.currentLayer = EnumUILayer.OVERLAY;
-        this.elements.forEach((e) -> e.drawLayer(this, EnumUILayer.OVERLAY));
+        this.elements.forEach((e) -> renderElement(e, EnumUILayer.OVERLAY));
     }
 
     @Override
@@ -208,7 +218,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
                 .findFirst();
 
         return matchingSlot.map(slot -> this.slotElements.get(slot)
-                        .getTransformedDimensions(this.screenContext)
+                        .getDrawnDimensions(this.screenContext)
                         .isPointInRect(mouseX, mouseY))
                 .orElseGet(() -> super.isHovering(x, y, width, height, mouseX, mouseY));
     }

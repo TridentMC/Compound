@@ -35,7 +35,7 @@ public class LayoutRelative implements ILayout {
 
     @Override
     public Rect2F getTransformedRect(IScreenContext screen, IElement element, Rect2F rect) {
-        Rect2F parentDimensions = this.relativeTo.getTransformedDimensions(screen);
+        Rect2F parentDimensions = this.relativeTo.getScreenspaceDimensions(screen);
         return rect.offsetPosition(parentDimensions.getX(), parentDimensions.getY());
     }
 

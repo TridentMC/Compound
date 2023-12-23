@@ -38,6 +38,22 @@ public class UVData {
         return this.v;
     }
 
+    public UVData add(float u, float v) {
+        return new UVData(this.u + u, this.v + v);
+    }
+
+    public UVData add(UVData uv) {
+        return this.add(uv.getU(), uv.getV());
+    }
+
+    public UVData sub(float u, float v) {
+        return new UVData(this.u - u, this.v - v);
+    }
+
+    public UVData sub(UVData uv) {
+        return this.sub(uv.getU(), uv.getV());
+    }
+
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

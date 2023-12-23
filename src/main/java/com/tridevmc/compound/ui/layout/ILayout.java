@@ -35,4 +35,16 @@ public interface ILayout {
      */
     Rect2F getTransformedRect(IScreenContext screen, IElement element, Rect2F rect);
 
+    /**
+     * Applies the layout to the active matrix stack, pushes and pops are expected to be handled by the caller.
+     *
+     * @param screen  the screen that the element is being drawn on.
+     * @param element the element that is being drawn.
+     */
+    default void applyToMatrix(IScreenContext screen, IElement element) {
+        var origin = this.getTransformedRect(screen, element, element.getDimensions());
+
+        screen.getActiveStack().translate(origin.getX(), origin.getY(), 0);
+    }
+
 }

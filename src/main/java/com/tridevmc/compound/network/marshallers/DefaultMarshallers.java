@@ -154,7 +154,7 @@ public class DefaultMarshallers {
     }
 
     private static void writeItemStack(ByteBuf buf, ItemStack stack) {
-        new FriendlyByteBuf(buf).writeItemStack(stack, false);
+        new FriendlyByteBuf(buf).writeItem(stack);
     }
 
     private static ItemStack readItemStack(ByteBuf buf) {

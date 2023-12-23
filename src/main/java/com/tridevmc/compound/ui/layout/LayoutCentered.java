@@ -44,7 +44,7 @@ public class LayoutCentered implements ILayout {
         float width = screen.getWidth();
         float height = screen.getHeight();
         if (this.parent != null) {
-            Rect2F parentDimensions = this.parent.getTransformedDimensions(screen);
+            Rect2F parentDimensions = this.parent.getDrawnDimensions(screen);
             width = parentDimensions.getWidth();
             height = parentDimensions.getHeight();
         }

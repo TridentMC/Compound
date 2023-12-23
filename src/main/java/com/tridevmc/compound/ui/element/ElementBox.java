@@ -43,6 +43,7 @@ public class ElementBox extends Element {
     @Override
     public void drawBackground(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
+
         screen.bindTexture(TEXTURE);
         this.drawCorners(ui);
         this.drawConnectingLines(ui);
@@ -51,25 +52,25 @@ public class ElementBox extends Element {
 
     private void drawCorners(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        Rect2F rect = this.getTransformedDimensions(screen);
+        Rect2F rect = this.getDrawnDimensions(screen);
         float xOff = rect.getX();
         float yOff = rect.getY();
         float width = rect.getWidth();
         float height = rect.getHeight();
 
         // top-left -> top-right -> bottom-left -> bottom-right
-        screen.drawTexturedRect(new Rect2F(xOff, yOff, 4, 4), new UVData(0, 0));
+        screen.drawTexturedRect(new Rect2F(xOff, yOff, 4, 4), new UVData(0, 0), new UVData(4, 4));
         screen.drawTexturedRect(new Rect2F(xOff + width - 4, yOff, 4, 4),
-                new UVData(172, 0));
+                new UVData(172, 0), new UVData(176, 4));
         screen.drawTexturedRect(new Rect2F(xOff, yOff + height - 4, 4, 4),
-                new UVData(0, 162));
+                new UVData(0, 162), new UVData(4, 166));
         screen.drawTexturedRect(new Rect2F(xOff + width - 4, yOff + height - 4, 4, 4),
-                new UVData(172, 162));
+                new UVData(172, 162), new UVData(176, 166));
     }
 
     private void drawConnectingLines(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        Rect2F rect = this.getTransformedDimensions(screen);
+        Rect2F rect = this.getDrawnDimensions(screen);
         float xOff = rect.getX();
         float yOff = rect.getY();
         float width = rect.getWidth();
@@ -89,7 +90,7 @@ public class ElementBox extends Element {
 
     private void drawMiddle(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        Rect2F rect = this.getTransformedDimensions(screen);
+        Rect2F rect = this.getDrawnDimensions(screen);
         float xOff = rect.getX();
         float yOff = rect.getY();
         float width = rect.getWidth();

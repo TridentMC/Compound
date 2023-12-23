@@ -17,7 +17,6 @@
 package com.tridevmc.compound.ui.element;
 
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.tridevmc.compound.ui.ICompoundUI;
 import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.layout.ILayout;
@@ -70,7 +69,7 @@ public class ElementLabel extends Element {
     @Override
     public void drawForeground(ICompoundUI ui) {
         IScreenContext screen = ui.getScreenContext();
-        Rect2F dimensions = this.getTransformedDimensions(screen);
+        Rect2F dimensions = this.getDrawnDimensions(screen);
 
         double nextYLevel = dimensions.getY();
         for (var line : this.lines) {

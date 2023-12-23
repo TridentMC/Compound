@@ -23,16 +23,12 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
-import com.tridevmc.compound.ui.Rect2F;
-import com.tridevmc.compound.ui.UVData;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.ItemStack;
@@ -101,50 +97,6 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void bindTexture(ResourceLocation texture) {
-        RenderSystem.setShaderTexture(0, texture);
-    }
-
-    @Override
-    public void drawGradientRect(Rect2F rect, int startColour, int endColour, int zLevel) {
-        float[] startColourUnpacked = this.getRGBA(startColour);
-        float r1 = startColourUnpacked[0];
-        float g1 = startColourUnpacked[1];
-        float b1 = startColourUnpacked[2];
-        float a1 = startColourUnpacked[3];
-
-        float[] endColourUnpacked = this.getRGBA(endColour);
-        float r2 = endColourUnpacked[0];
-        float g2 = endColourUnpacked[1];
-        float b2 = endColourUnpacked[2];
-        float a2 = endColourUnpacked[3];
-
-        RenderSystem.enableBlend();
-        //RenderSystem.disableTexture();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        var pose = this.getActiveStack().last().pose();
-        var tessellator = Tesselator.getInstance();
-        var bufferbuilder = tessellator.getBuilder();
-        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        bufferbuilder.vertex(pose, rect.getX() + rect.getWidth(), rect.getY(), zLevel)
-                .color(r1, g1, b1, a1)
-                .endVertex();
-        bufferbuilder.vertex(pose, rect.getX(), rect.getY(), zLevel)
-                .color(r1, g1, b1, a1)
-                .endVertex();
-        bufferbuilder.vertex(pose, rect.getX(), rect.getY() + rect.getHeight(), zLevel)
-                .color(r2, g2, b2, a2)
-                .endVertex();
-        bufferbuilder.vertex(pose, rect.getX() + rect.getWidth(), rect.getY() + rect.getHeight(), zLevel)
-                .color(r2, g2, b2, a2)
-                .endVertex();
-        tessellator.end();
-        //RenderSystem.enableTexture();
-        RenderSystem.disableBlend();
-    }
-
-    @Override
     public void drawFormattedCharSequence(FormattedCharSequence processor, float x, float y) {
         this.ui.getActiveGuiGraphics().drawString(this.getFont(), processor, x, y, 16777215, false);
     }
@@ -167,86 +119,18 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawTexturedRect(Rect2F rect, UVData uvs, int zLevel) {
-        this.drawTexturedRect(rect, uvs, new UVData(uvs.getU() + rect.getWidth(), uvs.getV() + rect.getHeight()));
-    }
-
-    @Override
-    public void drawTexturedRect(float x, float y, UVData minUvs, UVData maxUvs, int zLevel) {
-        this.drawTexturedRect(new Rect2F(x, y, maxUvs.getU() - minUvs.getU(), maxUvs.getV() - minUvs.getV()), minUvs, maxUvs);
-    }
-
-    @Override
-    public void drawTexturedRect(Rect2F rect, UVData minUvs, UVData maxUvs, int zLevel) {
-        double x = rect.getX();
-        double y = rect.getY();
-        double width = rect.getWidth();
-        double height = rect.getHeight();
+    public void drawTexturedRect(float x, float y, float width, float height, float minU, float minV, float maxU, float maxV, int zLevel) {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         var pose = this.getActiveStack().last().pose();
         var tessellator = Tesselator.getInstance();
         var bufferbuilder = Tesselator.getInstance().getBuilder();
         bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bufferbuilder.vertex(pose, (float) x, (float) (y + height), zLevel).uv(minUvs.getU() * 0.00390625F, maxUvs.getV() * 0.00390625F).endVertex();
-        bufferbuilder.vertex(pose, (float) (x + width), (float) (y + height), zLevel).uv(maxUvs.getU() * 0.00390625F, maxUvs.getV() * 0.00390625F).endVertex();
-        bufferbuilder.vertex(pose, (float) (x + width), (float) y, zLevel).uv(maxUvs.getU() * 0.00390625F, minUvs.getV() * 0.00390625F).endVertex();
-        bufferbuilder.vertex(pose, (float) x, (float) y, zLevel).uv(minUvs.getU() * 0.00390625F, minUvs.getV() * 0.00390625F).endVertex();
+        bufferbuilder.vertex(pose, (float) x, (float) (y + height), zLevel).uv(minU * 0.00390625F, maxV * 0.00390625F).endVertex();
+        bufferbuilder.vertex(pose, (float) (x + width), (float) (y + height), zLevel).uv(maxU * 0.00390625F, maxV * 0.00390625F).endVertex();
+        bufferbuilder.vertex(pose, (float) (x + width), (float) y, zLevel).uv(maxU * 0.00390625F, minV * 0.00390625F).endVertex();
+        bufferbuilder.vertex(pose, (float) x, (float) y, zLevel).uv(minU * 0.00390625F, minV * 0.00390625F).endVertex();
         tessellator.end();
-    }
-
-    @Override
-    public void drawTexturedRect(Rect2F rect, TextureAtlasSprite sprite, int zLevel) {
-        RenderSystem.setShaderTexture(0, sprite.contents().name());
-        this.drawTexturedRect(rect, new UVData(sprite.getU0(), sprite.getV0()), new UVData(sprite.getU1(), sprite.getV1()));
-    }
-
-    @Override
-    public void drawTexturedRect(Rect2F rect, UVData uvs, float textureWidth, float textureHeight, int zLevel) {
-        float f = 1.0F / textureWidth;
-        float f1 = 1.0F / textureHeight;
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        var pose = this.getActiveStack().last().pose();
-        var tessellator = Tesselator.getInstance();
-        var bufferbuilder = tessellator.getBuilder();
-        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bufferbuilder.vertex(pose, rect.getX(), rect.getY() + rect.getHeight(), zLevel).uv((uvs.getU() * f), (uvs.getV() + rect.getHeight()) * f1).endVertex();
-        bufferbuilder.vertex(pose, rect.getX() + rect.getWidth(), rect.getY() + rect.getHeight(), zLevel).uv(((uvs.getU() + rect.getWidth()) * f), ((uvs.getV() + rect.getHeight()) * f1)).endVertex();
-        bufferbuilder.vertex(pose, rect.getX() + rect.getWidth(), rect.getY(), zLevel).uv((uvs.getU() + rect.getWidth()) * f, (uvs.getV() * f1)).endVertex();
-        bufferbuilder.vertex(pose, rect.getX(), rect.getY(), zLevel).uv((uvs.getU() * f), (uvs.getV() * f1)).endVertex();
-        tessellator.end();
-    }
-
-    @Override
-    public void drawTexturedRect(Rect2F rect, UVData uvs, int uWidth, int vHeight, float tileWidth, float tileHeight, int zLevel) {
-        float f = 1.0F / tileWidth;
-        float f1 = 1.0F / tileHeight;
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        var pose = this.getActiveStack().last().pose();
-        var tessellator = Tesselator.getInstance();
-        var bufferbuilder = tessellator.getBuilder();
-        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bufferbuilder.vertex(pose, rect.getX(), rect.getY() + rect.getHeight(), zLevel).uv((uvs.getU() * f), ((uvs.getV() + vHeight) * f1)).endVertex();
-        bufferbuilder.vertex(pose, rect.getX() + rect.getWidth(), rect.getY() + rect.getHeight(), zLevel).uv(((uvs.getU() + uWidth) * f), ((uvs.getV() + vHeight) * f1)).endVertex();
-        bufferbuilder.vertex(pose, rect.getX() + rect.getWidth(), rect.getY(), zLevel).uv(((uvs.getU() + uWidth) * f), (uvs.getV() * f1)).endVertex();
-        bufferbuilder.vertex(pose, rect.getX(), rect.getY(), zLevel).uv((uvs.getU() * f), (uvs.getV() * f1)).endVertex();
-        tessellator.end();
-    }
-
-    @Override
-    public void drawTiledTexturedRect(Rect2F rect, UVData uvMin, UVData uvMax, int zLevel) {
-        float uvWidth = uvMax.getU() - uvMin.getU();
-        float uvHeight = uvMax.getV() - uvMin.getV();
-
-        for (int x = 0; x < rect.getWidth(); x += uvWidth) {
-            for (int y = 0; y < rect.getHeight(); y += uvHeight) {
-                float width = Math.min(uvWidth, rect.getWidth() - x);
-                float height = Math.min(uvHeight, rect.getHeight() - y);
-                this.drawTexturedRect(rect.offsetPosition(x, y).setSize(width, height), uvMin, new UVData(uvMin.getU() + width, uvMin.getV() + height));
-            }
-        }
     }
 
     @Override
@@ -260,32 +144,22 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawItemStack(ItemStack stack, Rect2F dimensions, String altText) {
-        this.drawItemStack(stack, dimensions, altText, 232);
-    }
-
-    @Override
-    public void drawItemStack(ItemStack stack, Rect2F dimensions, String altText, int blitOffset) {
-        Font font = IClientItemExtensions.of(stack).getFont(stack, IClientItemExtensions.FontContext.TOOLTIP);
+    public void drawItemStack(ItemStack stack, float x, float y, float width, float height, String altText, int zLevel) {
+        var font = IClientItemExtensions.of(stack).getFont(stack, IClientItemExtensions.FontContext.TOOLTIP);
         if (font == null) font = this.getFont();
-        PoseStack poseStack = this.getActiveStack();
+        var poseStack = this.getActiveStack();
         poseStack.pushPose();
-        poseStack.translate(dimensions.getX(), dimensions.getY(), 0);
+        poseStack.translate(x, y, 0);
         poseStack.scale(1F / 16F, 1F / 16F, 1);
-        poseStack.scale(dimensions.getWidth(), dimensions.getHeight(), 1);
+        poseStack.scale(width, height, 1);
         poseStack.pushPose();
-        poseStack.translate(0, 0, blitOffset);
+        poseStack.translate(0, 0, zLevel);
         RenderSystem.applyModelViewMatrix();
         this.ui.getActiveGuiGraphics().renderItem(stack, 0, 0);
         this.ui.getActiveGuiGraphics().renderItemDecorations(font, stack, 0, 0, altText);
         poseStack.popPose();
         poseStack.popPose();
         RenderSystem.applyModelViewMatrix();
-    }
-
-    @Override
-    public void drawItemStack(ItemStack stack, int x, int y, String altText) {
-        this.drawItemStack(stack, new Rect2F(x, y, 16, 16), altText);
     }
 
     @Override
