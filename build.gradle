@@ -85,5 +85,3 @@ compoundModules.each { LinkedHashMap<String, String> moduleData ->
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
-
-publish.dependsOn('reobfJar')
