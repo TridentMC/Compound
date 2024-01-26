@@ -1,11 +1,11 @@
 ext {
     // Mod Stuff
     modGroup = "com.tridevmc"
-    modVersion = "1.12.0"
+    modVersion = "1.12.1"
     modBaseName = "compound"
 
     // Forge Stuff
-    forgeVersion = "20.4.47-beta"
+    forgeVersion = "20.4.122-beta"
     mappingsChannel = "official"
     mappingsVersion = "1.20.4"
 }

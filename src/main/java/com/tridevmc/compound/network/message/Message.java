@@ -17,6 +17,7 @@
 package com.tridevmc.compound.network.message;
 
 import com.tridevmc.compound.network.core.CompoundNetwork;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -27,12 +28,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.PlayNetworkDirection;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 
@@ -77,13 +77,17 @@ public abstract class Message {
                 .forEach(this::sendTo);
     }
 
+    private MessageConcept getMessageConcept() {
+        return this.getNetwork().getMsgConcept(this);
+    }
+
     /**
      * Sends this message to the client of the given player.
      *
      * @param player the player to send the message to.
      */
     public void sendTo(@Nonnull ServerPlayer player) {
-        this.getNetwork().getNetworkChannel().sendTo(this, player.connection.connection, PlayNetworkDirection.PLAY_TO_CLIENT);
+        player.connection.send(this.getMessageConcept().createPayload(this));
     }
 
     /**
@@ -94,8 +98,15 @@ public abstract class Message {
      * @param range     the range around the point that the target clients are within.
      */
     public void sendToAllAround(@Nonnull ResourceKey<Level> dimension, @Nonnull BlockPos pos, double range) {
-        PacketDistributor.TargetPoint target = new PacketDistributor.TargetPoint(pos.getX(), pos.getY(), pos.getZ(), range, dimension);
-        this.getNetwork().getNetworkChannel().send(PacketDistributor.NEAR.with(() -> target), this);
+        this.sendToMatching(p -> {
+            ResourceKey<Level> playerDim = p.level().dimension();
+            if (playerDim.equals(dimension)) {
+                double dist = p.distanceToSqr(pos.getX(), pos.getY(), pos.getZ());
+                return dist <= range * range;
+            } else {
+                return false;
+            }
+        });
     }
 
     /**
@@ -104,7 +115,7 @@ public abstract class Message {
      * @param entity the entity that the target clients are tracking.
      */
     public void sendToAllTracking(@Nonnull Entity entity) {
-        this.getNetwork().getNetworkChannel().send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity), this);
+        this.sendToMatching(p -> p.level().dimension() == entity.level().dimension() && p.getChunkTrackingView().contains(entity.chunkPosition()));
     }
 
     /**
@@ -138,7 +149,7 @@ public abstract class Message {
      * @param chunk the chunk that the target clients are tracking.
      */
     public void sendToAllTracking(@Nonnull LevelChunk chunk) {
-        this.getNetwork().getNetworkChannel().send(PacketDistributor.TRACKING_CHUNK.with(() -> chunk), this);
+        this.sendToMatching(p -> p.level().dimension() == chunk.getLevel().dimension() && p.getChunkTrackingView().contains(chunk.getPos()));
     }
 
     /**
@@ -147,14 +158,14 @@ public abstract class Message {
      * @param dimension the dimension this message should be sent to.
      */
     public void sendToDimension(@Nonnull ResourceKey<Level> dimension) {
-        this.getNetwork().getNetworkChannel().send(PacketDistributor.DIMENSION.with(() -> dimension), this);
+        this.sendToMatching(p -> p.level().dimension() == dimension);
     }
 
     /**
      * Sends this message to the server to be executed.
      */
     public void sendToServer() {
-        this.getNetwork().getNetworkChannel().sendToServer(this);
+        Objects.requireNonNull(Minecraft.getInstance().getConnection()).send(this.getMessageConcept().createPayload(this));
     }
 
 }

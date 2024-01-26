@@ -24,14 +24,13 @@ import com.tridevmc.compound.network.message.MessageConcept;
 import com.tridevmc.compound.network.message.MessageField;
 import com.tridevmc.compound.network.message.RegisteredMessage;
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.LogicalSide;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.moddiscovery.ModAnnotation;
-import net.neoforged.neoforge.network.NetworkEvent;
-import net.neoforged.neoforge.network.NetworkRegistry;
-import net.neoforged.neoforge.network.simple.MessageFunctions;
-import net.neoforged.neoforge.network.simple.SimpleChannel;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlerEvent;
+import net.neoforged.neoforge.network.registration.IPayloadRegistrar;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.logging.log4j.LogManager;
@@ -41,8 +40,6 @@ import org.objectweb.asm.Type;
 
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 
@@ -58,29 +55,20 @@ public class CompoundNetwork {
     private static final Map<Class<? extends Message>, CompoundNetwork> NETWORKS = Maps.newHashMap();
 
     private final Logger logger;
+    private final ResourceLocation networkId;
     private final String name;
-    private final SimpleChannel networkChannel;
 
     private Map<Class<? extends Message>, MessageConcept> messageConcepts;
     private Map<String, Marshaller> marshallers;
     private Map<Class, String> marshallerIds;
-    private Map<LogicalSide, ICompoundNetworkHandler> handlers;
 
 
     private CompoundNetwork(ResourceLocation name, String version) {
+        this.networkId = name;
         this.name = name.getPath();
-        this.networkChannel = NetworkRegistry.ChannelBuilder.named(name)
-                .clientAcceptedVersions((v) -> true)
-                .serverAcceptedVersions((v) -> true)
-                .networkProtocolVersion(() -> version)
-                .simpleChannel();
         this.messageConcepts = Maps.newHashMap();
         this.marshallers = Maps.newHashMap();
         this.marshallerIds = Maps.newHashMap();
-        this.handlers = Maps.newHashMap();
-        this.handlers.put(LogicalSide.CLIENT, new CompoundClientHandler());
-        this.handlers.put(LogicalSide.SERVER, new CompoundServerHandler());
-
         this.logger = LogManager.getLogger("CompoundNetwork-" + name);
     }
 
@@ -96,6 +84,7 @@ public class CompoundNetwork {
         try {
             ArtifactVersion version = container.getModInfo().getVersion();
             CompoundNetwork network = new CompoundNetwork(new ResourceLocation(container.getModId(), channel), version.toString());
+            container.getEventBus().register(network);
             network.loadDefaultMarshallers();
             network.discoverMarshallers();
             network.discoverMessages();
@@ -194,7 +183,6 @@ public class CompoundNetwork {
     private void discoverMessages() {
         List<ModFileScanData.AnnotationData> applicableMessages = this.getAnnotationDataOfType(RegisteredMessage.class);
 
-        int currentDiscriminator = 0;
         for (ModFileScanData.AnnotationData registeredMessage : applicableMessages) {
             Map<String, Object> annotationInfo = registeredMessage.annotationData();
 
@@ -227,8 +215,7 @@ public class CompoundNetwork {
                 }
 
                 this.createConcept(msgClass, destination);
-                this.registerMessage(msgClass, destination, currentDiscriminator);
-                currentDiscriminator++;
+                this.registerMessage(msgClass);
             }
         }
     }
@@ -285,35 +272,39 @@ public class CompoundNetwork {
         return marshallerId;
     }
 
-    private <M extends Message> void registerMessage(Class<M> msgClass, LogicalSide side, int discriminator) {
-        ICompoundNetworkHandler handler = this.handlers.get(side);
-        this.networkChannel.messageBuilder(msgClass, discriminator)
-                .encoder(this.getMsgConcept(msgClass)::toBytes)
-                .decoder(this.getMsgConcept(msgClass)::fromBytes)
-                .consumerMainThread(getMessageConsumer(handler))
-                .add();
-
+    private <M extends Message> void registerMessage(Class<M> msgClass) {
         NETWORKS.put(msgClass, this);
-    }
-
-    private <M extends Message> MessageFunctions.MessageConsumer<M> getMessageConsumer(ICompoundNetworkHandler handler) {
-        return handler::handle;
     }
 
     public Logger getLogger() {
         return this.logger;
     }
 
-    public SimpleChannel getNetworkChannel() {
-        return this.networkChannel;
-    }
-
     public MessageConcept getMsgConcept(Message msg) {
         return this.messageConcepts.get(msg.getClass());
     }
 
+    public ResourceLocation getNetworkId() {
+        return networkId;
+    }
+
     public MessageConcept getMsgConcept(Class<? extends Message> msgClass) {
         return this.messageConcepts.get(msgClass);
+    }
+
+    private void registerMessageConcept(IPayloadRegistrar registrar, Class<? extends Message> messageClass, MessageConcept messageConcept) {
+        registrar.common(messageConcept.getMessageId(),
+                messageConcept.getPayloadReader(),
+                messageConcept.getPayloadHandlerBuilder());
+    }
+
+    @SubscribeEvent
+    private void onRegisterPayloadHandlerEvent(final RegisterPayloadHandlerEvent e) {
+        var registrar = e.registrar(this.name);
+
+        this.messageConcepts.forEach((msgClass, msgConcept) -> {
+            this.registerMessageConcept(registrar, msgClass, msgConcept);
+        });
     }
 
 }

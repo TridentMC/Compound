@@ -18,12 +18,16 @@ package com.tridevmc.compound.network.message;
 
 import com.tridevmc.compound.network.core.CompoundNetwork;
 import io.netty.buffer.ByteBuf;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.fml.LogicalSide;
+import net.neoforged.neoforge.network.handling.IPayloadHandler;
+import net.neoforged.neoforge.network.registration.IDirectionAwarePayloadHandlerBuilder;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -38,22 +42,31 @@ public class MessageConcept {
     private final LogicalSide messageSide;
     private final ArrayList<MessageField> messageFields;
 
+    private final ResourceLocation messageId;
+
     public MessageConcept(CompoundNetwork network, Class<? extends Message> messageClass,
                           ArrayList<MessageField> messageFields, LogicalSide messageSide) {
         this.network = network;
         this.messageClass = messageClass;
         this.messageSide = messageSide;
         this.messageFields = messageFields;
+        var canonicalNameUnderscoresAroundUpper = messageClass.getCanonicalName().replaceAll("([A-Z])", "_$1").toLowerCase();
+        this.messageId = new ResourceLocation(network.getNetworkId().getNamespace(),
+                messageSide.name().toLowerCase() + "/" + canonicalNameUnderscoresAroundUpper);
     }
 
     public LogicalSide getMessageSide() {
         return this.messageSide;
     }
 
+    public ResourceLocation getMessageId() {
+        return this.messageId;
+    }
+
     public void toBytes(Message msg, ByteBuf target) {
-        List<MessageField> booleanFields = this.messageFields.stream()
+        var booleanFields = this.messageFields.stream()
                 .filter(this::isFieldBoolean).sorted(
-                        Comparator.comparing(o -> o.getField().getName())).collect(Collectors.toList());
+                        Comparator.comparing(o -> o.getField().getName())).toList();
 
         if (!booleanFields.isEmpty()) {
             byte currentByte = 0x00000000;
@@ -64,7 +77,7 @@ public class MessageConcept {
                     currentByte = 0x00000000;
                 }
 
-                MessageField msgField = booleanFields.get(i);
+                var msgField = booleanFields.get(i);
                 boolean fieldValue = (boolean) msgField.getValue(msg);
 
                 if (fieldValue) {
@@ -77,7 +90,7 @@ public class MessageConcept {
             }
         }
 
-        for (MessageField msgField : this.messageFields) {
+        for (var msgField : this.messageFields) {
             if (!this.isFieldBoolean(msgField)) {
                 msgField.writeField(msg, target);
             }
@@ -85,9 +98,9 @@ public class MessageConcept {
     }
 
     public <M extends Message> M fromBytes(FriendlyByteBuf source) {
-        Message msg = null;
+        M msg = null;
         try {
-            msg = this.messageClass.newInstance();
+            msg = (M) this.messageClass.getConstructor().newInstance();
             this.fromBytes(msg, source.capacity(source.capacity()));
         } catch (Exception e) {
             this.network.getLogger().error("Failed to create new instance of {}, caused by {}", this.messageClass.getName(), e);
@@ -96,7 +109,7 @@ public class MessageConcept {
     }
 
     public void fromBytes(Message msg, ByteBuf source) {
-        List<MessageField> booleanFields = this.messageFields.stream()
+        var booleanFields = this.messageFields.stream()
                 .filter(this::isFieldBoolean).sorted(
                         Comparator.comparing(o -> o.getField().getName())).collect(Collectors.toList());
 
@@ -105,23 +118,52 @@ public class MessageConcept {
             byte currentByte = source.readByte();
             for (int i = 0; i < booleanFields.size(); i++) {
                 if (i == 8) {
-                    byteIndex = 0;
                     currentByte = source.readByte();
                 }
 
-                MessageField msgField = booleanFields.get(i);
+                var msgField = booleanFields.get(i);
                 msgField.setValue(msg, (currentByte & (1 << byteIndex)) != 0);
             }
         }
 
-        for (MessageField msgField : this.messageFields) {
+        for (var msgField : this.messageFields) {
             if (!this.isFieldBoolean(msgField)) {
                 msgField.readField(msg, source);
             }
         }
     }
 
-    private boolean isFieldBoolean(MessageField msgField) {
+    public FriendlyByteBuf.Reader<MessagePayload> getPayloadReader() {
+        return (source) -> {
+            var msg = this.fromBytes(source);
+            return new MessagePayload(this, msg);
+        };
+    }
+
+    public Consumer<IDirectionAwarePayloadHandlerBuilder<MessagePayload, IPayloadHandler<MessagePayload>>> getPayloadHandlerBuilder() {
+        return b -> {
+            b.client((p, c) -> {
+                if (this.getMessageSide().isServer()) {
+                    c.workHandler().submitAsync(() -> p.getMessage().handle(c.player().orElse(null)));
+                } else {
+                    throw new IllegalStateException("Received a serverbound message on the client!");
+                }
+            });
+            b.server((p, c) -> {
+                if (this.getMessageSide().isClient()) {
+                    c.workHandler().submitAsync(() -> p.getMessage().handle(c.player().orElse(Minecraft.getInstance().player)));
+                } else {
+                    throw new IllegalStateException("Received a clientbound message on the server!");
+                }
+            });
+        };
+    }
+
+    public MessagePayload createPayload(Message msg) {
+        return new MessagePayload(this, msg);
+    }
+
+    private boolean isFieldBoolean(MessageField<?> msgField) {
         return msgField.getType() == Boolean.class || msgField.getType() == boolean.class;
     }
 
