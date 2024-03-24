@@ -25,9 +25,14 @@ dependencies {
     implementation "net.neoforged:neoforge:${forgeVersion}"
 }
 
-minecraft {
-    mappings {
-        version(mappingsVersion)
+if (ext.mappingsChannel == "parchment") {
+    var parchmentMCVersion = ext.mappingsMinecraftVersion
+    var parchmentMappingsVersion = ext.mappingsVersion
+    subsystems {
+        parchment {
+            setMinecraftVersion(parchmentMCVersion)
+            setMappingsVersion(parchmentMappingsVersion)
+        }
     }
 }
 

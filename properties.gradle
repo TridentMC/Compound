@@ -5,7 +5,10 @@ ext {
     modBaseName = "compound"
 
     // Forge Stuff
-    forgeVersion = "20.4.122-beta"
-    mappingsChannel = "official"
-    mappingsVersion = "1.20.4"
+    forgeVersion = "20.4.210"
+
+    // Mapping Stuff
+    mappingsChannel = "parchment"
+    mappingsMinecraftVersion = "1.20.4"
+    mappingsVersion = "2024.02.25"
 }
