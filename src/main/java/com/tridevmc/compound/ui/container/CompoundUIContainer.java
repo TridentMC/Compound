@@ -111,12 +111,12 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     @Override
     protected void renderLabels(GuiGraphics gg, int mouseX, int mouseY) {
         var modelStack = RenderSystem.getModelViewStack();
-        modelStack.pushPose();
+        modelStack.pushMatrix();
         modelStack.translate(-this.leftPos, -this.topPos, 0);
         RenderSystem.applyModelViewMatrix();
         this.currentLayer = EnumUILayer.FOREGROUND;
         this.elements.forEach((e) -> renderElement(e, EnumUILayer.FOREGROUND));
-        modelStack.popPose();
+        modelStack.popMatrix();
         RenderSystem.applyModelViewMatrix();
     }
 

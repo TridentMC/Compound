@@ -17,17 +17,16 @@ public class MessagePayload implements CustomPacketPayload {
         this.message = message;
     }
 
-    @Override
     public void write(FriendlyByteBuf bb) {
         this.concept.toBytes(this.message, bb);
     }
 
-    @Override
-    public ResourceLocation id() {
-        return this.concept.getMessageId();
-    }
-
     protected Message getMessage() {
         return this.message;
+    }
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return this.concept.getMessageType();
     }
 }

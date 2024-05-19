@@ -154,11 +154,11 @@ public class DefaultMarshallers {
     }
 
     private static void writeItemStack(ByteBuf buf, ItemStack stack) {
-        new FriendlyByteBuf(buf).writeItem(stack);
+        new FriendlyByteBuf(buf).writeJsonWithCodec(ItemStack.CODEC, stack);
     }
 
     private static ItemStack readItemStack(ByteBuf buf) {
-        return new FriendlyByteBuf(buf).readItem();
+        return new FriendlyByteBuf(buf).readJsonWithCodec(ItemStack.CODEC);
     }
 
     private static BlockPos readBlockPos(ByteBuf buf) {

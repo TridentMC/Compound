@@ -28,9 +28,9 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.LogicalSide;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
-import net.neoforged.fml.loading.moddiscovery.ModAnnotation;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlerEvent;
-import net.neoforged.neoforge.network.registration.IPayloadRegistrar;
+import net.neoforged.fml.loading.modscan.ModAnnotation;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.logging.log4j.LogManager;
@@ -127,7 +127,7 @@ public class CompoundNetwork {
         applicableMarshallers.sort(Comparator.comparingInt(
                 o -> {
                     ModAnnotation.EnumHolder enumHolder = (ModAnnotation.EnumHolder) o.annotationData().getOrDefault("priority", null);
-                    EnumMarshallerPriority priority = enumHolder == null ? EnumMarshallerPriority.NORMAL : EnumMarshallerPriority.valueOf(enumHolder.getValue());
+                    EnumMarshallerPriority priority = enumHolder == null ? EnumMarshallerPriority.NORMAL : EnumMarshallerPriority.valueOf(enumHolder.value());
                     return priority.getRank();
                 }));
 
@@ -191,7 +191,7 @@ public class CompoundNetwork {
             if (Objects.equals(networkChannel, this.name)) {
                 // Found a message that can be registered for this network instance.
                 ModAnnotation.EnumHolder destinationHolder = (ModAnnotation.EnumHolder) annotationInfo.get("destination");
-                LogicalSide destination = LogicalSide.valueOf(destinationHolder.getValue());
+                LogicalSide destination = LogicalSide.valueOf(destinationHolder.value());
                 Class<? extends Message> msgClass;
                 try {
                     msgClass = (Class<? extends Message>) Class
@@ -292,14 +292,20 @@ public class CompoundNetwork {
         return this.messageConcepts.get(msgClass);
     }
 
-    private void registerMessageConcept(IPayloadRegistrar registrar, Class<? extends Message> messageClass, MessageConcept messageConcept) {
-        registrar.common(messageConcept.getMessageId(),
-                messageConcept.getPayloadReader(),
-                messageConcept.getPayloadHandlerBuilder());
+    private void registerMessageConcept(PayloadRegistrar registrar, Class<? extends Message> messageClass, MessageConcept messageConcept) {
+        if (!messageConcept.getMessageSide().isClient()) {
+            registrar.commonToClient(messageConcept.getMessageType(),
+                    messageConcept.getPayloadCodec(),
+                    messageConcept.getPayloadHandler());
+        } else {
+            registrar.commonToServer(messageConcept.getMessageType(),
+                    messageConcept.getPayloadCodec(),
+                    messageConcept.getPayloadHandler());
+        }
     }
 
     @SubscribeEvent
-    private void onRegisterPayloadHandlerEvent(final RegisterPayloadHandlerEvent e) {
+    private void onRegisterPayloadHandlerEvent(final RegisterPayloadHandlersEvent e) {
         var registrar = e.registrar(this.name);
 
         this.messageConcepts.forEach((msgClass, msgConcept) -> {

@@ -18,17 +18,15 @@ package com.tridevmc.compound.network.message;
 
 import com.tridevmc.compound.network.core.CompoundNetwork;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.fml.LogicalSide;
 import net.neoforged.neoforge.network.handling.IPayloadHandler;
-import net.neoforged.neoforge.network.registration.IDirectionAwarePayloadHandlerBuilder;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * Stores information about a message for use in serializing and deserializing.
@@ -43,6 +41,7 @@ public class MessageConcept {
     private final ArrayList<MessageField> messageFields;
 
     private final ResourceLocation messageId;
+    private final CustomPacketPayload.Type<MessagePayload> messageType;
 
     public MessageConcept(CompoundNetwork network, Class<? extends Message> messageClass,
                           ArrayList<MessageField> messageFields, LogicalSide messageSide) {
@@ -53,6 +52,7 @@ public class MessageConcept {
         var canonicalNameUnderscoresAroundUpper = messageClass.getCanonicalName().replaceAll("([A-Z])", "_$1").toLowerCase();
         this.messageId = new ResourceLocation(network.getNetworkId().getNamespace(),
                 messageSide.name().toLowerCase() + "/" + canonicalNameUnderscoresAroundUpper);
+        this.messageType = new CustomPacketPayload.Type<>(this.messageId);
     }
 
     public LogicalSide getMessageSide() {
@@ -105,13 +105,13 @@ public class MessageConcept {
         } catch (Exception e) {
             this.network.getLogger().error("Failed to create new instance of {}, caused by {}", this.messageClass.getName(), e);
         }
-        return (M) msg;
+        return msg;
     }
 
     public void fromBytes(Message msg, ByteBuf source) {
         var booleanFields = this.messageFields.stream()
                 .filter(this::isFieldBoolean).sorted(
-                        Comparator.comparing(o -> o.getField().getName())).collect(Collectors.toList());
+                        Comparator.comparing(o -> o.getField().getName())).toList();
 
         if (!booleanFields.isEmpty()) {
             int byteIndex = 0;
@@ -133,31 +133,6 @@ public class MessageConcept {
         }
     }
 
-    public FriendlyByteBuf.Reader<MessagePayload> getPayloadReader() {
-        return (source) -> {
-            var msg = this.fromBytes(source);
-            return new MessagePayload(this, msg);
-        };
-    }
-
-    public Consumer<IDirectionAwarePayloadHandlerBuilder<MessagePayload, IPayloadHandler<MessagePayload>>> getPayloadHandlerBuilder() {
-        return b -> {
-            b.client((p, c) -> {
-                if (this.getMessageSide().isServer()) {
-                    c.workHandler().submitAsync(() -> p.getMessage().handle(c.player().orElse(null)));
-                } else {
-                    throw new IllegalStateException("Received a serverbound message on the client!");
-                }
-            });
-            b.server((p, c) -> {
-                if (this.getMessageSide().isClient()) {
-                    c.workHandler().submitAsync(() -> p.getMessage().handle(c.player().orElse(Minecraft.getInstance().player)));
-                } else {
-                    throw new IllegalStateException("Received a clientbound message on the server!");
-                }
-            });
-        };
-    }
 
     public MessagePayload createPayload(Message msg) {
         return new MessagePayload(this, msg);
@@ -167,4 +142,23 @@ public class MessageConcept {
         return msgField.getType() == Boolean.class || msgField.getType() == boolean.class;
     }
 
+    public CustomPacketPayload.Type<MessagePayload> getMessageType() {
+        return this.messageType;
+    }
+
+    public StreamCodec<FriendlyByteBuf, MessagePayload> getPayloadCodec() {
+        return CustomPacketPayload.codec(
+                MessagePayload::write,
+                pBuffer -> MessageConcept.this.createPayload(MessageConcept.this.fromBytes(pBuffer))
+        );
+    }
+
+    public IPayloadHandler<MessagePayload> getPayloadHandler() {
+        return (payload, context) -> {
+            var message = payload.getMessage();
+            if (message != null) {
+                message.handle(context.player());
+            }
+        };
+    }
 }

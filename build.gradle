@@ -3,7 +3,7 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.neoforged.gradle.userdev' version '[7.0.57,8.0)'
+    id 'net.neoforged.gradle.userdev' version '[7.0.124,7.0.130)'
     id 'org.cadixdev.licenser' version '0.6.1'
 }
 
@@ -14,7 +14,7 @@ group = modGroup
 archivesBaseName = modBaseName
 ext.versionTag = ''
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 license {
     header = project.file('LICENSE-HEADER')
@@ -89,4 +89,11 @@ compoundModules.each { LinkedHashMap<String, String> moduleData ->
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
 }
