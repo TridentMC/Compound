@@ -17,6 +17,7 @@
 package com.tridevmc.compound.config;
 
 import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.Nullable;
 
 public class ForgeRegistryEntrySerializer<T> implements IConfigFieldSerializer<T> {
 
@@ -51,6 +52,12 @@ public class ForgeRegistryEntrySerializer<T> implements IConfigFieldSerializer<T
     @Override
     public boolean accepts(ConfigField<T> field) {
         return field.getRegistryName() != null;
+    }
+
+    @Override
+    public @Nullable String defaultListValue(ConfigField<T> field) {
+        var def = (T) field.getRegistry().getAny().orElse(null);
+        return def != null ? toString(field, def) : null;
     }
 
 }

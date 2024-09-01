@@ -16,6 +16,8 @@
 
 package com.tridevmc.compound.config;
 
+import org.jetbrains.annotations.Nullable;
+
 public interface IConfigFieldSerializer<T> {
 
     /**
@@ -43,5 +45,16 @@ public interface IConfigFieldSerializer<T> {
      * @return true if the field can be serialized by this serializer, false otherwise.
      */
     boolean accepts(ConfigField<T> field);
+
+    /**
+     * Get the default value for the given field type, used for adding new elements to a list.
+     * <p>
+     * If no default value is supplied then the contents of the list will be considered immutable, but the order of elements may be changed.
+     *
+     * @param field the field to get the default value for.
+     * @return the default value for the given field type.
+     */
+    @Nullable
+    String defaultListValue(ConfigField<T> field);
 
 }

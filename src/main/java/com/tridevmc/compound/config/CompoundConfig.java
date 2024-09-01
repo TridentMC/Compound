@@ -28,6 +28,8 @@ import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.config.ModConfigs;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.javafmlmod.FMLModContainer;
+import net.neoforged.neoforge.client.gui.ConfigurationScreen;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforgespi.language.ModFileScanData;
 import org.apache.commons.lang3.tuple.Pair;
@@ -81,7 +83,7 @@ public class CompoundConfig<T> {
                 mC -> mC.getSpec().equals(this.forgeConfig)
         ).findFirst().orElse(null);
         // TODO: Add config guis...
-        //modContainer.registerExtensionPoint(ExtensionPoint.CONFIGGUIFACTORY, () -> (mc, parent) -> {});
+        container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
         KNOWN_CONFIGS.put(this.configInstance, this);
     }
 

@@ -183,7 +183,7 @@ public class ConfigField<T> {
                     this.specValue = (ModConfigSpec.ConfigValue<T>) builder.define(this.getName(), (boolean) this.getDefaultValue());
             case ENUM -> this.specValue = builder.defineEnum(this.getName(), (Enum) this.getDefaultValue());
             case LIST ->
-                    this.specValue = (ModConfigSpec.ConfigValue<T>) builder.defineList(this.getName(), (List<?>) this.getDefaultValue(), (o) -> true);
+                    this.specValue = (ModConfigSpec.ConfigValue<T>) builder.defineList(this.getName(), (List<?>) this.getDefaultValue(), () -> this.serializer.defaultListValue(this), (o) -> true);
             case OBJECT ->
                     this.specValue = (ModConfigSpec.ConfigValue<T>) builder.define(this.getName(), this.getDefaultValue());
         }

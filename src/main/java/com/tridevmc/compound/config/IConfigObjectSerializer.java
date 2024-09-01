@@ -17,6 +17,7 @@
 package com.tridevmc.compound.config;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Used to define custom serialization steps for objects used in configs.
@@ -52,6 +53,17 @@ public interface IConfigObjectSerializer<T> extends IConfigFieldSerializer<T> {
      */
     boolean accepts(Class<?> clazz);
 
+    /**
+     * Get the default value for the given field type, used for adding new elements to a list.
+     * <p>
+     * If no default value is supplied then the contents of the list will be considered immutable, but the order of elements may be changed.
+     *
+     * @param fieldType the type of field to get the default value for.
+     * @return the default value for the given field type.
+     */
+    @Nullable
+    String defaultListValue(Class<T> fieldType);
+
     @Override
     default String toString(@NotNull ConfigField<T> field, T value) {
         return toString(field.getFieldType(), value);
@@ -67,4 +79,9 @@ public interface IConfigObjectSerializer<T> extends IConfigFieldSerializer<T> {
         return accepts(field.getFieldType());
     }
 
+    @Override
+    @Nullable
+    default String defaultListValue(ConfigField<T> field) {
+        return defaultListValue(field.getFieldType());
+    }
 }
