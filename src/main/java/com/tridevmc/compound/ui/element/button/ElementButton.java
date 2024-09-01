@@ -36,9 +36,9 @@ import java.util.List;
  */
 public class ElementButton extends Element {
 
-    private static final ResourceLocation ENABLED_TEXTURE_LOCATION = new ResourceLocation("widget/button");
-    private static final ResourceLocation DISABLED_TEXTURE_LOCATION = new ResourceLocation("widget/button_disabled");
-    private static final ResourceLocation HIGHLIGHTED_TEXTURE_LOCATION = new ResourceLocation("widget/button_highlighted");
+    private static final ResourceLocation ENABLED_TEXTURE_LOCATION = ResourceLocation.withDefaultNamespace("widget/button");
+    private static final ResourceLocation DISABLED_TEXTURE_LOCATION = ResourceLocation.withDefaultNamespace("widget/button_disabled");
+    private static final ResourceLocation HIGHLIGHTED_TEXTURE_LOCATION = ResourceLocation.withDefaultNamespace("widget/button_highlighted");
     private boolean isEnabled;
     private boolean isVisible;
     private boolean isHovered;

@@ -17,10 +17,7 @@
 package com.tridevmc.compound.ui.screen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.*;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
 import net.minecraft.Util;
@@ -28,6 +25,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
@@ -49,6 +47,11 @@ public class CompoundScreenContext implements IScreenContext {
     @Override
     public PoseStack getActiveStack() {
         return this.ui.getActiveStack();
+    }
+
+    @Override
+    public VertexConsumer getBuffer(RenderType renderType) {
+        return ui.getActiveGuiGraphics().bufferSource().getBuffer(renderType);
     }
 
     @Override
@@ -83,7 +86,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public float getPartialTicks() {
-        return this.getMc().getDeltaFrameTime();
+        return this.getMc().getTimer().getGameTimeDeltaPartialTick(false);
     }
 
     @Override
@@ -123,14 +126,12 @@ public class CompoundScreenContext implements IScreenContext {
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         var pose = this.getActiveStack().last().pose();
-        var tessellator = Tesselator.getInstance();
-        var bufferbuilder = Tesselator.getInstance().getBuilder();
-        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bufferbuilder.vertex(pose, (float) x, (float) (y + height), zLevel).uv(minU, maxV).endVertex();
-        bufferbuilder.vertex(pose, (float) (x + width), (float) (y + height), zLevel).uv(maxU, maxV).endVertex();
-        bufferbuilder.vertex(pose, (float) (x + width), (float) y, zLevel).uv(maxU, minV).endVertex();
-        bufferbuilder.vertex(pose, (float) x, (float) y, zLevel).uv(minU, minV).endVertex();
-        tessellator.end();
+        var bb = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        bb.addVertex(pose, (float) x, (float) (y + height), zLevel).setUv(minU, maxV);
+        bb.addVertex(pose, (float) (x + width), (float) (y + height), zLevel).setUv(maxU, maxV);
+        bb.addVertex(pose, (float) (x + width), (float) y, zLevel).setUv(maxU, minV);
+        bb.addVertex(pose, (float) x, (float) y, zLevel).setUv(minU, minV);
+        BufferUploader.drawWithShader(bb.buildOrThrow());
     }
 
     @Override

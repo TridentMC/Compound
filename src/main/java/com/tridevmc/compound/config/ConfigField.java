@@ -132,7 +132,7 @@ public class ConfigField<T> {
     private ResourceLocation generateRegistryName() {
         if (this.field.isAnnotationPresent(RegisteredValue.class)) {
             var annotation = this.field.getAnnotation(RegisteredValue.class);
-            return new ResourceLocation(annotation.value());
+            return ResourceLocation.parse(annotation.value());
         }
         return null;
     }

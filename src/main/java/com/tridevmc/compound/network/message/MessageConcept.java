@@ -50,7 +50,7 @@ public class MessageConcept {
         this.messageSide = messageSide;
         this.messageFields = messageFields;
         var canonicalNameUnderscoresAroundUpper = messageClass.getCanonicalName().replaceAll("([A-Z])", "_$1").toLowerCase();
-        this.messageId = new ResourceLocation(network.getNetworkId().getNamespace(),
+        this.messageId = ResourceLocation.fromNamespaceAndPath(network.getNetworkId().getNamespace(),
                 messageSide.name().toLowerCase() + "/" + canonicalNameUnderscoresAroundUpper);
         this.messageType = new CustomPacketPayload.Type<>(this.messageId);
     }

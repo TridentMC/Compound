@@ -83,7 +83,7 @@ public class CompoundNetwork {
     public static CompoundNetwork createNetwork(ModContainer container, String channel) {
         try {
             ArtifactVersion version = container.getModInfo().getVersion();
-            CompoundNetwork network = new CompoundNetwork(new ResourceLocation(container.getModId(), channel), version.toString());
+            CompoundNetwork network = new CompoundNetwork(ResourceLocation.fromNamespaceAndPath(container.getModId(), channel), version.toString());
             container.getEventBus().register(network);
             network.loadDefaultMarshallers();
             network.discoverMarshallers();

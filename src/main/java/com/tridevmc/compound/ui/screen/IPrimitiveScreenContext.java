@@ -18,16 +18,14 @@ package com.tridevmc.compound.ui.screen;
 
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.*;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
@@ -55,6 +53,14 @@ public interface IPrimitiveScreenContext {
      * @return the active matrix stack for the current draw.
      */
     PoseStack getActiveStack();
+
+    /**
+     * Gets the vertex consumer for the given render type.
+     *
+     * @param renderType the render type to get the consumer for.
+     * @return the vertex consumer for the given render type.
+     */
+    VertexConsumer getBuffer(RenderType renderType);
 
     /**
      * Gets the width of the screen.
@@ -190,22 +196,11 @@ public interface IPrimitiveScreenContext {
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         var pose = this.getActiveStack().last().pose();
-        var tesselator = Tesselator.getInstance();
-        var bufferbuilder = tesselator.getBuilder();
-        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        bufferbuilder.vertex(pose, x + width, y, zLevel)
-                .color(r1, g1, b1, a1)
-                .endVertex();
-        bufferbuilder.vertex(pose, x, y, zLevel)
-                .color(r1, g1, b1, a1)
-                .endVertex();
-        bufferbuilder.vertex(pose, x, y + height, zLevel)
-                .color(r2, g2, b2, a2)
-                .endVertex();
-        bufferbuilder.vertex(pose, x + width, y + height, zLevel)
-                .color(r2, g2, b2, a2)
-                .endVertex();
-        tesselator.end();
+        var bb = getBuffer(RenderType.gui());
+        bb.addVertex(pose, x + width, y, zLevel).setColor(r1, g1, b1, a1);
+        bb.addVertex(pose, x, y, zLevel).setColor(r1, g1, b1, a1);
+        bb.addVertex(pose, x, y + height, zLevel).setColor(r2, g2, b2, a2);
+        bb.addVertex(pose, x + width, y + height, zLevel).setColor(r2, g2, b2, a2);
         RenderSystem.disableBlend();
     }
 

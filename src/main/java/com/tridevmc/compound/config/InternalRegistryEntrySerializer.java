@@ -117,7 +117,7 @@ public class InternalRegistryEntrySerializer<T> implements IConfigObjectSerializ
 
     @Override
     public T fromString(Class<T> fieldType, String value) {
-        return this.getRegistry().get(new ResourceLocation(value));
+        return this.getRegistry().get(ResourceLocation.parse(value));
     }
 
     @Override

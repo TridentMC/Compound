@@ -40,7 +40,7 @@ import java.util.Objects;
  */
 public class ElementSlot extends Element {
 
-    private static final IScreenSprite SLOT_SPRITE = IScreenSprite.of(Minecraft.getInstance().getGuiSprites().getSprite(new ResourceLocation("container/slot")), new ScreenSpriteWriterNineSlice(
+    private static final IScreenSprite SLOT_SPRITE = IScreenSprite.of(Minecraft.getInstance().getGuiSprites().getSprite(ResourceLocation.withDefaultNamespace("container/slot")), new ScreenSpriteWriterNineSlice(
             1, 1, 1, 1
     ));
     private Slot slot;

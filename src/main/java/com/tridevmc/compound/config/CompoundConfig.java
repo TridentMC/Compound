@@ -25,6 +25,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.config.ModConfigs;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.javafmlmod.FMLModContainer;
 import net.neoforged.neoforge.common.ModConfigSpec;
@@ -48,7 +49,7 @@ public class CompoundConfig<T> {
 
     static final Map<Object, CompoundConfig> KNOWN_CONFIGS = Maps.newHashMap();
     private static final Logger LOG = LogManager.getLogger("CompoundConfig");
-    private final CompoundModConfig modConfig;
+    private final ModConfig modConfig;
     private final String modId;
     private final ModConfig.Type configType;
     private final ModConfigSpec forgeConfig;
@@ -72,9 +73,13 @@ public class CompoundConfig<T> {
         this.forgeConfig = configure.getRight();
 
         if (container instanceof FMLModContainer) {
-            ((FMLModContainer) container).getEventBus().register(this);
+            container.getEventBus().register(this);
         }
-        this.modConfig = new CompoundModConfig(this, container, configFile);
+        container.registerConfig(this.configType, this.forgeConfig, configFile);
+        var modConfigs = ModConfigs.getModConfigs(this.modId);
+        this.modConfig = modConfigs.stream().filter(
+                mC -> mC.getSpec().equals(this.forgeConfig)
+        ).findFirst().orElse(null);
         // TODO: Add config guis...
         //modContainer.registerExtensionPoint(ExtensionPoint.CONFIGGUIFACTORY, () -> (mc, parent) -> {});
         KNOWN_CONFIGS.put(this.configInstance, this);

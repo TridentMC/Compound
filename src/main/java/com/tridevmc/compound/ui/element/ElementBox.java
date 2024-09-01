@@ -31,7 +31,7 @@ import net.minecraft.resources.ResourceLocation;
  */
 public class ElementBox extends Element {
 
-    private static final IScreenSprite INVENTORY_SPRITE = IScreenSprite.ofAssetLocation(new ResourceLocation("textures/gui/container/inventory.png"), 256, 256);
+    private static final IScreenSprite INVENTORY_SPRITE = IScreenSprite.ofAssetLocation(ResourceLocation.withDefaultNamespace("textures/gui/container/inventory.png"), 256, 256);
 
     public ElementBox(Rect2F dimensions) {
         this(dimensions, new LayoutNone());
