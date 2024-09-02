@@ -196,7 +196,7 @@ public interface IPrimitiveScreenContext {
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         var pose = this.getActiveStack().last().pose();
-        var bb = getBuffer(RenderType.gui());
+        var bb = getBuffer(RenderType.guiOverlay());
         bb.addVertex(pose, x + width, y, zLevel).setColor(r1, g1, b1, a1);
         bb.addVertex(pose, x, y, zLevel).setColor(r1, g1, b1, a1);
         bb.addVertex(pose, x, y + height, zLevel).setColor(r2, g2, b2, a2);
