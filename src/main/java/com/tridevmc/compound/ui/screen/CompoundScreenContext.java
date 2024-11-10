@@ -16,6 +16,7 @@
 
 package com.tridevmc.compound.ui.screen;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.tridevmc.compound.ui.EnumUILayer;
@@ -24,7 +25,7 @@ import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.CoreShaders;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
@@ -51,7 +52,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public VertexConsumer getBuffer(RenderType renderType) {
-        return ui.getActiveGuiGraphics().bufferSource().getBuffer(renderType);
+        return ui.getBufferSource().getBuffer(renderType);
     }
 
     @Override
@@ -86,7 +87,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public float getPartialTicks() {
-        return this.getMc().getTimer().getGameTimeDeltaPartialTick(false);
+        return this.getMc().getDeltaTracker().getGameTimeDeltaPartialTick(false);
     }
 
     @Override
@@ -123,14 +124,14 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawTexturedRect(float x, float y, float width, float height, float minU, float minV, float maxU, float maxV, int zLevel) {
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShader(CoreShaders.POSITION_TEX_COLOR);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         var pose = this.getActiveStack().last().pose();
-        var bb = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bb.addVertex(pose, (float) x, (float) (y + height), zLevel).setUv(minU, maxV);
-        bb.addVertex(pose, (float) (x + width), (float) (y + height), zLevel).setUv(maxU, maxV);
-        bb.addVertex(pose, (float) (x + width), (float) y, zLevel).setUv(maxU, minV);
-        bb.addVertex(pose, (float) x, (float) y, zLevel).setUv(minU, minV);
+        var bb = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        bb.addVertex(pose, (float) x, (float) (y + height), zLevel).setUv(minU, maxV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        bb.addVertex(pose, (float) (x + width), (float) (y + height), zLevel).setUv(maxU, maxV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        bb.addVertex(pose, (float) (x + width), (float) y, zLevel).setUv(maxU, minV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        bb.addVertex(pose, (float) x, (float) y, zLevel).setUv(minU, minV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
         BufferUploader.drawWithShader(bb.buildOrThrow());
     }
 
@@ -155,12 +156,40 @@ public class CompoundScreenContext implements IScreenContext {
         poseStack.scale(width, height, 1);
         poseStack.pushPose();
         poseStack.translate(0, 0, zLevel);
-        RenderSystem.applyModelViewMatrix();
+        //RenderSystem.applyModelViewMatrix();
         this.ui.getActiveGuiGraphics().renderItem(stack, 0, 0);
         this.ui.getActiveGuiGraphics().renderItemDecorations(font, stack, 0, 0, altText);
         poseStack.popPose();
         poseStack.popPose();
-        RenderSystem.applyModelViewMatrix();
+        this.ui.getBufferSource().endLastBatch();
+        //RenderSystem.applyModelViewMatrix();
+    }
+
+    @Override
+    public void drawGradientRect(float x, float y, float width, float height, int startColour, int endColour, int zLevel) {
+        float[] startColourUnpacked = this.getRGBA(startColour);
+        float r1 = startColourUnpacked[0];
+        float g1 = startColourUnpacked[1];
+        float b1 = startColourUnpacked[2];
+        float a1 = startColourUnpacked[3];
+
+        float[] endColourUnpacked = this.getRGBA(endColour);
+        float r2 = endColourUnpacked[0];
+        float g2 = endColourUnpacked[1];
+        float b2 = endColourUnpacked[2];
+        float a2 = endColourUnpacked[3];
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(CoreShaders.POSITION_COLOR);
+        var pose = this.getActiveStack().last().pose();
+        var bb = getBuffer(RenderType.guiOverlay());
+        bb.addVertex(pose, x + width, y, zLevel).setColor(r1, g1, b1, a1);
+        bb.addVertex(pose, x, y, zLevel).setColor(r1, g1, b1, a1);
+        bb.addVertex(pose, x, y + height, zLevel).setColor(r2, g2, b2, a2);
+        bb.addVertex(pose, x + width, y + height, zLevel).setColor(r2, g2, b2, a2);
+        RenderSystem.disableBlend();
+        this.ui.getBufferSource().endLastBatch();
     }
 
     @Override

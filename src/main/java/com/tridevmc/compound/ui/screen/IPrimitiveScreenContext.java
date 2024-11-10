@@ -24,6 +24,7 @@ import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.CoreShaders;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
@@ -179,30 +180,7 @@ public interface IPrimitiveScreenContext {
      * @param endColour   the colour at the end of the gradient.
      * @param zLevel      the z level to draw the rect at.
      */
-    default void drawGradientRect(float x, float y, float width, float height, int startColour, int endColour, int zLevel) {
-        float[] startColourUnpacked = this.getRGBA(startColour);
-        float r1 = startColourUnpacked[0];
-        float g1 = startColourUnpacked[1];
-        float b1 = startColourUnpacked[2];
-        float a1 = startColourUnpacked[3];
-
-        float[] endColourUnpacked = this.getRGBA(endColour);
-        float r2 = endColourUnpacked[0];
-        float g2 = endColourUnpacked[1];
-        float b2 = endColourUnpacked[2];
-        float a2 = endColourUnpacked[3];
-
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        var pose = this.getActiveStack().last().pose();
-        var bb = getBuffer(RenderType.guiOverlay());
-        bb.addVertex(pose, x + width, y, zLevel).setColor(r1, g1, b1, a1);
-        bb.addVertex(pose, x, y, zLevel).setColor(r1, g1, b1, a1);
-        bb.addVertex(pose, x, y + height, zLevel).setColor(r2, g2, b2, a2);
-        bb.addVertex(pose, x + width, y + height, zLevel).setColor(r2, g2, b2, a2);
-        RenderSystem.disableBlend();
-    }
+    void drawGradientRect(float x, float y, float width, float height, int startColour, int endColour, int zLevel);
 
     /**
      * Draws the given string on the screen at the given position.

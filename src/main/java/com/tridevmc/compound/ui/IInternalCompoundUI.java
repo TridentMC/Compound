@@ -20,11 +20,14 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.MultiBufferSource;
 
 /**
  * Only for internal use, exposes methods and variables to screen context.
  */
 public interface IInternalCompoundUI {
+
+    MultiBufferSource.BufferSource getBufferSource();
 
     GuiGraphics getActiveGuiGraphics();
 

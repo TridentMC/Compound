@@ -16,11 +16,11 @@
 
 package com.tridevmc.compound.core.reflect;
 
-import org.apache.commons.lang3.reflect.FieldUtils;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -31,12 +31,17 @@ import java.lang.reflect.Type;
 public class WrappedField<T> {
 
     private final Field field;
+    private final VarHandle varHandle;
     private final boolean isStatic;
+    private final boolean isFinal;
 
-    private WrappedField(@Nonnull Field field) {
+    private WrappedField(Field field, VarHandle varHandle, boolean isStatic, boolean isFinal) {
         this.field = field;
-        this.isStatic = Modifier.isStatic(field.getModifiers());
+        this.varHandle = varHandle;
+        this.isStatic = isStatic;
+        this.isFinal = isFinal;
     }
+
 
     /**
      * Wraps the given field.
@@ -45,7 +50,7 @@ public class WrappedField<T> {
      * @return a WrappedField representing the given field.
      */
     public static <T> WrappedField<T> create(@Nonnull Field field) {
-        return new WrappedField<>(field);
+        return create(field.getDeclaringClass(), field.getName());
     }
 
     /**
@@ -57,8 +62,19 @@ public class WrappedField<T> {
      */
     @Nullable
     public static <T> WrappedField<T> create(Class<?> clazz, String fieldName) {
-        Field f = FieldUtils.getField(clazz, fieldName, true);
-        return f == null ? null : new WrappedField<>(FieldUtils.getField(clazz, fieldName, true));
+        try {
+            var lookup = MethodHandles.privateLookupIn(clazz, MethodHandles.lookup());
+            var field = clazz.getDeclaredField(fieldName);
+            var isStatic = Modifier.isStatic(field.getModifiers());
+            var isFinal = Modifier.isFinal(field.getModifiers());
+            var varHandle = lookup.unreflectVarHandle(field);
+            if (isFinal) {
+                field.setAccessible(true);
+            }
+            return new WrappedField<>(field, varHandle, isStatic, isFinal);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            return null;
+        }
     }
 
     /**
@@ -70,15 +86,13 @@ public class WrappedField<T> {
      */
     @Nullable
     public static <T> WrappedField<T> create(Class<?> clazz, String... fieldNames) {
-        Field f = null;
         for (String fieldName : fieldNames) {
-            if (f != null) {
-                break;
+            var field = create(clazz, fieldName);
+            if (field != null) {
+                return (WrappedField<T>) field;
             }
-            f = FieldUtils.getDeclaredField(clazz, fieldName, true);
         }
-
-        return f == null ? null : new WrappedField<>(f);
+        return null;
     }
 
     /**
@@ -105,38 +119,13 @@ public class WrappedField<T> {
      * @param target the instance to get the field type from.
      * @return the type of the field on the given target.
      */
-    public T get(Object target) {
-        return this.get(target, true);
-    }
-
-    /**
-     * Gets the type of the field on the given target.
-     *
-     * @param target the instance to get the field type from.
-     * @param force  whether to force access to get the type.
-     * @return the type of the field on the given target.
-     */
     @SuppressWarnings("unchecked") // We already know that the field type is correct.
-    public T get(Object target, boolean force) {
-        try {
-            if (this.isStatic) {
-                return (T) FieldUtils.readStaticField(this.field, force);
-            } else {
-                return (T) FieldUtils.readField(this.field, target, force);
-            }
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(String.format("Failed to read value of field %s", this.field.getName()), e);
+    public T get(Object target) {
+        if (this.isStatic) {
+            return (T) this.varHandle.get();
+        } else {
+            return (T) this.varHandle.get(target);
         }
-    }
-
-    /**
-     * Sets the type on the field of the target instance to the given type.
-     *
-     * @param target the instance to set the type on.
-     * @param value  the new type of the field.
-     */
-    public void set(Object target, T value) {
-        this.set(target, value, true);
     }
 
     /**
@@ -144,17 +133,20 @@ public class WrappedField<T> {
      *
      * @param target the instance to set the type on.
      * @param value  the new type of the field.
-     * @param force  whether to force access to set the type.
      */
-    public void set(Object target, T value, boolean force) {
-        try {
-            if (this.isStatic) {
-                FieldUtils.writeStaticField(this.field, value, force);
-            } else {
-                FieldUtils.writeField(this.field, target, value, force);
+    public void set(Object target, T value) {
+        if (this.isFinal) {
+            try {
+                this.field.set(target, value);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException("Failed to set final field: " + this.field.getName(), e);
             }
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(String.format("Failed to write type of field %s", this.field.getName()), e);
+        } else {
+            if (this.isStatic) {
+                this.varHandle.set(value);
+            } else {
+                this.varHandle.set(target, value);
+            }
         }
     }
 
@@ -226,28 +218,6 @@ public class WrappedField<T> {
      */
     public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationClass) {
         return this.field.getAnnotationsByType(annotationClass);
-    }
-
-    /**
-     * Checks if this field is accessible.
-     * <p>
-     * Delegates to method in Field class.
-     *
-     * @return whether the this field is accessible or not.
-     */
-    public boolean isAccessible() {
-        return this.field.isAccessible();
-    }
-
-    /**
-     * Sets the accessibility of the field to the type specified.
-     * <p>
-     * Delegates to method in Field class.
-     *
-     * @param b the accessibility to set the field to.
-     */
-    public void setAccessible(boolean b) {
-        this.field.setAccessible(b);
     }
 
     /**

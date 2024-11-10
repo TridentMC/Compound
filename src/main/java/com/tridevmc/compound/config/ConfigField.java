@@ -140,7 +140,7 @@ public class ConfigField<T> {
     @Nullable
     protected Registry<T> getRegistry() {
         if (this.registry == null && this.registryName != null) {
-            this.registry = (Registry<T>) BuiltInRegistries.REGISTRY.get(this.registryName);
+            this.registry = (Registry<T>) BuiltInRegistries.REGISTRY.get(this.registryName).orElseThrow();
         }
         return this.registry;
     }
@@ -150,7 +150,7 @@ public class ConfigField<T> {
     }
 
     private Object genDefaultValue() {
-        Object value = this.field.get(this.config.getConfigInstance(), true);
+        Object value = this.field.get(this.config.getConfigInstance());
 
         Class<T> fieldType = this.field.getType();
         if (fieldType.isArray()) {

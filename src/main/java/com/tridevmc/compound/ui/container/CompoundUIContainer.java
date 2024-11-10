@@ -34,9 +34,11 @@ import com.tridevmc.compound.ui.screen.CompoundScreenContext;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
@@ -53,6 +55,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     private static final WrappedField<Boolean> isSplittingStack = WrappedField.create(AbstractContainerScreen.class, "isSplittingStack", "field_147004_w");
     private static final WrappedField<ItemStack> draggingItem = WrappedField.create(AbstractContainerScreen.class, "draggingItem", "field_147012_x");
     private static final WrappedField<Integer> quickCraftingType = WrappedField.create(AbstractContainerScreen.class, "quickCraftingType", "field_146987_F");
+    private static final WrappedField<MultiBufferSource.BufferSource> bufferSource = WrappedField.create(GuiGraphics.class, "bufferSource", "f_279627_");
 
     private GuiGraphics activeGuiGraphics;
     private long ticks;
@@ -104,20 +107,20 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
 
     @Override
     protected void renderBg(GuiGraphics gg, float partialTicks, int mouseX, int mouseY) {
+        this.getBufferSource().endLastBatch();
         this.currentLayer = EnumUILayer.BACKGROUND;
         this.elements.forEach(e->renderElement(e, EnumUILayer.BACKGROUND));
     }
 
     @Override
     protected void renderLabels(GuiGraphics gg, int mouseX, int mouseY) {
+        this.getBufferSource().endLastBatch();
         var modelStack = RenderSystem.getModelViewStack();
         modelStack.pushMatrix();
         modelStack.translate(-this.leftPos, -this.topPos, 0);
-        RenderSystem.applyModelViewMatrix();
         this.currentLayer = EnumUILayer.FOREGROUND;
         this.elements.forEach((e) -> renderElement(e, EnumUILayer.FOREGROUND));
         modelStack.popMatrix();
-        RenderSystem.applyModelViewMatrix();
     }
 
     @Override
@@ -128,6 +131,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
         this.mouseY = mouseY;
         this.updateSlotStates();
         super.render(gg, mouseX, mouseY, partialTicks);
+        this.getBufferSource().endLastBatch();
         this.currentLayer = EnumUILayer.OVERLAY;
         this.elements.forEach((e) -> renderElement(e, EnumUILayer.OVERLAY));
     }
@@ -231,6 +235,11 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     @Override
     public double getMouseY() {
         return this.mouseY;
+    }
+
+    @Override
+    public MultiBufferSource.BufferSource getBufferSource() {
+        return bufferSource.get(this.getActiveGuiGraphics());
     }
 
     @Override

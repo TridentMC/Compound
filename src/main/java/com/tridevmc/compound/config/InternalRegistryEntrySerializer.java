@@ -132,12 +132,12 @@ public class InternalRegistryEntrySerializer<T> implements IConfigObjectSerializ
     public InternalRegistryEntrySerializer(Class<?> registry, ResourceKey<Registry<T>> registryKey, ResourceKey<T> defaultValue) {
         this.registryType = registry;
         this.registryKey = registryKey;
-        this.defaultValue = () -> this.getRegistry().get(defaultValue);
+        this.defaultValue = () -> (T) this.getRegistry().get(defaultValue).orElse(null);
     }
 
     private Registry<T> getRegistry() {
         if (this.registry == null) {
-            this.registry = (Registry<T>) BuiltInRegistries.REGISTRY.get(this.registryKey.location());
+            this.registry = (Registry<T>) BuiltInRegistries.REGISTRY.get(this.registryKey.location()).orElse(null);
         }
         return this.registry;
     }
@@ -149,7 +149,7 @@ public class InternalRegistryEntrySerializer<T> implements IConfigObjectSerializ
 
     @Override
     public T fromString(Class<T> fieldType, String value) {
-        return this.getRegistry().get(ResourceLocation.parse(value));
+        return (T) this.getRegistry().get(ResourceLocation.parse(value)).orElse(null);
     }
 
     @Override

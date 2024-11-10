@@ -170,10 +170,9 @@ public class CompoundConfig<T> {
             // Load any fields if we haven't already.
             for (Field field : this.configClass.getDeclaredFields()) {
                 if (field.isAnnotationPresent(ConfigValue.class)) {
-                    WrappedField wrappedField = WrappedField.create(field);
-                    wrappedField.setAccessible(true);
+                    var wrappedField = WrappedField.create(field);
                     try {
-                        ConfigField configField = new ConfigField(this, wrappedField);
+                        var configField = new ConfigField(this, wrappedField);
                         this.fields.add(configField);
                     } catch (IllegalArgumentException e) {
                         LOG.error("Failed to create ConfigField for field {}, caused by {}", wrappedField.getName(), e);
