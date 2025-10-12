@@ -3,7 +3,6 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'org.cadixdev.licenser' version '0.6.1'
     id 'net.neoforged.moddev' version '2.0.115'
 }
 
@@ -11,14 +10,12 @@ apply from: "properties.gradle"
 
 version = modVersion
 group = modGroup
-archivesBaseName = modBaseName
 ext.versionTag = ''
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-license {
-    header = project.file('LICENSE-HEADER')
-    include '**/*.java'
+base {
+    archivesName = modBaseName
 }
 
 neoForge {
