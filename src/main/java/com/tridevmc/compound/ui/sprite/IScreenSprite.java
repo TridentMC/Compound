@@ -19,6 +19,7 @@ package com.tridevmc.compound.ui.sprite;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.data.AtlasIds;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -99,7 +100,7 @@ public interface IScreenSprite {
      * @return a new screen sprite.
      */
     static IScreenSprite of(ResourceLocation location) {
-        return of(Minecraft.getInstance().getGuiSprites().getSprite(location));
+        return of(Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.GUI).getSprite(location));
     }
 
     static IScreenSprite ofAssetLocation(ResourceLocation location, int width, int height) {

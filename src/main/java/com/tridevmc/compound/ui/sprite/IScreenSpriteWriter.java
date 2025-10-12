@@ -19,7 +19,9 @@ package com.tridevmc.compound.ui.sprite;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.metadata.gui.GuiMetadataSection;
 import net.minecraft.client.resources.metadata.gui.GuiSpriteScaling;
+import net.minecraft.data.AtlasIds;
 
 /**
  * Responsible for drawing/interpolating sprites to the screen.
@@ -27,7 +29,7 @@ import net.minecraft.client.resources.metadata.gui.GuiSpriteScaling;
 public interface IScreenSpriteWriter {
 
     static IScreenSpriteWriter forTextureAtlasSprite(TextureAtlasSprite sprite) {
-        var scaling = Minecraft.getInstance().getGuiSprites().getSpriteScaling(sprite);
+        var scaling = sprite.contents().getAdditionalMetadata(GuiMetadataSection.TYPE).orElse(GuiMetadataSection.DEFAULT).scaling();
         return switch (scaling.type()) {
             case STRETCH -> new ScreenSpriteWriterStretch();
             case TILE -> new ScreenSpriteWriterTile();

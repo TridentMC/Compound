@@ -77,7 +77,7 @@ public class InternalRegistryEntrySerializer<T> implements IConfigObjectSerializ
             new InternalRegistryEntrySerializer<>(Block.class, Registries.BLOCK, Blocks.AIR),
             new InternalRegistryEntrySerializer<>(Fluid.class, Registries.FLUID, Fluids.EMPTY),
             new InternalRegistryEntrySerializer<>(Item.class, Registries.ITEM, Items.AIR),
-            new InternalRegistryEntrySerializer<>(MobEffect.class, Registries.MOB_EFFECT, MobEffects.JUMP),
+            new InternalRegistryEntrySerializer<>(MobEffect.class, Registries.MOB_EFFECT, MobEffects.JUMP_BOOST),
             new InternalRegistryEntrySerializer<>(Potion.class, Registries.POTION, Potions.AWKWARD),
             new InternalRegistryEntrySerializer<>(Attribute.class, Registries.ATTRIBUTE, Attributes.ARMOR),
             new InternalRegistryEntrySerializer<>(StatType.class, Registries.STAT_TYPE, BLOCK_MINED),

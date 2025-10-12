@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.ICompoundUI;
@@ -34,16 +33,19 @@ import com.tridevmc.compound.ui.screen.CompoundScreenContext;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Matrix3x2fStack;
 
 import java.util.List;
 import java.util.Map;
@@ -96,10 +98,10 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
 
     void renderElement(IElement element, EnumUILayer layer) {
         if (element.useManagedMatrix()) {
-            this.getActiveStack().pushPose();
+            this.getActiveStack().pushMatrix();
             element.getLayout().applyToMatrix(this.screenContext, element);
             element.drawLayer(this, layer);
-            this.getActiveStack().popPose();
+            this.getActiveStack().popMatrix();
         } else {
             element.drawLayer(this, layer);
         }
@@ -248,7 +250,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     }
 
     @Override
-    public PoseStack getActiveStack() {
+    public Matrix3x2fStack getActiveStack() {
         return this.getActiveGuiGraphics() != null ? this.getActiveGuiGraphics().pose() : null;
     }
 
@@ -283,39 +285,41 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     }
 
     @Override
-    public boolean keyPressed(int key, int scanCode, int modifiers) {
-        this.keyPressListeners.forEach((l) -> l.listen(this.screenContext, key, scanCode, modifiers));
-        return super.keyPressed(key, scanCode, modifiers);
+    public boolean keyPressed(@NotNull KeyEvent event) {
+        this.keyPressListeners.forEach((l) -> l.listen(this.screenContext, event.key(), event.scancode(), event.modifiers()));
+        return super.keyPressed(event);
     }
 
     @Override
-    public boolean keyReleased(int key, int scanCode, int modifiers) {
-        this.keyReleaseListeners.forEach((l) -> l.listen(this.screenContext, key, scanCode, modifiers));
-        return super.keyReleased(key, scanCode, modifiers);
+    public boolean keyReleased(@NotNull KeyEvent event) {
+        this.keyReleaseListeners.forEach((l) -> l.listen(this.screenContext, event.key(), event.scancode(), event.modifiers()));
+        return super.keyReleased(event);
+    }
+
+
+    @Override
+    public boolean charTyped(@NotNull CharacterEvent event) {
+        this.charTypeListeners.forEach((l) -> l.listen(this.screenContext, (char) event.codepoint(), event.modifiers()));
+        return super.charTyped(event);
     }
 
     @Override
-    public boolean charTyped(char typedChar, int modifiers) {
-        this.charTypeListeners.forEach((l) -> l.listen(this.screenContext, typedChar, modifiers));
-        return super.charTyped(typedChar, modifiers);
+    public boolean mouseDragged(@NotNull MouseButtonEvent event, double pX, double pY) {
+        this.mouseDragListeners.forEach((l) -> l.listen(this.screenContext, event.x(), event.y(), event.button(), pX, pY));
+
+        return super.mouseDragged(event, pX, pY);
     }
 
     @Override
-    public boolean mouseClicked(double x, double y, int button) {
-        this.mousePressListeners.forEach((l) -> l.listen(this.screenContext, x, y, button));
-        return super.mouseClicked(x, y, button);
+    public boolean mouseClicked(@NotNull MouseButtonEvent event, boolean isDoubleClick) {
+        this.mousePressListeners.forEach((l) -> l.listen(this.screenContext, event.x(), event.y(), event.button()));
+        return super.mouseClicked(event, isDoubleClick);
     }
 
     @Override
-    public boolean mouseDragged(double x, double y, int button, double pX, double pY) {
-        this.mouseDragListeners.forEach((l) -> l.listen(this.screenContext, x, y, button, pX, pY));
-        return super.mouseDragged(x, y, button, pX, pY);
-    }
-
-    @Override
-    public boolean mouseReleased(double x, double y, int button) {
-        this.mouseReleaseListeners.forEach((l) -> l.listen(this.screenContext, x, y, button));
-        return super.mouseReleased(x, y, button);
+    public boolean mouseReleased(@NotNull MouseButtonEvent event) {
+        this.mouseReleaseListeners.forEach((l) -> l.listen(this.screenContext, event.x(), event.y(), event.button()));
+        return super.mouseReleased(event);
     }
 
     @Override
@@ -323,7 +327,6 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
         this.mouseScrollListeners.forEach((l) -> l.listen(this.screenContext, x, y, scrollX, scrollY));
         return super.mouseScrolled(x, y, scrollX, scrollY);
     }
-
     @Override
     public IScreenContext getScreenContext() {
         return this.screenContext;

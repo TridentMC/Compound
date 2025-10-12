@@ -18,7 +18,6 @@ package com.tridevmc.compound.ui;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.listeners.*;
 import com.tridevmc.compound.ui.screen.CompoundScreenContext;
@@ -26,13 +25,18 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.NotNull;
+import org.joml.Matrix3x2fStack;
 
 import java.util.List;
 
 public abstract class CompoundUI extends Screen implements ICompoundUI, IInternalCompoundUI {
 
-    private PoseStack activeStack;
+    private Matrix3x2fStack activeStack;
     private long ticks;
     private double mouseX, mouseY;
     private EnumUILayer currentLayer;
@@ -75,10 +79,10 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
             this.currentLayer = layer;
             this.elements.forEach((e) -> {
                 if (e.useManagedMatrix()) {
-                    this.activeStack.pushPose();
+                    this.activeStack.pushMatrix();
                     e.getLayout().applyToMatrix(this.screenContext, e);
                     e.drawLayer(this, layer);
-                    this.activeStack.popPose();
+                    this.activeStack.popMatrix();
                 } else {
                     e.drawLayer(this, layer);
                 }
@@ -105,7 +109,7 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     }
 
     @Override
-    public PoseStack getActiveStack() {
+    public Matrix3x2fStack getActiveStack() {
         return this.activeStack;
     }
 
@@ -140,39 +144,41 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     }
 
     @Override
-    public boolean keyPressed(int key, int scanCode, int modifiers) {
-        this.keyPressListeners.forEach((l) -> l.listen(this.screenContext, key, scanCode, modifiers));
-        return super.keyPressed(key, scanCode, modifiers);
+    public boolean keyPressed(@NotNull KeyEvent event) {
+        this.keyPressListeners.forEach((l) -> l.listen(this.screenContext, event.key(), event.scancode(), event.modifiers()));
+        return super.keyPressed(event);
     }
 
     @Override
-    public boolean keyReleased(int key, int scanCode, int modifiers) {
-        this.keyReleaseListeners.forEach((l) -> l.listen(this.screenContext, key, scanCode, modifiers));
-        return super.keyReleased(key, scanCode, modifiers);
+    public boolean keyReleased(@NotNull KeyEvent event) {
+        this.keyReleaseListeners.forEach((l) -> l.listen(this.screenContext, event.key(), event.scancode(), event.modifiers()));
+        return super.keyReleased(event);
+    }
+
+
+    @Override
+    public boolean charTyped(@NotNull CharacterEvent event) {
+        this.charTypeListeners.forEach((l) -> l.listen(this.screenContext, (char) event.codepoint(), event.modifiers()));
+        return super.charTyped(event);
     }
 
     @Override
-    public boolean charTyped(char typedChar, int modifiers) {
-        this.charTypeListeners.forEach((l) -> l.listen(this.screenContext, typedChar, modifiers));
-        return super.charTyped(typedChar, modifiers);
+    public boolean mouseDragged(@NotNull MouseButtonEvent event, double pX, double pY) {
+        this.mouseDragListeners.forEach((l) -> l.listen(this.screenContext, event.x(), event.y(), event.button(), pX, pY));
+
+        return super.mouseDragged(event, pX, pY);
     }
 
     @Override
-    public boolean mouseClicked(double x, double y, int button) {
-        this.mousePressListeners.forEach((l) -> l.listen(this.screenContext, x, y, button));
-        return super.mouseClicked(x, y, button);
+    public boolean mouseClicked(@NotNull MouseButtonEvent event, boolean isDoubleClick) {
+        this.mousePressListeners.forEach((l) -> l.listen(this.screenContext, event.x(), event.y(), event.button()));
+        return super.mouseClicked(event, isDoubleClick);
     }
 
     @Override
-    public boolean mouseDragged(double x, double y, int button, double pX, double pY) {
-        this.mouseDragListeners.forEach((l) -> l.listen(this.screenContext, x, y, button, pX, pY));
-        return super.mouseDragged(x, y, button, pX, pY);
-    }
-
-    @Override
-    public boolean mouseReleased(double x, double y, int button) {
-        this.mouseReleaseListeners.forEach((l) -> l.listen(this.screenContext, x, y, button));
-        return super.mouseReleased(x, y, button);
+    public boolean mouseReleased(@NotNull MouseButtonEvent event) {
+        this.mouseReleaseListeners.forEach((l) -> l.listen(this.screenContext, event.x(), event.y(), event.button()));
+        return super.mouseReleased(event);
     }
 
     @Override

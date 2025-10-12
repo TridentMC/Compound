@@ -16,11 +16,11 @@
 
 package com.tridevmc.compound.ui;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.MultiBufferSource;
+import org.joml.Matrix3x2fStack;
 
 /**
  * Only for internal use, exposes methods and variables to screen context.
@@ -31,7 +31,7 @@ public interface IInternalCompoundUI {
 
     GuiGraphics getActiveGuiGraphics();
 
-    PoseStack getActiveStack();
+    Matrix3x2fStack getActiveStack();
 
     int getWidth();
 

@@ -1,17 +1,17 @@
 ext {
     // Mod Stuff
     modGroup = "com.tridevmc"
-    modVersion = "1.16.1"
+    modVersion = "1.17.1"
     modBaseName = "compound"
 
     // Forge Stuff
-    neoForgeVersion = "21.4.38-beta"
+    neoForgeVersion = "21.10.12-beta"
 
     // Mapping Stuff
     mappingsChannel = "parchment"
-    mappingsMinecraftVersion = "1.21.4"
-    mappingsVersion = "2024.12.22"
+    mappingsMinecraftVersion = "1.21.10"
+    mappingsVersion = "2025.10.12"
 
     // Game Stuff
-    minecraftVersion = "1.21.4"
+    minecraftVersion = "1.21.10"
 }

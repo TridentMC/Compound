@@ -158,7 +158,7 @@ public class DefaultMarshallers {
     }
 
     private static ItemStack readItemStack(ByteBuf buf) {
-        return new FriendlyByteBuf(buf).readJsonWithCodec(ItemStack.CODEC);
+        return new FriendlyByteBuf(buf).readLenientJsonWithCodec(ItemStack.CODEC);
     }
 
     private static BlockPos readBlockPos(ByteBuf buf) {
