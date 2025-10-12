@@ -128,10 +128,10 @@ public class CompoundScreenContext implements IScreenContext {
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         var pose = this.getActiveStack().last().pose();
         var bb = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
-        bb.addVertex(pose, (float) x, (float) (y + height), zLevel).setUv(minU, maxV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-        bb.addVertex(pose, (float) (x + width), (float) (y + height), zLevel).setUv(maxU, maxV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-        bb.addVertex(pose, (float) (x + width), (float) y, zLevel).setUv(maxU, minV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-        bb.addVertex(pose, (float) x, (float) y, zLevel).setUv(minU, minV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        bb.addVertex(pose, x, y + height, zLevel).setUv(minU, maxV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        bb.addVertex(pose, x + width, y + height, zLevel).setUv(maxU, maxV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        bb.addVertex(pose, x + width, y, zLevel).setUv(maxU, minV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        bb.addVertex(pose, x, y, zLevel).setUv(minU, minV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
         BufferUploader.drawWithShader(bb.buildOrThrow());
     }
 

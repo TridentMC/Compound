@@ -44,13 +44,15 @@ public class LayoutCentered implements ILayout {
         float width = screen.getWidth();
         float height = screen.getHeight();
         if (this.parent != null) {
-            Rect2F parentDimensions = this.parent.getDrawnDimensions(screen);
+            var parentDimensions = this.parent.getDrawnDimensions(screen);
             width = parentDimensions.getWidth();
             height = parentDimensions.getHeight();
         }
 
-        return rect.offsetPosition(this.horizontal ? (width / 2) - (rect.getWidth() / 2) : 0,
-                this.vertical ? (height / 2) - (rect.getHeight() / 2) : 0);
+        // Round centered positions to avoid subpixel misalignment
+        var offsetX = this.horizontal ? Math.round((width / 2F) - (rect.getWidth() / 2F)) : 0;
+        var offsetY = this.vertical ? Math.round((height / 2F) - (rect.getHeight() / 2F)) : 0;
+        return rect.offsetPosition(offsetX, offsetY);
     }
 
 }
