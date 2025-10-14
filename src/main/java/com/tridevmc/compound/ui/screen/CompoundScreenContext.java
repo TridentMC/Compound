@@ -30,6 +30,7 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
+import org.joml.Matrix3x2fStack;
 
 import java.net.URI;
 import java.util.List;
@@ -44,7 +45,7 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public PoseStack getActiveStack() {
+    public Matrix3x2fStack getActiveStack() {
         return this.ui.getActiveStack();
     }
 
@@ -100,7 +101,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawFormattedCharSequence(FormattedCharSequence processor, float x, float y) {
-        this.ui.getActiveGuiGraphics().drawString(this.getFont(), processor, x, y, 16777215, false);
+        this.ui.getActiveGuiGraphics().drawString(this.getFont(), processor, (int) x, (int) y, 16777215, false);
     }
 
     @Override
@@ -111,7 +112,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawFormattedCharSequenceWithShadow(FormattedCharSequence processor, float x, float y) {
-        this.ui.getActiveGuiGraphics().drawString(this.getFont(), processor, x, y, -1, true);
+        this.ui.getActiveGuiGraphics().drawString(this.getFont(), processor, (int) x, (int) y, -1, true);
     }
 
     @Override
@@ -122,25 +123,27 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawTexturedRect(float x, float y, float width, float height, float minU, float minV, float maxU, float maxV, int zLevel) {
-        RenderSystem.setShader(CoreShaders.POSITION_TEX_COLOR);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        var pose = this.getActiveStack().last().pose();
-        var bb = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
-        bb.addVertex(pose, x, y + height, zLevel).setUv(minU, maxV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-        bb.addVertex(pose, x + width, y + height, zLevel).setUv(maxU, maxV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-        bb.addVertex(pose, x + width, y, zLevel).setUv(maxU, minV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-        bb.addVertex(pose, x, y, zLevel).setUv(minU, minV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-        BufferUploader.drawWithShader(bb.buildOrThrow());
+        // TODO: Delegating to GuiGraphics for now, but we don't want to rely on them as the API changes way too frequently.
+        // RenderSystem.setShader(CoreShaders.POSITION_TEX_COLOR);
+        // RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        // var pose = this.getActiveStack().last().pose();
+        // var bb = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        // bb.addVertex(pose, x, y + height, zLevel).setUv(minU, maxV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        // bb.addVertex(pose, x + width, y + height, zLevel).setUv(maxU, maxV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        // bb.addVertex(pose, x + width, y, zLevel).setUv(maxU, minV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        // bb.addVertex(pose, x, y, zLevel).setUv(minU, minV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        // BufferUploader.drawWithShader(bb.buildOrThrow());
+        this.ui.getActiveGuiGraphics().fill((int) x, (int) y, (int) (x + width), (int) (y + height), -1);
     }
 
     @Override
     public void drawTooltip(List<Component> tooltip, int x, int y, Optional<TooltipComponent> extraComponents, Font font) {
-        this.ui.getActiveGuiGraphics().renderTooltip(font, tooltip, extraComponents, x, y);
+        this.ui.getActiveGuiGraphics().setTooltipForNextFrame(font, tooltip, extraComponents, x, y);
     }
 
     @Override
     public void drawProcessorAsTooltip(List<FormattedCharSequence> processors, int x, int y, Font font) {
-        this.ui.getActiveGuiGraphics().renderTooltip(font, processors, x, y);
+        this.ui.getActiveGuiGraphics().setTooltipForNextFrame(font, processors, x, y);
     }
 
     @Override
@@ -148,46 +151,44 @@ public class CompoundScreenContext implements IScreenContext {
         var font = IClientItemExtensions.of(stack).getFont(stack, IClientItemExtensions.FontContext.TOOLTIP);
         if (font == null) font = this.getFont();
         var poseStack = this.getActiveStack();
-        poseStack.pushPose();
-        poseStack.translate(x, y, 0);
-        poseStack.scale(1F / 16F, 1F / 16F, 1);
-        poseStack.scale(width, height, 1);
-        poseStack.pushPose();
-        poseStack.translate(0, 0, zLevel);
-        //RenderSystem.applyModelViewMatrix();
+        poseStack.pushMatrix();
+        poseStack.translate(x, y);
+        poseStack.scale(width / 16F, height / 16F);
+
         this.ui.getActiveGuiGraphics().renderItem(stack, 0, 0);
         this.ui.getActiveGuiGraphics().renderItemDecorations(font, stack, 0, 0, altText);
-        poseStack.popPose();
-        poseStack.popPose();
+
+        poseStack.popMatrix();
         this.ui.getBufferSource().endLastBatch();
-        //RenderSystem.applyModelViewMatrix();
     }
 
     @Override
     public void drawGradientRect(float x, float y, float width, float height, int startColour, int endColour, int zLevel) {
-        float[] startColourUnpacked = this.getRGBA(startColour);
-        float r1 = startColourUnpacked[0];
-        float g1 = startColourUnpacked[1];
-        float b1 = startColourUnpacked[2];
-        float a1 = startColourUnpacked[3];
-
-        float[] endColourUnpacked = this.getRGBA(endColour);
-        float r2 = endColourUnpacked[0];
-        float g2 = endColourUnpacked[1];
-        float b2 = endColourUnpacked[2];
-        float a2 = endColourUnpacked[3];
-
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShader(CoreShaders.POSITION_COLOR);
-        var pose = this.getActiveStack().last().pose();
-        var bb = getBuffer(RenderType.guiOverlay());
-        bb.addVertex(pose, x + width, y, zLevel).setColor(r1, g1, b1, a1);
-        bb.addVertex(pose, x, y, zLevel).setColor(r1, g1, b1, a1);
-        bb.addVertex(pose, x, y + height, zLevel).setColor(r2, g2, b2, a2);
-        bb.addVertex(pose, x + width, y + height, zLevel).setColor(r2, g2, b2, a2);
-        RenderSystem.disableBlend();
-        this.ui.getBufferSource().endLastBatch();
+        // TODO: Do not delegate to guigraphics as its a changing target.
+        // float[] startColourUnpacked = this.getRGBA(startColour);
+        // float r1 = startColourUnpacked[0];
+        // float g1 = startColourUnpacked[1];
+        // float b1 = startColourUnpacked[2];
+        // float a1 = startColourUnpacked[3];
+        //
+        // float[] endColourUnpacked = this.getRGBA(endColour);
+        // float r2 = endColourUnpacked[0];
+        // float g2 = endColourUnpacked[1];
+        // float b2 = endColourUnpacked[2];
+        // float a2 = endColourUnpacked[3];
+        //
+        // RenderSystem.enableBlend();
+        // RenderSystem.defaultBlendFunc();
+        // RenderSystem.setShader(CoreShaders.POSITION_COLOR);
+        // var pose = this.getActiveStack().last().pose();
+        // var bb = getBuffer(RenderType.guiOverlay());
+        // bb.addVertex(pose, x + width, y, zLevel).setColor(r1, g1, b1, a1);
+        // bb.addVertex(pose, x, y, zLevel).setColor(r1, g1, b1, a1);
+        // bb.addVertex(pose, x, y + height, zLevel).setColor(r2, g2, b2, a2);
+        // bb.addVertex(pose, x + width, y + height, zLevel).setColor(r2, g2, b2, a2);
+        // RenderSystem.disableBlend();
+        // this.ui.getBufferSource().endLastBatch();
+        this.ui.getActiveGuiGraphics().fillGradient((int) x, (int) y, (int) (x + width), (int) (y + height), startColour, endColour);
     }
 
     @Override
@@ -210,12 +211,12 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public boolean isShiftDown() {
-        return Screen.hasShiftDown();
+        return this.getMc().hasShiftDown();
     }
 
     @Override
     public boolean isAltDown() {
-        return Screen.hasAltDown();
+        return this.getMc().hasAltDown();
     }
 
     @Override

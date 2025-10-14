@@ -30,6 +30,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.ItemStack;
+import org.joml.Matrix3x2fStack;
 
 import java.net.URI;
 import java.util.Collections;
@@ -51,7 +52,7 @@ public interface IPrimitiveScreenContext {
      *
      * @return the active matrix stack for the current draw.
      */
-    PoseStack getActiveStack();
+    Matrix3x2fStack getActiveStack();
 
     /**
      * Gets the vertex consumer for the given render type.
@@ -130,7 +131,7 @@ public interface IPrimitiveScreenContext {
      * @param texture the texture to bind.
      */
     default void bindTexture(ResourceLocation texture) {
-        RenderSystem.setShaderTexture(0, texture);
+        RenderSystem.setShaderTexture(0, getMc().getTextureManager().getTexture(texture).getTextureView());
     }
 
     /**

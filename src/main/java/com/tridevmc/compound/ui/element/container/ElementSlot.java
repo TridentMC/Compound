@@ -93,12 +93,13 @@ public class ElementSlot extends Element {
 
     private void drawHighlightOverlay(IScreenContext screen) {
         Rect2F highlightArea = this.getDrawnDimensions(screen).offset(new Rect2F(1, 1, -1, -1));
-        RenderSystem.disableDepthTest();
-        RenderSystem.colorMask(true, true, true, false);
+        // TODO: No shot this works without the depth test stuff.
+        // RenderSystem.disableDepthTest();
+        // RenderSystem.colorMask(true, true, true, false);
         int slotColor = -2130706433;
         screen.drawRect(highlightArea, slotColor, 0);
-        RenderSystem.colorMask(true, true, true, true);
-        RenderSystem.enableDepthTest();
+        // RenderSystem.colorMask(true, true, true, true);
+        // RenderSystem.enableDepthTest();
     }
 
     private void drawHighlightUnderlay(IScreenContext screen) {

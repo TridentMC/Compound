@@ -56,7 +56,7 @@ public interface ILayout {
     default void applyToMatrix(IScreenContext screen, IElement element) {
         var origin = this.getScreenspaceRect(screen, element, element.getDimensions().setPosition(0, 0));
 
-        screen.getActiveStack().translate(origin.getX(), origin.getY(), 0);
+        screen.getActiveStack().translate(origin.getX(), origin.getY());
     }
 
 }
