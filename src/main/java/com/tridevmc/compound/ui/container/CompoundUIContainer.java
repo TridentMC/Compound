@@ -19,7 +19,6 @@ package com.tridevmc.compound.ui.container;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.ICompoundUI;
@@ -34,12 +33,12 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
@@ -57,7 +56,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     private static final WrappedField<Boolean> isSplittingStack = WrappedField.create(AbstractContainerScreen.class, "isSplittingStack", "field_147004_w");
     private static final WrappedField<ItemStack> draggingItem = WrappedField.create(AbstractContainerScreen.class, "draggingItem", "field_147012_x");
     private static final WrappedField<Integer> quickCraftingType = WrappedField.create(AbstractContainerScreen.class, "quickCraftingType", "field_146987_F");
-    private static final WrappedField<MultiBufferSource.BufferSource> bufferSource = WrappedField.create(GuiGraphics.class, "bufferSource", "f_279627_");
+    private static final WrappedField<GuiRenderState> guiRenderState = WrappedField.create(GuiGraphics.class, "guiRenderState", "f_399111_");
 
     private GuiGraphics activeGuiGraphics;
     private long ticks;
@@ -109,20 +108,20 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
 
     @Override
     protected void renderBg(GuiGraphics gg, float partialTicks, int mouseX, int mouseY) {
-        this.getBufferSource().endLastBatch();
+        this.activeGuiGraphics = gg;
         this.currentLayer = EnumUILayer.BACKGROUND;
         this.elements.forEach(e->renderElement(e, EnumUILayer.BACKGROUND));
     }
 
     @Override
     protected void renderLabels(GuiGraphics gg, int mouseX, int mouseY) {
-        this.getBufferSource().endLastBatch();
-        var modelStack = RenderSystem.getModelViewStack();
-        modelStack.pushMatrix();
-        modelStack.translate(-this.leftPos, -this.topPos, 0);
+        this.activeGuiGraphics = gg;
+        var poseStack = gg.pose();
+        poseStack.pushMatrix();
+        poseStack.translate(-this.leftPos, -this.topPos);
         this.currentLayer = EnumUILayer.FOREGROUND;
         this.elements.forEach((e) -> renderElement(e, EnumUILayer.FOREGROUND));
-        modelStack.popMatrix();
+        poseStack.popMatrix();
     }
 
     @Override
@@ -133,7 +132,6 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
         this.mouseY = mouseY;
         this.updateSlotStates();
         super.render(gg, mouseX, mouseY, partialTicks);
-        this.getBufferSource().endLastBatch();
         this.currentLayer = EnumUILayer.OVERLAY;
         this.elements.forEach((e) -> renderElement(e, EnumUILayer.OVERLAY));
     }
@@ -240,13 +238,13 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     }
 
     @Override
-    public MultiBufferSource.BufferSource getBufferSource() {
-        return bufferSource.get(this.getActiveGuiGraphics());
+    public GuiGraphics getActiveGuiGraphics() {
+        return this.activeGuiGraphics;
     }
 
     @Override
-    public GuiGraphics getActiveGuiGraphics() {
-        return this.activeGuiGraphics;
+    public GuiRenderState getGuiRenderState() {
+        return guiRenderState.get(this.getActiveGuiGraphics());
     }
 
     @Override

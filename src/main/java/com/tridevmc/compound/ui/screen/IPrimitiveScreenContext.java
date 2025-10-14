@@ -23,6 +23,7 @@ import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
@@ -55,12 +56,11 @@ public interface IPrimitiveScreenContext {
     Matrix3x2fStack getActiveStack();
 
     /**
-     * Gets the vertex consumer for the given render type.
+     * Gets the active GuiRenderState for submitting rendering primitives.
      *
-     * @param renderType the render type to get the consumer for.
-     * @return the vertex consumer for the given render type.
+     * @return the active GuiRenderState for the current draw.
      */
-    VertexConsumer getBuffer(RenderType renderType);
+    GuiRenderState getGuiRenderState();
 
     /**
      * Gets the width of the screen.
@@ -125,23 +125,6 @@ public interface IPrimitiveScreenContext {
      */
     Font getFont();
 
-    /**
-     * Binds the given texture to the texture manager.
-     *
-     * @param texture the texture to bind.
-     */
-    default void bindTexture(ResourceLocation texture) {
-        RenderSystem.setShaderTexture(0, getMc().getTextureManager().getTexture(texture).getTextureView());
-    }
-
-    /**
-     * Binds the given texture to the texture manager.
-     *
-     * @param sprite the sprite to bind.
-     */
-    default void bindTexture(IScreenSprite sprite) {
-        this.bindTexture(sprite.getTextureLocation());
-    }
 
     /**
      * Draws a solid single colour rect on the screen matching the provided rect data.
@@ -312,10 +295,11 @@ public interface IPrimitiveScreenContext {
     /**
      * Draws a textured rect on the screen matching the provided rect data.
      *
+     * @param texture the texture to use for drawing.
      * @param x the x coordinate to draw the rect at.
      * @param y the y coordinate to draw the rect at.
      */
-    void drawTexturedRect(float x, float y, float width, float height, float minU, float minV, float maxU, float maxV, int zLevel);
+    void drawTexturedRect(ResourceLocation texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV, int zLevel);
 
     /**
      * Draws a textured rect on the screen matching the provided rect data using the given sprite, utilizing the writer to draw the sprite.
@@ -390,8 +374,7 @@ public interface IPrimitiveScreenContext {
      * @param zLevel the z level to draw the rect at.
      */
     default void drawRectUsingSprite(IScreenSprite sprite, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV, int zLevel) {
-        this.bindTexture(sprite);
-        this.drawTexturedRect(x, y, width, height, sprite.getU(minU), sprite.getV(minV), sprite.getU(maxU), sprite.getV(maxV), zLevel);
+        this.drawTexturedRect(sprite.getTextureLocation(), x, y, width, height, sprite.getU(minU), sprite.getV(minV), sprite.getU(maxU), sprite.getV(maxV), zLevel);
     }
 
     /**
@@ -406,8 +389,8 @@ public interface IPrimitiveScreenContext {
      * @param maxU   the maximum u coordinate of the texture to draw.
      * @param maxV   the maximum v coordinate of the texture to draw.
      */
-    default void drawTexturedRect(float x, float y, float width, float height, float minU, float minV, float maxU, float maxV) {
-        this.drawTexturedRect(x, y, width, height, minU, minV, maxU, maxV, 0);
+    default void drawTexturedRect(ResourceLocation texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV) {
+        this.drawTexturedRect(texture, x, y, width, height, minU, minV, maxU, maxV, 0);
     }
 
     /**

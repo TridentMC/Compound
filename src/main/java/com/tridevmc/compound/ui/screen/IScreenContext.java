@@ -19,6 +19,7 @@ package com.tridevmc.compound.ui.screen;
 import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.UVData;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -78,19 +79,20 @@ public interface IScreenContext extends IPrimitiveScreenContext {
      * @param minUvs the minimum uvs for the rect.
      * @param maxUvs the maximum uvs for the rect.
      */
-    default void drawTexturedRect(Rect2F rect, UVData minUvs, UVData maxUvs) {
-        this.drawTexturedRect(rect, minUvs, maxUvs, 0);
+    default void drawTexturedRect(ResourceLocation texture, Rect2F rect, UVData minUvs, UVData maxUvs) {
+        this.drawTexturedRect(texture, rect, minUvs, maxUvs, 0);
     }
 
     /**
      * Draws a textured rect on the screen matching the provided rect data using the given sprite.
      *
+     * @param texture the texture to use for drawing.
      * @param rect   the position and dimensions of the rect to draw.
      * @param minUvs the minimum uvs for the rect.
      * @param maxUvs the maximum uvs for the rect.
      */
-    default void drawTexturedRect(Rect2F rect, UVData minUvs, UVData maxUvs, int zLevel) {
-        this.drawTexturedRect(rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), minUvs.getU(), minUvs.getV(), maxUvs.getU(), maxUvs.getV(), zLevel);
+    default void drawTexturedRect(ResourceLocation texture, Rect2F rect, UVData minUvs, UVData maxUvs, int zLevel) {
+        this.drawTexturedRect(texture, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), minUvs.getU(), minUvs.getV(), maxUvs.getU(), maxUvs.getV(), zLevel);
     }
 
     /**

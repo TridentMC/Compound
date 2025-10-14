@@ -17,19 +17,27 @@
 package com.tridevmc.compound.ui.screen;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.*;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
+import com.tridevmc.compound.ui.render.CompoundRenderable;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.gui.render.TextureSetup;
+import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
+import org.joml.Matrix3x2f;
 import org.joml.Matrix3x2fStack;
 
 import java.net.URI;
@@ -50,8 +58,8 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public VertexConsumer getBuffer(RenderType renderType) {
-        return ui.getBufferSource().getBuffer(renderType);
+    public GuiRenderState getGuiRenderState() {
+        return this.ui.getGuiRenderState();
     }
 
     @Override
@@ -101,7 +109,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawFormattedCharSequence(FormattedCharSequence processor, float x, float y) {
-        this.ui.getActiveGuiGraphics().drawString(this.getFont(), processor, (int) x, (int) y, 16777215, false);
+        this.ui.getActiveGuiGraphics().drawString(this.getFont(), processor, (int) x, (int) y, 0xFF404040, false);
     }
 
     @Override
@@ -112,7 +120,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawFormattedCharSequenceWithShadow(FormattedCharSequence processor, float x, float y) {
-        this.ui.getActiveGuiGraphics().drawString(this.getFont(), processor, (int) x, (int) y, -1, true);
+        this.ui.getActiveGuiGraphics().drawString(this.getFont(), processor, (int) x, (int) y, 0xFF404040, true);
     }
 
     @Override
@@ -122,18 +130,31 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawTexturedRect(float x, float y, float width, float height, float minU, float minV, float maxU, float maxV, int zLevel) {
-        // TODO: Delegating to GuiGraphics for now, but we don't want to rely on them as the API changes way too frequently.
-        // RenderSystem.setShader(CoreShaders.POSITION_TEX_COLOR);
-        // RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        // var pose = this.getActiveStack().last().pose();
-        // var bb = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
-        // bb.addVertex(pose, x, y + height, zLevel).setUv(minU, maxV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-        // bb.addVertex(pose, x + width, y + height, zLevel).setUv(maxU, maxV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-        // bb.addVertex(pose, x + width, y, zLevel).setUv(maxU, minV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-        // bb.addVertex(pose, x, y, zLevel).setUv(minU, minV).setColor(1.0F, 1.0F, 1.0F, 1.0F);
-        // BufferUploader.drawWithShader(bb.buildOrThrow());
-        this.ui.getActiveGuiGraphics().fill((int) x, (int) y, (int) (x + width), (int) (y + height), -1);
+    public void drawTexturedRect(ResourceLocation texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV, int zLevel) {
+        var pose = new Matrix3x2f(this.getActiveStack());
+
+        var textureView = getMc().getTextureManager().getTexture(texture).getTextureView();
+        var textureSetup = TextureSetup.singleTexture(textureView);
+
+        var bounds = new ScreenRectangle((int) x, (int) y, (int) width, (int) height).transformMaxBounds(pose);
+
+        this.getGuiRenderState().submitGuiElement(
+            new CompoundRenderable(
+                RenderPipelines.GUI_TEXTURED,
+                textureSetup,
+                pose,
+                null,
+                bounds,
+                consumer -> {
+                    // Emit vertices in correct winding order: top-left, bottom-left, bottom-right, top-right
+                    int color = -1;
+                    consumer.addVertexWith2DPose(pose, x, y).setUv(minU, minV).setColor(color);
+                    consumer.addVertexWith2DPose(pose, x, y + height).setUv(minU, maxV).setColor(color);
+                    consumer.addVertexWith2DPose(pose, x + width, y + height).setUv(maxU, maxV).setColor(color);
+                    consumer.addVertexWith2DPose(pose, x + width, y).setUv(maxU, minV).setColor(color);
+                }
+            )
+        );
     }
 
     @Override
@@ -159,36 +180,32 @@ public class CompoundScreenContext implements IScreenContext {
         this.ui.getActiveGuiGraphics().renderItemDecorations(font, stack, 0, 0, altText);
 
         poseStack.popMatrix();
-        this.ui.getBufferSource().endLastBatch();
     }
 
     @Override
     public void drawGradientRect(float x, float y, float width, float height, int startColour, int endColour, int zLevel) {
-        // TODO: Do not delegate to guigraphics as its a changing target.
-        // float[] startColourUnpacked = this.getRGBA(startColour);
-        // float r1 = startColourUnpacked[0];
-        // float g1 = startColourUnpacked[1];
-        // float b1 = startColourUnpacked[2];
-        // float a1 = startColourUnpacked[3];
-        //
-        // float[] endColourUnpacked = this.getRGBA(endColour);
-        // float r2 = endColourUnpacked[0];
-        // float g2 = endColourUnpacked[1];
-        // float b2 = endColourUnpacked[2];
-        // float a2 = endColourUnpacked[3];
-        //
-        // RenderSystem.enableBlend();
-        // RenderSystem.defaultBlendFunc();
-        // RenderSystem.setShader(CoreShaders.POSITION_COLOR);
-        // var pose = this.getActiveStack().last().pose();
-        // var bb = getBuffer(RenderType.guiOverlay());
-        // bb.addVertex(pose, x + width, y, zLevel).setColor(r1, g1, b1, a1);
-        // bb.addVertex(pose, x, y, zLevel).setColor(r1, g1, b1, a1);
-        // bb.addVertex(pose, x, y + height, zLevel).setColor(r2, g2, b2, a2);
-        // bb.addVertex(pose, x + width, y + height, zLevel).setColor(r2, g2, b2, a2);
-        // RenderSystem.disableBlend();
-        // this.ui.getBufferSource().endLastBatch();
-        this.ui.getActiveGuiGraphics().fillGradient((int) x, (int) y, (int) (x + width), (int) (y + height), startColour, endColour);
+        var pose = new Matrix3x2f(this.getActiveStack());
+
+        // Calculate bounds for culling and debug rendering
+        var bounds = new ScreenRectangle((int) x, (int) y, (int) width, (int) height).transformMaxBounds(pose);
+
+        this.getGuiRenderState().submitGuiElement(
+            new CompoundRenderable(
+                RenderPipelines.GUI,
+                TextureSetup.noTexture(),
+                pose,
+                null,
+                bounds,
+                consumer -> {
+                    // Emit vertices in correct winding order: top-left, bottom-left, bottom-right, top-right
+                    // Top two vertices use startColour, bottom two use endColour
+                    consumer.addVertexWith2DPose(pose, x, y).setColor(startColour);
+                    consumer.addVertexWith2DPose(pose, x, y + height).setColor(endColour);
+                    consumer.addVertexWith2DPose(pose, x + width, y + height).setColor(endColour);
+                    consumer.addVertexWith2DPose(pose, x + width, y).setColor(startColour);
+                }
+            )
+        );
     }
 
     @Override

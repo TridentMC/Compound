@@ -18,12 +18,14 @@ package com.tridevmc.compound.ui;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.listeners.*;
 import com.tridevmc.compound.ui.screen.CompoundScreenContext;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -36,6 +38,9 @@ import java.util.List;
 
 public abstract class CompoundUI extends Screen implements ICompoundUI, IInternalCompoundUI {
 
+    private static final WrappedField<GuiRenderState> guiRenderState = WrappedField.create(GuiGraphics.class, "guiRenderState", "f_399111_");
+
+    private GuiGraphics activeGuiGraphics;
     private Matrix3x2fStack activeStack;
     private long ticks;
     private double mouseX, mouseY;
@@ -72,6 +77,7 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        this.activeGuiGraphics = graphics;
         this.activeStack = graphics.pose();
         this.mouseX = mouseX;
         this.mouseY = mouseY;
@@ -141,6 +147,16 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     @Override
     public EnumUILayer getCurrentLayer() {
         return this.currentLayer;
+    }
+
+    @Override
+    public GuiGraphics getActiveGuiGraphics() {
+        return this.activeGuiGraphics;
+    }
+
+    @Override
+    public GuiRenderState getGuiRenderState() {
+        return guiRenderState.get(this.activeGuiGraphics);
     }
 
     @Override

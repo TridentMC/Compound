@@ -44,8 +44,7 @@ public class ElementImage extends Element {
         if (this.layer == layer) {
             IScreenContext context = ui.getScreenContext();
             Rect2F dimensions = this.getDrawnDimensions(context);
-            context.bindTexture(this.textureLocation);
-            context.drawTexturedRect(dimensions, min, max);
+            context.drawTexturedRect(this.textureLocation, dimensions, min, max);
         }
     }
 

@@ -18,8 +18,8 @@ package com.tridevmc.compound.ui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix3x2fStack;
 
 /**
@@ -27,9 +27,9 @@ import org.joml.Matrix3x2fStack;
  */
 public interface IInternalCompoundUI {
 
-    MultiBufferSource.BufferSource getBufferSource();
-
     GuiGraphics getActiveGuiGraphics();
+
+    GuiRenderState getGuiRenderState();
 
     Matrix3x2fStack getActiveStack();
 
