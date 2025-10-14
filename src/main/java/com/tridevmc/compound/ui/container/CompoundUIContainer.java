@@ -127,7 +127,6 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     @Override
     public void render(@NotNull GuiGraphics gg, int mouseX, int mouseY, float partialTicks) {
         this.activeGuiGraphics = gg;
-        this.renderBackground(gg, mouseX, mouseY, partialTicks);
         this.mouseX = mouseX;
         this.mouseY = mouseY;
         this.updateSlotStates();
