@@ -33,7 +33,7 @@ public class ScreenSpriteWriterNineSlice implements IScreenSpriteWriter {
     private final int leftBorder, rightBorder, topBorder, bottomBorder;
 
     @Override
-    public void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height, int zLevel) {
+    public void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height) {
         // Draw all the corners first
         // Top left
         screen.drawRectUsingSprite(
@@ -41,8 +41,7 @@ public class ScreenSpriteWriterNineSlice implements IScreenSpriteWriter {
                 x, y,
                 leftBorder, topBorder,
                 0, 0,
-                leftBorder, topBorder,
-                zLevel
+                leftBorder, topBorder
         );
 
         // Top right
@@ -51,8 +50,7 @@ public class ScreenSpriteWriterNineSlice implements IScreenSpriteWriter {
                 x + width - rightBorder, y,
                 rightBorder, topBorder,
                 sprite.getWidthInPixels() - rightBorder, 0,
-                sprite.getWidthInPixels(), topBorder,
-                zLevel
+                sprite.getWidthInPixels(), topBorder
         );
 
         // Bottom left
@@ -61,8 +59,7 @@ public class ScreenSpriteWriterNineSlice implements IScreenSpriteWriter {
                 x, y + height - bottomBorder,
                 leftBorder, bottomBorder,
                 0, sprite.getHeightInPixels() - bottomBorder,
-                leftBorder, sprite.getHeightInPixels(),
-                zLevel
+                leftBorder, sprite.getHeightInPixels()
         );
 
         // Bottom right
@@ -71,8 +68,7 @@ public class ScreenSpriteWriterNineSlice implements IScreenSpriteWriter {
                 x + width - rightBorder, y + height - bottomBorder,
                 rightBorder, bottomBorder,
                 sprite.getWidthInPixels() - rightBorder, sprite.getHeightInPixels() - bottomBorder,
-                sprite.getWidthInPixels(), sprite.getHeightInPixels(),
-                zLevel
+                sprite.getWidthInPixels(), sprite.getHeightInPixels()
         );
 
         // Draw the top and bottom edges
@@ -87,8 +83,7 @@ public class ScreenSpriteWriterNineSlice implements IScreenSpriteWriter {
                     x + leftBorder + (i * maxSegmentWidth), y,
                     segmentWidth, topBorder,
                     leftBorder, 0,
-                    leftBorder + segmentWidth, topBorder,
-                    zLevel
+                    leftBorder + segmentWidth, topBorder
             );
         }
 
@@ -100,8 +95,7 @@ public class ScreenSpriteWriterNineSlice implements IScreenSpriteWriter {
                     x + leftBorder + (i * maxSegmentWidth), y + height - bottomBorder,
                     segmentWidth, bottomBorder,
                     leftBorder, sprite.getHeightInPixels() - bottomBorder,
-                    leftBorder + segmentWidth, sprite.getHeightInPixels(),
-                    zLevel
+                    leftBorder + segmentWidth, sprite.getHeightInPixels()
             );
         }
 
@@ -117,8 +111,7 @@ public class ScreenSpriteWriterNineSlice implements IScreenSpriteWriter {
                     x, y + topBorder + (i * maxSegmentHeight),
                     leftBorder, segmentHeight,
                     0, topBorder,
-                    leftBorder, topBorder + segmentHeight,
-                    zLevel
+                    leftBorder, topBorder + segmentHeight
             );
         }
 
@@ -130,8 +123,7 @@ public class ScreenSpriteWriterNineSlice implements IScreenSpriteWriter {
                     x + width - rightBorder, y + topBorder + (i * maxSegmentHeight),
                     rightBorder, segmentHeight,
                     sprite.getWidthInPixels() - rightBorder, topBorder,
-                    sprite.getWidthInPixels(), topBorder + segmentHeight,
-                    zLevel
+                    sprite.getWidthInPixels(), topBorder + segmentHeight
             );
         }
 
@@ -149,8 +141,7 @@ public class ScreenSpriteWriterNineSlice implements IScreenSpriteWriter {
                         x + leftBorder + (i * maxSegmentWidth), y + topBorder + (j * maxSegmentHeight),
                         segmentWidth, segmentHeight,
                         leftBorder, topBorder,
-                        leftBorder + segmentWidth, topBorder + segmentHeight,
-                        zLevel
+                        leftBorder + segmentWidth, topBorder + segmentHeight
                 );
             }
         }

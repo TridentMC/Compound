@@ -49,8 +49,7 @@ public interface IScreenSpriteWriter {
      * @param y      the y coordinate to draw the sprite at.
      * @param width  the width of the rectangle to draw the sprite in.
      * @param height the height of the rectangle to draw the sprite in.
-     * @param zLevel the z level to draw the sprite at.
      */
-    void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height, int zLevel);
+    void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height);
 
 }

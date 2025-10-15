@@ -77,7 +77,7 @@ public class ElementSlot extends Element {
 
         Rect2F rect = this.getDrawnDimensions(ui.getScreenContext());
         rect = new Rect2F(rect.getX() + 1, rect.getY() + 1, rect.getWidth() - 2, rect.getHeight() - 2);
-        ui.getScreenContext().drawItemStack(this.displayStack, rect, this.displayString, 100);
+        ui.getScreenContext().drawItemStack(this.displayStack, rect, this.displayString);
 
         if (this.drawOverlay) {
             this.drawHighlightOverlay(ui.getScreenContext());
@@ -95,19 +95,17 @@ public class ElementSlot extends Element {
     }
 
     private void drawHighlightOverlay(IScreenContext screen) {
-        Rect2F slotRect = this.getDrawnDimensions(screen);
+        var slotRect = this.getDrawnDimensions(screen);
         // Draw front highlight sprite at 24x24 size, centered on the slot (-4 offset)
-        // Render at higher z-level to be in front of items
-        Rect2F highlightArea = new Rect2F(slotRect.getX() - 3, slotRect.getY() - 3, 24, 24);
-        screen.drawSprite(SLOT_HIGHLIGHT_FRONT_SPRITE, highlightArea, 200);
+        var highlightArea = new Rect2F(slotRect.getX() - 3, slotRect.getY() - 3, 24, 24);
+        screen.drawSprite(SLOT_HIGHLIGHT_FRONT_SPRITE, highlightArea);
     }
 
     private void drawHighlightUnderlay(IScreenContext screen) {
-        Rect2F slotRect = this.getDrawnDimensions(screen);
+        var slotRect = this.getDrawnDimensions(screen);
         // Draw back highlight sprite at 24x24 size, centered on the slot (-4 offset)
-        // Render at lower z-level to be behind items (item renders at 100)
-        Rect2F highlightArea = new Rect2F(slotRect.getX() - 3, slotRect.getY() - 3, 24, 24);
-        screen.drawSprite(SLOT_HIGHLIGHT_BACK_SPRITE, highlightArea, 50);
+        var highlightArea = new Rect2F(slotRect.getX() - 3, slotRect.getY() - 3, 24, 24);
+        screen.drawSprite(SLOT_HIGHLIGHT_BACK_SPRITE, highlightArea);
     }
 
     private void drawTooltip(IScreenContext screen) {

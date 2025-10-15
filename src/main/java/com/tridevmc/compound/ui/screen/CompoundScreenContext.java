@@ -130,7 +130,7 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawTexturedRect(ResourceLocation texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV, int zLevel) {
+    public void drawTexturedRect(ResourceLocation texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV) {
         var pose = new Matrix3x2f(this.getActiveStack());
 
         var textureView = getMc().getTextureManager().getTexture(texture).getTextureView();
@@ -168,7 +168,7 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawItemStack(ItemStack stack, float x, float y, float width, float height, String altText, int zLevel) {
+    public void drawItemStack(ItemStack stack, float x, float y, float width, float height, String altText) {
         var font = IClientItemExtensions.of(stack).getFont(stack, IClientItemExtensions.FontContext.TOOLTIP);
         if (font == null) font = this.getFont();
         var poseStack = this.getActiveStack();
@@ -183,7 +183,7 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawGradientRect(float x, float y, float width, float height, int startColour, int endColour, int zLevel) {
+    public void drawGradientRect(float x, float y, float width, float height, int startColour, int endColour) {
         var pose = new Matrix3x2f(this.getActiveStack());
 
         // Calculate bounds for culling and debug rendering

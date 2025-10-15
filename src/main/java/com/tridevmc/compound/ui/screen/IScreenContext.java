@@ -35,20 +35,10 @@ public interface IScreenContext extends IPrimitiveScreenContext {
      * @param colour the colour of the rect to draw.
      */
     default void drawRect(Rect2F rect, int colour) {
-        this.drawRect(rect, colour, 0);
+        this.drawGradientRect(rect, colour, colour);
     }
 
-    /**
-     * Draws a solid single colour rect on the screen matching the provided rect data.
-     *
-     * @param rect   the position and dimensions of the rect to draw.
-     * @param colour the colour of the rect to draw.
-     * @param zLevel the z level to draw the rect at.
-     */
-    default void drawRect(Rect2F rect, int colour, int zLevel) {
-        this.drawGradientRect(rect, colour, colour, zLevel);
-    }
-
+  
     /**
      * Draws a solid gradient rect on the screen matching the provided rect data.
      *
@@ -57,19 +47,7 @@ public interface IScreenContext extends IPrimitiveScreenContext {
      * @param endColour   the colour at the end of the gradient.
      */
     default void drawGradientRect(Rect2F rect, int startColour, int endColour) {
-        this.drawGradientRect(rect, startColour, endColour, 0);
-    }
-
-    /**
-     * Draws a solid gradient rect on the screen matching the provided rect data.
-     *
-     * @param rect        the position and dimensions of the rect to draw.
-     * @param startColour the colour at the beginning of the gradient.
-     * @param endColour   the colour at the end of the gradient.
-     * @param zLevel      the z level to draw the rect at.
-     */
-    default void drawGradientRect(Rect2F rect, int startColour, int endColour, int zLevel) {
-        this.drawGradientRect(rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), startColour, endColour, zLevel);
+        this.drawGradientRect(rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), startColour, endColour);
     }
 
     /**
@@ -80,19 +58,7 @@ public interface IScreenContext extends IPrimitiveScreenContext {
      * @param maxUvs the maximum uvs for the rect.
      */
     default void drawTexturedRect(ResourceLocation texture, Rect2F rect, UVData minUvs, UVData maxUvs) {
-        this.drawTexturedRect(texture, rect, minUvs, maxUvs, 0);
-    }
-
-    /**
-     * Draws a textured rect on the screen matching the provided rect data using the given sprite.
-     *
-     * @param texture the texture to use for drawing.
-     * @param rect   the position and dimensions of the rect to draw.
-     * @param minUvs the minimum uvs for the rect.
-     * @param maxUvs the maximum uvs for the rect.
-     */
-    default void drawTexturedRect(ResourceLocation texture, Rect2F rect, UVData minUvs, UVData maxUvs, int zLevel) {
-        this.drawTexturedRect(texture, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), minUvs.getU(), minUvs.getV(), maxUvs.getU(), maxUvs.getV(), zLevel);
+        this.drawTexturedRect(texture, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), minUvs.getU(), minUvs.getV(), maxUvs.getU(), maxUvs.getV());
     }
 
     /**
@@ -102,17 +68,7 @@ public interface IScreenContext extends IPrimitiveScreenContext {
      * @param rect   the position and dimensions of the rect to draw.
      */
     default void drawSprite(IScreenSprite sprite, Rect2F rect) {
-        this.drawSprite(sprite, rect, 0);
-    }
-
-    /**
-     * Draws a textured rect on the screen matching the provided rect data using the given sprite.
-     *
-     * @param sprite the sprite to draw on the screen, used for gathering uv data and determining tiling behaviour.
-     * @param rect   the position and dimensions of the rect to draw.
-     */
-    default void drawSprite(IScreenSprite sprite, Rect2F rect, int zLevel) {
-        this.drawSprite(sprite, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), zLevel);
+        this.drawSprite(sprite, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight());
     }
 
     /**
@@ -123,18 +79,7 @@ public interface IScreenContext extends IPrimitiveScreenContext {
      * @param uv     the uv data to use for drawing the sprite.
      */
     default void drawRectUsingSprite(IScreenSprite sprite, Rect2F rect, UVData uv) {
-        this.drawRectUsingSprite(sprite, rect, uv, 0);
-    }
-
-    /**
-     * Draws a textured rect on the screen matching the provided rect data using the given sprite for calculating uv data.
-     *
-     * @param sprite the sprite to draw on the screen, used for gathering uv data and determining tiling behaviour.
-     * @param rect   the position and dimensions of the rect to draw.
-     * @param uv     the uv data to use for drawing the sprite.
-     */
-    default void drawRectUsingSprite(IScreenSprite sprite, Rect2F rect, UVData uv, int zLevel) {
-        this.drawRectUsingSprite(sprite, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), uv.getU(), uv.getV(), zLevel);
+        this.drawRectUsingSprite(sprite, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), uv.getU(), uv.getV());
     }
 
     /**
@@ -146,20 +91,7 @@ public interface IScreenContext extends IPrimitiveScreenContext {
      * @param maxUvs the maximum uvs for the rect.
      */
     default void drawRectUsingSprite(IScreenSprite sprite, Rect2F rect, UVData minUvs, UVData maxUvs) {
-        this.drawRectUsingSprite(sprite, rect, minUvs, maxUvs, 0);
-    }
-
-    /**
-     * Draws a textured rect on the screen matching the provided rect data using the given sprite for calculating uv data.
-     *
-     * @param sprite the sprite to draw on the screen, used for gathering uv data and determining tiling behaviour.
-     * @param rect   the position and dimensions of the rect to draw.
-     * @param minUvs the minimum uvs for the rect.
-     * @param maxUvs the maximum uvs for the rect.
-     * @param zLevel the z level to draw the rect at.
-     */
-    default void drawRectUsingSprite(IScreenSprite sprite, Rect2F rect, UVData minUvs, UVData maxUvs, int zLevel) {
-        this.drawRectUsingSprite(sprite, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), minUvs.getU(), minUvs.getV(), maxUvs.getU(), maxUvs.getV(), zLevel);
+        this.drawRectUsingSprite(sprite, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), minUvs.getU(), minUvs.getV(), maxUvs.getU(), maxUvs.getV());
     }
 
     /**
@@ -170,19 +102,7 @@ public interface IScreenContext extends IPrimitiveScreenContext {
      * @param altText    the text to draw if no stack count will be drawn.
      */
     default void drawItemStack(ItemStack stack, Rect2F dimensions, String altText) {
-        this.drawItemStack(stack, dimensions.getX(), dimensions.getY(), dimensions.getWidth(), dimensions.getHeight(), altText, 0);
-    }
-
-    /**
-     * Draws the given itemstack on the screen within the given dimensions.
-     *
-     * @param stack      the stack to draw.
-     * @param dimensions the dimensions to draw the stack within.
-     * @param altText    the text to draw if no stack count will be drawn.
-     * @param zLevel     the blit offset to draw at.
-     */
-    default void drawItemStack(ItemStack stack, Rect2F dimensions, String altText, int zLevel) {
-        this.drawItemStack(stack, dimensions.getX(), dimensions.getY(), dimensions.getWidth(), dimensions.getHeight(), altText, zLevel);
+        this.drawItemStack(stack, dimensions.getX(), dimensions.getY(), dimensions.getWidth(), dimensions.getHeight(), altText);
     }
 
 }

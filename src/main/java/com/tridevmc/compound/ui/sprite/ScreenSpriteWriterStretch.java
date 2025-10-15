@@ -26,14 +26,13 @@ public class ScreenSpriteWriterStretch implements IScreenSpriteWriter {
     public static final ScreenSpriteWriterStretch INSTANCE = new ScreenSpriteWriterStretch();
 
     @Override
-    public void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height, int zLevel) {
+    public void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height) {
         screen.drawRectUsingSprite(
                 sprite,
                 x, y,
                 width, height,
                 sprite.getMinU(), sprite.getMinV(),
-                sprite.getMaxU(), sprite.getMaxV(),
-                zLevel
+                sprite.getMaxU(), sprite.getMaxV()
         );
     }
 }

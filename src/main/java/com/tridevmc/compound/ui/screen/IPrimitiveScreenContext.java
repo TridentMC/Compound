@@ -132,17 +132,7 @@ public interface IPrimitiveScreenContext {
      * @param colour the colour of the rect to draw.
      */
     default void drawRect(float x, float y, float width, float height, int colour) {
-        this.drawRect(x, y, width, height, colour, 0);
-    }
-
-    /**
-     * Draws a solid single colour rect on the screen matching the provided rect data.
-     *
-     * @param colour the colour of the rect to draw.
-     * @param zLevel the z level to draw the rect at.
-     */
-    default void drawRect(float x, float y, float width, float height, int colour, int zLevel) {
-        this.drawGradientRect(x, y, width, height, colour, colour, zLevel);
+        this.drawGradientRect(x, y, width, height, colour, colour);
     }
 
     /**
@@ -151,18 +141,7 @@ public interface IPrimitiveScreenContext {
      * @param startColour the colour at the beginning of the gradient.
      * @param endColour   the colour at the end of the gradient.
      */
-    default void drawGradientRect(float x, float y, float width, float height, int startColour, int endColour) {
-        this.drawGradientRect(x, y, width, height, startColour, endColour, 0);
-    }
-
-    /**
-     * Draws a solid gradient rect on the screen matching the provided rect data.
-     *
-     * @param startColour the colour at the beginning of the gradient.
-     * @param endColour   the colour at the end of the gradient.
-     * @param zLevel      the z level to draw the rect at.
-     */
-    void drawGradientRect(float x, float y, float width, float height, int startColour, int endColour, int zLevel);
+    void drawGradientRect(float x, float y, float width, float height, int startColour, int endColour);
 
     /**
      * Draws the given string on the screen at the given position.
@@ -299,7 +278,7 @@ public interface IPrimitiveScreenContext {
      * @param x the x coordinate to draw the rect at.
      * @param y the y coordinate to draw the rect at.
      */
-    void drawTexturedRect(ResourceLocation texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV, int zLevel);
+    void drawTexturedRect(ResourceLocation texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV);
 
     /**
      * Draws a textured rect on the screen matching the provided rect data using the given sprite, utilizing the writer to draw the sprite.
@@ -311,21 +290,7 @@ public interface IPrimitiveScreenContext {
      * @param height the height of the rect to draw.
      */
     default void drawSprite(IScreenSprite sprite, float x, float y, float width, float height) {
-        sprite.getWriter().drawSprite(asScreenContext(), sprite, x, y, width, height, 0);
-    }
-
-    /**
-     * Draws a textured rect on the screen matching the provided rect data using the given sprite, utilizing the writer to draw the sprite.
-     *
-     * @param sprite the sprite to draw on the screen, used for gathering uv data and binding the texture.
-     * @param x      the x coordinate to draw the rect at.
-     * @param y      the y coordinate to draw the rect at.
-     * @param width  the width of the rect to draw.
-     * @param height the height of the rect to draw.
-     * @param zLevel the z level to draw the rect at.
-     */
-    default void drawSprite(IScreenSprite sprite, float x, float y, float width, float height, int zLevel) {
-        sprite.getWriter().drawSprite(asScreenContext(), sprite, x, y, width, height, zLevel);
+        sprite.getWriter().drawSprite(asScreenContext(), sprite, x, y, width, height);
     }
 
     /**
@@ -340,23 +305,7 @@ public interface IPrimitiveScreenContext {
      * @param v      the v coordinate of the sprite to draw.
      */
     default void drawRectUsingSprite(IScreenSprite sprite, float x, float y, float width, float height, float u, float v) {
-        this.drawRectUsingSprite(sprite, x, y, width, height, u, v, 0);
-    }
-
-    /**
-     * Draws a textured rect on the screen matching the provided rect data using the given sprite, utilizing the sprite to gather UV data and bind the texture.
-     *
-     * @param sprite the sprite to draw on the screen, used for gathering uv data and binding the texture.
-     * @param x      the x coordinate to draw the rect at.
-     * @param y      the y coordinate to draw the rect at.
-     * @param width  the width of the rect to draw.
-     * @param height the height of the rect to draw.
-     * @param u      the u coordinate of the sprite to draw.
-     * @param v      the v coordinate of the sprite to draw.
-     * @param zLevel the z level to draw the rect at.
-     */
-    default void drawRectUsingSprite(IScreenSprite sprite, float x, float y, float width, float height, float u, float v, int zLevel) {
-        this.drawRectUsingSprite(sprite, x, y, width, height, u, v, u + width, v + height, zLevel);
+        this.drawRectUsingSprite(sprite, x, y, width, height, u, v, u + width, v + height);
     }
 
     /**
@@ -371,26 +320,9 @@ public interface IPrimitiveScreenContext {
      * @param minV   the minimum v coordinate of the texture to draw.
      * @param maxU   the maximum u coordinate of the texture to draw.
      * @param maxV   the maximum v coordinate of the texture to draw.
-     * @param zLevel the z level to draw the rect at.
      */
-    default void drawRectUsingSprite(IScreenSprite sprite, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV, int zLevel) {
-        this.drawTexturedRect(sprite.getTextureLocation(), x, y, width, height, sprite.getU(minU), sprite.getV(minV), sprite.getU(maxU), sprite.getV(maxV), zLevel);
-    }
-
-    /**
-     * Draws a textured rect on the screen matching the provided rect data.
-     *
-     * @param x      the x coordinate to draw the rect at.
-     * @param y      the y coordinate to draw the rect at.
-     * @param width  the width of the rect to draw.
-     * @param height the height of the rect to draw.
-     * @param minU   the minimum u coordinate of the texture to draw.
-     * @param minV   the minimum v coordinate of the texture to draw.
-     * @param maxU   the maximum u coordinate of the texture to draw.
-     * @param maxV   the maximum v coordinate of the texture to draw.
-     */
-    default void drawTexturedRect(ResourceLocation texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV) {
-        this.drawTexturedRect(texture, x, y, width, height, minU, minV, maxU, maxV, 0);
+    default void drawRectUsingSprite(IScreenSprite sprite, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV) {
+        this.drawTexturedRect(sprite.getTextureLocation(), x, y, width, height, sprite.getU(minU), sprite.getV(minV), sprite.getU(maxU), sprite.getV(maxV));
     }
 
     /**
@@ -519,20 +451,6 @@ public interface IPrimitiveScreenContext {
     void drawProcessorAsTooltip(List<FormattedCharSequence> processors, int x, int y, Font font);
 
     /**
-     * Draws the given itemstack on the screen within the given dimensions, at z level 232.
-     *
-     * @param stack   the stack to draw.
-     * @param x       the x position to draw the stack at.
-     * @param y       the y position to draw the stack at.
-     * @param width   the width of the rectangle to draw the stack in.
-     * @param height  the height of the rectangle to draw the stack in.
-     * @param altText the text to draw if no stack count will be drawn.
-     */
-    default void drawItemStack(ItemStack stack, float x, float y, float width, float height, String altText) {
-        this.drawItemStack(stack, x, y, width, height, altText, 232);
-    }
-
-    /**
      * Draws the given itemstack on the screen within the given dimensions.
      *
      * @param stack   the stack to draw.
@@ -541,9 +459,8 @@ public interface IPrimitiveScreenContext {
      * @param width   the width of the rectangle to draw the stack in.
      * @param height  the height of the rectangle to draw the stack in.
      * @param altText the text to draw if no stack count will be drawn.
-     * @param zLevel  the blit offset to draw at.
      */
-    void drawItemStack(ItemStack stack, float x, float y, float width, float height, String altText, int zLevel);
+    void drawItemStack(ItemStack stack, float x, float y, float width, float height, String altText);
 
     /**
      * Draws the given itemstack on the screen at the given coordinates.

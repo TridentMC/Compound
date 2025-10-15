@@ -26,7 +26,7 @@ public class ScreenSpriteWriterTile implements IScreenSpriteWriter {
     public static final ScreenSpriteWriterTile INSTANCE = new ScreenSpriteWriterTile();
 
     @Override
-    public void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height, int zLevel) {
+    public void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height) {
         var spriteWidth = sprite.getWidthInPixels();
         var spriteHeight = sprite.getHeightInPixels();
         var horizontalTiles = (int) Math.ceil(width / spriteWidth);
@@ -41,8 +41,7 @@ public class ScreenSpriteWriterTile implements IScreenSpriteWriter {
                 screen.drawRectUsingSprite(sprite,
                         tileX, tileY,
                         0, 0,
-                        tileWidth, tileHeight,
-                        zLevel
+                        tileWidth, tileHeight
                 );
             }
         }
