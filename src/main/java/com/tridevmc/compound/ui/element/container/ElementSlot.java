@@ -44,6 +44,9 @@ public class ElementSlot extends Element {
     private static final IScreenSprite SLOT_SPRITE = IScreenSprite.of(Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.GUI).getSprite(ResourceLocation.withDefaultNamespace("container/slot")), new ScreenSpriteWriterNineSlice(
             1, 1, 1, 1
     ));
+
+    private static final IScreenSprite SLOT_HIGHLIGHT_BACK_SPRITE = IScreenSprite.of(ResourceLocation.withDefaultNamespace("container/slot_highlight_back"));
+    private static final IScreenSprite SLOT_HIGHLIGHT_FRONT_SPRITE = IScreenSprite.of(ResourceLocation.withDefaultNamespace("container/slot_highlight_front"));
     private Slot slot;
     private boolean drawOverlay;
     private boolean drawUnderlay;
@@ -92,20 +95,19 @@ public class ElementSlot extends Element {
     }
 
     private void drawHighlightOverlay(IScreenContext screen) {
-        Rect2F highlightArea = this.getDrawnDimensions(screen).offset(new Rect2F(1, 1, -1, -1));
-        // TODO: No shot this works without the depth test stuff.
-        // RenderSystem.disableDepthTest();
-        // RenderSystem.colorMask(true, true, true, false);
-        int slotColor = -2130706433;
-        screen.drawRect(highlightArea, slotColor, 0);
-        // RenderSystem.colorMask(true, true, true, true);
-        // RenderSystem.enableDepthTest();
+        Rect2F slotRect = this.getDrawnDimensions(screen);
+        // Draw front highlight sprite at 24x24 size, centered on the slot (-4 offset)
+        // Render at higher z-level to be in front of items
+        Rect2F highlightArea = new Rect2F(slotRect.getX() - 3, slotRect.getY() - 3, 24, 24);
+        screen.drawSprite(SLOT_HIGHLIGHT_FRONT_SPRITE, highlightArea, 200);
     }
 
     private void drawHighlightUnderlay(IScreenContext screen) {
-        Rect2F highlightArea = this.getDrawnDimensions(screen).offset(new Rect2F(1, 1, -1, -1));
-        int slotColor = -2130706433;
-        screen.drawRect(highlightArea, slotColor, 100);
+        Rect2F slotRect = this.getDrawnDimensions(screen);
+        // Draw back highlight sprite at 24x24 size, centered on the slot (-4 offset)
+        // Render at lower z-level to be behind items (item renders at 100)
+        Rect2F highlightArea = new Rect2F(slotRect.getX() - 3, slotRect.getY() - 3, 24, 24);
+        screen.drawSprite(SLOT_HIGHLIGHT_BACK_SPRITE, highlightArea, 50);
     }
 
     private void drawTooltip(IScreenContext screen) {

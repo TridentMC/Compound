@@ -181,7 +181,12 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
                 }
             }
             slotElement.setDisplayStack(displayStack);
-            slotElement.setDrawOverlay(slot.isActive() && slotElement.isMouseOverSlot(this.screenContext));
+            boolean isHovered = slot.isActive() && slotElement.isMouseOverSlot(this.screenContext);
+            // Vanilla renders both underlay and overlay under the same condition: hoveredSlot != null && slot.isHighlightable()
+            slotElement.setDrawOverlay(isHovered);
+            if (!this.isQuickCrafting || !this.quickCraftSlots.contains(slot)) {
+                slotElement.setDrawUnderlay(isHovered);
+            }
         }
     }
 
