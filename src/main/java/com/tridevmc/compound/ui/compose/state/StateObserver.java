@@ -23,6 +23,8 @@ public interface StateObserver {
 
     /**
      * Called when any observed state changes.
+     *
+     * @param state the state that changed
      */
-    void onStateChanged();
+    void onStateChanged(State<?> state);
 }

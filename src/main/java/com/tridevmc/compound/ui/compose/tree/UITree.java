@@ -24,6 +24,7 @@ import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.compose.layout.Constraints;
 import com.tridevmc.compound.ui.compose.layout.Position;
 import com.tridevmc.compound.ui.compose.state.State;
+import com.tridevmc.compound.ui.compose.state.StateObserver;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -32,9 +33,10 @@ import java.util.function.Consumer;
  * Manages the tree of nodes (like the DOM).
  * NOTE: This is internal to the framework and not exposed to elements or composition code.
  */
-public class UITree {
+public class UITree implements StateObserver {
     private ITreeNode root;
     private final Map<IElement, ITreeNode> elementToNode = new HashMap<>();
+    private final Set<State<?>> observedStates = new HashSet<>();
 
     // Root node management
     public void setRoot(ITreeNode root) {
@@ -94,7 +96,19 @@ public class UITree {
         if (parent != null) {
             parent.removeChild(node);
         }
+
+        // Collect all states used by this node and its children
+        Set<State<?>> statesToCheck = new HashSet<>();
+        this.walkDepthFirst(node, n -> {
+            statesToCheck.addAll(n.getBoundStates());
+        });
+
         this.unregisterNode(node);
+
+        // Check if any states are no longer used and cleanup
+        for (State<?> state : statesToCheck) {
+            this.unregisterStateIfUnused(state);
+        }
 
         // Call lifecycle
         node.getElement().onDetached();
@@ -254,6 +268,7 @@ public class UITree {
     }
 
     // State change notification
+    @Override
     public void onStateChanged(State<?> state) {
         // Find all nodes bound to this state and trigger re-composition
         List<ITreeNode> nodesToRecompose = new ArrayList<>();
@@ -266,6 +281,61 @@ public class UITree {
         for (ITreeNode node : nodesToRecompose) {
             this.recomposeNode(node);
         }
+    }
+
+    /**
+     * Register a state for observation. The UITree will observe this state
+     * and trigger re-composition when it changes.
+     *
+     * @param state the state to observe
+     */
+    public void registerState(State<?> state) {
+        if (!this.observedStates.contains(state)) {
+            this.observedStates.add(state);
+            state.addObserver(this);
+        }
+    }
+
+    /**
+     * Unregister a state from observation if it's no longer used by any nodes.
+     *
+     * @param state the state to check and potentially unregister
+     */
+    public void unregisterStateIfUnused(State<?> state) {
+        // Check if any nodes are still bound to this state
+        boolean[] isUsed = {false};
+        this.walkDepthFirst(this.root, node -> {
+            if (node.isBoundToState(state)) {
+                isUsed[0] = true;
+            }
+        });
+
+        if (!isUsed[0] && this.observedStates.contains(state)) {
+            this.observedStates.remove(state);
+            state.removeObserver(this);
+        }
+    }
+
+    /**
+     * Bind a node to a state and ensure the state is observed.
+     *
+     * @param node  the node to bind
+     * @param state the state to bind to
+     */
+    public void bindNodeToState(ITreeNode node, State<?> state) {
+        node.bindState(state);
+        this.registerState(state);
+    }
+
+    /**
+     * Unbind a node from a state and cleanup if no longer needed.
+     *
+     * @param node  the node to unbind
+     * @param state the state to unbind from
+     */
+    public void unbindNodeFromState(ITreeNode node, State<?> state) {
+        node.unbindState(state);
+        this.unregisterStateIfUnused(state);
     }
 
     // Render helper
