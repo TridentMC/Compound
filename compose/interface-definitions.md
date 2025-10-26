@@ -19,10 +19,6 @@ public interface IElement {
     // Sets the final bounds for this element
     void place(Bounds bounds);
 
-    // Rendering
-    // Draw this element (called every frame)
-    void draw(PoseStack poseStack, int mouseX, int mouseY, float partialTick);
-
     // Lifecycle
     // Called when element is attached to the tree
     void onAttached();
@@ -45,11 +41,14 @@ public interface IElement {
 
 ### IPrimitiveElement
 Elements that cannot have children - they draw pixels.
+**Only primitives have a draw() method - containers and composables do not draw.**
 
 ```java
 public interface IPrimitiveElement extends IElement {
-    // No additional methods - this is a marker interface
-    // Primitives are "terminators" in the tree
+    // Draw this primitive element (called every frame)
+    // Only primitive elements draw - containers and composables do not.
+    // Mouse position and partial ticks can be queried from the context if needed.
+    void draw(IScreenContext context);
 }
 ```
 
@@ -77,9 +76,6 @@ public interface IComposableElement extends IContainer {
     // Internal composition method
     // Called once during tree construction to build this element's internal UI
     void compose(ICompositionScope scope);
-
-    // Exposed slots that users can fill
-    List<SlotKey> getAvailableSlots();
 }
 ```
 
@@ -655,10 +651,13 @@ This interface definition covers the core framework components:
 8. **Screen Integration**: CompoundScreenWithDeclarativeUI base class
 
 **Key Design Principles:**
+- **Only primitives draw**: IPrimitiveElement has draw() method. Containers and composables just create structure.
 - Elements are completely unaware of the tree structure (like DOM elements)
 - TreeNodes wrap elements and store all tree metadata (parent, children, bindings, handlers)
 - When state changes, the framework kills the bound TreeNode and re-runs composition to rebuild
 - UITree manages the node hierarchy and coordinates layout/events
 - Event handlers are stored in TreeNodes and automatically cleaned up when nodes are removed
 - All structural changes go through composition scopes
+- Draw signature is simple: `draw(IScreenContext)` - mouse and timing data available from context
 - Uses standard Java features (Supplier<T>, Consumer<T>, Function<T, R>)
+- No layering support initially - primitives draw in tree order during single render pass
