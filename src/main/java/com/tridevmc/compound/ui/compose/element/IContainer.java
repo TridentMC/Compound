@@ -16,31 +16,29 @@
 
 package com.tridevmc.compound.ui.compose.element;
 
+import com.tridevmc.compound.ui.compose.tree.ITreeNode;
+
 import java.util.List;
 
 /**
- * Elements that can have children.
+ * Interface for elements that can have children.
+ * Children are managed by the tree and can be queried via getChildren().
  */
 public interface IContainer extends IElement {
 
     /**
-     * Get children (queries the internal tree).
+     * Get the children of this container from the tree.
+     * Default implementation queries the tree for this element's node and returns its children.
      *
      * @return list of child elements
      */
-    List<IElement> getChildren();
-
-    /**
-     * Check if this container has any children.
-     *
-     * @return true if has children, false otherwise
-     */
-    boolean hasChildren();
-
-    /**
-     * Get child count.
-     *
-     * @return number of children
-     */
-    int getChildCount();
+    default List<IElement> getChildren() {
+        ITreeNode node = this.getTree().getNodeForElement(this);
+        if (node == null) {
+            return List.of();
+        }
+        return node.getChildren().stream()
+                .map(ITreeNode::getElement)
+                .toList();
+    }
 }

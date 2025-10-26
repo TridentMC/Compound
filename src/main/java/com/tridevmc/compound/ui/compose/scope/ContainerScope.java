@@ -1,0 +1,94 @@
+/*
+ * Copyright 2018 - 2024 TridentMC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.tridevmc.compound.ui.compose.scope;
+
+import com.tridevmc.compound.ui.compose.element.IComposableElement;
+import com.tridevmc.compound.ui.compose.element.IContainer;
+import com.tridevmc.compound.ui.compose.element.IPrimitiveElement;
+import com.tridevmc.compound.ui.compose.slot.SlotMap;
+import com.tridevmc.compound.ui.compose.state.State;
+import com.tridevmc.compound.ui.compose.tree.ITreeNode;
+import com.tridevmc.compound.ui.compose.tree.UITree;
+
+import java.util.function.Consumer;
+
+/**
+ * Scope for configuring a container element.
+ * Provides access to the element and composition methods for adding children.
+ */
+public class ContainerScope<T extends IContainer> extends ElementScope<T> implements IContainerScope<T> {
+    protected final UITree tree;
+    protected final ITreeNode parentNode;
+
+    public ContainerScope(UITree tree, ITreeNode parentNode, T element) {
+        super(element);
+        this.tree = tree;
+        this.parentNode = parentNode;
+    }
+
+    @Override
+    public <E extends IPrimitiveElement> void e(E element, Consumer<IElementScope<E>> configurator) {
+        ITreeNode node = this.tree.createNode(element);
+        this.tree.attachNode(this.parentNode, node);
+        element.onAttached();
+
+        if (configurator != null) {
+            ElementScope<E> scope = new ElementScope<>(element);
+            configurator.accept(scope);
+        }
+    }
+
+    @Override
+    public <E extends IContainer> void e(E element, Consumer<IContainerScope<E>> configurator) {
+        ITreeNode node = this.tree.createNode(element);
+        this.tree.attachNode(this.parentNode, node);
+        element.onAttached();
+
+        if (configurator != null) {
+            ContainerScope<E> scope = new ContainerScope<>(this.tree, node, element);
+            configurator.accept(scope);
+        }
+    }
+
+    @Override
+    public <E extends IComposableElement> void e(E element, Consumer<IComposableElementScope<E>> configurator) {
+        ITreeNode node = this.tree.createNode(element);
+        this.tree.attachNode(this.parentNode, node);
+        element.onAttached();
+
+        SlotMap slotMap = new SlotMap();
+        node.setSlotMap(slotMap);
+
+        ComposableElementScope<E> scope = new ComposableElementScope<>(this.tree, node, element, slotMap);
+
+        if (configurator != null) {
+            configurator.accept(scope);
+        }
+
+        // Set composition function so it can re-compose when states change
+        node.setCompositionFunction(() -> element.compose(scope));
+
+        // Run composition to build internal structure
+        element.compose(scope);
+    }
+
+    @Override
+    public void bind(State<?> state) {
+        // Bind the parent node to this state so it re-composes when state changes
+        this.tree.bindNodeToState(this.parentNode, state);
+    }
+}

@@ -20,6 +20,7 @@ import com.tridevmc.compound.ui.compose.layout.Bounds;
 import com.tridevmc.compound.ui.compose.layout.Constraints;
 import com.tridevmc.compound.ui.compose.layout.LayoutProperties;
 import com.tridevmc.compound.ui.compose.layout.Size;
+import com.tridevmc.compound.ui.compose.tree.UITree;
 
 /**
  * The base interface for all UI elements in the compose system.
@@ -42,6 +43,20 @@ public interface IElement {
      * @param bounds the final bounds for this element
      */
     void place(Bounds bounds);
+
+    /**
+     * Gets the tree this element belongs to.
+     *
+     * @return the UI tree
+     */
+    UITree getTree();
+
+    /**
+     * Sets the tree this element belongs to (called by framework).
+     *
+     * @param tree the UI tree
+     */
+    void setTree(UITree tree);
 
     /**
      * Lifecycle: Called when element is attached to the tree.

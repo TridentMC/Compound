@@ -23,6 +23,7 @@ import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
 import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.compose.layout.Constraints;
 import com.tridevmc.compound.ui.compose.layout.Position;
+import com.tridevmc.compound.ui.compose.layout.Size;
 import com.tridevmc.compound.ui.compose.state.State;
 import com.tridevmc.compound.ui.compose.state.StateObserver;
 
@@ -66,12 +67,14 @@ public class UITree implements StateObserver {
     // Tree operations
     public ITreeNode createNode(IElement element) {
         TreeNode node = new TreeNode(element);
+        element.setTree(this);
         this.registerNode(node);
         return node;
     }
 
     private void registerNode(ITreeNode node) {
         this.elementToNode.put(node.getElement(), node);
+        node.getElement().setTree(this);
         // Register all children recursively
         for (ITreeNode child : node.getChildren()) {
             this.registerNode(child);
@@ -80,6 +83,7 @@ public class UITree implements StateObserver {
 
     private void unregisterNode(ITreeNode node) {
         this.elementToNode.remove(node.getElement());
+        node.getElement().setTree(null);
         // Unregister all children recursively
         for (ITreeNode child : node.getChildren()) {
             this.unregisterNode(child);
@@ -120,10 +124,13 @@ public class UITree implements StateObserver {
             return;
         }
 
-        // Clear children
-        node.clearChildren();
+        // Properly detach all children (lifecycle, state cleanup, unregister)
+        List<ITreeNode> children = new ArrayList<>(node.getChildren());
+        for (ITreeNode child : children) {
+            this.detachNode(child);
+        }
 
-        // Re-run composition function
+        // Re-run composition function to rebuild children
         Runnable compositionFn = node.getCompositionFunction();
         if (compositionFn != null) {
             compositionFn.run();
@@ -186,15 +193,31 @@ public class UITree implements StateObserver {
     // Layout coordination
     public void measureTree(Constraints rootConstraints) {
         if (this.root != null) {
-            this.root.getElement().measure(rootConstraints);
+            this.measureNode(this.root, rootConstraints);
         }
     }
 
     public void placeTree(Position rootPosition) {
         if (this.root != null && this.root.getElement().getBounds() != null) {
             var size = this.root.getElement().getBounds().size();
-            this.root.getElement().place(new com.tridevmc.compound.ui.compose.layout.Bounds(rootPosition, size));
+            this.placeNode(this.root, new com.tridevmc.compound.ui.compose.layout.Bounds(rootPosition, size));
         }
+    }
+
+    /**
+     * Recursively measure a node and its children (bottom-up).
+     */
+    private Size measureNode(ITreeNode node, Constraints constraints) {
+        // Element can query children via getChildren() if it's a container
+        return node.getElement().measure(constraints);
+    }
+
+    /**
+     * Recursively place a node and its children (top-down).
+     */
+    private void placeNode(ITreeNode node, com.tridevmc.compound.ui.compose.layout.Bounds bounds) {
+        // Element can query children via getChildren() if it's a container
+        node.getElement().place(bounds);
     }
 
     // Event dispatch

@@ -16,11 +16,20 @@
 
 package com.tridevmc.compound.ui.compose.scope;
 
-import com.tridevmc.compound.ui.compose.element.IContainer;
+import com.tridevmc.compound.ui.compose.element.IElement;
 
 /**
- * Scope for configuring a container element (can add children).
- * Extends IElementScope for element access and ICompositionScope for adding children.
+ * Scope for configuring a basic element (no children, no composition).
  */
-public interface IContainerScope<T extends IContainer> extends IElementScope<T>, ICompositionScope {
+public class ElementScope<T extends IElement> implements IElementScope<T> {
+    protected final T element;
+
+    public ElementScope(T element) {
+        this.element = element;
+    }
+
+    @Override
+    public T getElement() {
+        return this.element;
+    }
 }

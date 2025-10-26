@@ -16,10 +16,59 @@
 
 package com.tridevmc.compound.ui.compose.scope;
 
+import com.tridevmc.compound.ui.compose.element.IComposableElement;
+import com.tridevmc.compound.ui.compose.element.IContainer;
+import com.tridevmc.compound.ui.compose.element.IPrimitiveElement;
+import com.tridevmc.compound.ui.compose.state.State;
+
+import java.util.function.Consumer;
+
 /**
  * The scope given to composable elements for their internal composition.
- * Full implementation will be added in Phase 6.
  */
 public interface ICompositionScope {
-    // Methods will be added in Phase 6
+
+    /**
+     * Add a primitive element to the tree.
+     *
+     * @param element      the element instance to add
+     * @param configurator optional configuration receiving element scope
+     * @param <T>          the element type
+     */
+    <T extends IPrimitiveElement> void e(T element, Consumer<IElementScope<T>> configurator);
+
+    /**
+     * Add a container element to the tree.
+     *
+     * @param element      the element instance to add
+     * @param configurator optional configuration receiving container scope
+     * @param <T>          the element type
+     */
+    <T extends IContainer> void e(T element, Consumer<IContainerScope<T>> configurator);
+
+    /**
+     * Add a composable element to the tree.
+     *
+     * @param element      the element instance to add
+     * @param configurator optional configuration receiving composable scope
+     * @param <T>          the element type
+     */
+    <T extends IComposableElement> void e(T element, Consumer<IComposableElementScope<T>> configurator);
+
+    /**
+     * Add an element to the tree without configuration.
+     *
+     * @param element the element instance to add
+     * @param <T>     the element type
+     */
+    default <T extends IPrimitiveElement> void e(T element) {
+        this.e(element, (Consumer<IElementScope<T>>) null);
+    }
+
+    /**
+     * Bind to a state, causing the current composition context to re-compose when the state changes.
+     *
+     * @param state the state to observe
+     */
+    void bind(State<?> state);
 }
