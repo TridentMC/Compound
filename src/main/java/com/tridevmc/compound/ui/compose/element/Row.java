@@ -18,6 +18,7 @@ package com.tridevmc.compound.ui.compose.element;
 
 import com.tridevmc.compound.ui.compose.layout.Bounds;
 import com.tridevmc.compound.ui.compose.layout.Constraints;
+import com.tridevmc.compound.ui.compose.layout.LayoutHelper;
 import com.tridevmc.compound.ui.compose.layout.Position;
 import com.tridevmc.compound.ui.compose.layout.Size;
 
@@ -53,7 +54,7 @@ public class Row extends BaseContainer {
                     constraints.maxHeight()
             );
 
-            var childSize = child.measure(childConstraints);
+            var childSize = LayoutHelper.measureChild(child, childConstraints);
             totalWidth += childSize.width();
             if (i < children.size() - 1) {
                 totalWidth += this.spacing;
@@ -83,7 +84,7 @@ public class Row extends BaseContainer {
                     childSize
             );
 
-            child.place(childBounds);
+            LayoutHelper.placeChild(child, childBounds);
             x += childSize.width() + this.spacing;
         }
     }

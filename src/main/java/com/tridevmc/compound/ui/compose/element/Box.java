@@ -18,6 +18,7 @@ package com.tridevmc.compound.ui.compose.element;
 
 import com.tridevmc.compound.ui.compose.layout.Bounds;
 import com.tridevmc.compound.ui.compose.layout.Constraints;
+import com.tridevmc.compound.ui.compose.layout.LayoutHelper;
 import com.tridevmc.compound.ui.compose.layout.Position;
 import com.tridevmc.compound.ui.compose.layout.Size;
 
@@ -72,7 +73,7 @@ public class Box extends BaseContainer {
                 Math.max(0, constraints.maxHeight() - verticalPadding)
         );
 
-        var childSize = child.measure(childConstraints);
+        var childSize = LayoutHelper.measureChild(child, childConstraints);
 
         return new Size(
                 Math.min(childSize.width() + horizontalPadding, constraints.maxWidth()),
@@ -95,7 +96,7 @@ public class Box extends BaseContainer {
                     childSize
             );
 
-            child.place(childBounds);
+            LayoutHelper.placeChild(child, childBounds);
         }
     }
 

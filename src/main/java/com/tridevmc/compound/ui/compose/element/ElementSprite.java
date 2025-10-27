@@ -23,15 +23,21 @@ import com.tridevmc.compound.ui.compose.layout.Size;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 
+import java.util.function.Supplier;
+
 /**
  * A primitive element that renders a sprite (textured image).
  */
 public class ElementSprite extends BaseElement implements IPrimitiveElement {
 
-    private IScreenSprite sprite;
+    private Supplier<IScreenSprite> spriteSupplier;
 
     public ElementSprite(IScreenSprite sprite) {
-        this.sprite = sprite;
+        this(() -> sprite);
+    }
+
+    public ElementSprite(Supplier<IScreenSprite> spriteSupplier) {
+        this.spriteSupplier = spriteSupplier;
     }
 
     @Override
@@ -57,16 +63,25 @@ public class ElementSprite extends BaseElement implements IPrimitiveElement {
             return;
         }
 
+        IScreenSprite sprite = this.spriteSupplier.get();
+        if (sprite == null) {
+            return;
+        }
+
         // Convert bounds to Rect2F for sprite drawing
         var rect = new Rect2F(bounds.x(), bounds.y(), bounds.width(), bounds.height());
-        context.drawSprite(this.sprite, rect);
+        context.drawSprite(sprite, rect);
     }
 
     public IScreenSprite getSprite() {
-        return this.sprite;
+        return this.spriteSupplier.get();
     }
 
     public void setSprite(IScreenSprite sprite) {
-        this.sprite = sprite;
+        this.spriteSupplier = () -> sprite;
+    }
+
+    public void setSpriteSupplier(Supplier<IScreenSprite> spriteSupplier) {
+        this.spriteSupplier = spriteSupplier;
     }
 }

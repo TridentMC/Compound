@@ -18,6 +18,7 @@ package com.tridevmc.compound.ui.compose.element;
 
 import com.tridevmc.compound.ui.compose.layout.Bounds;
 import com.tridevmc.compound.ui.compose.layout.Constraints;
+import com.tridevmc.compound.ui.compose.layout.LayoutHelper;
 import com.tridevmc.compound.ui.compose.layout.Size;
 
 /**
@@ -33,7 +34,7 @@ public class Stack extends BaseContainer {
 
         // Measure all children with the same constraints
         for (var child : this.getChildren()) {
-            var childSize = child.measure(constraints);
+            var childSize = LayoutHelper.measureChild(child, constraints);
             maxWidth = Math.max(maxWidth, childSize.width());
             maxHeight = Math.max(maxHeight, childSize.height());
         }
@@ -51,7 +52,7 @@ public class Stack extends BaseContainer {
 
         // Place all children at the same position and size
         for (var child : this.getChildren()) {
-            child.place(bounds);
+            LayoutHelper.placeChild(child, bounds);
         }
     }
 }
