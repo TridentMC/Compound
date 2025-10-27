@@ -19,6 +19,9 @@ package com.tridevmc.compound.ui.compose.scope;
 import com.tridevmc.compound.ui.compose.element.IComposableElement;
 import com.tridevmc.compound.ui.compose.element.IContainer;
 import com.tridevmc.compound.ui.compose.element.IPrimitiveElement;
+import com.tridevmc.compound.ui.compose.event.KeyEvent;
+import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
+import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.compose.state.State;
 
 import java.util.function.Consumer;
@@ -71,4 +74,32 @@ public interface ICompositionScope {
      * @param state the state to observe
      */
     void bind(State<?> state);
+
+    /**
+     * Register a click handler on the current node.
+     *
+     * @param handler the click handler
+     */
+    void onClick(Consumer<MouseClickEvent> handler);
+
+    /**
+     * Register a scroll handler on the current node.
+     *
+     * @param handler the scroll handler
+     */
+    void onScroll(Consumer<MouseScrollEvent> handler);
+
+    /**
+     * Register a key press handler on the current node.
+     *
+     * @param handler the key press handler
+     */
+    void onKeyPress(Consumer<KeyEvent> handler);
+
+    /**
+     * Register a key release handler on the current node.
+     *
+     * @param handler the key release handler
+     */
+    void onKeyRelease(Consumer<KeyEvent> handler);
 }

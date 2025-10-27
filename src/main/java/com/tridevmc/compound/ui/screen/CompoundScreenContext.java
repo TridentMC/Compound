@@ -250,4 +250,14 @@ public class CompoundScreenContext implements IScreenContext {
         return this.ui.getCurrentLayer();
     }
 
+    @Override
+    public void enableScissor(int x, int y, int right, int bottom) {
+        this.ui.getActiveGuiGraphics().enableScissor(x, y, right, bottom);
+    }
+
+    @Override
+    public void disableScissor() {
+        this.ui.getActiveGuiGraphics().disableScissor();
+    }
+
 }

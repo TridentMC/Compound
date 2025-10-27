@@ -30,53 +30,72 @@ import com.tridevmc.compound.ui.compose.tree.UITree;
 import java.util.function.Consumer;
 
 /**
- * Scope for configuring a container element.
- * Provides access to the element and composition methods for adding children.
+ * Root scope for bootstrapping composition.
+ * The first e() call becomes the root of the tree.
  */
-public class ContainerScope<T extends IContainer> extends ElementScope<T> implements IContainerScope<T> {
-    protected final UITree tree;
-    protected final ITreeNode parentNode;
+public class RootScope implements ICompositionScope {
+    private final UITree tree;
+    private ITreeNode rootNode;
 
-    public ContainerScope(UITree tree, ITreeNode parentNode, T element) {
-        super(element);
+    public RootScope(UITree tree) {
         this.tree = tree;
-        this.parentNode = parentNode;
     }
 
     @Override
-    public <E extends IPrimitiveElement> void e(E element, Consumer<IElementScope<E>> configurator) {
+    public <T extends IPrimitiveElement> void e(T element, Consumer<IElementScope<T>> configurator) {
         ITreeNode node = this.tree.createNode(element);
-        this.tree.attachNode(this.parentNode, node);
+
+        if (!this.tree.hasRoot()) {
+            this.tree.setRoot(node);
+            this.rootNode = node;
+        } else if (this.rootNode != null) {
+            this.tree.attachNode(this.rootNode, node);
+        }
+
         element.onAttached();
 
         if (configurator != null) {
-            ElementScope<E> scope = new ElementScope<>(element);
+            ElementScope<T> scope = new ElementScope<>(element);
             configurator.accept(scope);
         }
     }
 
     @Override
-    public <E extends IContainer> void e(E element, Consumer<IContainerScope<E>> configurator) {
+    public <T extends IContainer> void e(T element, Consumer<IContainerScope<T>> configurator) {
         ITreeNode node = this.tree.createNode(element);
-        this.tree.attachNode(this.parentNode, node);
+
+        if (!this.tree.hasRoot()) {
+            this.tree.setRoot(node);
+            this.rootNode = node;
+        } else if (this.rootNode != null) {
+            this.tree.attachNode(this.rootNode, node);
+        }
+
         element.onAttached();
 
         if (configurator != null) {
-            ContainerScope<E> scope = new ContainerScope<>(this.tree, node, element);
+            ContainerScope<T> scope = new ContainerScope<>(this.tree, node, element);
             configurator.accept(scope);
         }
     }
 
     @Override
-    public <E extends IComposableElement> void e(E element, Consumer<IComposableElementScope<E>> configurator) {
+    public <T extends IComposableElement> void e(T element, Consumer<IComposableElementScope<T>> configurator) {
         ITreeNode node = this.tree.createNode(element);
-        this.tree.attachNode(this.parentNode, node);
+
+        if (!this.tree.hasRoot()) {
+            this.tree.setRoot(node);
+            this.rootNode = node;
+        } else if (this.rootNode != null) {
+            this.tree.attachNode(this.rootNode, node);
+        }
+
         element.onAttached();
 
         SlotMap slotMap = new SlotMap();
         node.setSlotMap(slotMap);
 
-        ComposableElementScope<E> scope = new ComposableElementScope<>(this.tree, node, element, slotMap);
+        ComposableElementScope<T> scope = new ComposableElementScope<>(this.tree, node, element, slotMap);
 
         if (configurator != null) {
             configurator.accept(scope);
@@ -91,27 +110,36 @@ public class ContainerScope<T extends IContainer> extends ElementScope<T> implem
 
     @Override
     public void bind(State<?> state) {
-        // Bind the parent node to this state so it re-composes when state changes
-        this.tree.bindNodeToState(this.parentNode, state);
+        if (this.rootNode != null) {
+            this.tree.bindNodeToState(this.rootNode, state);
+        }
     }
 
     @Override
     public void onClick(Consumer<MouseClickEvent> handler) {
-        this.parentNode.addClickHandler(handler);
+        if (this.rootNode != null) {
+            this.rootNode.addClickHandler(handler);
+        }
     }
 
     @Override
     public void onScroll(Consumer<MouseScrollEvent> handler) {
-        this.parentNode.addScrollHandler(handler);
+        if (this.rootNode != null) {
+            this.rootNode.addScrollHandler(handler);
+        }
     }
 
     @Override
     public void onKeyPress(Consumer<KeyEvent> handler) {
-        this.parentNode.addKeyPressHandler(handler);
+        if (this.rootNode != null) {
+            this.rootNode.addKeyPressHandler(handler);
+        }
     }
 
     @Override
     public void onKeyRelease(Consumer<KeyEvent> handler) {
-        this.parentNode.addKeyReleaseHandler(handler);
+        if (this.rootNode != null) {
+            this.rootNode.addKeyReleaseHandler(handler);
+        }
     }
 }

@@ -105,4 +105,22 @@ public interface IScreenContext extends IPrimitiveScreenContext {
         this.drawItemStack(stack, dimensions.getX(), dimensions.getY(), dimensions.getWidth(), dimensions.getHeight(), altText);
     }
 
+    /**
+     * Enables scissor test to clip rendering to the given rectangle.
+     * All rendering after this call will be clipped to the specified bounds.
+     * Must be followed by a disableScissor() call.
+     *
+     * @param x      the left edge of the scissor rectangle
+     * @param y      the top edge of the scissor rectangle
+     * @param right  the right edge of the scissor rectangle
+     * @param bottom the bottom edge of the scissor rectangle
+     */
+    void enableScissor(int x, int y, int right, int bottom);
+
+    /**
+     * Disables scissor test, restoring full rendering area.
+     * Must be called after enableScissor().
+     */
+    void disableScissor();
+
 }
