@@ -24,9 +24,10 @@ import java.util.function.Consumer;
 
 /**
  * Scope for configuring a composable element.
- * Extends IContainerScope and adds slot filling capabilities.
+ * Extends IElementScope and adds slot filling capabilities.
+ * Composable elements are not containers from the outside, so this doesn't extend IContainerScope.
  */
-public interface IComposableElementScope<T extends IComposableElement> extends IContainerScope<T> {
+public interface IComposableElementScope<T extends IComposableElement> extends IElementScope<T> {
 
     /**
      * Fill a slot with custom content.
@@ -34,7 +35,7 @@ public interface IComposableElementScope<T extends IComposableElement> extends I
      * @param key     the slot key
      * @param content the content to render in the slot
      */
-    void fillSlot(SlotKey key, Consumer<IContainerScope<?>> content);
+    void fillSlot(SlotKey key, Consumer<ICompositionScope> content);
 
     /**
      * Render a slot (used inside compose() method).
@@ -42,7 +43,7 @@ public interface IComposableElementScope<T extends IComposableElement> extends I
      * @param key            the slot key
      * @param defaultContent default content if slot not filled
      */
-    void slot(SlotKey key, Consumer<IContainerScope<?>> defaultContent);
+    void slot(SlotKey key, Consumer<ICompositionScope> defaultContent);
 
     /**
      * Render a slot without default content.

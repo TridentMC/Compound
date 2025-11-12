@@ -16,55 +16,29 @@
 
 package com.tridevmc.compound.ui.compose.element;
 
-import com.tridevmc.compound.ui.compose.layout.Bounds;
-import com.tridevmc.compound.ui.compose.layout.Constraints;
-import com.tridevmc.compound.ui.compose.layout.LayoutHelper;
-import com.tridevmc.compound.ui.compose.layout.Position;
-import com.tridevmc.compound.ui.compose.layout.Size;
+import com.tridevmc.compound.ui.compose.layout.*;
 
 /**
- * A container that wraps a single child with padding.
+ * A container that wraps a single child with padding and alignment.
+ * Uses contentAlignment and padding properties from LayoutProperties.
  */
 public class Box extends BaseContainer {
 
-    private int paddingLeft;
-    private int paddingTop;
-    private int paddingRight;
-    private int paddingBottom;
-
     public Box() {
-        this(0, 0, 0, 0);
-    }
-
-    public Box(int padding) {
-        this(padding, padding, padding, padding);
-    }
-
-    public Box(int horizontal, int vertical) {
-        this(horizontal, vertical, horizontal, vertical);
-    }
-
-    public Box(int paddingLeft, int paddingTop, int paddingRight, int paddingBottom) {
-        this.paddingLeft = paddingLeft;
-        this.paddingTop = paddingTop;
-        this.paddingRight = paddingRight;
-        this.paddingBottom = paddingBottom;
     }
 
     @Override
     public Size measure(Constraints constraints) {
         var children = this.getChildren();
+        int horizontalPadding = this.getLayoutProperties().getPaddingLeft() + this.getLayoutProperties().getPaddingRight();
+        int verticalPadding = this.getLayoutProperties().getPaddingTop() + this.getLayoutProperties().getPaddingBottom();
+
         if (children.isEmpty()) {
-            return new Size(
-                    this.paddingLeft + this.paddingRight,
-                    this.paddingTop + this.paddingBottom
-            );
+            return new Size(horizontalPadding, verticalPadding);
         }
 
         // Single child - measure with reduced constraints
         var child = children.getFirst();
-        int horizontalPadding = this.paddingLeft + this.paddingRight;
-        int verticalPadding = this.paddingTop + this.paddingBottom;
 
         var childConstraints = new Constraints(
                 Math.max(0, constraints.minWidth() - horizontalPadding),
@@ -90,45 +64,31 @@ public class Box extends BaseContainer {
             var child = children.get(0);
             var childSize = child.getBounds() != null ? child.getBounds().size() : new Size(0, 0);
 
-            // Place child with padding offset
+            // Calculate available space after padding
+            int availableWidth = bounds.width() - this.getLayoutProperties().getPaddingLeft() - this.getLayoutProperties().getPaddingRight();
+            int availableHeight = bounds.height() - this.getLayoutProperties().getPaddingTop() - this.getLayoutProperties().getPaddingBottom();
+            var availableSize = new Size(availableWidth, availableHeight);
+
+            // Apply contentAlignment to position child within available space
+            var alignment = this.getLayoutProperties().getContentAlignment();
+            Position childOffset;
+            if (alignment != null) {
+                childOffset = alignment.align(childSize, availableSize);
+            } else {
+                // Default to top-left if no alignment specified
+                childOffset = new Position(0, 0);
+            }
+
+            // Place child with padding and alignment offset
             var childBounds = new Bounds(
-                    new Position(bounds.x() + this.paddingLeft, bounds.y() + this.paddingTop),
+                    new Position(
+                            bounds.x() + this.getLayoutProperties().getPaddingLeft() + childOffset.x(),
+                            bounds.y() + this.getLayoutProperties().getPaddingTop() + childOffset.y()
+                    ),
                     childSize
             );
 
             LayoutHelper.placeChild(child, childBounds);
         }
-    }
-
-    public int getPaddingLeft() {
-        return this.paddingLeft;
-    }
-
-    public void setPaddingLeft(int paddingLeft) {
-        this.paddingLeft = paddingLeft;
-    }
-
-    public int getPaddingTop() {
-        return this.paddingTop;
-    }
-
-    public void setPaddingTop(int paddingTop) {
-        this.paddingTop = paddingTop;
-    }
-
-    public int getPaddingRight() {
-        return this.paddingRight;
-    }
-
-    public void setPaddingRight(int paddingRight) {
-        this.paddingRight = paddingRight;
-    }
-
-    public int getPaddingBottom() {
-        return this.paddingBottom;
-    }
-
-    public void setPaddingBottom(int paddingBottom) {
-        this.paddingBottom = paddingBottom;
     }
 }

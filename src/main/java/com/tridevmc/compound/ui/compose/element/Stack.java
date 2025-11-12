@@ -16,16 +16,16 @@
 
 package com.tridevmc.compound.ui.compose.element;
 
-import com.tridevmc.compound.ui.compose.layout.Bounds;
-import com.tridevmc.compound.ui.compose.layout.Constraints;
-import com.tridevmc.compound.ui.compose.layout.LayoutHelper;
-import com.tridevmc.compound.ui.compose.layout.Size;
+import com.tridevmc.compound.ui.compose.layout.*;
 
 /**
  * A container that stacks children on top of each other (z-layering).
- * All children are sized to fill the entire stack bounds.
+ * Uses contentAlignment property from LayoutProperties to align stacked children.
  */
 public class Stack extends BaseContainer {
+
+    public Stack() {
+    }
 
     @Override
     public Size measure(Constraints constraints) {
@@ -50,9 +50,24 @@ public class Stack extends BaseContainer {
     public void place(Bounds bounds) {
         this.setBounds(bounds);
 
-        // Place all children at the same position and size
+        var contentAlignment = this.getLayoutProperties().getContentAlignment();
+
+        // Place all children with alignment
         for (var child : this.getChildren()) {
-            LayoutHelper.placeChild(child, bounds);
+            var childSize = child.getBounds() != null ? child.getBounds().size() : new Size(0, 0);
+
+            if (contentAlignment != null) {
+                // Apply contentAlignment to position child within available space
+                var alignedPos = contentAlignment.align(childSize, bounds.size());
+                var childBounds = new Bounds(
+                        new Position(bounds.x() + alignedPos.x(), bounds.y() + alignedPos.y()),
+                        childSize
+                );
+                LayoutHelper.placeChild(child, childBounds);
+            } else {
+                // Default: fill entire bounds
+                LayoutHelper.placeChild(child, bounds);
+            }
         }
     }
 }

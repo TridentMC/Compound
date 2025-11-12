@@ -21,11 +21,11 @@ import com.tridevmc.compound.ui.compose.element.IPrimitiveElement;
 import com.tridevmc.compound.ui.compose.event.KeyEvent;
 import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
 import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
-import com.tridevmc.compound.ui.compose.layout.Constraints;
+import com.tridevmc.compound.ui.compose.layout.Bounds;import com.tridevmc.compound.ui.compose.layout.Constraints;
 import com.tridevmc.compound.ui.compose.layout.Position;
 import com.tridevmc.compound.ui.compose.layout.Size;
 import com.tridevmc.compound.ui.compose.state.State;
-import com.tridevmc.compound.ui.compose.state.StateObserver;
+import com.tridevmc.compound.ui.compose.state.StateObserver;import com.tridevmc.compound.ui.screen.IScreenContext;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -38,6 +38,7 @@ public class UITree implements StateObserver {
     private ITreeNode root;
     private final Map<IElement, ITreeNode> elementToNode = new HashMap<>();
     private final Set<State<?>> observedStates = new HashSet<>();
+    private Size rootSize;
 
     // Root node management
     public void setRoot(ITreeNode root) {
@@ -193,14 +194,13 @@ public class UITree implements StateObserver {
     // Layout coordination
     public void measureTree(Constraints rootConstraints) {
         if (this.root != null) {
-            this.measureNode(this.root, rootConstraints);
+            this.rootSize = this.measureNode(this.root, rootConstraints);
         }
     }
 
     public void placeTree(Position rootPosition) {
-        if (this.root != null && this.root.getElement().getBounds() != null) {
-            var size = this.root.getElement().getBounds().size();
-            this.placeNode(this.root, new com.tridevmc.compound.ui.compose.layout.Bounds(rootPosition, size));
+        if (this.root != null && this.rootSize != null) {
+            this.placeNode(this.root, new Bounds(rootPosition, this.rootSize));
         }
     }
 
@@ -215,7 +215,7 @@ public class UITree implements StateObserver {
     /**
      * Recursively place a node and its children (top-down).
      */
-    private void placeNode(ITreeNode node, com.tridevmc.compound.ui.compose.layout.Bounds bounds) {
+    private void placeNode(ITreeNode node, Bounds bounds) {
         // Element can query children via getChildren() if it's a container
         node.getElement().place(bounds);
     }
@@ -362,7 +362,7 @@ public class UITree implements StateObserver {
     }
 
     // Render helper
-    public void renderTree(com.tridevmc.compound.ui.screen.IScreenContext context) {
+    public void renderTree(IScreenContext context) {
         if (this.root == null) {
             return;
         }

@@ -75,6 +75,14 @@ public class LayoutHelper {
             childSize = child.measure(childConstraints);
         }
 
+        // Apply fillMax flags
+        if (props.isFillMaxWidth()) {
+            childSize = new Size(availableWidth, childSize.height());
+        }
+        if (props.isFillMaxHeight()) {
+            childSize = new Size(childSize.width(), availableHeight);
+        }
+
         // Return size including margin
         return new Size(
                 childSize.width() + marginHorizontal,
@@ -114,15 +122,9 @@ public class LayoutHelper {
             childSize = new Size(width, height);
         }
 
-        // Apply alignment if child is smaller than allocated space
-        if (props.getAlignment() != null) {
-            var parentSize = new Size(width, height);
-            var aligned = props.getAlignment().align(childSize, parentSize);
-            x += aligned.x();
-            y += aligned.y();
-        }
-
         // Place child
+        // Note: Alignment is handled by specific container types (Box, Column, Row, Stack)
+        // not as a general property here
         child.place(new Bounds(new Position(x, y), childSize));
     }
 

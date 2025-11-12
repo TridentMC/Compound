@@ -16,25 +16,15 @@
 
 package com.tridevmc.compound.ui.compose.element;
 
-import com.tridevmc.compound.ui.compose.layout.Bounds;
-import com.tridevmc.compound.ui.compose.layout.Constraints;
-import com.tridevmc.compound.ui.compose.layout.LayoutHelper;
-import com.tridevmc.compound.ui.compose.layout.Position;
-import com.tridevmc.compound.ui.compose.layout.Size;
+import com.tridevmc.compound.ui.compose.layout.*;
 
 /**
  * A container that lays out children vertically in a column.
+ * Uses horizontalAlignment and spacing properties from LayoutProperties.
  */
 public class Column extends BaseContainer {
 
-    private int spacing;
-
     public Column() {
-        this(0);
-    }
-
-    public Column(int spacing) {
-        this.spacing = spacing;
     }
 
     @Override
@@ -42,6 +32,7 @@ public class Column extends BaseContainer {
         int maxWidth = 0;
         int totalHeight = 0;
         var children = this.getChildren();
+        int spacing = this.getLayoutProperties().getSpacing();
 
         for (int i = 0; i < children.size(); i++) {
             var child = children.get(i);
@@ -58,7 +49,7 @@ public class Column extends BaseContainer {
             maxWidth = Math.max(maxWidth, childSize.width());
             totalHeight += childSize.height();
             if (i < children.size() - 1) {
-                totalHeight += this.spacing;
+                totalHeight += spacing;
             }
         }
 
@@ -74,26 +65,31 @@ public class Column extends BaseContainer {
 
         int y = bounds.y();
         var children = this.getChildren();
+        int spacing = this.getLayoutProperties().getSpacing();
+        var horizontalAlignment = this.getLayoutProperties().getHorizontalAlignment();
 
         for (var child : children) {
             var childSize = child.getBounds() != null ? child.getBounds().size() : new Size(0, 0);
 
-            // Place child at current y position
+            // Apply horizontal alignment
+            int x;
+            if (horizontalAlignment != null) {
+                // Use alignment to calculate x offset
+                var alignedPos = horizontalAlignment.align(childSize, bounds.size());
+                x = bounds.x() + alignedPos.x();
+            } else {
+                // Default to left
+                x = bounds.x();
+            }
+
+            // Place child at current y position with horizontal alignment
             var childBounds = new Bounds(
-                    new Position(bounds.x(), y),
+                    new Position(x, y),
                     childSize
             );
 
             LayoutHelper.placeChild(child, childBounds);
-            y += childSize.height() + this.spacing;
+            y += childSize.height() + spacing;
         }
-    }
-
-    public int getSpacing() {
-        return this.spacing;
-    }
-
-    public void setSpacing(int spacing) {
-        this.spacing = spacing;
     }
 }

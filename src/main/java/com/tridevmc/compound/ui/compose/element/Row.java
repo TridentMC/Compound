@@ -16,25 +16,15 @@
 
 package com.tridevmc.compound.ui.compose.element;
 
-import com.tridevmc.compound.ui.compose.layout.Bounds;
-import com.tridevmc.compound.ui.compose.layout.Constraints;
-import com.tridevmc.compound.ui.compose.layout.LayoutHelper;
-import com.tridevmc.compound.ui.compose.layout.Position;
-import com.tridevmc.compound.ui.compose.layout.Size;
+import com.tridevmc.compound.ui.compose.layout.*;
 
 /**
  * A container that lays out children horizontally in a row.
+ * Uses verticalAlignment and spacing properties from LayoutProperties.
  */
 public class Row extends BaseContainer {
 
-    private int spacing;
-
     public Row() {
-        this(0);
-    }
-
-    public Row(int spacing) {
-        this.spacing = spacing;
     }
 
     @Override
@@ -42,6 +32,7 @@ public class Row extends BaseContainer {
         int totalWidth = 0;
         int maxHeight = 0;
         var children = this.getChildren();
+        int spacing = this.getLayoutProperties().getSpacing();
 
         for (int i = 0; i < children.size(); i++) {
             var child = children.get(i);
@@ -57,7 +48,7 @@ public class Row extends BaseContainer {
             var childSize = LayoutHelper.measureChild(child, childConstraints);
             totalWidth += childSize.width();
             if (i < children.size() - 1) {
-                totalWidth += this.spacing;
+                totalWidth += spacing;
             }
             maxHeight = Math.max(maxHeight, childSize.height());
         }
@@ -74,26 +65,31 @@ public class Row extends BaseContainer {
 
         int x = bounds.x();
         var children = this.getChildren();
+        int spacing = this.getLayoutProperties().getSpacing();
+        var verticalAlignment = this.getLayoutProperties().getVerticalAlignment();
 
         for (var child : children) {
             var childSize = child.getBounds() != null ? child.getBounds().size() : new Size(0, 0);
 
-            // Place child at current x position
+            // Apply vertical alignment
+            int y;
+            if (verticalAlignment != null) {
+                // Use alignment to calculate y offset
+                var alignedPos = verticalAlignment.align(childSize, bounds.size());
+                y = bounds.y() + alignedPos.y();
+            } else {
+                // Default to top
+                y = bounds.y();
+            }
+
+            // Place child at current x position with vertical alignment
             var childBounds = new Bounds(
-                    new Position(x, bounds.y()),
+                    new Position(x, y),
                     childSize
             );
 
             LayoutHelper.placeChild(child, childBounds);
-            x += childSize.width() + this.spacing;
+            x += childSize.width() + spacing;
         }
-    }
-
-    public int getSpacing() {
-        return this.spacing;
-    }
-
-    public void setSpacing(int spacing) {
-        this.spacing = spacing;
     }
 }

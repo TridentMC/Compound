@@ -14,24 +14,17 @@
  * limitations under the License.
  */
 
-package com.tridevmc.compound.ui.compose.element;
+package com.tridevmc.compound.ui.compose.scope;
 
-import com.tridevmc.compound.ui.compose.layout.Bounds;
-import com.tridevmc.compound.ui.compose.layout.Constraints;
+import com.tridevmc.compound.ui.compose.element.IGenericContainer;
 import com.tridevmc.compound.ui.compose.layout.LayoutProperties;
-import com.tridevmc.compound.ui.compose.layout.Size;
 
 /**
- * Base implementation for container elements.
- * Provides common functionality for elements that can have children.
+ * Scope for configuring a container element (can add children).
+ * Extends IGenericElementScope for element access and ICompositionScope for adding children.
+ *
+ * @param <T> the container type
  */
-public abstract class BaseContainer extends BaseElement implements IContainer {
-
-    // IContainer's default getChildren() implementation is inherited
-
-    @Override
-    public abstract Size measure(Constraints constraints);
-
-    @Override
-    public abstract void place(Bounds bounds);
+public interface IGenericContainerScope<T extends IGenericContainer>
+        extends IGenericElementScope<T>, ICompositionScope {
 }

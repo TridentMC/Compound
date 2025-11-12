@@ -20,8 +20,10 @@ import com.tridevmc.compound.ui.compose.scope.ICompositionScope;
 
 /**
  * "Smart" components that encapsulate behavior and have internal composition.
+ * Composable elements have internal children created via composition, but are not
+ * containers from the external perspective.
  */
-public interface IComposableElement extends IContainer {
+public interface IComposableElement extends IElement {
 
     /**
      * Internal composition method.

@@ -29,7 +29,7 @@ import com.tridevmc.compound.ui.compose.tree.UITree;
 public abstract class BaseElement implements IElement {
     private UITree tree;
     private Bounds bounds;
-    private LayoutProperties layoutProperties;
+    private LayoutProperties layoutProperties = LayoutProperties.create();
     private boolean visible = true;
 
     @Override

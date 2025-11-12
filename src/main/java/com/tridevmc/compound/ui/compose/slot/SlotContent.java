@@ -16,21 +16,21 @@
 
 package com.tridevmc.compound.ui.compose.slot;
 
-import com.tridevmc.compound.ui.compose.scope.IContainerScope;
+import com.tridevmc.compound.ui.compose.scope.ICompositionScope;
 
 import java.util.function.Consumer;
 
 /**
  * Wrapper for user-provided slot content.
  */
-public record SlotContent(Consumer<IContainerScope<?>> content) {
+public record SlotContent(Consumer<ICompositionScope> content) {
 
     /**
      * Execute the content in the given scope.
      *
      * @param scope the scope to execute in
      */
-    public void render(IContainerScope<?> scope) {
+    public void render(ICompositionScope scope) {
         this.content.accept(scope);
     }
 }

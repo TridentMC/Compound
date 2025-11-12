@@ -17,16 +17,12 @@
 package com.tridevmc.compound.ui.compose.scope;
 
 import com.tridevmc.compound.ui.compose.element.IElement;
+import com.tridevmc.compound.ui.compose.layout.LayoutProperties;
 
 /**
- * Base scope for configuring an element.
+ * Default scope for configuring an element.
+ * Most elements use this interface.
  */
-public interface IElementScope<T extends IElement> {
-
-    /**
-     * Get the element being configured.
-     *
-     * @return the element
-     */
-    T getElement();
+public interface IElementScope<T extends IElement> extends IGenericElementScope<T> {
+    // All methods inherited from IGenericElementScope
 }

@@ -24,6 +24,10 @@ public class LayoutProperties {
     private Integer fixedWidth;
     private Integer fixedHeight;
 
+    // Fill max size flags
+    private boolean fillMaxWidth;
+    private boolean fillMaxHeight;
+
     // Weight (for flex layouts)
     private Float weight;
 
@@ -45,17 +49,19 @@ public class LayoutProperties {
     private int marginRight;
     private int marginBottom;
 
-    // Alignment (for containers)
-    private Alignment alignment;
+    // Container alignment properties
+    private Alignment contentAlignment;      // For Box, Stack - aligns child within parent
+    private Alignment horizontalAlignment;  // For Column - aligns children horizontally
+    private Alignment verticalAlignment;    // For Row - aligns children vertically
 
-    // Spacing (between children in containers)
-    private Integer spacing;
+    // Spacing (between children in Row/Column)
+    private int spacing;
 
     // Grid-specific
     private Integer gridColumns;
     private Integer gridRows;
 
-    private LayoutProperties() {
+    protected LayoutProperties() {
     }
 
     public static LayoutProperties create() {
@@ -200,23 +206,41 @@ public class LayoutProperties {
         return this.marginBottom;
     }
 
-    // Alignment
-    public LayoutProperties withAlignment(Alignment alignment) {
-        this.alignment = alignment;
+    // Container alignment methods
+    public LayoutProperties contentAlignment(Alignment alignment) {
+        this.contentAlignment = alignment;
         return this;
     }
 
-    public Alignment getAlignment() {
-        return this.alignment;
+    public Alignment getContentAlignment() {
+        return this.contentAlignment;
     }
 
-    // Spacing
-    public LayoutProperties withSpacing(int spacing) {
+    public LayoutProperties horizontalAlignment(Alignment alignment) {
+        this.horizontalAlignment = alignment;
+        return this;
+    }
+
+    public Alignment getHorizontalAlignment() {
+        return this.horizontalAlignment;
+    }
+
+    public LayoutProperties verticalAlignment(Alignment alignment) {
+        this.verticalAlignment = alignment;
+        return this;
+    }
+
+    public Alignment getVerticalAlignment() {
+        return this.verticalAlignment;
+    }
+
+    // Spacing (for Row/Column)
+    public LayoutProperties spacing(int spacing) {
         this.spacing = spacing;
         return this;
     }
 
-    public Integer getSpacing() {
+    public int getSpacing() {
         return this.spacing;
     }
 
@@ -233,5 +257,67 @@ public class LayoutProperties {
 
     public Integer getGridRows() {
         return this.gridRows;
+    }
+
+    // Fill max size (Compose-like API)
+    public LayoutProperties fillMaxWidth() {
+        this.fillMaxWidth = true;
+        return this;
+    }
+
+    public LayoutProperties fillMaxHeight() {
+        this.fillMaxHeight = true;
+        return this;
+    }
+
+    public LayoutProperties fillMax() {
+        this.fillMaxWidth = true;
+        this.fillMaxHeight = true;
+        return this;
+    }
+
+    public boolean isFillMaxWidth() {
+        return this.fillMaxWidth;
+    }
+
+    public boolean isFillMaxHeight() {
+        return this.fillMaxHeight;
+    }
+
+    // Short-form methods (more ergonomic)
+    public LayoutProperties fixedWidth(int width) {
+        return this.withFixedWidth(width);
+    }
+
+    public LayoutProperties fixedHeight(int height) {
+        return this.withFixedHeight(height);
+    }
+
+    public LayoutProperties fixedSize(int width, int height) {
+        return this.withFixedSize(width, height);
+    }
+
+    public LayoutProperties margin(int all) {
+        return this.withMargin(all);
+    }
+
+    public LayoutProperties margin(int horizontal, int vertical) {
+        return this.withMargin(horizontal, vertical);
+    }
+
+    public LayoutProperties margin(int left, int top, int right, int bottom) {
+        return this.withMargin(left, top, right, bottom);
+    }
+
+    public LayoutProperties padding(int all) {
+        return this.withPadding(all);
+    }
+
+    public LayoutProperties padding(int horizontal, int vertical) {
+        return this.withPadding(horizontal, vertical);
+    }
+
+    public LayoutProperties padding(int left, int top, int right, int bottom) {
+        return this.withPadding(left, top, right, bottom);
     }
 }

@@ -14,24 +14,32 @@
  * limitations under the License.
  */
 
-package com.tridevmc.compound.ui.compose.element;
+package com.tridevmc.compound.ui.compose.scope;
 
-import com.tridevmc.compound.ui.compose.layout.Bounds;
-import com.tridevmc.compound.ui.compose.layout.Constraints;
+import com.tridevmc.compound.ui.compose.element.IGenericElement;
 import com.tridevmc.compound.ui.compose.layout.LayoutProperties;
-import com.tridevmc.compound.ui.compose.layout.Size;
 
 /**
- * Base implementation for container elements.
- * Provides common functionality for elements that can have children.
+ * Base scope for configuring an element.
+ *
+ * @param <T> the element type
  */
-public abstract class BaseContainer extends BaseElement implements IContainer {
+public interface IGenericElementScope<T extends IGenericElement> {
 
-    // IContainer's default getChildren() implementation is inherited
+    /**
+     * Get the element being configured.
+     *
+     * @return the element
+     */
+    T getElement();
 
-    @Override
-    public abstract Size measure(Constraints constraints);
-
-    @Override
-    public abstract void place(Bounds bounds);
+    /**
+     * Get the element's layout properties for configuration.
+     * This provides fluent access to layout configuration methods.
+     *
+     * @return the element's layout properties
+     */
+    default LayoutProperties layout() {
+        return this.getElement().getLayoutProperties();
+    }
 }

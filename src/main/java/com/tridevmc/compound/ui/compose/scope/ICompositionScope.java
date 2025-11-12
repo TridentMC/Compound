@@ -69,6 +69,26 @@ public interface ICompositionScope {
     }
 
     /**
+     * Add a container element to the tree without configuration.
+     *
+     * @param element the element instance to add
+     * @param <T>     the element type
+     */
+    default <T extends IContainer> void e(T element) {
+        this.e(element, (Consumer<IContainerScope<T>>) null);
+    }
+
+    /**
+     * Add a composable element to the tree without configuration.
+     *
+     * @param element the element instance to add
+     * @param <T>     the element type
+     */
+    default <T extends IComposableElement> void e(T element) {
+        this.e(element, (Consumer<IComposableElementScope<T>>) null);
+    }
+
+    /**
      * Bind to a state, causing the current composition context to re-compose when the state changes.
      *
      * @param state the state to observe

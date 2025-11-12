@@ -35,7 +35,7 @@ import javax.annotation.Nonnull;
  * Integrates with vanilla inventory management while providing declarative composition.
  * Composes several primitives: background sprite, underlay rect, item, label, overlay rect.
  */
-public class ComposedSlot extends BaseContainer implements IComposableElement {
+public class ComposedSlot extends BaseElement implements IComposableElement {
 
     private static final IScreenSprite SLOT_SPRITE = IScreenSprite.of(
             Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.GUI)
@@ -70,13 +70,40 @@ public class ComposedSlot extends BaseContainer implements IComposableElement {
 
     @Override
     public Size measure(Constraints constraints) {
-        // Slots are fixed size (18x18)
-        return new Size(18, 18);
+        // Measure the internal stack
+        var tree = this.getTree();
+        if (tree == null) {
+            return new Size(18, 18);
+        }
+        var node = tree.getNodeForElement(this);
+        if (node == null) {
+            return new Size(18, 18);
+        }
+        var children = node.getChildren();
+        if (children.isEmpty()) {
+            return new Size(18, 18);
+        }
+        return children.get(0).getElement().measure(constraints);
     }
 
     @Override
     public void place(Bounds bounds) {
         this.setBounds(bounds);
+
+        // Place the internal stack
+        var tree = this.getTree();
+        if (tree == null) {
+            return;
+        }
+        var node = tree.getNodeForElement(this);
+        if (node == null) {
+            return;
+        }
+        var children = node.getChildren();
+        if (!children.isEmpty()) {
+            com.tridevmc.compound.ui.compose.layout.LayoutHelper.placeChild(children.get(0).getElement(), bounds);
+        }
+
         // Note: Vanilla slot x/y are final and set during slot construction.
         // The Integer.MIN_VALUE offset must be applied at construction time.
     }

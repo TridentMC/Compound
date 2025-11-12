@@ -22,14 +22,13 @@ import com.tridevmc.compound.ui.compose.layout.Constraints;
 import com.tridevmc.compound.ui.compose.layout.Size;
 import com.tridevmc.compound.ui.compose.scope.IComposableElementScope;
 import com.tridevmc.compound.ui.compose.scope.ICompositionScope;
-import com.tridevmc.compound.ui.compose.scope.IContainerScope;
 import com.tridevmc.compound.ui.compose.slot.SlotKey;
 import com.tridevmc.compound.ui.compose.state.State;
 import com.tridevmc.compound.ui.compose.state.StateImpl;
 import com.tridevmc.compound.ui.element.button.IButtonHoverListener;
 import com.tridevmc.compound.ui.element.button.IButtonPressListener;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.client.Minecraft;import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
@@ -56,7 +55,7 @@ import java.util.function.Consumer;
  * });
  * </pre>
  */
-public class Button extends BaseContainer implements IComposableElement {
+public class Button extends BaseElement implements IComposableElement {
 
     public static final SlotKey ENABLED_SLOT = new SlotKey("enabled");
     public static final SlotKey HIGHLIGHTED_SLOT = new SlotKey("highlighted");
@@ -91,7 +90,7 @@ public class Button extends BaseContainer implements IComposableElement {
     @Override
     public void compose(ICompositionScope scope) {
         // Cast to IComposableElementScope for slot access
-        IComposableElementScope elementScope = (IComposableElementScope) scope;
+        IComposableElementScope<?> elementScope = (IComposableElementScope<?>) scope;
 
         // Bind to state changes to trigger recomposition
         scope.bind(this.enabled);
@@ -116,7 +115,7 @@ public class Button extends BaseContainer implements IComposableElement {
                 y >= bounds.y() && y < bounds.y() + bounds.height()) {
 
                 // Play click sound
-                SoundManager soundManager = net.minecraft.client.Minecraft.getInstance().getSoundManager();
+                SoundManager soundManager = Minecraft.getInstance().getSoundManager();
                 soundManager.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 
                 // Notify listeners
@@ -127,33 +126,38 @@ public class Button extends BaseContainer implements IComposableElement {
         // Render the appropriate slot based on current state
         if (!this.enabled.get()) {
             // Disabled state
-            Consumer<IContainerScope<?>> defaultDisabled = content -> {
+            elementScope.slot(DISABLED_SLOT, content -> {
                 content.e(new ElementSprite(DEFAULT_DISABLED_SPRITE));
-            };
-            elementScope.slot(DISABLED_SLOT, defaultDisabled);
+            });
         } else if (this.hovered.get()) {
             // Highlighted/hover state
-            Consumer<IContainerScope<?>> defaultHighlighted = content -> {
+            elementScope.slot(HIGHLIGHTED_SLOT, content -> {
                 content.e(new ElementSprite(DEFAULT_HIGHLIGHTED_SPRITE));
-            };
-            elementScope.slot(HIGHLIGHTED_SLOT, defaultHighlighted);
+            });
         } else {
             // Normal/enabled state
-            Consumer<IContainerScope<?>> defaultEnabled = content -> {
+            elementScope.slot(ENABLED_SLOT, content -> {
                 content.e(new ElementSprite(DEFAULT_ENABLED_SPRITE));
-            };
-            elementScope.slot(ENABLED_SLOT, defaultEnabled);
+            });
         }
     }
 
     @Override
     public Size measure(Constraints constraints) {
         // Measure the slot content (only one slot is rendered at a time)
-        var children = this.getChildren();
+        var tree = this.getTree();
+        if (tree == null) {
+            return new Size(0, 0);
+        }
+        var node = tree.getNodeForElement(this);
+        if (node == null) {
+            return new Size(0, 0);
+        }
+        var children = node.getChildren();
         if (children.isEmpty()) {
             return new Size(0, 0);
         }
-        return children.get(0).measure(constraints);
+        return children.get(0).getElement().measure(constraints);
     }
 
     @Override
@@ -161,9 +165,17 @@ public class Button extends BaseContainer implements IComposableElement {
         this.setBounds(bounds);
 
         // Place the slot content
-        var children = this.getChildren();
+        var tree = this.getTree();
+        if (tree == null) {
+            return;
+        }
+        var node = tree.getNodeForElement(this);
+        if (node == null) {
+            return;
+        }
+        var children = node.getChildren();
         if (!children.isEmpty()) {
-            children.get(0).place(bounds);
+            com.tridevmc.compound.ui.compose.layout.LayoutHelper.placeChild(children.get(0).getElement(), bounds);
         }
     }
 

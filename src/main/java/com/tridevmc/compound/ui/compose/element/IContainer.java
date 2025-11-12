@@ -16,29 +16,12 @@
 
 package com.tridevmc.compound.ui.compose.element;
 
-import com.tridevmc.compound.ui.compose.tree.ITreeNode;
-
-import java.util.List;
+import com.tridevmc.compound.ui.compose.layout.LayoutProperties;
 
 /**
- * Interface for elements that can have children.
- * Children are managed by the tree and can be queried via getChildren().
+ * Default interface for containers that use LayoutProperties.
+ * Most containers should implement this interface.
  */
-public interface IContainer extends IElement {
-
-    /**
-     * Get the children of this container from the tree.
-     * Default implementation queries the tree for this element's node and returns its children.
-     *
-     * @return list of child elements
-     */
-    default List<IElement> getChildren() {
-        ITreeNode node = this.getTree().getNodeForElement(this);
-        if (node == null) {
-            return List.of();
-        }
-        return node.getChildren().stream()
-                .map(ITreeNode::getElement)
-                .toList();
-    }
+public interface IContainer extends IGenericContainer {
+    // All methods inherited from IGenericContainer
 }
