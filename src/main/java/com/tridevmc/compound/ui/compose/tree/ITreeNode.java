@@ -17,8 +17,12 @@
 package com.tridevmc.compound.ui.compose.tree;
 
 import com.tridevmc.compound.ui.compose.element.IElement;
+import com.tridevmc.compound.ui.compose.event.CharEvent;
 import com.tridevmc.compound.ui.compose.event.KeyEvent;
 import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
+import com.tridevmc.compound.ui.compose.event.MouseDragEvent;
+import com.tridevmc.compound.ui.compose.event.MouseMoveEvent;
+import com.tridevmc.compound.ui.compose.event.MouseReleaseEvent;
 import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.compose.slot.SlotMap;
 import com.tridevmc.compound.ui.compose.state.State;
@@ -80,6 +84,14 @@ public interface ITreeNode {
 
     void addKeyReleaseHandler(Consumer<KeyEvent> handler);
 
+    void addCharTypedHandler(Consumer<CharEvent> handler);
+
+    void addMouseReleaseHandler(Consumer<MouseReleaseEvent> handler);
+
+    void addMouseDragHandler(Consumer<MouseDragEvent> handler);
+
+    void addMouseMoveHandler(Consumer<MouseMoveEvent> handler);
+
     List<Consumer<MouseClickEvent>> getClickHandlers();
 
     List<Runnable> getMouseEnterHandlers();
@@ -91,6 +103,14 @@ public interface ITreeNode {
     List<Consumer<KeyEvent>> getKeyPressHandlers();
 
     List<Consumer<KeyEvent>> getKeyReleaseHandlers();
+
+    List<Consumer<CharEvent>> getCharTypedHandlers();
+
+    List<Consumer<MouseReleaseEvent>> getMouseReleaseHandlers();
+
+    List<Consumer<MouseDragEvent>> getMouseDragHandlers();
+
+    List<Consumer<MouseMoveEvent>> getMouseMoveHandlers();
 
     void clearHandlers();
 

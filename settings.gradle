@@ -21,4 +21,4 @@ compoundModules.eachWithIndex { LinkedHashMap<String, String> entry, int i ->
 
 println("Including Compound Modules ($compoundModuleNames)")
 
-include(compoundModuleNames)
+// include(compoundModuleNames)

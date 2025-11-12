@@ -23,27 +23,37 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
+import java.util.function.Supplier;
+
 /**
  * A primitive element that renders text.
  */
 public class ElementLabel extends BaseElement implements IPrimitiveElement {
 
     private Component text;
-    private int color;
-    private boolean shadow;
+    private Supplier<Integer> colorSupplier;
+    private Supplier<Boolean> shadowSupplier;
 
     public ElementLabel(Component text) {
-        this(text, 0xFFFFFF, true);
+        this(text, () -> 0xFFFFFF, () -> true);
     }
 
     public ElementLabel(Component text, int color) {
-        this(text, color, true);
+        this(text, () -> color, () -> true);
     }
 
     public ElementLabel(Component text, int color, boolean shadow) {
+        this(text, () -> color, () -> shadow);
+    }
+
+    public ElementLabel(Component text, Supplier<Integer> colorSupplier) {
+        this(text, colorSupplier, () -> true);
+    }
+
+    public ElementLabel(Component text, Supplier<Integer> colorSupplier, Supplier<Boolean> shadowSupplier) {
         this.text = text;
-        this.color = color;
-        this.shadow = shadow;
+        this.colorSupplier = colorSupplier;
+        this.shadowSupplier = shadowSupplier;
     }
 
     @Override
@@ -75,12 +85,16 @@ public class ElementLabel extends BaseElement implements IPrimitiveElement {
             return;
         }
 
-        // TODO: Color support - the drawText methods don't take a color parameter
-        // May need to use lower-level drawing or look for alternate methods
-        if (this.shadow) {
-            context.drawTextWithShadow(this.text, bounds.x(), bounds.y());
+        boolean shadow = this.shadowSupplier.get();
+        int color = this.colorSupplier.get();
+
+        // Apply color to the component through styling
+        Component coloredText = this.text.copy().withStyle(style -> style.withColor(color));
+
+        if (shadow) {
+            context.drawTextWithShadow(coloredText, bounds.x(), bounds.y());
         } else {
-            context.drawText(this.text, bounds.x(), bounds.y());
+            context.drawText(coloredText, bounds.x(), bounds.y());
         }
     }
 
@@ -93,18 +107,34 @@ public class ElementLabel extends BaseElement implements IPrimitiveElement {
     }
 
     public int getColor() {
-        return this.color;
+        return this.colorSupplier.get();
     }
 
     public void setColor(int color) {
-        this.color = color;
+        this.colorSupplier = () -> color;
+    }
+
+    public void setColorSupplier(Supplier<Integer> colorSupplier) {
+        this.colorSupplier = colorSupplier;
+    }
+
+    public Supplier<Integer> getColorSupplier() {
+        return this.colorSupplier;
     }
 
     public boolean isShadow() {
-        return this.shadow;
+        return this.shadowSupplier.get();
     }
 
     public void setShadow(boolean shadow) {
-        this.shadow = shadow;
+        this.shadowSupplier = () -> shadow;
+    }
+
+    public void setShadowSupplier(Supplier<Boolean> shadowSupplier) {
+        this.shadowSupplier = shadowSupplier;
+    }
+
+    public Supplier<Boolean> getShadowSupplier() {
+        return this.shadowSupplier;
     }
 }

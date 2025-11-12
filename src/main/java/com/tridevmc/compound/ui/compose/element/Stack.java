@@ -24,22 +24,28 @@ import com.tridevmc.compound.ui.compose.layout.*;
  */
 public class Stack extends BaseContainer {
 
+    private final java.util.List<Size> measuredChildSizes = new java.util.ArrayList<>();
+
     public Stack() {
     }
 
     @Override
     public Size measure(Constraints constraints) {
+        measuredChildSizes.clear();
+
         int maxWidth = 0;
         int maxHeight = 0;
 
-        // Measure all children with the same constraints
-        for (var child : this.getChildren()) {
+        // Measure all children with the same constraints and store their sizes
+        for (int i = 0; i < this.getChildren().size(); i++) {
+            var child = this.getChildren().get(i);
             var childSize = LayoutHelper.measureChild(child, constraints);
+            measuredChildSizes.add(childSize);
+
             maxWidth = Math.max(maxWidth, childSize.width());
             maxHeight = Math.max(maxHeight, childSize.height());
         }
 
-        // Stack size is the maximum of all children
         return new Size(
                 Math.min(maxWidth, constraints.maxWidth()),
                 Math.min(maxHeight, constraints.maxHeight())
@@ -52,22 +58,24 @@ public class Stack extends BaseContainer {
 
         var contentAlignment = this.getLayoutProperties().getContentAlignment();
 
-        // Place all children with alignment
-        for (var child : this.getChildren()) {
-            var childSize = child.getBounds() != null ? child.getBounds().size() : new Size(0, 0);
+        // Place all children with alignment using measured sizes
+        for (int i = 0; i < this.getChildren().size(); i++) {
+            var child = this.getChildren().get(i);
+            Size childSize = i < measuredChildSizes.size() ? measuredChildSizes.get(i) : new Size(0, 0);
 
+            Bounds childBounds;
             if (contentAlignment != null) {
                 // Apply contentAlignment to position child within available space
                 var alignedPos = contentAlignment.align(childSize, bounds.size());
-                var childBounds = new Bounds(
+                childBounds = new Bounds(
                         new Position(bounds.x() + alignedPos.x(), bounds.y() + alignedPos.y()),
                         childSize
                 );
-                LayoutHelper.placeChild(child, childBounds);
             } else {
                 // Default: fill entire bounds
-                LayoutHelper.placeChild(child, bounds);
+                childBounds = bounds;
             }
+            LayoutHelper.placeChild(child, childBounds);
         }
     }
 }

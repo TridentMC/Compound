@@ -19,8 +19,12 @@ package com.tridevmc.compound.ui.compose.scope;
 import com.tridevmc.compound.ui.compose.element.IComposableElement;
 import com.tridevmc.compound.ui.compose.element.IContainer;
 import com.tridevmc.compound.ui.compose.element.IPrimitiveElement;
+import com.tridevmc.compound.ui.compose.event.CharEvent;
 import com.tridevmc.compound.ui.compose.event.KeyEvent;
 import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
+import com.tridevmc.compound.ui.compose.event.MouseDragEvent;
+import com.tridevmc.compound.ui.compose.event.MouseMoveEvent;
+import com.tridevmc.compound.ui.compose.event.MouseReleaseEvent;
 import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.compose.slot.SlotMap;
 import com.tridevmc.compound.ui.compose.state.State;
@@ -140,6 +144,34 @@ public class RootScope implements ICompositionScope {
     public void onKeyRelease(Consumer<KeyEvent> handler) {
         if (this.rootNode != null) {
             this.rootNode.addKeyReleaseHandler(handler);
+        }
+    }
+
+    @Override
+    public void onCharTyped(Consumer<CharEvent> handler) {
+        if (this.rootNode != null) {
+            this.rootNode.addCharTypedHandler(handler);
+        }
+    }
+
+    @Override
+    public void onMouseRelease(Consumer<MouseReleaseEvent> handler) {
+        if (this.rootNode != null) {
+            this.rootNode.addMouseReleaseHandler(handler);
+        }
+    }
+
+    @Override
+    public void onMouseDrag(Consumer<MouseDragEvent> handler) {
+        if (this.rootNode != null) {
+            this.rootNode.addMouseDragHandler(handler);
+        }
+    }
+
+    @Override
+    public void onMouseMove(Consumer<MouseMoveEvent> handler) {
+        if (this.rootNode != null) {
+            this.rootNode.addMouseMoveHandler(handler);
         }
     }
 }

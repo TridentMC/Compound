@@ -28,6 +28,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.data.AtlasIds;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.function.Supplier;
+
 /**
  * A composable box element that renders a nineslice background with content on top.
  * By default uses the inventory container sprite.
@@ -38,14 +40,18 @@ public class ElementBox extends BaseElement implements IComposableElement {
 
     private static IScreenSprite DEFAULT_SPRITE = null;
 
-    private IScreenSprite sprite;
+    private Supplier<IScreenSprite> spriteSupplier;
 
     public ElementBox() {
-        this(getDefaultSprite());
+        this(ElementBox::getDefaultSprite);
     }
 
     public ElementBox(IScreenSprite sprite) {
-        this.sprite = sprite;
+        this(() -> sprite);
+    }
+
+    public ElementBox(Supplier<IScreenSprite> spriteSupplier) {
+        this.spriteSupplier = spriteSupplier;
     }
 
     private static IScreenSprite getDefaultSprite() {
@@ -67,8 +73,9 @@ public class ElementBox extends BaseElement implements IComposableElement {
 
         // Stack the background sprite and content
         scope.e(new Stack(), stack -> {
-            // Background nineslice sprite
-            stack.e(new ElementSprite(this.sprite));
+            // Background nineslice sprite (ElementSprite already supports Supplier)
+            // Sprite will fill whatever bounds are set during placement
+            stack.e(new ElementSprite(this.spriteSupplier));
 
             // Content slot
             elementScope.slot(CONTENT_SLOT);
@@ -77,6 +84,12 @@ public class ElementBox extends BaseElement implements IComposableElement {
 
     @Override
     public Size measure(Constraints constraints) {
+        // Check if we have a fixed size from layout properties
+        var props = this.getLayoutProperties();
+        if (props != null && props.getFixedWidth() != null && props.getFixedHeight() != null) {
+            return new Size(props.getFixedWidth(), props.getFixedHeight());
+        }
+
         var tree = this.getTree();
         if (tree == null) {
             return new Size(0, 0);
@@ -111,10 +124,18 @@ public class ElementBox extends BaseElement implements IComposableElement {
     }
 
     public IScreenSprite getSprite() {
-        return this.sprite;
+        return this.spriteSupplier.get();
     }
 
     public void setSprite(IScreenSprite sprite) {
-        this.sprite = sprite;
+        this.spriteSupplier = () -> sprite;
+    }
+
+    public Supplier<IScreenSprite> getSpriteSupplier() {
+        return this.spriteSupplier;
+    }
+
+    public void setSpriteSupplier(Supplier<IScreenSprite> spriteSupplier) {
+        this.spriteSupplier = spriteSupplier;
     }
 }

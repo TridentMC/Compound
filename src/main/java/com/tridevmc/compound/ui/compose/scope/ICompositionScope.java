@@ -19,8 +19,12 @@ package com.tridevmc.compound.ui.compose.scope;
 import com.tridevmc.compound.ui.compose.element.IComposableElement;
 import com.tridevmc.compound.ui.compose.element.IContainer;
 import com.tridevmc.compound.ui.compose.element.IPrimitiveElement;
+import com.tridevmc.compound.ui.compose.event.CharEvent;
 import com.tridevmc.compound.ui.compose.event.KeyEvent;
 import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
+import com.tridevmc.compound.ui.compose.event.MouseDragEvent;
+import com.tridevmc.compound.ui.compose.event.MouseMoveEvent;
+import com.tridevmc.compound.ui.compose.event.MouseReleaseEvent;
 import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.compose.state.State;
 
@@ -122,4 +126,32 @@ public interface ICompositionScope {
      * @param handler the key release handler
      */
     void onKeyRelease(Consumer<KeyEvent> handler);
+
+    /**
+     * Register a character typed handler on the current node.
+     *
+     * @param handler the character typed handler
+     */
+    void onCharTyped(Consumer<CharEvent> handler);
+
+    /**
+     * Register a mouse release handler on the current node.
+     *
+     * @param handler the mouse release handler
+     */
+    void onMouseRelease(Consumer<MouseReleaseEvent> handler);
+
+    /**
+     * Register a mouse drag handler on the current node.
+     *
+     * @param handler the mouse drag handler
+     */
+    void onMouseDrag(Consumer<MouseDragEvent> handler);
+
+    /**
+     * Register a mouse move handler on the current node.
+     *
+     * @param handler the mouse move handler
+     */
+    void onMouseMove(Consumer<MouseMoveEvent> handler);
 }

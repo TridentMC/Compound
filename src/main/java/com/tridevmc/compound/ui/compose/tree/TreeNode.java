@@ -17,8 +17,12 @@
 package com.tridevmc.compound.ui.compose.tree;
 
 import com.tridevmc.compound.ui.compose.element.IElement;
+import com.tridevmc.compound.ui.compose.event.CharEvent;
 import com.tridevmc.compound.ui.compose.event.KeyEvent;
 import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
+import com.tridevmc.compound.ui.compose.event.MouseDragEvent;
+import com.tridevmc.compound.ui.compose.event.MouseMoveEvent;
+import com.tridevmc.compound.ui.compose.event.MouseReleaseEvent;
 import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.compose.slot.SlotMap;
 import com.tridevmc.compound.ui.compose.state.State;
@@ -45,6 +49,10 @@ public class TreeNode implements ITreeNode {
     private final List<Consumer<MouseScrollEvent>> scrollHandlers = new ArrayList<>();
     private final List<Consumer<KeyEvent>> keyPressHandlers = new ArrayList<>();
     private final List<Consumer<KeyEvent>> keyReleaseHandlers = new ArrayList<>();
+    private final List<Consumer<CharEvent>> charTypedHandlers = new ArrayList<>();
+    private final List<Consumer<MouseReleaseEvent>> mouseReleaseHandlers = new ArrayList<>();
+    private final List<Consumer<MouseDragEvent>> mouseDragHandlers = new ArrayList<>();
+    private final List<Consumer<MouseMoveEvent>> mouseMoveHandlers = new ArrayList<>();
 
     public TreeNode(IElement element) {
         this.element = element;
@@ -177,6 +185,26 @@ public class TreeNode implements ITreeNode {
     }
 
     @Override
+    public void addCharTypedHandler(Consumer<CharEvent> handler) {
+        this.charTypedHandlers.add(handler);
+    }
+
+    @Override
+    public void addMouseReleaseHandler(Consumer<MouseReleaseEvent> handler) {
+        this.mouseReleaseHandlers.add(handler);
+    }
+
+    @Override
+    public void addMouseDragHandler(Consumer<MouseDragEvent> handler) {
+        this.mouseDragHandlers.add(handler);
+    }
+
+    @Override
+    public void addMouseMoveHandler(Consumer<MouseMoveEvent> handler) {
+        this.mouseMoveHandlers.add(handler);
+    }
+
+    @Override
     public List<Consumer<MouseClickEvent>> getClickHandlers() {
         return new ArrayList<>(this.clickHandlers);
     }
@@ -207,6 +235,26 @@ public class TreeNode implements ITreeNode {
     }
 
     @Override
+    public List<Consumer<CharEvent>> getCharTypedHandlers() {
+        return new ArrayList<>(this.charTypedHandlers);
+    }
+
+    @Override
+    public List<Consumer<MouseReleaseEvent>> getMouseReleaseHandlers() {
+        return new ArrayList<>(this.mouseReleaseHandlers);
+    }
+
+    @Override
+    public List<Consumer<MouseDragEvent>> getMouseDragHandlers() {
+        return new ArrayList<>(this.mouseDragHandlers);
+    }
+
+    @Override
+    public List<Consumer<MouseMoveEvent>> getMouseMoveHandlers() {
+        return new ArrayList<>(this.mouseMoveHandlers);
+    }
+
+    @Override
     public void clearHandlers() {
         this.clickHandlers.clear();
         this.mouseEnterHandlers.clear();
@@ -214,6 +262,10 @@ public class TreeNode implements ITreeNode {
         this.scrollHandlers.clear();
         this.keyPressHandlers.clear();
         this.keyReleaseHandlers.clear();
+        this.charTypedHandlers.clear();
+        this.mouseReleaseHandlers.clear();
+        this.mouseDragHandlers.clear();
+        this.mouseMoveHandlers.clear();
     }
 
     // Slot map

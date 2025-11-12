@@ -19,8 +19,12 @@ package com.tridevmc.compound.ui.compose.screen;
 import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
+import com.tridevmc.compound.ui.compose.event.CharEvent;
 import com.tridevmc.compound.ui.compose.event.KeyEvent;
 import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
+import com.tridevmc.compound.ui.compose.event.MouseDragEvent;
+import com.tridevmc.compound.ui.compose.event.MouseMoveEvent;
+import com.tridevmc.compound.ui.compose.event.MouseReleaseEvent;
 import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.compose.layout.Constraints;
 import com.tridevmc.compound.ui.compose.layout.Position;
@@ -45,6 +49,7 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
     private Matrix3x2fStack activeStack;
     private long ticks;
     private double mouseX, mouseY;
+    private double prevMouseX, prevMouseY;
 
     private CompoundScreenContext screenContext;
     private UITree tree;
@@ -73,13 +78,26 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         this.activeGuiGraphics = graphics;
         this.activeStack = graphics.pose();
-        this.mouseX = mouseX;
-        this.mouseY = mouseY;
 
-        // Layout
-        Constraints constraints = Constraints.loose(this.width, this.height);
-        this.tree.measureTree(constraints);
-        this.tree.placeTree(Position.ORIGIN);
+        // Track mouse movement for hover events
+        if (mouseX != this.mouseX || mouseY != this.mouseY) {
+            this.prevMouseX = this.mouseX;
+            this.prevMouseY = this.mouseY;
+            this.mouseX = mouseX;
+            this.mouseY = mouseY;
+
+            MouseMoveEvent moveEvent = new MouseMoveEvent(
+                    (int) this.mouseX, (int) this.mouseY,
+                    (int) this.prevMouseX, (int) this.prevMouseY
+            );
+            MouseMoveEvent.resetConsumed();
+            this.tree.dispatchMouseMove((int) this.mouseX, (int) this.mouseY, moveEvent);
+        }
+
+        // Layout - DISABLED TO TEST INFINITE LOOP
+        // Constraints constraints = Constraints.loose(this.width, this.height);
+        // this.tree.measureTree(constraints);
+        // this.tree.placeTree(Position.ORIGIN);
 
         // Render
         this.tree.renderTree(this.screenContext);
@@ -171,14 +189,22 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
     @Override
     public boolean charTyped(@NotNull CharacterEvent event) {
-        // Character events aren't currently supported in compose system
-        return super.charTyped(event);
+        CharEvent charEvent = new CharEvent((char) event.codepoint(), event.modifiers());
+        CharEvent.resetConsumed();
+        this.tree.dispatchCharTyped(charEvent);
+        return charEvent.isConsumed() || super.charTyped(event);
     }
 
     @Override
     public boolean mouseDragged(@NotNull MouseButtonEvent event, double pX, double pY) {
-        // Mouse drag events aren't currently supported in compose system
-        return super.mouseDragged(event, pX, pY);
+        MouseDragEvent dragEvent = new MouseDragEvent(
+                event.button(),
+                (int) event.x(), (int) event.y(),
+                pX, pY
+        );
+        MouseDragEvent.resetConsumed();
+        this.tree.dispatchMouseDrag((int) event.x(), (int) event.y(), dragEvent);
+        return dragEvent.isConsumed() || super.mouseDragged(event, pX, pY);
     }
 
     @Override
@@ -193,8 +219,12 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
     @Override
     public boolean mouseReleased(@NotNull MouseButtonEvent event) {
-        // Mouse release events aren't currently supported in compose system
-        return super.mouseReleased(event);
+        MouseReleaseEvent releaseEvent = new MouseReleaseEvent(
+                (int) event.x(), (int) event.y(), event.button()
+        );
+        MouseReleaseEvent.resetConsumed();
+        this.tree.dispatchMouseRelease((int) event.x(), (int) event.y(), releaseEvent);
+        return releaseEvent.isConsumed() || super.mouseReleased(event);
     }
 
     @Override

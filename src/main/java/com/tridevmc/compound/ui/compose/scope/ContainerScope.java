@@ -19,8 +19,12 @@ package com.tridevmc.compound.ui.compose.scope;
 import com.tridevmc.compound.ui.compose.element.IComposableElement;
 import com.tridevmc.compound.ui.compose.element.IContainer;
 import com.tridevmc.compound.ui.compose.element.IPrimitiveElement;
+import com.tridevmc.compound.ui.compose.event.CharEvent;
 import com.tridevmc.compound.ui.compose.event.KeyEvent;
 import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
+import com.tridevmc.compound.ui.compose.event.MouseDragEvent;
+import com.tridevmc.compound.ui.compose.event.MouseMoveEvent;
+import com.tridevmc.compound.ui.compose.event.MouseReleaseEvent;
 import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.compose.slot.SlotMap;
 import com.tridevmc.compound.ui.compose.state.State;
@@ -113,5 +117,25 @@ public class ContainerScope<T extends IContainer> extends ElementScope<T> implem
     @Override
     public void onKeyRelease(Consumer<KeyEvent> handler) {
         this.parentNode.addKeyReleaseHandler(handler);
+    }
+
+    @Override
+    public void onCharTyped(Consumer<CharEvent> handler) {
+        this.parentNode.addCharTypedHandler(handler);
+    }
+
+    @Override
+    public void onMouseRelease(Consumer<MouseReleaseEvent> handler) {
+        this.parentNode.addMouseReleaseHandler(handler);
+    }
+
+    @Override
+    public void onMouseDrag(Consumer<MouseDragEvent> handler) {
+        this.parentNode.addMouseDragHandler(handler);
+    }
+
+    @Override
+    public void onMouseMove(Consumer<MouseMoveEvent> handler) {
+        this.parentNode.addMouseMoveHandler(handler);
     }
 }

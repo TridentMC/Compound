@@ -18,8 +18,12 @@ package com.tridevmc.compound.ui.compose.tree;
 
 import com.tridevmc.compound.ui.compose.element.IElement;
 import com.tridevmc.compound.ui.compose.element.IPrimitiveElement;
+import com.tridevmc.compound.ui.compose.event.CharEvent;
 import com.tridevmc.compound.ui.compose.event.KeyEvent;
 import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
+import com.tridevmc.compound.ui.compose.event.MouseDragEvent;
+import com.tridevmc.compound.ui.compose.event.MouseMoveEvent;
+import com.tridevmc.compound.ui.compose.event.MouseReleaseEvent;
 import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.compose.layout.Bounds;import com.tridevmc.compound.ui.compose.layout.Constraints;
 import com.tridevmc.compound.ui.compose.layout.Position;
@@ -200,7 +204,8 @@ public class UITree implements StateObserver {
 
     public void placeTree(Position rootPosition) {
         if (this.root != null && this.rootSize != null) {
-            this.placeNode(this.root, new Bounds(rootPosition, this.rootSize));
+            Bounds rootBounds = new Bounds(rootPosition, this.rootSize);
+            this.placeNode(this.root, rootBounds);
         }
     }
 
@@ -209,7 +214,8 @@ public class UITree implements StateObserver {
      */
     private Size measureNode(ITreeNode node, Constraints constraints) {
         // Element can query children via getChildren() if it's a container
-        return node.getElement().measure(constraints);
+        Size size = node.getElement().measure(constraints);
+        return size;
     }
 
     /**
@@ -238,9 +244,43 @@ public class UITree implements StateObserver {
         }
     }
 
-    public void dispatchMouseMove(int x, int y) {
-        // TODO: Track hover state and fire enter/exit events
-        // This will be implemented when we need it
+    private ITreeNode lastHoveredNode = null;
+
+    public void dispatchMouseMove(int x, int y, MouseMoveEvent event) {
+        ITreeNode node = this.findNodeAt(x, y);
+
+        // Handle hover state changes
+        if (node != lastHoveredNode) {
+            // Fire exit on previously hovered node
+            if (lastHoveredNode != null) {
+                for (var handler : lastHoveredNode.getMouseExitHandlers()) {
+                    handler.run();
+                }
+            }
+
+            // Fire enter on newly hovered node
+            if (node != null) {
+                for (var handler : node.getMouseEnterHandlers()) {
+                    handler.run();
+                }
+            }
+
+            lastHoveredNode = node;
+        }
+
+        // Dispatch move event if there's a node under cursor
+        if (node != null && !event.isConsumed()) {
+            ITreeNode current = node;
+            while (current != null && !event.isConsumed()) {
+                for (var handler : current.getMouseMoveHandlers()) {
+                    handler.accept(event);
+                    if (event.isConsumed()) {
+                        break;
+                    }
+                }
+                current = current.getParent();
+            }
+        }
     }
 
     public void dispatchScroll(int x, int y, MouseScrollEvent event) {
@@ -288,6 +328,54 @@ public class UITree implements StateObserver {
                 }
             }
         });
+    }
+
+    public void dispatchCharTyped(CharEvent event) {
+        // Dispatch to all elements (focus system not yet implemented)
+        this.walkDepthFirst(this.root, node -> {
+            if (!event.isConsumed()) {
+                for (var handler : node.getCharTypedHandlers()) {
+                    handler.accept(event);
+                    if (event.isConsumed()) {
+                        break;
+                    }
+                }
+            }
+        });
+    }
+
+    public void dispatchMouseRelease(int x, int y, MouseReleaseEvent event) {
+        ITreeNode node = this.findNodeAt(x, y);
+        if (node != null) {
+            // Walk up the tree firing handlers until consumed
+            ITreeNode current = node;
+            while (current != null && !event.isConsumed()) {
+                for (var handler : current.getMouseReleaseHandlers()) {
+                    handler.accept(event);
+                    if (event.isConsumed()) {
+                        break;
+                    }
+                }
+                current = current.getParent();
+            }
+        }
+    }
+
+    public void dispatchMouseDrag(int x, int y, MouseDragEvent event) {
+        ITreeNode node = this.findNodeAt(x, y);
+        if (node != null) {
+            // Walk up the tree firing handlers until consumed
+            ITreeNode current = node;
+            while (current != null && !event.isConsumed()) {
+                for (var handler : current.getMouseDragHandlers()) {
+                    handler.accept(event);
+                    if (event.isConsumed()) {
+                        break;
+                    }
+                }
+                current = current.getParent();
+            }
+        }
     }
 
     // State change notification
