@@ -5,7 +5,7 @@ ext {
     modBaseName = "compound"
 
     // Forge Stuff
-    neoForgeVersion = "21.10.12-beta"
+    neoForgeVersion = "21.10.51-beta"
 
     // Mapping Stuff
     mappingsChannel = "parchment"
