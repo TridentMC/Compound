@@ -17,37 +17,47 @@
 package com.tridevmc.compound.ui.compose.element;
 
 import com.tridevmc.compound.ui.compose.layout.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  * A container that wraps a single child with padding and alignment.
  * Uses contentAlignment and padding properties from LayoutProperties.
+ *
+ * <p><strong>Important:</strong> Box is designed for a single child only. If multiple children
+ * are added, only the first child will be rendered and a warning will be logged.</p>
  */
 public class Box extends BaseContainer {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Box.class);
+    private static boolean warnedMultipleChildren = false;
 
     public Box() {
     }
 
     @Override
-    public Size measure(Constraints constraints) {
-        var children = this.getChildren();
-        int horizontalPadding = this.getLayoutProperties().getPaddingLeft() + this.getLayoutProperties().getPaddingRight();
-        int verticalPadding = this.getLayoutProperties().getPaddingTop() + this.getLayoutProperties().getPaddingBottom();
+    public Size measure(Constraints constraints, List<IElement> children) {
+        var props = this.getLayoutProperties();
+        int horizontalPadding = props.getPaddingLeft() + props.getPaddingRight();
+        int verticalPadding = props.getPaddingTop() + props.getPaddingBottom();
 
         if (children.isEmpty()) {
             return new Size(horizontalPadding, verticalPadding);
         }
 
-        // Single child - measure with reduced constraints
-        var child = children.getFirst();
+        // Warn if multiple children are present (Box is designed for single child)
+        if (children.size() > 1 && !warnedMultipleChildren) {
+            LOGGER.warn("Box element contains {} children, but Box is designed for a single child. " +
+                    "Only the first child will be rendered. Consider using Stack for multiple children.",
+                    children.size());
+            warnedMultipleChildren = true;
+        }
 
-        var childConstraints = new Constraints(
-                Math.max(0, constraints.minWidth() - horizontalPadding),
-                Math.max(0, constraints.maxWidth() - horizontalPadding),
-                Math.max(0, constraints.minHeight() - verticalPadding),
-                Math.max(0, constraints.maxHeight() - verticalPadding)
-        );
-
-        var childSize = LayoutHelper.measureChild(child, childConstraints);
+        // Single child - use standard container pattern like Stack/Column/Row
+        var contentConstraints = LayoutMath.calculateContentConstraints(constraints, props);
+        var childSize = LayoutHelper.measureChild(children.getFirst(), contentConstraints);
 
         return new Size(
                 Math.min(childSize.width() + horizontalPadding, constraints.maxWidth()),
@@ -56,12 +66,11 @@ public class Box extends BaseContainer {
     }
 
     @Override
-    public void place(Bounds bounds) {
+    public void place(Bounds bounds, List<IElement> children) {
         this.setBounds(bounds);
 
-        var children = this.getChildren();
         if (!children.isEmpty()) {
-            var child = children.get(0);
+            var child = children.getFirst();
             var childSize = child.getBounds() != null ? child.getBounds().size() : new Size(0, 0);
 
             // Calculate available space after padding

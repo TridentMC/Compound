@@ -63,4 +63,15 @@ public interface State<T> {
      * Cleanup.
      */
     void dispose();
+
+    /**
+     * Create a new State with the given initial value.
+     *
+     * @param initialValue the initial value
+     * @param <T>          the type of the value
+     * @return a new State instance
+     */
+    static <T> State<T> of(T initialValue) {
+        return new StateImpl<>(initialValue);
+    }
 }

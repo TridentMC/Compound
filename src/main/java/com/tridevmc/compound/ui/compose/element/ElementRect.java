@@ -21,6 +21,7 @@ import com.tridevmc.compound.ui.compose.layout.Constraints;
 import com.tridevmc.compound.ui.compose.layout.Size;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -39,13 +40,13 @@ public class ElementRect extends BaseElement implements IPrimitiveElement {
     }
 
     @Override
-    public Size measure(Constraints constraints) {
+    public Size measure(Constraints constraints, List<IElement> children) {
         // Fill available space by default
         return new Size(constraints.maxWidth(), constraints.maxHeight());
     }
 
     @Override
-    public void place(Bounds bounds) {
+    public void place(Bounds bounds, List<IElement> children) {
         this.setBounds(bounds);
     }
 

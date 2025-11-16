@@ -19,6 +19,7 @@ package com.tridevmc.compound.ui.compose.scope;
 import com.tridevmc.compound.ui.compose.element.IComposableElement;
 import com.tridevmc.compound.ui.compose.slot.SlotContent;
 import com.tridevmc.compound.ui.compose.slot.SlotKey;
+import com.tridevmc.compound.ui.compose.slot.SlotMap;
 
 import java.util.function.Consumer;
 
@@ -53,4 +54,11 @@ public interface IComposableElementScope<T extends IComposableElement> extends I
     default void slot(SlotKey key) {
         this.slot(key, null);
     }
+
+    /**
+     * Get the slot map for this element.
+     *
+     * @return the slot map
+     */
+    SlotMap getSlotMap();
 }

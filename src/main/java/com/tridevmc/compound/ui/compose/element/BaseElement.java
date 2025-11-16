@@ -22,6 +22,8 @@ import com.tridevmc.compound.ui.compose.layout.LayoutProperties;
 import com.tridevmc.compound.ui.compose.layout.Size;
 import com.tridevmc.compound.ui.compose.tree.UITree;
 
+import java.util.List;
+
 /**
  * Base implementation of IElement with common functionality.
  * Concrete elements should extend this class.
@@ -83,8 +85,8 @@ public abstract class BaseElement implements IElement {
 
     // Subclasses must implement layout
     @Override
-    public abstract Size measure(Constraints constraints);
+    public abstract Size measure(Constraints constraints, List<IElement> children);
 
     @Override
-    public abstract void place(Bounds bounds);
+    public abstract void place(Bounds bounds, List<IElement> children);
 }

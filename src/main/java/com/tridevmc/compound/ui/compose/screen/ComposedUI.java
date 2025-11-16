@@ -65,6 +65,11 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
         // Bootstrap composition
         RootScope scope = new RootScope(this.tree);
         this.compose(scope);
+
+        // Initial layout
+        Constraints constraints = Constraints.loose(this.width, this.height);
+        this.tree.measureTree(constraints);
+        this.tree.placeTree(Position.ORIGIN, constraints);
     }
 
     /**
@@ -94,10 +99,12 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
             this.tree.dispatchMouseMove((int) this.mouseX, (int) this.mouseY, moveEvent);
         }
 
-        // Layout - DISABLED TO TEST INFINITE LOOP
-        // Constraints constraints = Constraints.loose(this.width, this.height);
-        // this.tree.measureTree(constraints);
-        // this.tree.placeTree(Position.ORIGIN);
+        // Layout
+        // Note: In a full implementation, this should only run when state changes trigger recomposition
+        // For now, we layout every frame to handle dynamic changes
+        Constraints constraints = Constraints.loose(this.width, this.height);
+        this.tree.measureTree(constraints);
+        this.tree.placeTree(Position.ORIGIN, constraints);
 
         // Render
         this.tree.renderTree(this.screenContext);

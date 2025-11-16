@@ -27,6 +27,7 @@ import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.compose.layout.Constraints;
 import com.tridevmc.compound.ui.compose.layout.Position;
 import com.tridevmc.compound.ui.compose.scope.RootScope;
+import com.tridevmc.compound.ui.compose.state.State;
 import com.tridevmc.compound.ui.compose.tree.UITree;
 import com.tridevmc.compound.ui.container.CompoundContainerMenu;
 import com.tridevmc.compound.ui.screen.CompoundScreenContext;
@@ -48,6 +49,12 @@ import org.joml.Matrix3x2fStack;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Simple record to hold window dimensions for state tracking.
+ */
+record WindowSize(int width, int height) {}
+
+
 public abstract class ComposedUIContainer<T extends CompoundContainerMenu> extends AbstractContainerScreen<T> implements IInternalCompoundUI {
 
     private static final WrappedField<Slot> clickedSlot = WrappedField.create(AbstractContainerScreen.class, "clickedSlot", "field_147005_v");
@@ -64,6 +71,10 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     private UITree tree;
     private Map<Slot, ComposedSlot> slotElements;
 
+    // Window size state - changes will trigger recomposition automatically
+    private final State<WindowSize> windowSizeState = State.of(new WindowSize(0, 0));
+
+    
     public ComposedUIContainer(T container) {
         super(container, Minecraft.getInstance().player.getInventory(), Component.empty());
 
@@ -74,8 +85,13 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         var mc = Minecraft.getInstance();
         this.init(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
 
-        // Bootstrap composition
+        // Bootstrap composition with window size state bound to root
         RootScope scope = new RootScope(this.tree);
+
+        // Update window size state and bind it to root - changes trigger recomposition
+        this.windowSizeState.set(new WindowSize(this.width, this.height));
+        scope.bind(this.windowSizeState);
+
         this.compose(scope);
 
         // After composition, discover all slot elements from the tree
@@ -117,17 +133,53 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         this.activeGuiGraphics = gg;
         this.mouseX = mouseX;
         this.mouseY = mouseY;
+
+        // Update slot states BEFORE layout so recomposition can be triggered
         this.updateSlotStates();
 
-        // Layout
-        Constraints constraints = Constraints.loose(this.width, this.height);
-        this.tree.measureTree(constraints);
-        this.tree.placeTree(Position.ORIGIN);
+        // Update window size state if changed - this will trigger recomposition automatically
+        WindowSize currentSize = new WindowSize(this.width, this.height);
+        if (!currentSize.equals(this.windowSizeState.get())) {
+            this.windowSizeState.set(currentSize);
+        }
 
-        super.render(gg, mouseX, mouseY, partialTicks);
+        // Render background overlay (dark transparent background)
+        this.renderBackground(gg, mouseX, mouseY, partialTicks);
 
-        // Render tree
+        // Render our composed UI tree
+        // This renders the panel background, slots, labels, etc.
         this.tree.renderTree(this.screenContext);
+
+        // Render carried item (the one being dragged by mouse)
+        this.renderFloatingItem(gg, mouseX, mouseY, partialTicks);
+
+        // Render tooltips for hovered slots
+        this.renderTooltip(gg, mouseX, mouseY);
+    }
+
+    /**
+     * Renders the item being carried by the mouse cursor.
+     */
+    private void renderFloatingItem(GuiGraphics gg, int mouseX, int mouseY, float partialTicks) {
+        ItemStack carried = this.getMenu().getCarried();
+        if (!carried.isEmpty()) {
+            // Render the carried item at mouse position
+            // Standard offset is 8 pixels to center the item on the cursor
+            int x = mouseX - 8;
+            int y = mouseY - 8;
+
+            // Use drag count if we're splitting stack
+            int dragCount = draggingItem.get(this).getCount();
+            String countText = null;
+
+            if (dragCount > 0 && isSplittingStack.get(this)) {
+                // Show the split count
+                countText = String.valueOf(dragCount);
+            }
+
+            gg.renderItem(carried, x, y);
+            gg.renderItemDecorations(this.font, carried, x, y, countText);
+        }
     }
 
     @Override

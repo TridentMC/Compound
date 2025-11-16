@@ -18,46 +18,66 @@ package com.tridevmc.compound.ui.compose.layout;
 
 /**
  * Configuration for how an element should be laid out by its parent.
+ *
+ * <p>Properties are grouped by usage context. Not all properties apply to all containers.
+ * See individual property documentation for which containers respect each property.</p>
+ *
+ * <h2>Common Properties (All Elements)</h2>
+ * <ul>
+ *   <li>{@link #fixedSize(int, int)} - Forces a specific size</li>
+ *   <li>{@link #fillMaxWidth()} / {@link #fillMaxHeight()} - Expands to fill available space</li>
+ *   <li>{@link #margin(int)} - Space outside element bounds (handled by parent)</li>
+ *   <li>{@link #minWidth(int)} / {@link #maxWidth(int)} etc. - Size constraints</li>
+ * </ul>
+ *
+ * <h2>Container Properties (Set on Container Element)</h2>
+ * <ul>
+ *   <li>{@link #padding(int)} - Space inside container bounds (Box, Column, Row, Stack, Grid)</li>
+ *   <li>{@link #contentAlignment(Alignment)} - Child alignment in Box, Stack</li>
+ *   <li>{@link #horizontalAlignment(Alignment)} - Child alignment in Column</li>
+ *   <li>{@link #verticalAlignment(Alignment)} - Child alignment in Row</li>
+ *   <li>{@link #spacing(int)} - Gap between children in Column, Row</li>
+ * </ul>
  */
 public class LayoutProperties {
-    // Fixed size
+    // Fixed size - used by LayoutHelper.measureChild() and LayoutHelper.calculateSizeWithProperties()
     private Integer fixedWidth;
     private Integer fixedHeight;
 
-    // Fill max size flags
+    // Fill max size flags - used by LayoutHelper.measureChild() and LayoutHelper.calculateSizeWithProperties()
     private boolean fillMaxWidth;
     private boolean fillMaxHeight;
 
-    // Weight (for flex layouts)
+    // Weight (for flex layouts) - reserved for future weighted layouts
     private Float weight;
 
-    // Min/Max size
+    // Min/Max size - used by LayoutHelper.measureChild()
     private Integer minWidth;
     private Integer minHeight;
     private Integer maxWidth;
     private Integer maxHeight;
 
-    // Padding (space inside the element's bounds)
+    // Padding (space inside the element's bounds) - used by Box, Column, Row, Stack, Grid
     private int paddingLeft;
     private int paddingTop;
     private int paddingRight;
     private int paddingBottom;
 
-    // Margin (space outside the element's bounds)
+    // Margin (space outside the element's bounds) - used by LayoutHelper.measureChild() and placeChild()
     private int marginLeft;
     private int marginTop;
     private int marginRight;
     private int marginBottom;
 
     // Container alignment properties
-    private Alignment contentAlignment;      // For Box, Stack - aligns child within parent
-    private Alignment horizontalAlignment;  // For Column - aligns children horizontally
-    private Alignment verticalAlignment;    // For Row - aligns children vertically
+    private Alignment contentAlignment;      // Used by Box, Stack
+    private Alignment horizontalAlignment;  // Used by Column
+    private Alignment verticalAlignment;    // Used by Row
 
     // Spacing (between children in Row/Column)
     private int spacing;
 
-    // Grid-specific
+    // Grid-specific - reserved for future Grid enhancements
     private Integer gridColumns;
     private Integer gridRows;
 
@@ -68,18 +88,41 @@ public class LayoutProperties {
         return new LayoutProperties();
     }
 
-    // Fixed size
-    public LayoutProperties withFixedWidth(int width) {
+    // ========== Fixed Size Methods ==========
+
+    /**
+     * Sets a fixed width for this element.
+     * Used by: All elements via LayoutHelper.measureChild()
+     *
+     * @param width the fixed width in pixels
+     * @return this for chaining
+     */
+    public LayoutProperties fixedWidth(int width) {
         this.fixedWidth = width;
         return this;
     }
 
-    public LayoutProperties withFixedHeight(int height) {
+    /**
+     * Sets a fixed height for this element.
+     * Used by: All elements via LayoutHelper.measureChild()
+     *
+     * @param height the fixed height in pixels
+     * @return this for chaining
+     */
+    public LayoutProperties fixedHeight(int height) {
         this.fixedHeight = height;
         return this;
     }
 
-    public LayoutProperties withFixedSize(int width, int height) {
+    /**
+     * Sets both fixed width and height for this element.
+     * Used by: All elements via LayoutHelper.measureChild()
+     *
+     * @param width  the fixed width in pixels
+     * @param height the fixed height in pixels
+     * @return this for chaining
+     */
+    public LayoutProperties fixedSize(int width, int height) {
         this.fixedWidth = width;
         this.fixedHeight = height;
         return this;
@@ -93,8 +136,60 @@ public class LayoutProperties {
         return this.fixedHeight;
     }
 
-    // Weight
-    public LayoutProperties withWeight(float weight) {
+    // ========== Fill Max Size Methods ==========
+
+    /**
+     * Makes this element expand to fill maximum available width.
+     * Used by: All elements via LayoutHelper.measureChild() and calculateSizeWithProperties()
+     *
+     * @return this for chaining
+     */
+    public LayoutProperties fillMaxWidth() {
+        this.fillMaxWidth = true;
+        return this;
+    }
+
+    /**
+     * Makes this element expand to fill maximum available height.
+     * Used by: All elements via LayoutHelper.measureChild() and calculateSizeWithProperties()
+     *
+     * @return this for chaining
+     */
+    public LayoutProperties fillMaxHeight() {
+        this.fillMaxHeight = true;
+        return this;
+    }
+
+    /**
+     * Makes this element expand to fill maximum available space in both dimensions.
+     * Used by: All elements via LayoutHelper.measureChild() and calculateSizeWithProperties()
+     *
+     * @return this for chaining
+     */
+    public LayoutProperties fillMax() {
+        this.fillMaxWidth = true;
+        this.fillMaxHeight = true;
+        return this;
+    }
+
+    public boolean isFillMaxWidth() {
+        return this.fillMaxWidth;
+    }
+
+    public boolean isFillMaxHeight() {
+        return this.fillMaxHeight;
+    }
+
+    // ========== Weight Methods ==========
+
+    /**
+     * Sets the weight for weighted layouts (e.g., flex layouts).
+     * Reserved for future use.
+     *
+     * @param weight the weight value
+     * @return this for chaining
+     */
+    public LayoutProperties weight(float weight) {
         this.weight = weight;
         return this;
     }
@@ -103,23 +198,52 @@ public class LayoutProperties {
         return this.weight;
     }
 
-    // Min/Max size
-    public LayoutProperties withMinWidth(int minWidth) {
+    // ========== Min/Max Size Methods ==========
+
+    /**
+     * Sets minimum width constraint.
+     * Used by: All elements via LayoutHelper.measureChild()
+     *
+     * @param minWidth the minimum width in pixels
+     * @return this for chaining
+     */
+    public LayoutProperties minWidth(int minWidth) {
         this.minWidth = minWidth;
         return this;
     }
 
-    public LayoutProperties withMinHeight(int minHeight) {
+    /**
+     * Sets minimum height constraint.
+     * Used by: All elements via LayoutHelper.measureChild()
+     *
+     * @param minHeight the minimum height in pixels
+     * @return this for chaining
+     */
+    public LayoutProperties minHeight(int minHeight) {
         this.minHeight = minHeight;
         return this;
     }
 
-    public LayoutProperties withMaxWidth(int maxWidth) {
+    /**
+     * Sets maximum width constraint.
+     * Used by: All elements via LayoutHelper.measureChild()
+     *
+     * @param maxWidth the maximum width in pixels
+     * @return this for chaining
+     */
+    public LayoutProperties maxWidth(int maxWidth) {
         this.maxWidth = maxWidth;
         return this;
     }
 
-    public LayoutProperties withMaxHeight(int maxHeight) {
+    /**
+     * Sets maximum height constraint.
+     * Used by: All elements via LayoutHelper.measureChild()
+     *
+     * @param maxHeight the maximum height in pixels
+     * @return this for chaining
+     */
+    public LayoutProperties maxHeight(int maxHeight) {
         this.maxHeight = maxHeight;
         return this;
     }
@@ -140,16 +264,42 @@ public class LayoutProperties {
         return this.maxHeight;
     }
 
-    // Padding
-    public LayoutProperties withPadding(int padding) {
-        return this.withPadding(padding, padding, padding, padding);
+    // ========== Padding Methods ==========
+
+    /**
+     * Sets equal padding on all sides.
+     * Used by: Box, Column, Row, Stack, Grid (space inside container bounds)
+     *
+     * @param all padding in pixels for all sides
+     * @return this for chaining
+     */
+    public LayoutProperties padding(int all) {
+        return this.padding(all, all, all, all);
     }
 
-    public LayoutProperties withPadding(int horizontal, int vertical) {
-        return this.withPadding(horizontal, vertical, horizontal, vertical);
+    /**
+     * Sets horizontal and vertical padding.
+     * Used by: Box, Column, Row, Stack, Grid (space inside container bounds)
+     *
+     * @param horizontal left and right padding in pixels
+     * @param vertical   top and bottom padding in pixels
+     * @return this for chaining
+     */
+    public LayoutProperties padding(int horizontal, int vertical) {
+        return this.padding(horizontal, vertical, horizontal, vertical);
     }
 
-    public LayoutProperties withPadding(int left, int top, int right, int bottom) {
+    /**
+     * Sets individual padding for each side.
+     * Used by: Box, Column, Row, Stack, Grid (space inside container bounds)
+     *
+     * @param left   left padding in pixels
+     * @param top    top padding in pixels
+     * @param right  right padding in pixels
+     * @param bottom bottom padding in pixels
+     * @return this for chaining
+     */
+    public LayoutProperties padding(int left, int top, int right, int bottom) {
         this.paddingLeft = left;
         this.paddingTop = top;
         this.paddingRight = right;
@@ -173,16 +323,42 @@ public class LayoutProperties {
         return this.paddingBottom;
     }
 
-    // Margin
-    public LayoutProperties withMargin(int margin) {
-        return this.withMargin(margin, margin, margin, margin);
+    // ========== Margin Methods ==========
+
+    /**
+     * Sets equal margin on all sides.
+     * Used by: All elements via LayoutHelper.measureChild() and placeChild() (space outside bounds)
+     *
+     * @param all margin in pixels for all sides
+     * @return this for chaining
+     */
+    public LayoutProperties margin(int all) {
+        return this.margin(all, all, all, all);
     }
 
-    public LayoutProperties withMargin(int horizontal, int vertical) {
-        return this.withMargin(horizontal, vertical, horizontal, vertical);
+    /**
+     * Sets horizontal and vertical margin.
+     * Used by: All elements via LayoutHelper.measureChild() and placeChild() (space outside bounds)
+     *
+     * @param horizontal left and right margin in pixels
+     * @param vertical   top and bottom margin in pixels
+     * @return this for chaining
+     */
+    public LayoutProperties margin(int horizontal, int vertical) {
+        return this.margin(horizontal, vertical, horizontal, vertical);
     }
 
-    public LayoutProperties withMargin(int left, int top, int right, int bottom) {
+    /**
+     * Sets individual margin for each side.
+     * Used by: All elements via LayoutHelper.measureChild() and placeChild() (space outside bounds)
+     *
+     * @param left   left margin in pixels
+     * @param top    top margin in pixels
+     * @param right  right margin in pixels
+     * @param bottom bottom margin in pixels
+     * @return this for chaining
+     */
+    public LayoutProperties margin(int left, int top, int right, int bottom) {
         this.marginLeft = left;
         this.marginTop = top;
         this.marginRight = right;
@@ -206,7 +382,18 @@ public class LayoutProperties {
         return this.marginBottom;
     }
 
-    // Container alignment methods
+    // ========== Container Alignment Methods ==========
+
+    /**
+     * Sets content alignment for Box and Stack containers.
+     * Used by: Box, Stack (positions child(ren) within container bounds)
+     *
+     * <p><strong>Note:</strong> This property is ignored by Column (use horizontalAlignment)
+     * and Row (use verticalAlignment).</p>
+     *
+     * @param alignment the alignment to apply to children
+     * @return this for chaining
+     */
     public LayoutProperties contentAlignment(Alignment alignment) {
         this.contentAlignment = alignment;
         return this;
@@ -216,6 +403,15 @@ public class LayoutProperties {
         return this.contentAlignment;
     }
 
+    /**
+     * Sets horizontal alignment for Column containers.
+     * Used by: Column (aligns children horizontally within column width)
+     *
+     * <p><strong>Note:</strong> This property is ignored by Box, Stack, Row, and Grid.</p>
+     *
+     * @param alignment the horizontal alignment to apply
+     * @return this for chaining
+     */
     public LayoutProperties horizontalAlignment(Alignment alignment) {
         this.horizontalAlignment = alignment;
         return this;
@@ -225,6 +421,15 @@ public class LayoutProperties {
         return this.horizontalAlignment;
     }
 
+    /**
+     * Sets vertical alignment for Row containers.
+     * Used by: Row (aligns children vertically within row height)
+     *
+     * <p><strong>Note:</strong> This property is ignored by Box, Stack, Column, and Grid.</p>
+     *
+     * @param alignment the vertical alignment to apply
+     * @return this for chaining
+     */
     public LayoutProperties verticalAlignment(Alignment alignment) {
         this.verticalAlignment = alignment;
         return this;
@@ -234,7 +439,18 @@ public class LayoutProperties {
         return this.verticalAlignment;
     }
 
-    // Spacing (for Row/Column)
+    // ========== Spacing Methods ==========
+
+    /**
+     * Sets spacing between children in linear layouts.
+     * Used by: Column (vertical spacing), Row (horizontal spacing)
+     *
+     * <p><strong>Note:</strong> This property is ignored by Box, Stack, and Grid
+     * (Grid uses constructor parameters for spacing).</p>
+     *
+     * @param spacing the spacing in pixels between children
+     * @return this for chaining
+     */
     public LayoutProperties spacing(int spacing) {
         this.spacing = spacing;
         return this;
@@ -244,8 +460,17 @@ public class LayoutProperties {
         return this.spacing;
     }
 
-    // Grid-specific
-    public LayoutProperties withGridSize(int columns, int rows) {
+    // ========== Grid-Specific Methods ==========
+
+    /**
+     * Sets grid dimensions.
+     * Reserved for future Grid enhancements.
+     *
+     * @param columns number of columns
+     * @param rows    number of rows
+     * @return this for chaining
+     */
+    public LayoutProperties gridSize(int columns, int rows) {
         this.gridColumns = columns;
         this.gridRows = rows;
         return this;
@@ -257,67 +482,5 @@ public class LayoutProperties {
 
     public Integer getGridRows() {
         return this.gridRows;
-    }
-
-    // Fill max size (Compose-like API)
-    public LayoutProperties fillMaxWidth() {
-        this.fillMaxWidth = true;
-        return this;
-    }
-
-    public LayoutProperties fillMaxHeight() {
-        this.fillMaxHeight = true;
-        return this;
-    }
-
-    public LayoutProperties fillMax() {
-        this.fillMaxWidth = true;
-        this.fillMaxHeight = true;
-        return this;
-    }
-
-    public boolean isFillMaxWidth() {
-        return this.fillMaxWidth;
-    }
-
-    public boolean isFillMaxHeight() {
-        return this.fillMaxHeight;
-    }
-
-    // Short-form methods (more ergonomic)
-    public LayoutProperties fixedWidth(int width) {
-        return this.withFixedWidth(width);
-    }
-
-    public LayoutProperties fixedHeight(int height) {
-        return this.withFixedHeight(height);
-    }
-
-    public LayoutProperties fixedSize(int width, int height) {
-        return this.withFixedSize(width, height);
-    }
-
-    public LayoutProperties margin(int all) {
-        return this.withMargin(all);
-    }
-
-    public LayoutProperties margin(int horizontal, int vertical) {
-        return this.withMargin(horizontal, vertical);
-    }
-
-    public LayoutProperties margin(int left, int top, int right, int bottom) {
-        return this.withMargin(left, top, right, bottom);
-    }
-
-    public LayoutProperties padding(int all) {
-        return this.withPadding(all);
-    }
-
-    public LayoutProperties padding(int horizontal, int vertical) {
-        return this.withPadding(horizontal, vertical);
-    }
-
-    public LayoutProperties padding(int left, int top, int right, int bottom) {
-        return this.withPadding(left, top, right, bottom);
     }
 }

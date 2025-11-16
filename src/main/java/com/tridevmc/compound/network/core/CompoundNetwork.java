@@ -169,7 +169,7 @@ public class CompoundNetwork {
 
             for (Type acceptedType : acceptedTypes) {
                 try {
-                    this.marshallerIds.put(Class.forName(acceptedType.getClassName()), ids.get(0));
+                    this.marshallerIds.put(Class.forName(acceptedType.getClassName()), ids.getFirst());
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException(String.format(
                             "Failed to find class to marshall with name %s",

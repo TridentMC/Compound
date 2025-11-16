@@ -73,6 +73,15 @@ public record Constraints(int minWidth, int maxWidth, int minHeight, int maxHeig
         return new Size(width, height);
     }
 
+    // Constrain individual dimensions
+    public int constrainWidth(int width) {
+        return Math.max(this.minWidth, Math.min(this.maxWidth, width));
+    }
+
+    public int constrainHeight(int height) {
+        return Math.max(this.minHeight, Math.min(this.maxHeight, height));
+    }
+
     // Create variations
     public Constraints withMaxWidth(int maxWidth) {
         return new Constraints(this.minWidth, maxWidth, this.minHeight, this.maxHeight);

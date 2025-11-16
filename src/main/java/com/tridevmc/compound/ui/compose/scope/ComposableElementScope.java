@@ -54,6 +54,10 @@ public class ComposableElementScope<T extends IComposableElement> extends Elemen
     @Override
     public void fillSlot(SlotKey key, Consumer<ICompositionScope> content) {
         this.slotMap.put(key, new SlotContent(content));
+        // Only re-compose if the element has already been composed (has children)
+        if (!this.parentNode.getChildren().isEmpty()) {
+            this.tree.recomposeNode(this.parentNode);
+        }
     }
 
     @Override
@@ -68,6 +72,7 @@ public class ComposableElementScope<T extends IComposableElement> extends Elemen
         }
     }
 
+    
     @Override
     public <E extends IPrimitiveElement> void e(E element, Consumer<IElementScope<E>> configurator) {
         ITreeNode node = this.tree.createNode(element);
@@ -158,5 +163,10 @@ public class ComposableElementScope<T extends IComposableElement> extends Elemen
     @Override
     public void onMouseMove(Consumer<MouseMoveEvent> handler) {
         this.parentNode.addMouseMoveHandler(handler);
+    }
+
+    @Override
+    public SlotMap getSlotMap() {
+        return this.slotMap;
     }
 }

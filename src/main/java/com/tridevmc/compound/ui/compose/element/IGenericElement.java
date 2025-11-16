@@ -22,6 +22,8 @@ import com.tridevmc.compound.ui.compose.layout.LayoutProperties;
 import com.tridevmc.compound.ui.compose.layout.Size;
 import com.tridevmc.compound.ui.compose.tree.UITree;
 
+import java.util.List;
+
 /**
  * The base interface for all UI elements in the compose system.
  */
@@ -30,19 +32,23 @@ public interface IGenericElement {
     /**
      * Layout Phase 1: Measure (bottom-up).
      * Returns the desired size given the constraints.
+     * Children are provided by the tree - elements don't query for them.
      *
      * @param constraints the constraints for measuring this element
+     * @param children    the child elements (empty for primitives)
      * @return the desired size of this element
      */
-    Size measure(Constraints constraints);
+    Size measure(Constraints constraints, List<IElement> children);
 
     /**
      * Layout Phase 2: Place (top-down).
      * Sets the final bounds for this element.
+     * Children are provided by the tree - elements don't query for them.
      *
-     * @param bounds the final bounds for this element
+     * @param bounds   the final bounds for this element
+     * @param children the child elements (empty for primitives)
      */
-    void place(Bounds bounds);
+    void place(Bounds bounds, List<IElement> children);
 
     /**
      * Gets the tree this element belongs to.

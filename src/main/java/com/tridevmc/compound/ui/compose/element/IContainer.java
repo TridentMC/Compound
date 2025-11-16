@@ -19,9 +19,19 @@ package com.tridevmc.compound.ui.compose.element;
 import com.tridevmc.compound.ui.compose.layout.LayoutProperties;
 
 /**
- * Default interface for containers that use LayoutProperties.
- * Most containers should implement this interface.
+ * Interface for layout containers that manage child elements.
+ * Containers are responsible for measuring and placing their children.
+ *
+ * <p>Built-in containers:</p>
+ * <ul>
+ *   <li>{@link Column} - Vertical layout</li>
+ *   <li>{@link Row} - Horizontal layout</li>
+ *   <li>{@link Stack} - Z-order layering</li>
+ *   <li>{@link Box} - Single child with alignment</li>
+ *   <li>{@link Grid} - Grid layout</li>
+ * </ul>
  */
 public interface IContainer extends IGenericContainer {
-    // All methods inherited from IGenericContainer
+    // Container-specific methods could be added here if needed
+    // Currently inherits getChildren() from IGenericContainer
 }

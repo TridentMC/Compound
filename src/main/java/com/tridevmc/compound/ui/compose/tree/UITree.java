@@ -209,21 +209,39 @@ public class UITree implements StateObserver {
         }
     }
 
+    public void placeTree(Position rootPosition, Constraints rootConstraints) {
+        if (this.root != null && this.rootSize != null) {
+            // Use constraint bounds for placement, not measured size
+            // This allows containers to properly align children within the full constraint area
+            Size constraintSize = new Size(
+                rootConstraints.hasBoundedWidth() ? rootConstraints.maxWidth() : this.rootSize.width(),
+                rootConstraints.hasBoundedHeight() ? rootConstraints.maxHeight() : this.rootSize.height()
+            );
+            Bounds rootBounds = new Bounds(rootPosition, constraintSize);
+            this.placeNode(this.root, rootBounds);
+        }
+    }
+
     /**
      * Recursively measure a node and its children (bottom-up).
+     * Tree provides children to element - element doesn't query tree.
      */
     private Size measureNode(ITreeNode node, Constraints constraints) {
-        // Element can query children via getChildren() if it's a container
-        Size size = node.getElement().measure(constraints);
-        return size;
+        List<IElement> children = node.getChildren().stream()
+                .map(ITreeNode::getElement)
+                .toList();
+        return node.getElement().measure(constraints, children);
     }
 
     /**
      * Recursively place a node and its children (top-down).
+     * Tree provides children to element - element doesn't query tree.
      */
     private void placeNode(ITreeNode node, Bounds bounds) {
-        // Element can query children via getChildren() if it's a container
-        node.getElement().place(bounds);
+        List<IElement> children = node.getChildren().stream()
+                .map(ITreeNode::getElement)
+                .toList();
+        node.getElement().place(bounds, children);
     }
 
     // Event dispatch

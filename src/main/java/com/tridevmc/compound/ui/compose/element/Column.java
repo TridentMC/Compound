@@ -16,80 +16,107 @@
 
 package com.tridevmc.compound.ui.compose.element;
 
-import com.tridevmc.compound.ui.compose.layout.*;
+import com.tridevmc.compound.ui.compose.layout.Alignment;
+import com.tridevmc.compound.ui.compose.layout.Bounds;
+import com.tridevmc.compound.ui.compose.layout.Constraints;
+import com.tridevmc.compound.ui.compose.layout.LayoutHelper;
+import com.tridevmc.compound.ui.compose.layout.LayoutMath;
+import com.tridevmc.compound.ui.compose.layout.LayoutProperties;
+import com.tridevmc.compound.ui.compose.layout.Position;
+import com.tridevmc.compound.ui.compose.layout.Size;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * A container that lays out children vertically in a column.
+ * A container that lays out children vertically from top to bottom.
  * Uses horizontalAlignment and spacing properties from LayoutProperties.
  */
 public class Column extends BaseContainer {
+
+    // Store measured child sizes between measure and place phases
+    private final List<Size> measuredChildSizes = new ArrayList<>();
 
     public Column() {
     }
 
     @Override
-    public Size measure(Constraints constraints) {
-        int maxWidth = 0;
-        int totalHeight = 0;
-        var children = this.getChildren();
-        int spacing = this.getLayoutProperties().getSpacing();
+    public Size measure(Constraints constraints, List<IElement> children) {
+        this.measuredChildSizes.clear();
 
-        for (int i = 0; i < children.size(); i++) {
-            var child = children.get(i);
+        var props = this.getLayoutProperties();
 
-            // Measure child with available height
-            var childConstraints = new Constraints(
-                    constraints.minWidth(),
-                    constraints.maxWidth(),
-                    0,
-                    Math.max(0, constraints.maxHeight() - totalHeight)
-            );
-
-            var childSize = LayoutHelper.measureChild(child, childConstraints);
-            maxWidth = Math.max(maxWidth, childSize.width());
-            totalHeight += childSize.height();
-            if (i < children.size() - 1) {
-                totalHeight += spacing;
-            }
+        if (children.isEmpty()) {
+            int horizontalPadding = props.getPaddingLeft() + props.getPaddingRight();
+            int verticalPadding = props.getPaddingTop() + props.getPaddingBottom();
+            return constraints.constrain(new Size(horizontalPadding, verticalPadding));
         }
 
-        return new Size(
-                Math.min(maxWidth, constraints.maxWidth()),
-                Math.min(totalHeight, constraints.maxHeight())
-        );
+        // Calculate content constraints (excluding padding)
+        var contentConstraints = LayoutMath.calculateContentConstraints(constraints, props);
+
+        // Measure all children
+        int maxWidth = 0;
+        int totalHeight = 0;
+
+        for (var child : children) {
+            var childSize = LayoutHelper.measureChild(child, contentConstraints);
+            this.measuredChildSizes.add(childSize);
+
+            maxWidth = Math.max(maxWidth, childSize.width());
+            totalHeight += childSize.height();
+        }
+
+        // Add spacing between children
+        int totalSpacing = LayoutMath.calculateTotalSpacing(children.size(), props.getSpacing());
+        totalHeight += totalSpacing;
+
+        // Add padding back to total size
+        int horizontalPadding = props.getPaddingLeft() + props.getPaddingRight();
+        int verticalPadding = props.getPaddingTop() + props.getPaddingBottom();
+
+        int totalWidth = maxWidth + horizontalPadding;
+        totalHeight += verticalPadding;
+
+        return constraints.constrain(new Size(totalWidth, totalHeight));
     }
 
     @Override
-    public void place(Bounds bounds) {
+    public void place(Bounds bounds, List<IElement> children) {
         this.setBounds(bounds);
 
-        int y = bounds.y();
-        var children = this.getChildren();
-        int spacing = this.getLayoutProperties().getSpacing();
-        var horizontalAlignment = this.getLayoutProperties().getHorizontalAlignment();
+        var props = this.getLayoutProperties();
+        var horizontalAlignment = props.getHorizontalAlignment();
 
-        for (var child : children) {
-            var childSize = child.getBounds() != null ? child.getBounds().size() : new Size(0, 0);
+        if (this.measuredChildSizes.isEmpty()) {
+            return;
+        }
 
-            // Apply horizontal alignment
-            int x;
+        // Calculate content area (excluding padding)
+        var contentArea = LayoutMath.calculateContentArea(bounds, props);
+
+        // Place children vertically with spacing
+        int currentY = contentArea.y();
+
+        for (int i = 0; i < children.size(); i++) {
+            var child = children.get(i);
+            Size childSize = this.measuredChildSizes.get(i);
+
+            // Apply horizontal alignment within content area
+            Bounds childBounds;
             if (horizontalAlignment != null) {
-                // Use alignment to calculate x offset
-                var alignedPos = horizontalAlignment.align(childSize, bounds.size());
-                x = bounds.x() + alignedPos.x();
+                var alignedPos = LayoutMath.applyAlignment(
+                    new Bounds(contentArea.x(), currentY, contentArea.width(), childSize.height()),
+                    childSize, horizontalAlignment, true
+                );
+                childBounds = new Bounds(alignedPos, childSize);
             } else {
-                // Default to left
-                x = bounds.x();
+                // Default to top-left
+                childBounds = new Bounds(new Position(contentArea.x(), currentY), childSize);
             }
 
-            // Place child at current y position with horizontal alignment
-            var childBounds = new Bounds(
-                    new Position(x, y),
-                    childSize
-            );
-
             LayoutHelper.placeChild(child, childBounds);
-            y += childSize.height() + spacing;
+            currentY += childSize.height() + props.getSpacing();
         }
     }
 }

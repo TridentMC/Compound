@@ -23,6 +23,7 @@ import com.tridevmc.compound.ui.compose.layout.Size;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -41,14 +42,28 @@ public class ElementSprite extends BaseElement implements IPrimitiveElement {
     }
 
     @Override
-    public Size measure(Constraints constraints) {
+    public Size measure(Constraints constraints, List<IElement> children) {
+        System.out.println("=== ElementSprite MEASURE DEBUG ===");
+        System.out.println("Input constraints: " + constraints);
+        var sprite = this.spriteSupplier.get();
+        if (sprite != null) {
+            System.out.println("Sprite: " + sprite.getClass().getSimpleName());
+            System.out.println("Sprite size: " + sprite.getWidthInPixels() + "x" + sprite.getHeightInPixels());
+            System.out.println("Sprite bounds: " + sprite.getMinU() + "," + sprite.getMinV() + " to " + sprite.getMaxU() + "," + sprite.getMaxV());
+        } else {
+            System.out.println("Sprite is null!");
+        }
+
         // Fill available space by default
         // TODO: Could use sprite's natural size if available
-        return new Size(constraints.maxWidth(), constraints.maxHeight());
+        var resultSize = new Size(constraints.maxWidth(), constraints.maxHeight());
+        System.out.println("Result size: " + resultSize.width() + "x" + resultSize.height());
+        System.out.println("=== END ElementSprite MEASURE DEBUG ===");
+        return resultSize;
     }
 
     @Override
-    public void place(Bounds bounds) {
+    public void place(Bounds bounds, List<IElement> children) {
         this.setBounds(bounds);
     }
 

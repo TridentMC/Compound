@@ -18,6 +18,7 @@ package com.tridevmc.compound.ui.compose.element;
 
 import com.tridevmc.compound.ui.compose.layout.Bounds;
 import com.tridevmc.compound.ui.compose.layout.Constraints;
+import com.tridevmc.compound.ui.compose.layout.LayoutHelper;
 import com.tridevmc.compound.ui.compose.layout.Position;
 import com.tridevmc.compound.ui.compose.layout.Size;
 import com.tridevmc.compound.ui.compose.scope.IComposableElementScope;
@@ -26,6 +27,8 @@ import com.tridevmc.compound.ui.compose.slot.SlotKey;
 import com.tridevmc.compound.ui.compose.state.State;
 import com.tridevmc.compound.ui.compose.state.StateImpl;
 import com.tridevmc.compound.ui.screen.IScreenContext;
+
+import java.util.List;
 
 /**
  * A scrollable container that clips content using scissor and offsets children based on scroll position.
@@ -102,29 +105,15 @@ public class ScrollContainer extends BaseElement implements IComposableElement {
     }
 
     @Override
-    public Size measure(Constraints constraints) {
-        var tree = this.getTree();
-        if (tree == null) {
-            return Size.ZERO;
-        }
-        var node = tree.getNodeForElement(this);
-        if (node == null) {
-            return Size.ZERO;
-        }
-        var children = node.getChildren();
+    public Size measure(Constraints constraints, List<IElement> children) {
         if (children.isEmpty()) {
             return Size.ZERO;
         }
 
-        // The scissor wrapper is the first child
-        var scissorNode = children.get(0);
-        if (scissorNode.getChildren().isEmpty()) {
-            return Size.ZERO;
-        }
-
-        // Measure content with unconstrained height to get true size
-        var contentNode = scissorNode.getChildren().get(0);
-        this.contentSize = contentNode.getElement().measure(Constraints.loose(constraints.maxWidth(), Integer.MAX_VALUE));
+        // The scissor wrapper (Stack) is the first child
+        // We need to measure it to get at the content inside
+        var stackSize = LayoutHelper.measureChild(children.getFirst(), Constraints.loose(constraints.maxWidth(), Integer.MAX_VALUE));
+        this.contentSize = stackSize;
 
         // Calculate max scroll based on content vs container height
         int containerHeight = constraints.maxHeight();
@@ -135,25 +124,15 @@ public class ScrollContainer extends BaseElement implements IComposableElement {
     }
 
     @Override
-    public void place(Bounds bounds) {
+    public void place(Bounds bounds, List<IElement> children) {
         this.setBounds(bounds);
 
-        var tree = this.getTree();
-        if (tree == null) {
-            return;
-        }
-        var node = tree.getNodeForElement(this);
-        if (node == null) {
-            return;
-        }
-        var children = node.getChildren();
         if (children.isEmpty()) {
             return;
         }
 
-        // Place the scissor wrapper
-        var scissorNode = children.get(0);
-        scissorNode.getElement().place(bounds);
+        // Place the scissor wrapper (Stack)
+        LayoutHelper.placeChild(children.getFirst(), bounds);
     }
 
     public State<Double> getScrollOffsetState() {
@@ -177,12 +156,12 @@ public class ScrollContainer extends BaseElement implements IComposableElement {
      */
     private static class ElementScissorEnable extends BaseElement implements IPrimitiveElement {
         @Override
-        public Size measure(Constraints constraints) {
+        public Size measure(Constraints constraints, List<IElement> children) {
             return Size.ZERO;
         }
 
         @Override
-        public void place(Bounds bounds) {
+        public void place(Bounds bounds, List<IElement> children) {
             this.setBounds(bounds);
         }
 
@@ -212,12 +191,12 @@ public class ScrollContainer extends BaseElement implements IComposableElement {
      */
     private static class ElementScissorDisable extends BaseElement implements IPrimitiveElement {
         @Override
-        public Size measure(Constraints constraints) {
+        public Size measure(Constraints constraints, List<IElement> children) {
             return Size.ZERO;
         }
 
         @Override
-        public void place(Bounds bounds) {
+        public void place(Bounds bounds, List<IElement> children) {
             this.setBounds(bounds);
         }
 
@@ -238,16 +217,7 @@ public class ScrollContainer extends BaseElement implements IComposableElement {
         }
 
         @Override
-        public Size measure(Constraints constraints) {
-            var tree = this.getTree();
-            if (tree == null) {
-                return Size.ZERO;
-            }
-            var node = tree.getNodeForElement(this);
-            if (node == null) {
-                return Size.ZERO;
-            }
-            var children = node.getChildren();
+        public Size measure(Constraints constraints, List<IElement> children) {
             if (children.isEmpty()) {
                 return Size.ZERO;
             }
@@ -255,25 +225,15 @@ public class ScrollContainer extends BaseElement implements IComposableElement {
             // Measure children with loose height constraint to get full content size
             Size maxSize = Size.ZERO;
             for (var child : children) {
-                Size childSize = child.getElement().measure(Constraints.loose(constraints.maxWidth(), Integer.MAX_VALUE));
+                Size childSize = LayoutHelper.measureChild(child, Constraints.loose(constraints.maxWidth(), Integer.MAX_VALUE));
                 maxSize = new Size(Math.max(maxSize.width(), childSize.width()), Math.max(maxSize.height(), childSize.height()));
             }
             return maxSize;
         }
 
         @Override
-        public void place(Bounds bounds) {
+        public void place(Bounds bounds, List<IElement> children) {
             this.setBounds(bounds);
-
-            var tree = this.getTree();
-            if (tree == null) {
-                return;
-            }
-            var node = tree.getNodeForElement(this);
-            if (node == null) {
-                return;
-            }
-            var children = node.getChildren();
 
             // Place children with scroll offset applied
             int offsetY = (int) -this.scrollOffset.get();
@@ -283,7 +243,7 @@ public class ScrollContainer extends BaseElement implements IComposableElement {
             );
 
             for (var child : children) {
-                child.getElement().place(offsetBounds);
+                LayoutHelper.placeChild(child, offsetBounds);
             }
         }
     }

@@ -19,6 +19,7 @@ package com.tridevmc.compound.ui.compose.element;
 import com.google.common.collect.Lists;
 import com.tridevmc.compound.ui.compose.layout.Bounds;
 import com.tridevmc.compound.ui.compose.layout.Constraints;
+import com.tridevmc.compound.ui.compose.layout.LayoutHelper;
 import com.tridevmc.compound.ui.compose.layout.Size;
 import com.tridevmc.compound.ui.compose.scope.IComposableElementScope;
 import com.tridevmc.compound.ui.compose.scope.ICompositionScope;
@@ -28,7 +29,8 @@ import com.tridevmc.compound.ui.compose.state.StateImpl;
 import com.tridevmc.compound.ui.element.button.IButtonHoverListener;
 import com.tridevmc.compound.ui.element.button.IButtonPressListener;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
-import net.minecraft.client.Minecraft;import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
@@ -143,39 +145,33 @@ public class Button extends BaseElement implements IComposableElement {
     }
 
     @Override
-    public Size measure(Constraints constraints) {
-        // Measure the slot content (only one slot is rendered at a time)
-        var tree = this.getTree();
-        if (tree == null) {
-            return new Size(0, 0);
+    public Size measure(Constraints constraints, List<IElement> children) {
+        // Step 1: Calculate final size using layout system (consistent with other composables)
+        // Use large intrinsic size since Button doesn't have a natural size preference
+        var finalSize = LayoutHelper.calculateSizeWithProperties(
+            Integer.MAX_VALUE, Integer.MAX_VALUE,  // No intrinsic size preference
+            this.getLayoutProperties(),
+            constraints
+        );
+
+        // Step 2: Measure children with constraints matching our decided size
+        if (!children.isEmpty()) {
+            // Give child exact constraints matching our final size
+            var childConstraints = Constraints.fixed(finalSize.width(), finalSize.height());
+            LayoutHelper.measureChild(children.getFirst(), childConstraints);
         }
-        var node = tree.getNodeForElement(this);
-        if (node == null) {
-            return new Size(0, 0);
-        }
-        var children = node.getChildren();
-        if (children.isEmpty()) {
-            return new Size(0, 0);
-        }
-        return children.get(0).getElement().measure(constraints);
+
+        // Step 3: Return our final size to parent
+        return finalSize;
     }
 
     @Override
-    public void place(Bounds bounds) {
+    public void place(Bounds bounds, List<IElement> children) {
         this.setBounds(bounds);
 
         // Place the slot content
-        var tree = this.getTree();
-        if (tree == null) {
-            return;
-        }
-        var node = tree.getNodeForElement(this);
-        if (node == null) {
-            return;
-        }
-        var children = node.getChildren();
         if (!children.isEmpty()) {
-            com.tridevmc.compound.ui.compose.layout.LayoutHelper.placeChild(children.get(0).getElement(), bounds);
+            LayoutHelper.placeChild(children.getFirst(), bounds);
         }
     }
 

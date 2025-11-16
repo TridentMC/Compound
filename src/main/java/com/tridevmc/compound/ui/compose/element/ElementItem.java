@@ -24,6 +24,7 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -48,7 +49,7 @@ public class ElementItem extends BaseElement implements IPrimitiveElement {
     }
 
     @Override
-    public Size measure(Constraints constraints) {
+    public Size measure(Constraints constraints, List<IElement> children) {
         // Items are typically rendered at 16x16
         int size = Math.min(constraints.maxWidth(), constraints.maxHeight());
         size = Math.min(size, 16);
@@ -56,7 +57,7 @@ public class ElementItem extends BaseElement implements IPrimitiveElement {
     }
 
     @Override
-    public void place(Bounds bounds) {
+    public void place(Bounds bounds, List<IElement> children) {
         this.setBounds(bounds);
     }
 

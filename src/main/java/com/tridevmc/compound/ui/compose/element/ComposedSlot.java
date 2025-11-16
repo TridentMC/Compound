@@ -18,6 +18,7 @@ package com.tridevmc.compound.ui.compose.element;
 
 import com.tridevmc.compound.ui.compose.layout.Bounds;
 import com.tridevmc.compound.ui.compose.layout.Constraints;
+import com.tridevmc.compound.ui.compose.layout.LayoutHelper;
 import com.tridevmc.compound.ui.compose.layout.Size;
 import com.tridevmc.compound.ui.compose.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
@@ -29,6 +30,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 
 /**
  * A slot element for the compose UI system.
@@ -69,43 +71,34 @@ public class ComposedSlot extends BaseElement implements IComposableElement {
     }
 
     @Override
-    public Size measure(Constraints constraints) {
-        // Measure the internal stack
-        var tree = this.getTree();
-        if (tree == null) {
-            return new Size(18, 18);
+    public Size measure(Constraints constraints, List<IElement> children) {
+        // Step 1: Calculate final size using common helper
+        // Intrinsic size for Minecraft slots is 18x18 pixels
+        var finalSize = LayoutHelper.calculateSizeWithProperties(
+            18, 18,  // intrinsic width/height
+            this.getLayoutProperties(),
+            constraints
+        );
+
+        // Step 2: Measure internal stack with constraints matching our decided size
+        if (!children.isEmpty()) {
+            // Give internal stack exact constraints matching our final size
+            Constraints childConstraints = Constraints.fixed(finalSize.width(), finalSize.height());
+            LayoutHelper.measureChild(children.getFirst(), childConstraints);
         }
-        var node = tree.getNodeForElement(this);
-        if (node == null) {
-            return new Size(18, 18);
-        }
-        var children = node.getChildren();
-        if (children.isEmpty()) {
-            return new Size(18, 18);
-        }
-        return children.get(0).getElement().measure(constraints);
+
+        // Step 3: Return our final size to parent
+        return finalSize;
     }
 
     @Override
-    public void place(Bounds bounds) {
+    public void place(Bounds bounds, List<IElement> children) {
         this.setBounds(bounds);
 
         // Place the internal stack
-        var tree = this.getTree();
-        if (tree == null) {
-            return;
-        }
-        var node = tree.getNodeForElement(this);
-        if (node == null) {
-            return;
-        }
-        var children = node.getChildren();
         if (!children.isEmpty()) {
-            com.tridevmc.compound.ui.compose.layout.LayoutHelper.placeChild(children.get(0).getElement(), bounds);
+            LayoutHelper.placeChild(children.getFirst(), bounds);
         }
-
-        // Note: Vanilla slot x/y are final and set during slot construction.
-        // The Integer.MIN_VALUE offset must be applied at construction time.
     }
 
     @Override
@@ -119,12 +112,13 @@ public class ComposedSlot extends BaseElement implements IComposableElement {
             // Uses supplier so it updates dynamically without recomposition
             stack.e(new ElementRect(() -> this.drawUnderlay ? 0x80FFFFFF : 0x00FFFFFF));
 
-            // Item layer: the actual item with optional count override
-            // Uses suppliers so displayStack and displayString can update dynamically
+            // Item layer: the actual item with 1px margin so it doesn't touch slot edges
             stack.e(new ElementItem(
                     () -> this.displayStack != null ? this.displayStack : ItemStack.EMPTY,
                     () -> this.displayString
-            ));
+            ), item -> {
+                item.layout().margin(1, 1, 1, 1);  // 1px margin on all sides
+            });
 
             // Top layer: overlay highlight (for hover)
             // Uses supplier so it updates dynamically without recomposition

@@ -16,22 +16,9 @@
 
 package com.tridevmc.compound.ui.compose.element;
 
-import com.tridevmc.compound.ui.compose.layout.Bounds;
-import com.tridevmc.compound.ui.compose.layout.Constraints;
-import com.tridevmc.compound.ui.compose.layout.LayoutProperties;
-import com.tridevmc.compound.ui.compose.layout.Size;
-
 /**
  * Base implementation for container elements.
  * Provides common functionality for elements that can have children.
  */
 public abstract class BaseContainer extends BaseElement implements IContainer {
-
-    // IContainer's default getChildren() implementation is inherited
-
-    @Override
-    public abstract Size measure(Constraints constraints);
-
-    @Override
-    public abstract void place(Bounds bounds);
 }

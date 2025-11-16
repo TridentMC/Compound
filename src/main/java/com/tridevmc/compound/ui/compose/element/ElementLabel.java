@@ -23,6 +23,7 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -57,10 +58,20 @@ public class ElementLabel extends BaseElement implements IPrimitiveElement {
     }
 
     @Override
-    public Size measure(Constraints constraints) {
+    public Size measure(Constraints constraints, List<IElement> children) {
         var font = Minecraft.getInstance().font;
-        int width = font.width(this.text);
-        int height = font.lineHeight;
+        int width;
+        int height;
+
+        if (font != null) {
+            width = font.width(this.text);
+            height = font.lineHeight;
+        } else {
+            // Fallback for testing when Minecraft instance isn't fully initialized
+            // Estimate based on character count and standard line height
+            width = this.text.getString().length() * 6; // Rough estimate of 6 pixels per character
+            height = 9; // Standard Minecraft font line height
+        }
 
         // Constrain to available space
         width = Math.min(width, constraints.maxWidth());
@@ -70,7 +81,7 @@ public class ElementLabel extends BaseElement implements IPrimitiveElement {
     }
 
     @Override
-    public void place(Bounds bounds) {
+    public void place(Bounds bounds, List<IElement> children) {
         this.setBounds(bounds);
     }
 

@@ -21,6 +21,8 @@ import com.tridevmc.compound.ui.compose.layout.Constraints;
 import com.tridevmc.compound.ui.compose.layout.Size;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 
+import java.util.List;
+
 /**
  * A primitive element that takes up space but doesn't render anything.
  * Useful for creating gaps and flexible spacing in layouts.
@@ -55,7 +57,7 @@ public class ElementSpacer extends BaseElement implements IPrimitiveElement {
     }
 
     @Override
-    public Size measure(Constraints constraints) {
+    public Size measure(Constraints constraints, List<IElement> children) {
         if (this.flexible) {
             // Flexible spacer fills available space
             return new Size(constraints.maxWidth(), constraints.maxHeight());
@@ -69,7 +71,7 @@ public class ElementSpacer extends BaseElement implements IPrimitiveElement {
     }
 
     @Override
-    public void place(Bounds bounds) {
+    public void place(Bounds bounds, List<IElement> children) {
         this.setBounds(bounds);
     }
 
