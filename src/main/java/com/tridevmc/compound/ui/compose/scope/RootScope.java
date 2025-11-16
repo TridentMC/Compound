@@ -26,6 +26,7 @@ import com.tridevmc.compound.ui.compose.event.MouseDragEvent;
 import com.tridevmc.compound.ui.compose.event.MouseMoveEvent;
 import com.tridevmc.compound.ui.compose.event.MouseReleaseEvent;
 import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
+import com.tridevmc.compound.ui.compose.slot.SlotKey;
 import com.tridevmc.compound.ui.compose.slot.SlotMap;
 import com.tridevmc.compound.ui.compose.state.State;
 import com.tridevmc.compound.ui.compose.tree.ITreeNode;
@@ -173,5 +174,20 @@ public class RootScope implements ICompositionScope {
         if (this.rootNode != null) {
             this.rootNode.addMouseMoveHandler(handler);
         }
+    }
+
+    @Override
+    public void slot(SlotKey key, Consumer<ICompositionScope> defaultContent) {
+        throw new UnsupportedOperationException("Slots are not supported at the root level");
+    }
+
+    @Override
+    public void slotInto(SlotKey key, Consumer<ICompositionScope> defaultContent, ICompositionScope targetScope) {
+        throw new UnsupportedOperationException("Slots are not supported at the root level");
+    }
+
+    @Override
+    public SlotMap getSlotMap() {
+        throw new UnsupportedOperationException("Slots are not supported at the root level");
     }
 }

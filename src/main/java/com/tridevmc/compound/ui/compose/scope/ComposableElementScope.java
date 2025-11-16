@@ -62,13 +62,18 @@ public class ComposableElementScope<T extends IComposableElement> extends Elemen
 
     @Override
     public void slot(SlotKey key, Consumer<ICompositionScope> defaultContent) {
+        this.slotInto(key, defaultContent, this);
+    }
+
+    @Override
+    public void slotInto(SlotKey key, Consumer<ICompositionScope> defaultContent, ICompositionScope targetScope) {
         SlotContent content = this.slotMap.get(key);
         if (content != null) {
-            // Render user-provided content
-            content.render(this);
+            // Render user-provided content into target scope
+            content.render(targetScope);
         } else if (defaultContent != null) {
-            // Render default content
-            defaultContent.accept(this);
+            // Render default content into target scope
+            defaultContent.accept(targetScope);
         }
     }
 

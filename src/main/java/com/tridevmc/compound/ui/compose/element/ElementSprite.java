@@ -56,16 +56,19 @@ public class ElementSprite extends BaseElement implements IPrimitiveElement {
     @Override
     public void draw(IScreenContext context) {
         if (!this.isVisible()) {
+            System.out.println("ElementSprite: not visible");
             return;
         }
 
         var bounds = this.getBounds();
         if (bounds == null) {
+            System.out.println("ElementSprite: bounds is null");
             return;
         }
 
         IScreenSprite sprite = this.spriteSupplier.get();
         if (sprite == null) {
+            System.out.println("ElementSprite: sprite is null");
             return;
         }
 

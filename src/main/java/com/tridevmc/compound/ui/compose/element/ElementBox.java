@@ -20,13 +20,11 @@ import com.tridevmc.compound.ui.compose.layout.Bounds;
 import com.tridevmc.compound.ui.compose.layout.Constraints;
 import com.tridevmc.compound.ui.compose.layout.LayoutHelper;
 import com.tridevmc.compound.ui.compose.layout.Size;
-import com.tridevmc.compound.ui.compose.scope.IComposableElementScope;
 import com.tridevmc.compound.ui.compose.scope.ICompositionScope;
-import com.tridevmc.compound.ui.compose.slot.SlotContent;
 import com.tridevmc.compound.ui.compose.slot.SlotKey;
+import com.tridevmc.compound.ui.screen.IScreenContext;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.sprite.IScreenSpriteWriter;
-import com.tridevmc.compound.ui.sprite.ScreenSpriteWriterNineSlice;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.List;
@@ -58,12 +56,30 @@ public class ElementBox extends BaseElement implements IComposableElement {
 
     private static IScreenSprite getDefaultSprite() {
         if (DEFAULT_SPRITE == null) {
-            // Wrap the base sprite with a nineslice writer
             var baseSprite = IScreenSprite.ofAssetLocation(
                     ResourceLocation.withDefaultNamespace("textures/gui/container/inventory.png"),
                     256, 256
             );
-            DEFAULT_SPRITE = wrapWithWriter(baseSprite, new ScreenSpriteWriterNineSlice(4, 4, 4, 4));
+            // Custom writer that matches old ElementBox behavior: 4px corners/edges, 1px gray fill
+            DEFAULT_SPRITE = wrapWithWriter(baseSprite, new IScreenSpriteWriter() {
+                @Override
+                public void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height) {
+                    // Corners: top-left, top-right, bottom-left, bottom-right
+                    screen.drawRectUsingSprite(sprite, x, y, 4, 4, 0, 0, 4, 4);
+                    screen.drawRectUsingSprite(sprite, x + width - 4, y, 4, 4, 172, 0, 176, 4);
+                    screen.drawRectUsingSprite(sprite, x, y + height - 4, 4, 4, 0, 162, 4, 166);
+                    screen.drawRectUsingSprite(sprite, x + width - 4, y + height - 4, 4, 4, 172, 162, 176, 166);
+
+                    // Edges: left, right, top, bottom (stretch 1px strips)
+                    screen.drawRectUsingSprite(sprite, x, y + 4, 4, height - 8, 0, 4, 4, 5);
+                    screen.drawRectUsingSprite(sprite, x + width - 4, y + 4, 4, height - 8, 172, 4, 176, 5);
+                    screen.drawRectUsingSprite(sprite, x + 4, y, width - 8, 4, 4, 0, 5, 4);
+                    screen.drawRectUsingSprite(sprite, x + 4, y + height - 4, width - 8, 4, 4, 162, 5, 166);
+
+                    // Middle: stretch single gray pixel at (4,4)
+                    screen.drawRectUsingSprite(sprite, x + 4, y + 4, width - 8, height - 8, 4, 4, 5, 5);
+                }
+            });
         }
         return DEFAULT_SPRITE;
     }
@@ -72,12 +88,10 @@ public class ElementBox extends BaseElement implements IComposableElement {
         return new IScreenSprite() {
             public IScreenSpriteWriter getWriter() { return writer; }
             public ResourceLocation getTextureLocation() { return base.getTextureLocation(); }
-
-            // Use only the inventory panel area: 176x166 pixels starting from 0,0
             public float getMinU() { return 0F; }
             public float getMinV() { return 0F; }
-            public float getMaxU() { return 176F / 256F; }  // UV for the panel edge
-            public float getMaxV() { return 166F / 256F; }  // UV for the panel edge
+            public float getMaxU() { return 176F / 256F; }
+            public float getMaxV() { return 166F / 256F; }
             public float getWidth() { return 176F / 256F; }
             public float getHeight() { return 166F / 256F; }
             public int getWidthInPixels() { return 176; }
@@ -87,26 +101,23 @@ public class ElementBox extends BaseElement implements IComposableElement {
 
     @Override
     public void compose(ICompositionScope scope) {
-        IComposableElementScope<?> elementScope = (IComposableElementScope<?>) scope;
-
-        // Stack the background sprite and content
+        // Create a Stack to layer the background sprite and slot content
         scope.e(new Stack(), stack -> {
-            // Background: use sprite if available, otherwise fallback to colored rectangle
+            // Make the Stack fill the entire ElementBox bounds
+            stack.layout().fillMax();
+
+            // Background: compose sprite if available, otherwise fallback to colored rectangle
             IScreenSprite sprite = this.spriteSupplier.get();
             if (sprite != null) {
                 // Background nineslice sprite (ElementSprite already supports Supplier)
-                // Sprite will fill whatever bounds are set during placement
                 stack.e(new ElementSprite(this.spriteSupplier));
             } else {
                 // Fallback: gray background similar to Minecraft's inventory
-                stack.e(new ElementRect(0xFFC6C6C6));  // Light gray background
+                stack.e(new ElementRect(0xFFC6C6C6));
             }
 
-            // Content slot - render slot content directly in the stack
-            SlotContent slotContent = elementScope.getSlotMap().get(CONTENT_SLOT);
-            if (slotContent != null) {
-                slotContent.render(stack);
-            }
+            // Content slot - render slot content as a child of the Stack
+            scope.slotInto(CONTENT_SLOT, stack);
         });
     }
 
@@ -114,14 +125,6 @@ public class ElementBox extends BaseElement implements IComposableElement {
     public Size measure(Constraints constraints, List<IElement> children) {
         System.out.println("=== ElementBox MEASURE DEBUG ===");
         System.out.println("Input constraints: " + constraints);
-
-        var props = this.getLayoutProperties();
-        if (props != null) {
-            System.out.println("Layout properties:");
-            System.out.println("  Fixed size: " + props.getFixedWidth() + "x" + props.getFixedHeight());
-            System.out.println("  Min size: " + props.getMinWidth() + "x" + props.getMinHeight());
-            System.out.println("  Max size: " + props.getMaxWidth() + "x" + props.getMaxHeight());
-        }
 
         // Step 1: Calculate final size using the layout system helper
         // Use large intrinsic size since we don't have a natural size
@@ -131,25 +134,23 @@ public class ElementBox extends BaseElement implements IComposableElement {
             constraints
         );
 
-        System.out.println("Calculated final size: " + finalSize.width() + "x" + finalSize.height());
-        System.out.println("Children count: " + children.size());
-
         // Step 2: Measure children with constraints matching our decided size
         if (!children.isEmpty()) {
             // Give children exact constraints matching our final size
             var childConstraints = Constraints.fixed(finalSize.width(), finalSize.height());
-            System.out.println("Child constraints: " + childConstraints);
             var childSize = LayoutHelper.measureChild(children.getFirst(), childConstraints);
-            System.out.println("Child measured size: " + childSize.width() + "x" + childSize.height());
         }
 
         // Step 3: Return our final size to parent
-        System.out.println("=== END ElementBox MEASURE DEBUG ===");
         return finalSize;
     }
 
     @Override
     public void place(Bounds bounds, List<IElement> children) {
+        for (int i = 0; i < children.size(); i++) {
+            System.out.println("Child " + i + ": " + children.get(i).getClass().getSimpleName());
+        }
+
         this.setBounds(bounds);
 
         if (!children.isEmpty()) {

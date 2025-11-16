@@ -21,7 +21,6 @@ import com.tridevmc.compound.ui.compose.layout.Constraints;
 import com.tridevmc.compound.ui.compose.layout.LayoutHelper;
 import com.tridevmc.compound.ui.compose.layout.Position;
 import com.tridevmc.compound.ui.compose.layout.Size;
-import com.tridevmc.compound.ui.compose.scope.IComposableElementScope;
 import com.tridevmc.compound.ui.compose.scope.ICompositionScope;
 import com.tridevmc.compound.ui.compose.slot.SlotKey;
 import com.tridevmc.compound.ui.compose.state.State;
@@ -70,8 +69,6 @@ public class ScrollContainer extends BaseElement implements IComposableElement {
 
     @Override
     public void compose(ICompositionScope scope) {
-        IComposableElementScope<?> elementScope = (IComposableElementScope<?>) scope;
-
         // Bind to scroll offset state
         scope.bind(this.scrollOffset);
 
@@ -95,8 +92,8 @@ public class ScrollContainer extends BaseElement implements IComposableElement {
 
             // Offset container for scrolled content
             stack.e(new ElementScrollOffset(this.scrollOffset), offsetContainer -> {
-                // Render content slot
-                elementScope.slot(CONTENT, null);
+                // Render content slot into the offset container
+                scope.slotInto(CONTENT, offsetContainer);
             });
 
             // Disable scissor clipping

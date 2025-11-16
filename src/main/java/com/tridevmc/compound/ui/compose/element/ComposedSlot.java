@@ -22,6 +22,7 @@ import com.tridevmc.compound.ui.compose.layout.LayoutHelper;
 import com.tridevmc.compound.ui.compose.layout.Size;
 import com.tridevmc.compound.ui.compose.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
+import com.tridevmc.compound.ui.sprite.ScreenSpriteWriterNineSlice;
 import net.minecraft.client.Minecraft;
 import net.minecraft.data.AtlasIds;
 import net.minecraft.resources.ResourceLocation;
@@ -40,9 +41,12 @@ import java.util.List;
 public class ComposedSlot extends BaseElement implements IComposableElement {
 
     private static final IScreenSprite SLOT_SPRITE = IScreenSprite.of(
-            Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.GUI)
-                    .getSprite(ResourceLocation.withDefaultNamespace("container/slot"))
+            Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.GUI).getSprite(
+                    ResourceLocation.withDefaultNamespace("container/slot")),
+            new ScreenSpriteWriterNineSlice(
+                    1, 1, 1, 1)
     );
+
 
     private final Slot vanillaSlot;
     private boolean drawOverlay;
@@ -75,9 +79,9 @@ public class ComposedSlot extends BaseElement implements IComposableElement {
         // Step 1: Calculate final size using common helper
         // Intrinsic size for Minecraft slots is 18x18 pixels
         var finalSize = LayoutHelper.calculateSizeWithProperties(
-            18, 18,  // intrinsic width/height
-            this.getLayoutProperties(),
-            constraints
+                18, 18,  // intrinsic width/height
+                this.getLayoutProperties(),
+                constraints
         );
 
         // Step 2: Measure internal stack with constraints matching our decided size

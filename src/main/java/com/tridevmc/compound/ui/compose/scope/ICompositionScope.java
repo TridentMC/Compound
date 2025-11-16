@@ -26,6 +26,8 @@ import com.tridevmc.compound.ui.compose.event.MouseDragEvent;
 import com.tridevmc.compound.ui.compose.event.MouseMoveEvent;
 import com.tridevmc.compound.ui.compose.event.MouseReleaseEvent;
 import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
+import com.tridevmc.compound.ui.compose.slot.SlotKey;
+import com.tridevmc.compound.ui.compose.slot.SlotMap;
 import com.tridevmc.compound.ui.compose.state.State;
 
 import java.util.function.Consumer;
@@ -154,4 +156,50 @@ public interface ICompositionScope {
      * @param handler the mouse move handler
      */
     void onMouseMove(Consumer<MouseMoveEvent> handler);
+
+    /**
+     * Render a slot (used inside compose() method).
+     * This renders user-provided slot content, or falls back to default content if no content was provided.
+     *
+     * @param key            the slot key
+     * @param defaultContent default content if slot not filled
+     */
+    void slot(SlotKey key, Consumer<ICompositionScope> defaultContent);
+
+    /**
+     * Render a slot without default content.
+     *
+     * @param key the slot key
+     */
+    default void slot(SlotKey key) {
+        this.slot(key, null);
+    }
+
+    /**
+     * Render a slot into a specific target scope.
+     * This renders user-provided slot content into the target scope, or falls back to default content.
+     * Useful when the content needs to be rendered as a child of a nested container.
+     *
+     * @param key            the slot key
+     * @param defaultContent default content if slot not filled
+     * @param targetScope    the scope to render the content into
+     */
+    void slotInto(SlotKey key, Consumer<ICompositionScope> defaultContent, ICompositionScope targetScope);
+
+    /**
+     * Render a slot into a specific target scope without default content.
+     *
+     * @param key         the slot key
+     * @param targetScope the scope to render the content into
+     */
+    default void slotInto(SlotKey key, ICompositionScope targetScope) {
+        this.slotInto(key, null, targetScope);
+    }
+
+    /**
+     * Get the slot map for this composition scope.
+     *
+     * @return the slot map
+     */
+    SlotMap getSlotMap();
 }

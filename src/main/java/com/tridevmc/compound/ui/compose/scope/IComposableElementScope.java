@@ -17,9 +17,7 @@
 package com.tridevmc.compound.ui.compose.scope;
 
 import com.tridevmc.compound.ui.compose.element.IComposableElement;
-import com.tridevmc.compound.ui.compose.slot.SlotContent;
 import com.tridevmc.compound.ui.compose.slot.SlotKey;
-import com.tridevmc.compound.ui.compose.slot.SlotMap;
 
 import java.util.function.Consumer;
 
@@ -32,33 +30,10 @@ public interface IComposableElementScope<T extends IComposableElement> extends I
 
     /**
      * Fill a slot with custom content.
+     * This stores the content to be rendered by the composable element during its internal composition.
      *
      * @param key     the slot key
      * @param content the content to render in the slot
      */
     void fillSlot(SlotKey key, Consumer<ICompositionScope> content);
-
-    /**
-     * Render a slot (used inside compose() method).
-     *
-     * @param key            the slot key
-     * @param defaultContent default content if slot not filled
-     */
-    void slot(SlotKey key, Consumer<ICompositionScope> defaultContent);
-
-    /**
-     * Render a slot without default content.
-     *
-     * @param key the slot key
-     */
-    default void slot(SlotKey key) {
-        this.slot(key, null);
-    }
-
-    /**
-     * Get the slot map for this element.
-     *
-     * @return the slot map
-     */
-    SlotMap getSlotMap();
 }

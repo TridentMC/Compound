@@ -21,7 +21,6 @@ import com.tridevmc.compound.ui.compose.layout.Bounds;
 import com.tridevmc.compound.ui.compose.layout.Constraints;
 import com.tridevmc.compound.ui.compose.layout.LayoutHelper;
 import com.tridevmc.compound.ui.compose.layout.Size;
-import com.tridevmc.compound.ui.compose.scope.IComposableElementScope;
 import com.tridevmc.compound.ui.compose.scope.ICompositionScope;
 import com.tridevmc.compound.ui.compose.slot.SlotKey;
 import com.tridevmc.compound.ui.compose.state.State;
@@ -91,9 +90,6 @@ public class Button extends BaseElement implements IComposableElement {
 
     @Override
     public void compose(ICompositionScope scope) {
-        // Cast to IComposableElementScope for slot access
-        IComposableElementScope<?> elementScope = (IComposableElementScope<?>) scope;
-
         // Bind to state changes to trigger recomposition
         scope.bind(this.enabled);
         scope.bind(this.hovered);
@@ -128,17 +124,17 @@ public class Button extends BaseElement implements IComposableElement {
         // Render the appropriate slot based on current state
         if (!this.enabled.get()) {
             // Disabled state
-            elementScope.slot(DISABLED_SLOT, content -> {
+            scope.slot(DISABLED_SLOT, content -> {
                 content.e(new ElementSprite(DEFAULT_DISABLED_SPRITE));
             });
         } else if (this.hovered.get()) {
             // Highlighted/hover state
-            elementScope.slot(HIGHLIGHTED_SLOT, content -> {
+            scope.slot(HIGHLIGHTED_SLOT, content -> {
                 content.e(new ElementSprite(DEFAULT_HIGHLIGHTED_SPRITE));
             });
         } else {
             // Normal/enabled state
-            elementScope.slot(ENABLED_SLOT, content -> {
+            scope.slot(ENABLED_SLOT, content -> {
                 content.e(new ElementSprite(DEFAULT_ENABLED_SPRITE));
             });
         }
