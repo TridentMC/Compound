@@ -43,6 +43,7 @@ public class UITree implements StateObserver {
     private final Map<IElement, ITreeNode> elementToNode = new HashMap<>();
     private final Set<State<?>> observedStates = new HashSet<>();
     private Size rootSize;
+    private Size lastWindowSize = new Size(-1, -1);
 
     // Root node management
     public void setRoot(ITreeNode root) {
@@ -139,6 +140,7 @@ public class UITree implements StateObserver {
         Runnable compositionFn = node.getCompositionFunction();
         if (compositionFn != null) {
             compositionFn.run();
+            this.requestRemeasurement(node);
         }
     }
 
@@ -230,7 +232,12 @@ public class UITree implements StateObserver {
         List<IElement> children = node.getChildren().stream()
                 .map(ITreeNode::getElement)
                 .toList();
-        return node.getElement().measure(constraints, children);
+        Size size = node.getElement().measure(constraints, children);
+        System.out.println("[MEASURE] " + node.getElement().getClass().getSimpleName() +
+            " -> " + size.width() + "x" + size.height() + " (constraints: " +
+            constraints.minWidth() + ".." + constraints.maxWidth() + " x " +
+            constraints.minHeight() + ".." + constraints.maxHeight() + ")");
+        return size;
     }
 
     /**
@@ -241,7 +248,39 @@ public class UITree implements StateObserver {
         List<IElement> children = node.getChildren().stream()
                 .map(ITreeNode::getElement)
                 .toList();
+        System.out.println("[PLACE] " + node.getElement().getClass().getSimpleName() +
+            " -> bounds: " + bounds.x() + "," + bounds.y() + " " +
+            bounds.width() + "x" + bounds.height());
         node.getElement().place(bounds, children);
+    }
+
+    /**
+     * Trigger immediate measurement and placement for changed subtree.
+     * Walks up parent chain to remeasure affected layout hierarchy.
+     */
+    private void requestRemeasurement(ITreeNode changedNode) {
+        System.out.println("[REMEASURE] Automatic remeasurement triggered for: " +
+            changedNode.getElement().getClass().getSimpleName());
+
+        if (this.root == null || this.rootSize == null) {
+            System.out.println("[REMEASURE] Skipped - not initialized");
+            return; // Skip if not fully initialized
+        }
+
+        // Find highest parent that might be affected by layout changes
+        ITreeNode target = changedNode.getParent();
+        while (target != null && target.getParent() != null) {
+            target = target.getParent();
+        }
+
+        // Use existing measurement system for affected subtree
+        Constraints constraints = Constraints.loose(this.rootSize.width(), this.rootSize.height());
+        ITreeNode measureTarget = target != null ? target : changedNode;
+
+        // Measure and place using existing infrastructure
+        this.measureNode(measureTarget, constraints);
+        Bounds bounds = new Bounds(Position.ORIGIN, this.rootSize);
+        this.placeNode(measureTarget, bounds);
     }
 
     // Event dispatch
@@ -465,6 +504,31 @@ public class UITree implements StateObserver {
     public void unbindNodeFromState(ITreeNode node, State<?> state) {
         node.unbindState(state);
         this.unregisterStateIfUnused(state);
+    }
+
+    /**
+     * Handle layout and rendering with window dimensions.
+     * UITree tracks when window size changes and triggers measurement only when needed.
+     */
+    public void layoutAndRender(int width, int height, IScreenContext context) {
+        if (this.root == null) {
+            return;
+        }
+
+        var sizeChanged = this.lastWindowSize.width() != width || this.lastWindowSize.height() != height;
+
+        if (sizeChanged) {
+            System.out.println("[LAYOUT] Window: " + width + "x" + height + " -> measuring..." +
+                    " (was " + this.lastWindowSize.width() + "x" + this.lastWindowSize.height() + ")");
+            this.lastWindowSize = new Size(width, height);
+            Constraints constraints = Constraints.loose(width, height);
+            this.measureTree(constraints);
+            this.placeTree(Position.ORIGIN, constraints);
+            System.out.println("[LAYOUT] Completed");
+        }
+
+        // Always render
+        this.renderTree(context);
     }
 
     // Render helper

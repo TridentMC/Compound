@@ -24,10 +24,7 @@ import com.tridevmc.compound.ui.compose.element.ComposedSlot;
 import com.tridevmc.compound.ui.compose.event.KeyEvent;
 import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
 import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
-import com.tridevmc.compound.ui.compose.layout.Constraints;
-import com.tridevmc.compound.ui.compose.layout.Position;
 import com.tridevmc.compound.ui.compose.scope.RootScope;
-import com.tridevmc.compound.ui.compose.state.State;
 import com.tridevmc.compound.ui.compose.tree.UITree;
 import com.tridevmc.compound.ui.container.CompoundContainerMenu;
 import com.tridevmc.compound.ui.screen.CompoundScreenContext;
@@ -49,10 +46,6 @@ import org.joml.Matrix3x2fStack;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Simple record to hold window dimensions for state tracking.
- */
-record WindowSize(int width, int height) {}
 
 
 public abstract class ComposedUIContainer<T extends CompoundContainerMenu> extends AbstractContainerScreen<T> implements IInternalCompoundUI {
@@ -71,9 +64,6 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     private UITree tree;
     private Map<Slot, ComposedSlot> slotElements;
 
-    // Window size state - changes will trigger recomposition automatically
-    private final State<WindowSize> windowSizeState = State.of(new WindowSize(0, 0));
-
     
     public ComposedUIContainer(T container) {
         super(container, Minecraft.getInstance().player.getInventory(), Component.empty());
@@ -85,13 +75,8 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         var mc = Minecraft.getInstance();
         this.init(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
 
-        // Bootstrap composition with window size state bound to root
+        // Bootstrap composition
         RootScope scope = new RootScope(this.tree);
-
-        // Update window size state and bind it to root - changes trigger recomposition
-        this.windowSizeState.set(new WindowSize(this.width, this.height));
-        scope.bind(this.windowSizeState);
-
         this.compose(scope);
 
         // After composition, discover all slot elements from the tree
@@ -137,18 +122,11 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         // Update slot states BEFORE layout so recomposition can be triggered
         this.updateSlotStates();
 
-        // Update window size state if changed - this will trigger recomposition automatically
-        WindowSize currentSize = new WindowSize(this.width, this.height);
-        if (!currentSize.equals(this.windowSizeState.get())) {
-            this.windowSizeState.set(currentSize);
-        }
-
         // Render background overlay (dark transparent background)
         this.renderBackground(gg, mouseX, mouseY, partialTicks);
 
-        // Render our composed UI tree
-        // This renders the panel background, slots, labels, etc.
-        this.tree.renderTree(this.screenContext);
+        // Layout and render using the new approach - UITree handles window size changes
+        this.tree.layoutAndRender(this.width, this.height, this.screenContext);
 
         // Render carried item (the one being dragged by mouse)
         this.renderFloatingItem(gg, mouseX, mouseY, partialTicks);
