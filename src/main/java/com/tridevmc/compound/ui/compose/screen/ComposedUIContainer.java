@@ -21,7 +21,7 @@ import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
 import com.tridevmc.compound.ui.compose.element.ComposedSlot;
-import com.tridevmc.compound.ui.compose.event.KeyEvent;
+import com.tridevmc.compound.ui.compose.event.KeyInputEvent;
 import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
 import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.compose.scope.RootScope;
@@ -35,6 +35,7 @@ import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -44,8 +45,6 @@ import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix3x2fStack;
 
 import java.util.Map;
-import java.util.Optional;
-
 
 
 public abstract class ComposedUIContainer<T extends CompoundContainerMenu> extends AbstractContainerScreen<T> implements IInternalCompoundUI {
@@ -64,7 +63,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     private UITree tree;
     private Map<Slot, ComposedSlot> slotElements;
 
-    
+
     public ComposedUIContainer(T container) {
         super(container, Minecraft.getInstance().player.getInventory(), Component.empty());
 
@@ -75,11 +74,8 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         var mc = Minecraft.getInstance();
         this.init(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
 
-        // Bootstrap composition
         RootScope scope = new RootScope(this.tree);
         this.compose(scope);
-
-        // After composition, discover all slot elements from the tree
         this.discoverSlotElements();
     }
 
@@ -104,13 +100,11 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     @Override
     protected void renderBg(GuiGraphics gg, float partialTicks, int mouseX, int mouseY) {
         this.activeGuiGraphics = gg;
-        // Background rendering handled by tree
     }
 
     @Override
     protected void renderLabels(GuiGraphics gg, int mouseX, int mouseY) {
         this.activeGuiGraphics = gg;
-        // Label rendering handled by tree
     }
 
     @Override
@@ -119,45 +113,13 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         this.mouseX = mouseX;
         this.mouseY = mouseY;
 
-        // Update slot states BEFORE layout so recomposition can be triggered
-        this.updateSlotStates();
-
-        // Render background overlay (dark transparent background)
-        this.renderBackground(gg, mouseX, mouseY, partialTicks);
-
-        // Layout and render using the new approach - UITree handles window size changes
-        this.tree.layoutAndRender(this.width, this.height, this.screenContext);
-
-        // Render carried item (the one being dragged by mouse)
-        this.renderFloatingItem(gg, mouseX, mouseY, partialTicks);
-
-        // Render tooltips for hovered slots
-        this.renderTooltip(gg, mouseX, mouseY);
-    }
-
-    /**
-     * Renders the item being carried by the mouse cursor.
-     */
-    private void renderFloatingItem(GuiGraphics gg, int mouseX, int mouseY, float partialTicks) {
-        ItemStack carried = this.getMenu().getCarried();
-        if (!carried.isEmpty()) {
-            // Render the carried item at mouse position
-            // Standard offset is 8 pixels to center the item on the cursor
-            int x = mouseX - 8;
-            int y = mouseY - 8;
-
-            // Use drag count if we're splitting stack
-            int dragCount = draggingItem.get(this).getCount();
-            String countText = null;
-
-            if (dragCount > 0 && isSplittingStack.get(this)) {
-                // Show the split count
-                countText = String.valueOf(dragCount);
-            }
-
-            gg.renderItem(carried, x, y);
-            gg.renderItemDecorations(this.font, carried, x, y, countText);
+        if (this.slotElements.isEmpty() && this.tree.hasRoot()) {
+            this.discoverSlotElements();
         }
+
+        this.tree.layoutAndRender(this.width, this.height, this.screenContext);
+        this.updateSlotStates();
+        super.render(gg, mouseX, mouseY, partialTicks);
     }
 
     @Override
@@ -172,11 +134,13 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
      * For internal use only.
      */
     private void updateSlotStates() {
-        // Load some common variables using our wrapped fields.
         var clickSlot = clickedSlot.get(this);
         var dragItem = draggingItem.get(this);
         var quickCraftType = quickCraftingType.get(this);
         var splittingStack = isSplittingStack.get(this);
+
+        Slot newHoveredSlot = null;
+
         for (int i1 = 0; i1 < this.getMenu().slots.size(); ++i1) {
             var slot = this.getMenu().slots.get(i1);
             var slotElement = this.slotElements.get(slot);
@@ -207,7 +171,6 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
             }
             slotElement.setDisplayStack(displayStack);
 
-            // Check if mouse is over this slot
             boolean isHovered = false;
             if (slot.isActive()) {
                 var bounds = slotElement.getBounds();
@@ -215,18 +178,21 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
                     double mouseX = this.screenContext.getMouseX();
                     double mouseY = this.screenContext.getMouseY();
                     isHovered = mouseX >= bounds.x() && mouseX < bounds.right() &&
-                               mouseY >= bounds.y() && mouseY < bounds.bottom();
+                            mouseY >= bounds.y() && mouseY < bounds.bottom();
+                    if (isHovered) {
+                        newHoveredSlot = slot;
+                    }
                 }
             }
 
-            // Vanilla renders both underlay and overlay under the same condition: hoveredSlot != null && slot.isHighlightable()
             slotElement.setDrawOverlay(isHovered);
             if (!this.isQuickCrafting || !this.quickCraftSlots.contains(slot)) {
                 slotElement.setDrawUnderlay(isHovered);
             }
         }
-    }
 
+        this.hoveredSlot = newHoveredSlot;
+    }
 
     @Override
     protected boolean isHovering(int x, int y, int width, int height, double mouseX, double mouseY) {
@@ -238,11 +204,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         return matchingSlot.map(slot -> {
             var composedSlot = this.slotElements.get(slot);
             var bounds = composedSlot.getBounds();
-            if (bounds == null) {
-                return false;
-            }
-            return mouseX >= bounds.x() && mouseX < bounds.right() &&
-                   mouseY >= bounds.y() && mouseY < bounds.bottom();
+            return bounds.contains((int) mouseX, (int) mouseY);
         }).orElse(super.isHovering(x, y, width, height, mouseX, mouseY));
     }
 
@@ -292,31 +254,29 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
 
     @Override
     public EnumUILayer getCurrentLayer() {
-        // Compose system renders in a single pass, return foreground as default
         return EnumUILayer.FOREGROUND;
     }
 
     @Override
-    public boolean keyPressed(@NotNull net.minecraft.client.input.KeyEvent event) {
-        KeyEvent keyEvent = new KeyEvent(
+    public boolean keyPressed(@NotNull KeyEvent event) {
+        KeyInputEvent keyEvent = new KeyInputEvent(
                 event.key(),
-                '\0', // Key events don't always correspond to characters
-                (event.modifiers() & 1) != 0,  // shift
-                (event.modifiers() & 2) != 0,  // control
-                (event.modifiers() & 4) != 0   // alt
+                (char) event.scancode(),
+                (event.modifiers() & 1) != 0,
+                (event.modifiers() & 2) != 0,
+                (event.modifiers() & 4) != 0
         );
         this.tree.dispatchKeyPress(keyEvent);
         return keyEvent.isConsumed() || super.keyPressed(event);
     }
 
     @Override
-    public boolean keyReleased(@NotNull net.minecraft.client.input.KeyEvent event) {
-        KeyEvent keyEvent = new KeyEvent(
-                event.key(),
-                '\0', // Key events don't always correspond to characters
-                (event.modifiers() & 1) != 0,  // shift
-                (event.modifiers() & 2) != 0,  // control
-                (event.modifiers() & 4) != 0   // alt
+    public boolean keyReleased(@NotNull KeyEvent event) {
+        KeyInputEvent keyEvent = new KeyInputEvent(
+                event.key(), (char) event.scancode(),
+                (event.modifiers() & 1) != 0,
+                (event.modifiers() & 2) != 0,
+                (event.modifiers() & 4) != 0
         );
         this.tree.dispatchKeyRelease(keyEvent);
         return keyEvent.isConsumed() || super.keyReleased(event);
@@ -324,21 +284,22 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
 
     @Override
     public boolean charTyped(@NotNull CharacterEvent event) {
-        // Character events aren't currently supported in compose system
         return super.charTyped(event);
     }
 
     @Override
     public boolean mouseDragged(@NotNull MouseButtonEvent event, double pX, double pY) {
-        // Mouse drag events aren't currently supported in compose system
         return super.mouseDragged(event, pX, pY);
     }
 
     @Override
     public boolean mouseClicked(@NotNull MouseButtonEvent event, boolean isDoubleClick) {
+        boolean shiftDown = this.minecraft != null && this.minecraft.hasShiftDown();
+        boolean ctrlDown = this.minecraft != null && this.minecraft.hasControlDown();
+        boolean altDown = this.minecraft != null && this.minecraft.hasAltDown();
         MouseClickEvent clickEvent = new MouseClickEvent(
                 (int) event.x(), (int) event.y(), event.button(),
-                false, false, false // TODO: get actual modifier states
+                shiftDown, ctrlDown, altDown
         );
         this.tree.dispatchClick((int) event.x(), (int) event.y(), clickEvent);
         return clickEvent.isConsumed() || super.mouseClicked(event, isDoubleClick);
@@ -346,7 +307,6 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
 
     @Override
     public boolean mouseReleased(@NotNull MouseButtonEvent event) {
-        // Mouse release events aren't currently supported in compose system
         return super.mouseReleased(event);
     }
 

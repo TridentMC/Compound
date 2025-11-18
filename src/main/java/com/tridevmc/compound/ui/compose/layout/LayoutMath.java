@@ -62,45 +62,6 @@ public final class LayoutMath {
     }
 
     /**
-     * Aggregates sizes for linear layout (Column/Row) with spacing.
-     *
-     * @param sizes   the list of child sizes
-     * @param spacing the spacing between elements
-     * @param isStack if true, uses max size; if false, accumulates size
-     * @return the aggregated size
-     */
-    public static Size aggregateLinearSizes(java.util.List<Size> sizes, int spacing, boolean isStack) {
-        if (sizes.isEmpty()) {
-            return new Size(0, 0);
-        }
-
-        if (isStack) {
-            // Stack uses the maximum size in each dimension
-            int maxWidth = 0;
-            int maxHeight = 0;
-            for (Size size : sizes) {
-                maxWidth = Math.max(maxWidth, size.width());
-                maxHeight = Math.max(maxHeight, size.height());
-            }
-            return new Size(maxWidth, maxHeight);
-        } else {
-            // Linear layout accumulates size along one axis
-            int totalWidth = 0;
-            int totalHeight = 0;
-            int maxCrossSize = 0;
-
-            for (Size size : sizes) {
-                totalWidth += size.width();
-                totalHeight += size.height();
-                // This assumes horizontal layout - for vertical layout, swap dimensions
-                maxCrossSize = Math.max(maxCrossSize, size.height());
-            }
-
-            return new Size(totalWidth, maxCrossSize);
-        }
-    }
-
-    /**
      * Calculates total spacing for a linear layout.
      *
      * @param childCount the number of children
@@ -122,7 +83,6 @@ public final class LayoutMath {
      */
     public static Position applyAlignment(Bounds contentArea, Size childSize, Alignment alignment, boolean isHorizontal) {
         if (alignment == null) {
-            // Default to top-left
             return contentArea.position();
         }
 
@@ -133,45 +93,6 @@ public final class LayoutMath {
             return new Position(contentArea.x() + alignedPos.x(), contentArea.y());
         } else {
             return new Position(contentArea.x(), contentArea.y() + alignedPos.y());
-        }
-    }
-
-    /**
-     * Calculates constraints for a child in a linear layout, accounting for remaining space.
-     *
-     * @param availableConstraints the available constraints
-     * @param usedSpace           the space already used
-     * @param remainingChildren   the number of children still to be placed
-     * @param spacing            the spacing between elements
-     * @param isHorizontal       if true, layout is horizontal; if false, vertical
-     * @return the constraints for the child
-     */
-    public static Constraints calculateLinearChildConstraints(
-            Constraints availableConstraints,
-            int usedSpace,
-            int remainingChildren,
-            int spacing,
-            boolean isHorizontal) {
-
-        int remainingSpacing = calculateTotalSpacing(remainingChildren, spacing);
-        int availableSpace;
-
-        if (isHorizontal) {
-            availableSpace = Math.max(0, availableConstraints.maxWidth() - usedSpace - remainingSpacing);
-            return new Constraints(
-                    0,
-                    availableSpace,
-                    availableConstraints.minHeight(),
-                    availableConstraints.maxHeight()
-            );
-        } else {
-            availableSpace = Math.max(0, availableConstraints.maxHeight() - usedSpace - remainingSpacing);
-            return new Constraints(
-                    availableConstraints.minWidth(),
-                    availableConstraints.maxWidth(),
-                    0,
-                    availableSpace
-            );
         }
     }
 }

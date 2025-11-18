@@ -19,7 +19,7 @@ package com.tridevmc.compound.ui.compose.event;
 /**
  * Event for keyboard input.
  */
-public record KeyEvent(int keyCode, char character, boolean shiftDown, boolean ctrlDown, boolean altDown) {
+public record KeyInputEvent(int keyCode, char character, boolean shiftDown, boolean ctrlDown, boolean altDown) {
     private static boolean consumed;
 
     public void consume() {

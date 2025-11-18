@@ -234,13 +234,17 @@ public class ScrollContainer extends BaseElement implements IComposableElement {
 
             // Place children with scroll offset applied
             int offsetY = (int) -this.scrollOffset.get();
-            Bounds offsetBounds = new Bounds(
-                    new Position(bounds.x(), bounds.y() + offsetY),
-                    bounds.size()
-            );
 
             for (var child : children) {
-                LayoutHelper.placeChild(child, offsetBounds);
+                var childSize = LayoutHelper.getMeasuredSize(child);
+                if (childSize == null) {
+                    continue;
+                }
+                var childBounds = new Bounds(
+                        new Position(bounds.x(), bounds.y() + offsetY),
+                        childSize
+                );
+                LayoutHelper.placeChild(child, childBounds);
             }
         }
     }

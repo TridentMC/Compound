@@ -82,13 +82,24 @@ public class LayoutHelper {
                 finalHeight = Math.max(minHeight, Math.min(maxHeight, props.getFixedHeight()));
             } else {
                 // No fixed size - check fill max flags, respecting min/max
-                finalWidth = props.isFillMaxWidth() ? maxWidth : Math.max(minWidth, Math.min(maxWidth, constraints.constrainWidth(intrinsicHeight)));
+                finalWidth = props.isFillMaxWidth() ? maxWidth : Math.max(minWidth, Math.min(maxWidth, constraints.constrainWidth(intrinsicWidth)));
                 finalHeight = props.isFillMaxHeight() ? maxHeight : Math.max(minHeight, Math.min(maxHeight, constraints.constrainHeight(intrinsicHeight)));
             }
         } else {
-            // No properties - use intrinsic size constrained to parent
-            finalWidth = constraints.constrainWidth(intrinsicWidth);
-            finalHeight = constraints.constrainHeight(intrinsicHeight);
+            // No properties - use intrinsic size but respect hard constraints
+            // Intrinsic size should be preserved unless parent has explicit constraints
+            finalWidth = intrinsicWidth;
+            finalHeight = intrinsicHeight;
+
+            // Only constrain if parent has explicit bounds (not infinite)
+            if (constraints.hasBoundedWidth()) {
+                finalWidth = Math.min(intrinsicWidth, constraints.maxWidth());
+                finalWidth = Math.max(finalWidth, constraints.minWidth());
+            }
+            if (constraints.hasBoundedHeight()) {
+                finalHeight = Math.min(intrinsicHeight, constraints.maxHeight());
+                finalHeight = Math.max(finalHeight, constraints.minHeight());
+            }
         }
 
         return new Size(finalWidth, finalHeight);
@@ -98,6 +109,7 @@ public class LayoutHelper {
      * Measures a child element with its layout properties applied.
      * Handles margin, fixed size, and min/max constraints.
      * Automatically gets the child's children from the tree.
+     * Stores the measured size on the child's tree node for retrieval during placement.
      *
      * @param child       the child element to measure
      * @param constraints the parent's constraints
@@ -108,7 +120,9 @@ public class LayoutHelper {
         var grandchildren = getChildrenFromTree(child);
 
         if (props == null) {
-            return child.measure(constraints, grandchildren);
+            var size = child.measure(constraints, grandchildren);
+            storeMeasuredSize(child, size);
+            return size;
         }
 
         // Account for margin in available space
@@ -172,16 +186,46 @@ public class LayoutHelper {
             childSize = new Size(childSize.width(), contentMaxHeight);
         }
 
-        // Return total size including margin
-        return new Size(
+        // Total size includes margin - this is what gets stored and returned
+        var totalSize = new Size(
                 childSize.width() + marginHorizontal,
                 childSize.height() + marginVertical
         );
+        storeMeasuredSize(child, totalSize);
+        return totalSize;
+    }
+
+    /**
+     * Stores the measured size on the child's tree node for retrieval during placement.
+     */
+    private static void storeMeasuredSize(IElement child, Size size) {
+        var tree = child.getTree();
+        if (tree != null) {
+            var node = tree.getNodeForElement(child);
+            if (node != null) {
+                node.setMeasuredSize(size);
+            }
+        }
+    }
+
+    /**
+     * Retrieves the measured size from the child's tree node.
+     * Returns null if not available.
+     */
+    public static Size getMeasuredSize(IElement child) {
+        var tree = child.getTree();
+        if (tree != null) {
+            var node = tree.getNodeForElement(child);
+            if (node != null) {
+                return node.getMeasuredSize();
+            }
+        }
+        return null;
     }
 
     /**
      * Places a child element with its layout properties applied.
-     * Handles margin and alignment.
+     * Handles margin by offsetting the placement position.
      * Automatically gets the child's children from the tree.
      *
      * @param child          the child element to place
@@ -196,48 +240,12 @@ public class LayoutHelper {
             return;
         }
 
-        // Calculate margin values
-        int marginLeft = props.getMarginLeft();
-        int marginTop = props.getMarginTop();
-        int marginRight = props.getMarginRight();
-        int marginBottom = props.getMarginBottom();
+        // Offset by margin to get content bounds
+        int contentX = allocatedBounds.x() + props.getMarginLeft();
+        int contentY = allocatedBounds.y() + props.getMarginTop();
+        int contentWidth = allocatedBounds.width() - props.getMarginLeft() - props.getMarginRight();
+        int contentHeight = allocatedBounds.height() - props.getMarginTop() - props.getMarginBottom();
 
-        // Calculate content area (total bounds minus margins)
-        int contentX = allocatedBounds.x() + marginLeft;
-        int contentY = allocatedBounds.y() + marginTop;
-        int contentWidth = allocatedBounds.width() - marginLeft - marginRight;
-        int contentHeight = allocatedBounds.height() - marginTop - marginBottom;
-
-        // Get the child's actual measured content size
-        // Note: The child's bounds should already be set to content size, not total size including margin
-        var childBounds = child.getBounds();
-        Size childSize;
-        if (childBounds != null) {
-            // Child bounds should already be the content size
-            childSize = childBounds.size();
-        } else {
-            // Fallback: use available content area
-            childSize = new Size(contentWidth, contentHeight);
-        }
-
-        // Place child in content area with its measured size
-        // Note: Alignment is handled by specific container types (Column, Row, Stack)
-        // not as a general property here
-        child.place(new Bounds(new Position(contentX, contentY), childSize), grandchildren);
-    }
-
-    /**
-     * Gets the total margin (horizontal or vertical) for a child.
-     */
-    public static int getHorizontalMargin(IElement child) {
-        var props = child.getLayoutProperties();
-        if (props == null) return 0;
-        return props.getMarginLeft() + props.getMarginRight();
-    }
-
-    public static int getVerticalMargin(IElement child) {
-        var props = child.getLayoutProperties();
-        if (props == null) return 0;
-        return props.getMarginTop() + props.getMarginBottom();
+        child.place(new Bounds(new Position(contentX, contentY), new Size(contentWidth, contentHeight)), grandchildren);
     }
 }

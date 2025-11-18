@@ -16,8 +16,6 @@
 
 package com.tridevmc.compound.ui.compose.element;
 
-import com.tridevmc.compound.ui.compose.layout.LayoutProperties;
-
 /**
  * The core interface for all UI elements in the compose system.
  * All elements implement this interface directly or through sub-interfaces.

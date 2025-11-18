@@ -40,44 +40,27 @@ package com.tridevmc.compound.ui.compose.layout;
  * </ul>
  */
 public class LayoutProperties {
-    // Fixed size - used by LayoutHelper.measureChild() and LayoutHelper.calculateSizeWithProperties()
     private Integer fixedWidth;
     private Integer fixedHeight;
-
-    // Fill max size flags - used by LayoutHelper.measureChild() and LayoutHelper.calculateSizeWithProperties()
     private boolean fillMaxWidth;
     private boolean fillMaxHeight;
-
-    // Weight (for flex layouts) - reserved for future weighted layouts
     private Float weight;
-
-    // Min/Max size - used by LayoutHelper.measureChild()
     private Integer minWidth;
     private Integer minHeight;
     private Integer maxWidth;
     private Integer maxHeight;
-
-    // Padding (space inside the element's bounds) - used by Box, Column, Row, Stack, Grid
     private int paddingLeft;
     private int paddingTop;
     private int paddingRight;
     private int paddingBottom;
-
-    // Margin (space outside the element's bounds) - used by LayoutHelper.measureChild() and placeChild()
     private int marginLeft;
     private int marginTop;
     private int marginRight;
     private int marginBottom;
-
-    // Container alignment properties
-    private Alignment contentAlignment;      // Used by Box, Stack
-    private Alignment horizontalAlignment;  // Used by Column
-    private Alignment verticalAlignment;    // Used by Row
-
-    // Spacing (between children in Row/Column)
+    private Alignment contentAlignment;
+    private Alignment horizontalAlignment;
+    private Alignment verticalAlignment;
     private int spacing;
-
-    // Grid-specific - reserved for future Grid enhancements
     private Integer gridColumns;
     private Integer gridRows;
 
@@ -87,8 +70,6 @@ public class LayoutProperties {
     public static LayoutProperties create() {
         return new LayoutProperties();
     }
-
-    // ========== Fixed Size Methods ==========
 
     /**
      * Sets a fixed width for this element.
@@ -136,8 +117,6 @@ public class LayoutProperties {
         return this.fixedHeight;
     }
 
-    // ========== Fill Max Size Methods ==========
-
     /**
      * Makes this element expand to fill maximum available width.
      * Used by: All elements via LayoutHelper.measureChild() and calculateSizeWithProperties()
@@ -180,8 +159,6 @@ public class LayoutProperties {
         return this.fillMaxHeight;
     }
 
-    // ========== Weight Methods ==========
-
     /**
      * Sets the weight for weighted layouts (e.g., flex layouts).
      * Reserved for future use.
@@ -197,8 +174,6 @@ public class LayoutProperties {
     public Float getWeight() {
         return this.weight;
     }
-
-    // ========== Min/Max Size Methods ==========
 
     /**
      * Sets minimum width constraint.
@@ -264,8 +239,6 @@ public class LayoutProperties {
         return this.maxHeight;
     }
 
-    // ========== Padding Methods ==========
-
     /**
      * Sets equal padding on all sides.
      * Used by: Box, Column, Row, Stack, Grid (space inside container bounds)
@@ -323,7 +296,13 @@ public class LayoutProperties {
         return this.paddingBottom;
     }
 
-    // ========== Margin Methods ==========
+    public int getHorizontalPadding() {
+        return this.paddingLeft + this.paddingRight;
+    }
+
+    public int getVerticalPadding() {
+        return this.paddingTop + this.paddingBottom;
+    }
 
     /**
      * Sets equal margin on all sides.
@@ -382,8 +361,6 @@ public class LayoutProperties {
         return this.marginBottom;
     }
 
-    // ========== Container Alignment Methods ==========
-
     /**
      * Sets content alignment for Box and Stack containers.
      * Used by: Box, Stack (positions child(ren) within container bounds)
@@ -439,8 +416,6 @@ public class LayoutProperties {
         return this.verticalAlignment;
     }
 
-    // ========== Spacing Methods ==========
-
     /**
      * Sets spacing between children in linear layouts.
      * Used by: Column (vertical spacing), Row (horizontal spacing)
@@ -459,8 +434,6 @@ public class LayoutProperties {
     public int getSpacing() {
         return this.spacing;
     }
-
-    // ========== Grid-Specific Methods ==========
 
     /**
      * Sets grid dimensions.

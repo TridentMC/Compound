@@ -20,7 +20,7 @@ import com.tridevmc.compound.ui.compose.element.IComposableElement;
 import com.tridevmc.compound.ui.compose.element.IContainer;
 import com.tridevmc.compound.ui.compose.element.IPrimitiveElement;
 import com.tridevmc.compound.ui.compose.event.CharEvent;
-import com.tridevmc.compound.ui.compose.event.KeyEvent;
+import com.tridevmc.compound.ui.compose.event.KeyInputEvent;
 import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
 import com.tridevmc.compound.ui.compose.event.MouseDragEvent;
 import com.tridevmc.compound.ui.compose.event.MouseMoveEvent;
@@ -106,10 +106,7 @@ public class RootScope implements ICompositionScope {
             configurator.accept(scope);
         }
 
-        // Set composition function so it can re-compose when states change
         node.setCompositionFunction(() -> element.compose(scope));
-
-        // Run composition to build internal structure
         element.compose(scope);
     }
 
@@ -135,14 +132,14 @@ public class RootScope implements ICompositionScope {
     }
 
     @Override
-    public void onKeyPress(Consumer<KeyEvent> handler) {
+    public void onKeyPress(Consumer<KeyInputEvent> handler) {
         if (this.rootNode != null) {
             this.rootNode.addKeyPressHandler(handler);
         }
     }
 
     @Override
-    public void onKeyRelease(Consumer<KeyEvent> handler) {
+    public void onKeyRelease(Consumer<KeyInputEvent> handler) {
         if (this.rootNode != null) {
             this.rootNode.addKeyReleaseHandler(handler);
         }

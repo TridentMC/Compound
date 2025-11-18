@@ -23,14 +23,13 @@ import com.tridevmc.compound.ui.compose.layout.Size;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.world.item.ItemStack;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.function.Supplier;
 
 /**
  * A primitive element that renders an item stack.
  */
-public class ElementItem extends BaseElement implements IPrimitiveElement {
+public class ElementItem extends BasePrimitiveElement {
 
     private Supplier<ItemStack> itemStackSupplier;
     private Supplier<String> countOverrideSupplier;
@@ -50,36 +49,19 @@ public class ElementItem extends BaseElement implements IPrimitiveElement {
 
     @Override
     public Size measure(Constraints constraints, List<IElement> children) {
-        // Items are typically rendered at 16x16
         int size = Math.min(constraints.maxWidth(), constraints.maxHeight());
         size = Math.min(size, 16);
         return new Size(size, size);
     }
 
     @Override
-    public void place(Bounds bounds, List<IElement> children) {
-        this.setBounds(bounds);
-    }
-
-    @Override
-    public void draw(IScreenContext context) {
-        if (!this.isVisible()) {
-            return;
-        }
-
-        var bounds = this.getBounds();
-        if (bounds == null) {
-            return;
-        }
-
+    protected void drawElement(IScreenContext context, Bounds bounds) {
         ItemStack itemStack = this.itemStackSupplier.get();
         if (itemStack == null || itemStack.isEmpty()) {
             return;
         }
 
         String countOverride = this.countOverrideSupplier.get();
-
-        // Convert bounds to Rect2F for item drawing
         var rect = new Rect2F(bounds.x(), bounds.y(), bounds.width(), bounds.height());
         context.drawItemStack(itemStack, rect, countOverride);
     }

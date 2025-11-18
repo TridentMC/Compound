@@ -19,19 +19,29 @@ package com.tridevmc.compound.ui.compose.tree;
 import com.tridevmc.compound.ui.compose.element.IElement;
 import com.tridevmc.compound.ui.compose.element.IPrimitiveElement;
 import com.tridevmc.compound.ui.compose.event.CharEvent;
-import com.tridevmc.compound.ui.compose.event.KeyEvent;
+import com.tridevmc.compound.ui.compose.event.KeyInputEvent;
 import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
 import com.tridevmc.compound.ui.compose.event.MouseDragEvent;
 import com.tridevmc.compound.ui.compose.event.MouseMoveEvent;
 import com.tridevmc.compound.ui.compose.event.MouseReleaseEvent;
 import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
-import com.tridevmc.compound.ui.compose.layout.Bounds;import com.tridevmc.compound.ui.compose.layout.Constraints;
+import com.tridevmc.compound.ui.compose.layout.Bounds;
+import com.tridevmc.compound.ui.compose.layout.Constraints;
 import com.tridevmc.compound.ui.compose.layout.Position;
 import com.tridevmc.compound.ui.compose.layout.Size;
 import com.tridevmc.compound.ui.compose.state.State;
-import com.tridevmc.compound.ui.compose.state.StateObserver;import com.tridevmc.compound.ui.screen.IScreenContext;
+import com.tridevmc.compound.ui.compose.state.StateObserver;
+import com.tridevmc.compound.ui.screen.IScreenContext;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -45,7 +55,6 @@ public class UITree implements StateObserver {
     private Size rootSize;
     private Size lastWindowSize = new Size(-1, -1);
 
-    // Root node management
     public void setRoot(ITreeNode root) {
         this.root = root;
         if (root != null) {
@@ -61,7 +70,6 @@ public class UITree implements StateObserver {
         return this.root != null;
     }
 
-    // Node lookup
     public ITreeNode getNodeForElement(IElement element) {
         return this.elementToNode.get(element);
     }
@@ -70,7 +78,6 @@ public class UITree implements StateObserver {
         return this.elementToNode.containsKey(element);
     }
 
-    // Tree operations
     public ITreeNode createNode(IElement element) {
         TreeNode node = new TreeNode(element);
         element.setTree(this);
@@ -81,7 +88,6 @@ public class UITree implements StateObserver {
     private void registerNode(ITreeNode node) {
         this.elementToNode.put(node.getElement(), node);
         node.getElement().setTree(this);
-        // Register all children recursively
         for (ITreeNode child : node.getChildren()) {
             this.registerNode(child);
         }
@@ -90,7 +96,6 @@ public class UITree implements StateObserver {
     private void unregisterNode(ITreeNode node) {
         this.elementToNode.remove(node.getElement());
         node.getElement().setTree(null);
-        // Unregister all children recursively
         for (ITreeNode child : node.getChildren()) {
             this.unregisterNode(child);
         }
@@ -107,36 +112,28 @@ public class UITree implements StateObserver {
             parent.removeChild(node);
         }
 
-        // Collect all states used by this node and its children
         Set<State<?>> statesToCheck = new HashSet<>();
-        this.walkDepthFirst(node, n -> {
-            statesToCheck.addAll(n.getBoundStates());
-        });
+        this.walkDepthFirst(node, n -> statesToCheck.addAll(n.getBoundStates()));
 
         this.unregisterNode(node);
 
-        // Check if any states are no longer used and cleanup
         for (State<?> state : statesToCheck) {
             this.unregisterStateIfUnused(state);
         }
 
-        // Call lifecycle
         node.getElement().onDetached();
     }
 
-    // Re-composition (kill node and rebuild)
     public void recomposeNode(ITreeNode node) {
         if (!node.hasCompositionFunction()) {
             return;
         }
 
-        // Properly detach all children (lifecycle, state cleanup, unregister)
         List<ITreeNode> children = new ArrayList<>(node.getChildren());
         for (ITreeNode child : children) {
             this.detachNode(child);
         }
 
-        // Re-run composition function to rebuild children
         Runnable compositionFn = node.getCompositionFunction();
         if (compositionFn != null) {
             compositionFn.run();
@@ -144,7 +141,6 @@ public class UITree implements StateObserver {
         }
     }
 
-    // Tree traversal
     public void walkDepthFirst(ITreeNode start, Consumer<ITreeNode> visitor) {
         if (start == null) {
             return;
@@ -168,7 +164,6 @@ public class UITree implements StateObserver {
         }
     }
 
-    // Find operations
     public <T extends IElement> List<ITreeNode> findNodesByElementType(Class<T> type) {
         List<ITreeNode> result = new ArrayList<>();
         this.walkDepthFirst(this.root, node -> {
@@ -183,7 +178,6 @@ public class UITree implements StateObserver {
         if (this.root == null) {
             return null;
         }
-        // Walk in reverse order (front to back) to find topmost element
         List<ITreeNode> nodes = new ArrayList<>();
         this.walkDepthFirst(this.root, nodes::add);
         Collections.reverse(nodes);
@@ -197,7 +191,6 @@ public class UITree implements StateObserver {
         return null;
     }
 
-    // Layout coordination
     public void measureTree(Constraints rootConstraints) {
         if (this.root != null) {
             this.rootSize = this.measureNode(this.root, rootConstraints);
@@ -213,8 +206,6 @@ public class UITree implements StateObserver {
 
     public void placeTree(Position rootPosition, Constraints rootConstraints) {
         if (this.root != null && this.rootSize != null) {
-            // Use constraint bounds for placement, not measured size
-            // This allows containers to properly align children within the full constraint area
             Size constraintSize = new Size(
                 rootConstraints.hasBoundedWidth() ? rootConstraints.maxWidth() : this.rootSize.width(),
                 rootConstraints.hasBoundedHeight() ? rootConstraints.maxHeight() : this.rootSize.height()
@@ -224,70 +215,50 @@ public class UITree implements StateObserver {
         }
     }
 
-    /**
-     * Recursively measure a node and its children (bottom-up).
-     * Tree provides children to element - element doesn't query tree.
-     */
     private Size measureNode(ITreeNode node, Constraints constraints) {
         List<IElement> children = node.getChildren().stream()
                 .map(ITreeNode::getElement)
                 .toList();
         Size size = node.getElement().measure(constraints, children);
-        System.out.println("[MEASURE] " + node.getElement().getClass().getSimpleName() +
-            " -> " + size.width() + "x" + size.height() + " (constraints: " +
-            constraints.minWidth() + ".." + constraints.maxWidth() + " x " +
-            constraints.minHeight() + ".." + constraints.maxHeight() + ")");
+        node.setMeasuredSize(size);
         return size;
     }
 
-    /**
-     * Recursively place a node and its children (top-down).
-     * Tree provides children to element - element doesn't query tree.
-     */
     private void placeNode(ITreeNode node, Bounds bounds) {
         List<IElement> children = node.getChildren().stream()
                 .map(ITreeNode::getElement)
                 .toList();
-        System.out.println("[PLACE] " + node.getElement().getClass().getSimpleName() +
-            " -> bounds: " + bounds.x() + "," + bounds.y() + " " +
-            bounds.width() + "x" + bounds.height());
-        node.getElement().place(bounds, children);
-    }
 
-    /**
-     * Trigger immediate measurement and placement for changed subtree.
-     * Walks up parent chain to remeasure affected layout hierarchy.
-     */
-    private void requestRemeasurement(ITreeNode changedNode) {
-        System.out.println("[REMEASURE] Automatic remeasurement triggered for: " +
-            changedNode.getElement().getClass().getSimpleName());
-
-        if (this.root == null || this.rootSize == null) {
-            System.out.println("[REMEASURE] Skipped - not initialized");
-            return; // Skip if not fully initialized
+        Bounds placementBounds = bounds;
+        if ((bounds.width() == 0 || bounds.height() == 0) && node.getMeasuredSize() != null) {
+            Size measuredSize = node.getMeasuredSize();
+            placementBounds = new Bounds(bounds.position(), measuredSize);
         }
 
-        // Find highest parent that might be affected by layout changes
+        node.getElement().place(placementBounds, children);
+    }
+
+    private void requestRemeasurement(ITreeNode changedNode) {
+        if (this.root == null || this.rootSize == null) {
+            return;
+        }
+
         ITreeNode target = changedNode.getParent();
         while (target != null && target.getParent() != null) {
             target = target.getParent();
         }
 
-        // Use existing measurement system for affected subtree
         Constraints constraints = Constraints.loose(this.rootSize.width(), this.rootSize.height());
         ITreeNode measureTarget = target != null ? target : changedNode;
 
-        // Measure and place using existing infrastructure
         this.measureNode(measureTarget, constraints);
         Bounds bounds = new Bounds(Position.ORIGIN, this.rootSize);
         this.placeNode(measureTarget, bounds);
     }
 
-    // Event dispatch
     public void dispatchClick(int x, int y, MouseClickEvent event) {
         ITreeNode node = this.findNodeAt(x, y);
         if (node != null) {
-            // Walk up the tree firing handlers until consumed
             ITreeNode current = node;
             while (current != null && !event.isConsumed()) {
                 for (var handler : current.getClickHandlers()) {
@@ -306,16 +277,13 @@ public class UITree implements StateObserver {
     public void dispatchMouseMove(int x, int y, MouseMoveEvent event) {
         ITreeNode node = this.findNodeAt(x, y);
 
-        // Handle hover state changes
         if (node != lastHoveredNode) {
-            // Fire exit on previously hovered node
             if (lastHoveredNode != null) {
                 for (var handler : lastHoveredNode.getMouseExitHandlers()) {
                     handler.run();
                 }
             }
 
-            // Fire enter on newly hovered node
             if (node != null) {
                 for (var handler : node.getMouseEnterHandlers()) {
                     handler.run();
@@ -325,7 +293,6 @@ public class UITree implements StateObserver {
             lastHoveredNode = node;
         }
 
-        // Dispatch move event if there's a node under cursor
         if (node != null && !event.isConsumed()) {
             ITreeNode current = node;
             while (current != null && !event.isConsumed()) {
@@ -343,7 +310,6 @@ public class UITree implements StateObserver {
     public void dispatchScroll(int x, int y, MouseScrollEvent event) {
         ITreeNode node = this.findNodeAt(x, y);
         if (node != null) {
-            // Walk up the tree firing handlers until consumed
             ITreeNode current = node;
             while (current != null && !event.isConsumed()) {
                 for (var handler : current.getScrollHandlers()) {
@@ -357,9 +323,9 @@ public class UITree implements StateObserver {
         }
     }
 
-    public void dispatchKeyPress(KeyEvent event) {
-        // For now, dispatch to all elements
-        // TODO: Implement focus system
+    public void dispatchKeyPress(KeyInputEvent event) {
+        // TODO: Focus system - add focus tracking to dispatch keyboard events only to the focused element.
+        //       Current implementation broadcasts to all elements, which is inefficient for large UIs.
         this.walkDepthFirst(this.root, node -> {
             if (!event.isConsumed()) {
                 for (var handler : node.getKeyPressHandlers()) {
@@ -372,9 +338,8 @@ public class UITree implements StateObserver {
         });
     }
 
-    public void dispatchKeyRelease(KeyEvent event) {
-        // For now, dispatch to all elements
-        // TODO: Implement focus system
+    public void dispatchKeyRelease(KeyInputEvent event) {
+        // TODO: Focus system - see dispatchKeyPress
         this.walkDepthFirst(this.root, node -> {
             if (!event.isConsumed()) {
                 for (var handler : node.getKeyReleaseHandlers()) {
@@ -388,7 +353,7 @@ public class UITree implements StateObserver {
     }
 
     public void dispatchCharTyped(CharEvent event) {
-        // Dispatch to all elements (focus system not yet implemented)
+        // TODO: Focus system - see dispatchKeyPress
         this.walkDepthFirst(this.root, node -> {
             if (!event.isConsumed()) {
                 for (var handler : node.getCharTypedHandlers()) {
@@ -404,7 +369,6 @@ public class UITree implements StateObserver {
     public void dispatchMouseRelease(int x, int y, MouseReleaseEvent event) {
         ITreeNode node = this.findNodeAt(x, y);
         if (node != null) {
-            // Walk up the tree firing handlers until consumed
             ITreeNode current = node;
             while (current != null && !event.isConsumed()) {
                 for (var handler : current.getMouseReleaseHandlers()) {
@@ -421,7 +385,6 @@ public class UITree implements StateObserver {
     public void dispatchMouseDrag(int x, int y, MouseDragEvent event) {
         ITreeNode node = this.findNodeAt(x, y);
         if (node != null) {
-            // Walk up the tree firing handlers until consumed
             ITreeNode current = node;
             while (current != null && !event.isConsumed()) {
                 for (var handler : current.getMouseDragHandlers()) {
@@ -435,10 +398,8 @@ public class UITree implements StateObserver {
         }
     }
 
-    // State change notification
     @Override
     public void onStateChanged(State<?> state) {
-        // Find all nodes bound to this state and trigger re-composition
         List<ITreeNode> nodesToRecompose = new ArrayList<>();
         this.walkDepthFirst(this.root, node -> {
             if (node.isBoundToState(state)) {
@@ -470,7 +431,6 @@ public class UITree implements StateObserver {
      * @param state the state to check and potentially unregister
      */
     public void unregisterStateIfUnused(State<?> state) {
-        // Check if any nodes are still bound to this state
         boolean[] isUsed = {false};
         this.walkDepthFirst(this.root, node -> {
             if (node.isBoundToState(state)) {
@@ -518,20 +478,15 @@ public class UITree implements StateObserver {
         var sizeChanged = this.lastWindowSize.width() != width || this.lastWindowSize.height() != height;
 
         if (sizeChanged) {
-            System.out.println("[LAYOUT] Window: " + width + "x" + height + " -> measuring..." +
-                    " (was " + this.lastWindowSize.width() + "x" + this.lastWindowSize.height() + ")");
             this.lastWindowSize = new Size(width, height);
-            Constraints constraints = Constraints.loose(width, height);
+            var constraints = Constraints.loose(width, height);
             this.measureTree(constraints);
             this.placeTree(Position.ORIGIN, constraints);
-            System.out.println("[LAYOUT] Completed");
         }
 
-        // Always render
         this.renderTree(context);
     }
 
-    // Render helper
     public void renderTree(IScreenContext context) {
         if (this.root == null) {
             return;

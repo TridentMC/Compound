@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 /**
  * A primitive element that renders a gradient rectangle.
  */
-public class ElementGradientRect extends BaseElement implements IPrimitiveElement {
+public class ElementGradientRect extends BasePrimitiveElement {
 
     private Supplier<Integer> topColorSupplier;
     private Supplier<Integer> bottomColorSupplier;
@@ -43,26 +43,11 @@ public class ElementGradientRect extends BaseElement implements IPrimitiveElemen
 
     @Override
     public Size measure(Constraints constraints, List<IElement> children) {
-        // Fill available space by default
         return new Size(constraints.maxWidth(), constraints.maxHeight());
     }
 
     @Override
-    public void place(Bounds bounds, List<IElement> children) {
-        this.setBounds(bounds);
-    }
-
-    @Override
-    public void draw(IScreenContext context) {
-        if (!this.isVisible()) {
-            return;
-        }
-
-        var bounds = this.getBounds();
-        if (bounds == null) {
-            return;
-        }
-
+    protected void drawElement(IScreenContext context, Bounds bounds) {
         int topColor = this.topColorSupplier.get();
         int bottomColor = this.bottomColorSupplier.get();
         context.drawGradientRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), topColor, bottomColor);

@@ -26,10 +26,7 @@ import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import java.util.List;
 import java.util.function.Supplier;
 
-/**
- * A primitive element that renders a sprite (textured image).
- */
-public class ElementSprite extends BaseElement implements IPrimitiveElement {
+public class ElementSprite extends BasePrimitiveElement {
 
     private Supplier<IScreenSprite> spriteSupplier;
 
@@ -43,36 +40,16 @@ public class ElementSprite extends BaseElement implements IPrimitiveElement {
 
     @Override
     public Size measure(Constraints constraints, List<IElement> children) {
-        // Fill available space by default
-        // TODO: Could use sprite's natural size if available
         return new Size(constraints.maxWidth(), constraints.maxHeight());
     }
 
     @Override
-    public void place(Bounds bounds, List<IElement> children) {
-        this.setBounds(bounds);
-    }
-
-    @Override
-    public void draw(IScreenContext context) {
-        if (!this.isVisible()) {
-            System.out.println("ElementSprite: not visible");
-            return;
-        }
-
-        var bounds = this.getBounds();
-        if (bounds == null) {
-            System.out.println("ElementSprite: bounds is null");
-            return;
-        }
-
+    protected void drawElement(IScreenContext context, Bounds bounds) {
         IScreenSprite sprite = this.spriteSupplier.get();
         if (sprite == null) {
-            System.out.println("ElementSprite: sprite is null");
             return;
         }
 
-        // Convert bounds to Rect2F for sprite drawing
         var rect = new Rect2F(bounds.x(), bounds.y(), bounds.width(), bounds.height());
         context.drawSprite(sprite, rect);
     }

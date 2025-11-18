@@ -26,10 +26,7 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 import java.util.function.Supplier;
 
-/**
- * A primitive element that renders text.
- */
-public class ElementLabel extends BaseElement implements IPrimitiveElement {
+public class ElementLabel extends BasePrimitiveElement {
 
     private Component text;
     private Supplier<Integer> colorSupplier;
@@ -67,13 +64,10 @@ public class ElementLabel extends BaseElement implements IPrimitiveElement {
             width = font.width(this.text);
             height = font.lineHeight;
         } else {
-            // Fallback for testing when Minecraft instance isn't fully initialized
-            // Estimate based on character count and standard line height
-            width = this.text.getString().length() * 6; // Rough estimate of 6 pixels per character
-            height = 9; // Standard Minecraft font line height
+            width = this.text.getString().length() * 6;
+            height = 9;
         }
 
-        // Constrain to available space
         width = Math.min(width, constraints.maxWidth());
         height = Math.min(height, constraints.maxHeight());
 
@@ -81,25 +75,10 @@ public class ElementLabel extends BaseElement implements IPrimitiveElement {
     }
 
     @Override
-    public void place(Bounds bounds, List<IElement> children) {
-        this.setBounds(bounds);
-    }
-
-    @Override
-    public void draw(IScreenContext context) {
-        if (!this.isVisible()) {
-            return;
-        }
-
-        var bounds = this.getBounds();
-        if (bounds == null) {
-            return;
-        }
-
+    protected void drawElement(IScreenContext context, Bounds bounds) {
         boolean shadow = this.shadowSupplier.get();
         int color = this.colorSupplier.get();
 
-        // Apply color to the component through styling
         Component coloredText = this.text.copy().withStyle(style -> style.withColor(color));
 
         if (shadow) {

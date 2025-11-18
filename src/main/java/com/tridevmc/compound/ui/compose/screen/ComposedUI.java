@@ -20,14 +20,12 @@ import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
 import com.tridevmc.compound.ui.compose.event.CharEvent;
-import com.tridevmc.compound.ui.compose.event.KeyEvent;
+import com.tridevmc.compound.ui.compose.event.KeyInputEvent;
 import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
 import com.tridevmc.compound.ui.compose.event.MouseDragEvent;
 import com.tridevmc.compound.ui.compose.event.MouseMoveEvent;
 import com.tridevmc.compound.ui.compose.event.MouseReleaseEvent;
 import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
-import com.tridevmc.compound.ui.compose.layout.Constraints;
-import com.tridevmc.compound.ui.compose.layout.Position;
 import com.tridevmc.compound.ui.compose.scope.RootScope;
 import com.tridevmc.compound.ui.compose.tree.UITree;
 import com.tridevmc.compound.ui.screen.CompoundScreenContext;
@@ -81,7 +79,6 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
         this.activeGuiGraphics = graphics;
         this.activeStack = graphics.pose();
 
-        // Track mouse movement for hover events
         if (mouseX != this.mouseX || mouseY != this.mouseY) {
             this.prevMouseX = this.mouseX;
             this.prevMouseY = this.mouseY;
@@ -96,7 +93,6 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
             this.tree.dispatchMouseMove((int) this.mouseX, (int) this.mouseY, moveEvent);
         }
 
-        // Layout - let UITree handle window size changes and measurement
         this.tree.layoutAndRender(this.width, this.height, this.screenContext);
 
         super.render(graphics, mouseX, mouseY, partialTicks);
@@ -154,18 +150,17 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
     @Override
     public EnumUILayer getCurrentLayer() {
-        // Compose system renders in a single pass, return foreground as default
         return EnumUILayer.FOREGROUND;
     }
 
     @Override
     public boolean keyPressed(@NotNull net.minecraft.client.input.KeyEvent event) {
-        KeyEvent keyEvent = new KeyEvent(
+        KeyInputEvent keyEvent = new KeyInputEvent(
                 event.key(),
-                '\0', // Key events don't always correspond to characters
-                (event.modifiers() & 1) != 0,  // shift
-                (event.modifiers() & 2) != 0,  // control
-                (event.modifiers() & 4) != 0   // alt
+                '\0',
+                (event.modifiers() & 1) != 0,
+                (event.modifiers() & 2) != 0,
+                (event.modifiers() & 4) != 0
         );
         this.tree.dispatchKeyPress(keyEvent);
         return keyEvent.isConsumed() || super.keyPressed(event);
@@ -173,12 +168,12 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
     @Override
     public boolean keyReleased(@NotNull net.minecraft.client.input.KeyEvent event) {
-        KeyEvent keyEvent = new KeyEvent(
+        KeyInputEvent keyEvent = new KeyInputEvent(
                 event.key(),
-                '\0', // Key events don't always correspond to characters
-                (event.modifiers() & 1) != 0,  // shift
-                (event.modifiers() & 2) != 0,  // control
-                (event.modifiers() & 4) != 0   // alt
+                '\0',
+                (event.modifiers() & 1) != 0,
+                (event.modifiers() & 2) != 0,
+                (event.modifiers() & 4) != 0
         );
         this.tree.dispatchKeyRelease(keyEvent);
         return keyEvent.isConsumed() || super.keyReleased(event);
@@ -206,9 +201,12 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
     @Override
     public boolean mouseClicked(@NotNull MouseButtonEvent event, boolean isDoubleClick) {
+        boolean shiftDown = this.minecraft != null && this.minecraft.hasShiftDown();
+        boolean ctrlDown = this.minecraft != null && this.minecraft.hasControlDown();
+        boolean altDown = this.minecraft != null && this.minecraft.hasAltDown();
         MouseClickEvent clickEvent = new MouseClickEvent(
                 (int) event.x(), (int) event.y(), event.button(),
-                false, false, false // TODO: get actual modifier states
+                shiftDown, ctrlDown, altDown
         );
         this.tree.dispatchClick((int) event.x(), (int) event.y(), clickEvent);
         return clickEvent.isConsumed() || super.mouseClicked(event, isDoubleClick);

@@ -24,10 +24,7 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 import java.util.List;
 import java.util.function.Supplier;
 
-/**
- * A primitive element that renders a colored rectangle.
- */
-public class ElementRect extends BaseElement implements IPrimitiveElement {
+public class ElementRect extends BasePrimitiveElement {
 
     private Supplier<Integer> colorSupplier;
 
@@ -41,26 +38,11 @@ public class ElementRect extends BaseElement implements IPrimitiveElement {
 
     @Override
     public Size measure(Constraints constraints, List<IElement> children) {
-        // Fill available space by default
         return new Size(constraints.maxWidth(), constraints.maxHeight());
     }
 
     @Override
-    public void place(Bounds bounds, List<IElement> children) {
-        this.setBounds(bounds);
-    }
-
-    @Override
-    public void draw(IScreenContext context) {
-        if (!this.isVisible()) {
-            return;
-        }
-
-        var bounds = this.getBounds();
-        if (bounds == null) {
-            return;
-        }
-
+    protected void drawElement(IScreenContext context, Bounds bounds) {
         int color = this.colorSupplier.get();
         context.drawRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), color);
     }

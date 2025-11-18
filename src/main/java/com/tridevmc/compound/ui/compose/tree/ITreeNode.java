@@ -17,8 +17,9 @@
 package com.tridevmc.compound.ui.compose.tree;
 
 import com.tridevmc.compound.ui.compose.element.IElement;
+import com.tridevmc.compound.ui.compose.layout.Size;
 import com.tridevmc.compound.ui.compose.event.CharEvent;
-import com.tridevmc.compound.ui.compose.event.KeyEvent;
+import com.tridevmc.compound.ui.compose.event.KeyInputEvent;
 import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
 import com.tridevmc.compound.ui.compose.event.MouseDragEvent;
 import com.tridevmc.compound.ui.compose.event.MouseMoveEvent;
@@ -80,9 +81,9 @@ public interface ITreeNode {
 
     void addScrollHandler(Consumer<MouseScrollEvent> handler);
 
-    void addKeyPressHandler(Consumer<KeyEvent> handler);
+    void addKeyPressHandler(Consumer<KeyInputEvent> handler);
 
-    void addKeyReleaseHandler(Consumer<KeyEvent> handler);
+    void addKeyReleaseHandler(Consumer<KeyInputEvent> handler);
 
     void addCharTypedHandler(Consumer<CharEvent> handler);
 
@@ -100,9 +101,9 @@ public interface ITreeNode {
 
     List<Consumer<MouseScrollEvent>> getScrollHandlers();
 
-    List<Consumer<KeyEvent>> getKeyPressHandlers();
+    List<Consumer<KeyInputEvent>> getKeyPressHandlers();
 
-    List<Consumer<KeyEvent>> getKeyReleaseHandlers();
+    List<Consumer<KeyInputEvent>> getKeyReleaseHandlers();
 
     List<Consumer<CharEvent>> getCharTypedHandlers();
 
@@ -125,4 +126,9 @@ public interface ITreeNode {
     boolean isAncestorOf(ITreeNode other);
 
     boolean isDescendantOf(ITreeNode other);
+
+    // Measured size cache (for connecting measurement to placement)
+    Size getMeasuredSize();
+
+    void setMeasuredSize(Size size);
 }

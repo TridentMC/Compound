@@ -40,13 +40,14 @@ import java.util.List;
  */
 public class ComposedSlot extends BaseElement implements IComposableElement {
 
+    private static final int SLOT_SIZE = 18;
+
     private static final IScreenSprite SLOT_SPRITE = IScreenSprite.of(
             Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.GUI).getSprite(
                     ResourceLocation.withDefaultNamespace("container/slot")),
             new ScreenSpriteWriterNineSlice(
                     1, 1, 1, 1)
     );
-
 
     private final Slot vanillaSlot;
     private boolean drawOverlay;
@@ -76,22 +77,17 @@ public class ComposedSlot extends BaseElement implements IComposableElement {
 
     @Override
     public Size measure(Constraints constraints, List<IElement> children) {
-        // Step 1: Calculate final size using common helper
-        // Intrinsic size for Minecraft slots is 18x18 pixels
         var finalSize = LayoutHelper.calculateSizeWithProperties(
-                18, 18,  // intrinsic width/height
+                SLOT_SIZE, SLOT_SIZE,
                 this.getLayoutProperties(),
                 constraints
         );
 
-        // Step 2: Measure internal stack with constraints matching our decided size
         if (!children.isEmpty()) {
-            // Give internal stack exact constraints matching our final size
             Constraints childConstraints = Constraints.fixed(finalSize.width(), finalSize.height());
             LayoutHelper.measureChild(children.getFirst(), childConstraints);
         }
 
-        // Step 3: Return our final size to parent
         return finalSize;
     }
 
@@ -99,7 +95,6 @@ public class ComposedSlot extends BaseElement implements IComposableElement {
     public void place(Bounds bounds, List<IElement> children) {
         this.setBounds(bounds);
 
-        // Place the internal stack
         if (!children.isEmpty()) {
             LayoutHelper.placeChild(children.getFirst(), bounds);
         }
@@ -114,25 +109,24 @@ public class ComposedSlot extends BaseElement implements IComposableElement {
 
             // Middle layer: underlay highlight (for quick craft selection)
             // Uses supplier so it updates dynamically without recomposition
-            stack.e(new ElementRect(() -> this.drawUnderlay ? 0x80FFFFFF : 0x00FFFFFF));
+            stack.e(new ElementRect(() -> this.drawUnderlay ? 0x80FFFFFF : 0x00FFFFFF), r -> r.layout().margin(1));
 
             // Item layer: the actual item with 1px margin so it doesn't touch slot edges
             stack.e(new ElementItem(
-                    () -> this.displayStack != null ? this.displayStack : ItemStack.EMPTY,
-                    () -> this.displayString
-            ), item -> {
-                item.layout().margin(1, 1, 1, 1);  // 1px margin on all sides
-            });
+                            () -> this.displayStack != null ? this.displayStack : ItemStack.EMPTY,
+                            () -> this.displayString
+                    ), i -> i.layout().margin(1)
+            );
 
             // Top layer: overlay highlight (for hover)
             // Uses supplier so it updates dynamically without recomposition
-            stack.e(new ElementRect(() -> this.drawOverlay ? 0x80FFFFFF : 0x00FFFFFF));
+            stack.e(new ElementRect(() -> this.drawOverlay ? 0x80FFFFFF : 0x00FFFFFF),
+                    r -> r.layout().margin(1));
         });
 
-        // TODO: Tooltip handling
-        // Tooltips are typically rendered in a separate overlay pass after all normal rendering.
-        // We may need a special event handler or post-render hook for this.
-        // For now, the tooltip logic remains in ComposedUIContainer's render method.
+        // TODO: Tooltip handling - implement onTooltipRender event or similar mechanism.
+        //       Tooltips require a post-render overlay pass (after all UI elements).
+        //       Current workaround: tooltip logic is handled in ComposedUIContainer's render method.
     }
 
     public Slot getVanillaSlot() {
@@ -162,3 +156,4 @@ public class ComposedSlot extends BaseElement implements IComposableElement {
         this.displayString = null;
     }
 }
+

@@ -16,7 +16,12 @@
 
 package com.tridevmc.compound.ui.compose.element;
 
-import com.tridevmc.compound.ui.compose.layout.*;
+import com.tridevmc.compound.ui.compose.layout.Bounds;
+import com.tridevmc.compound.ui.compose.layout.Constraints;
+import com.tridevmc.compound.ui.compose.layout.LayoutHelper;
+import com.tridevmc.compound.ui.compose.layout.LayoutMath;
+import com.tridevmc.compound.ui.compose.layout.Position;
+import com.tridevmc.compound.ui.compose.layout.Size;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,10 +37,6 @@ import java.util.List;
 public class Box extends BaseContainer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Box.class);
-    private static boolean warnedMultipleChildren = false;
-
-    public Box() {
-    }
 
     @Override
     public Size measure(Constraints constraints, List<IElement> children) {
@@ -44,60 +45,53 @@ public class Box extends BaseContainer {
         int verticalPadding = props.getPaddingTop() + props.getPaddingBottom();
 
         if (children.isEmpty()) {
-            return new Size(horizontalPadding, verticalPadding);
+            return constraints.constrain(new Size(horizontalPadding, verticalPadding));
         }
 
-        // Warn if multiple children are present (Box is designed for single child)
-        if (children.size() > 1 && !warnedMultipleChildren) {
-            LOGGER.warn("Box element contains {} children, but Box is designed for a single child. " +
+        if (children.size() > 1) {
+            LOGGER.debug("Box element contains {} children, but Box is designed for a single child. " +
                     "Only the first child will be rendered. Consider using Stack for multiple children.",
                     children.size());
-            warnedMultipleChildren = true;
         }
 
-        // Single child - use standard container pattern like Stack/Column/Row
         var contentConstraints = LayoutMath.calculateContentConstraints(constraints, props);
         var childSize = LayoutHelper.measureChild(children.getFirst(), contentConstraints);
 
-        return new Size(
-                Math.min(childSize.width() + horizontalPadding, constraints.maxWidth()),
-                Math.min(childSize.height() + verticalPadding, constraints.maxHeight())
-        );
+        return constraints.constrain(new Size(
+                childSize.width() + horizontalPadding,
+                childSize.height() + verticalPadding
+        ));
     }
 
     @Override
     public void place(Bounds bounds, List<IElement> children) {
         this.setBounds(bounds);
 
-        if (!children.isEmpty()) {
-            var child = children.getFirst();
-            var childSize = child.getBounds() != null ? child.getBounds().size() : new Size(0, 0);
+        if (children.isEmpty()) {
+            return;
+        }
 
-            // Calculate available space after padding
-            int availableWidth = bounds.width() - this.getLayoutProperties().getPaddingLeft() - this.getLayoutProperties().getPaddingRight();
-            int availableHeight = bounds.height() - this.getLayoutProperties().getPaddingTop() - this.getLayoutProperties().getPaddingBottom();
-            var availableSize = new Size(availableWidth, availableHeight);
+        var child = children.getFirst();
+        var childSize = LayoutHelper.getMeasuredSize(child);
+        if (childSize == null) {
+            return;
+        }
 
-            // Apply contentAlignment to position child within available space
-            var alignment = this.getLayoutProperties().getContentAlignment();
-            Position childOffset;
-            if (alignment != null) {
-                childOffset = alignment.align(childSize, availableSize);
-            } else {
-                // Default to top-left if no alignment specified
-                childOffset = new Position(0, 0);
-            }
+        var props = this.getLayoutProperties();
+        var contentArea = LayoutMath.calculateContentArea(bounds, props);
 
-            // Place child with padding and alignment offset
-            var childBounds = new Bounds(
-                    new Position(
-                            bounds.x() + this.getLayoutProperties().getPaddingLeft() + childOffset.x(),
-                            bounds.y() + this.getLayoutProperties().getPaddingTop() + childOffset.y()
-                    ),
+        var alignment = props.getContentAlignment();
+        Bounds childBounds;
+        if (alignment != null) {
+            var alignedPos = alignment.align(childSize, contentArea.size());
+            childBounds = new Bounds(
+                    new Position(contentArea.x() + alignedPos.x(), contentArea.y() + alignedPos.y()),
                     childSize
             );
-
-            LayoutHelper.placeChild(child, childBounds);
+        } else {
+            childBounds = new Bounds(contentArea.position(), childSize);
         }
+
+        LayoutHelper.placeChild(child, childBounds);
     }
 }

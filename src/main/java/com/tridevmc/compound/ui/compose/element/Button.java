@@ -142,22 +142,18 @@ public class Button extends BaseElement implements IComposableElement {
 
     @Override
     public Size measure(Constraints constraints, List<IElement> children) {
-        // Step 1: Calculate final size using layout system (consistent with other composables)
-        // Use large intrinsic size since Button doesn't have a natural size preference
+        // Button doesn't have a natural size preference, so use max intrinsic size
         var finalSize = LayoutHelper.calculateSizeWithProperties(
-            Integer.MAX_VALUE, Integer.MAX_VALUE,  // No intrinsic size preference
+            Integer.MAX_VALUE, Integer.MAX_VALUE,
             this.getLayoutProperties(),
             constraints
         );
 
-        // Step 2: Measure children with constraints matching our decided size
         if (!children.isEmpty()) {
-            // Give child exact constraints matching our final size
             var childConstraints = Constraints.fixed(finalSize.width(), finalSize.height());
             LayoutHelper.measureChild(children.getFirst(), childConstraints);
         }
 
-        // Step 3: Return our final size to parent
         return finalSize;
     }
 
@@ -165,36 +161,8 @@ public class Button extends BaseElement implements IComposableElement {
     public void place(Bounds bounds, List<IElement> children) {
         this.setBounds(bounds);
 
-        // Place the slot content
         if (!children.isEmpty()) {
             LayoutHelper.placeChild(children.getFirst(), bounds);
-        }
-    }
-
-    /**
-     * Updates hover state when mouse position changes.
-     * Should be called from mouse move events.
-     */
-    public void updateHoverState(int mouseX, int mouseY) {
-        if (!this.canPress()) {
-            if (this.hovered.get()) {
-                this.hovered.set(false);
-                this.hoverListeners.forEach(listener -> listener.onButtonHover(mouseX, mouseY, false));
-            }
-            return;
-        }
-
-        var bounds = this.getBounds();
-        if (bounds == null) {
-            return;
-        }
-
-        boolean nowHovered = mouseX >= bounds.x() && mouseX < bounds.x() + bounds.width() &&
-                             mouseY >= bounds.y() && mouseY < bounds.y() + bounds.height();
-
-        if (nowHovered != this.hovered.get()) {
-            this.hovered.set(nowHovered);
-            this.hoverListeners.forEach(listener -> listener.onButtonHover(mouseX, mouseY, nowHovered));
         }
     }
 

@@ -20,7 +20,7 @@ import com.tridevmc.compound.ui.compose.element.IComposableElement;
 import com.tridevmc.compound.ui.compose.element.IContainer;
 import com.tridevmc.compound.ui.compose.element.IPrimitiveElement;
 import com.tridevmc.compound.ui.compose.event.CharEvent;
-import com.tridevmc.compound.ui.compose.event.KeyEvent;
+import com.tridevmc.compound.ui.compose.event.KeyInputEvent;
 import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
 import com.tridevmc.compound.ui.compose.event.MouseDragEvent;
 import com.tridevmc.compound.ui.compose.event.MouseMoveEvent;
@@ -117,16 +117,12 @@ public class ComposableElementScope<T extends IComposableElement> extends Elemen
             configurator.accept(scope);
         }
 
-        // Set composition function so it can re-compose when states change
         node.setCompositionFunction(() -> element.compose(scope));
-
-        // Run composition to build internal structure
         element.compose(scope);
     }
 
     @Override
     public void bind(State<?> state) {
-        // Bind the parent node to this state so it re-composes when state changes
         this.tree.bindNodeToState(this.parentNode, state);
     }
 
@@ -141,12 +137,12 @@ public class ComposableElementScope<T extends IComposableElement> extends Elemen
     }
 
     @Override
-    public void onKeyPress(Consumer<KeyEvent> handler) {
+    public void onKeyPress(Consumer<KeyInputEvent> handler) {
         this.parentNode.addKeyPressHandler(handler);
     }
 
     @Override
-    public void onKeyRelease(Consumer<KeyEvent> handler) {
+    public void onKeyRelease(Consumer<KeyInputEvent> handler) {
         this.parentNode.addKeyReleaseHandler(handler);
     }
 

@@ -17,8 +17,9 @@
 package com.tridevmc.compound.ui.compose.tree;
 
 import com.tridevmc.compound.ui.compose.element.IElement;
+import com.tridevmc.compound.ui.compose.layout.Size;
 import com.tridevmc.compound.ui.compose.event.CharEvent;
-import com.tridevmc.compound.ui.compose.event.KeyEvent;
+import com.tridevmc.compound.ui.compose.event.KeyInputEvent;
 import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
 import com.tridevmc.compound.ui.compose.event.MouseDragEvent;
 import com.tridevmc.compound.ui.compose.event.MouseMoveEvent;
@@ -41,14 +42,14 @@ public class TreeNode implements ITreeNode {
     private final List<State<?>> boundStates = new ArrayList<>();
     private Runnable compositionFunction;
     private SlotMap slotMap;
+    private Size measuredSize;
 
-    // Event handlers - elements can have multiple listeners for each event type
     private final List<Consumer<MouseClickEvent>> clickHandlers = new ArrayList<>();
     private final List<Runnable> mouseEnterHandlers = new ArrayList<>();
     private final List<Runnable> mouseExitHandlers = new ArrayList<>();
     private final List<Consumer<MouseScrollEvent>> scrollHandlers = new ArrayList<>();
-    private final List<Consumer<KeyEvent>> keyPressHandlers = new ArrayList<>();
-    private final List<Consumer<KeyEvent>> keyReleaseHandlers = new ArrayList<>();
+    private final List<Consumer<KeyInputEvent>> keyPressHandlers = new ArrayList<>();
+    private final List<Consumer<KeyInputEvent>> keyReleaseHandlers = new ArrayList<>();
     private final List<Consumer<CharEvent>> charTypedHandlers = new ArrayList<>();
     private final List<Consumer<MouseReleaseEvent>> mouseReleaseHandlers = new ArrayList<>();
     private final List<Consumer<MouseDragEvent>> mouseDragHandlers = new ArrayList<>();
@@ -63,7 +64,6 @@ public class TreeNode implements ITreeNode {
         return this.element;
     }
 
-    // Parent-child relationships
     @Override
     public ITreeNode getParent() {
         return this.parent;
@@ -114,7 +114,6 @@ public class TreeNode implements ITreeNode {
         return this.children.size();
     }
 
-    // State bindings
     @Override
     public List<State<?>> getBoundStates() {
         return new ArrayList<>(this.boundStates);
@@ -137,7 +136,6 @@ public class TreeNode implements ITreeNode {
         return this.boundStates.contains(state);
     }
 
-    // Composition function
     @Override
     public Runnable getCompositionFunction() {
         return this.compositionFunction;
@@ -153,7 +151,6 @@ public class TreeNode implements ITreeNode {
         return this.compositionFunction != null;
     }
 
-    // Event handlers
     @Override
     public void addClickHandler(Consumer<MouseClickEvent> handler) {
         this.clickHandlers.add(handler);
@@ -175,12 +172,12 @@ public class TreeNode implements ITreeNode {
     }
 
     @Override
-    public void addKeyPressHandler(Consumer<KeyEvent> handler) {
+    public void addKeyPressHandler(Consumer<KeyInputEvent> handler) {
         this.keyPressHandlers.add(handler);
     }
 
     @Override
-    public void addKeyReleaseHandler(Consumer<KeyEvent> handler) {
+    public void addKeyReleaseHandler(Consumer<KeyInputEvent> handler) {
         this.keyReleaseHandlers.add(handler);
     }
 
@@ -225,12 +222,12 @@ public class TreeNode implements ITreeNode {
     }
 
     @Override
-    public List<Consumer<KeyEvent>> getKeyPressHandlers() {
+    public List<Consumer<KeyInputEvent>> getKeyPressHandlers() {
         return new ArrayList<>(this.keyPressHandlers);
     }
 
     @Override
-    public List<Consumer<KeyEvent>> getKeyReleaseHandlers() {
+    public List<Consumer<KeyInputEvent>> getKeyReleaseHandlers() {
         return new ArrayList<>(this.keyReleaseHandlers);
     }
 
@@ -268,7 +265,6 @@ public class TreeNode implements ITreeNode {
         this.mouseMoveHandlers.clear();
     }
 
-    // Slot map
     @Override
     public SlotMap getSlotMap() {
         return this.slotMap;
@@ -279,7 +275,6 @@ public class TreeNode implements ITreeNode {
         this.slotMap = slotMap;
     }
 
-    // Tree queries
     @Override
     public int getDepth() {
         int depth = 0;
@@ -309,5 +304,15 @@ public class TreeNode implements ITreeNode {
     @Override
     public boolean isDescendantOf(ITreeNode other) {
         return other != null && other.isAncestorOf(this);
+    }
+
+    @Override
+    public Size getMeasuredSize() {
+        return this.measuredSize;
+    }
+
+    @Override
+    public void setMeasuredSize(Size size) {
+        this.measuredSize = size;
     }
 }

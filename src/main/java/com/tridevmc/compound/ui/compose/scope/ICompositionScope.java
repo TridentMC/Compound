@@ -20,7 +20,7 @@ import com.tridevmc.compound.ui.compose.element.IComposableElement;
 import com.tridevmc.compound.ui.compose.element.IContainer;
 import com.tridevmc.compound.ui.compose.element.IPrimitiveElement;
 import com.tridevmc.compound.ui.compose.event.CharEvent;
-import com.tridevmc.compound.ui.compose.event.KeyEvent;
+import com.tridevmc.compound.ui.compose.event.KeyInputEvent;
 import com.tridevmc.compound.ui.compose.event.MouseClickEvent;
 import com.tridevmc.compound.ui.compose.event.MouseDragEvent;
 import com.tridevmc.compound.ui.compose.event.MouseMoveEvent;
@@ -120,14 +120,14 @@ public interface ICompositionScope {
      *
      * @param handler the key press handler
      */
-    void onKeyPress(Consumer<KeyEvent> handler);
+    void onKeyPress(Consumer<KeyInputEvent> handler);
 
     /**
      * Register a key release handler on the current node.
      *
      * @param handler the key release handler
      */
-    void onKeyRelease(Consumer<KeyEvent> handler);
+    void onKeyRelease(Consumer<KeyInputEvent> handler);
 
     /**
      * Register a character typed handler on the current node.

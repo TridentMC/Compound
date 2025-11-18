@@ -53,27 +53,17 @@ public class Grid extends BaseContainer {
     @Override
     public Size measure(Constraints constraints, List<IElement> children) {
         var props = this.getLayoutProperties();
-        int horizontalPadding = props.getPaddingLeft() + props.getPaddingRight();
-        int verticalPadding = props.getPaddingTop() + props.getPaddingBottom();
 
         if (children.isEmpty() || this.columns <= 0) {
-            return new Size(horizontalPadding, verticalPadding);
+            return new Size(props.getHorizontalPadding(), props.getVerticalPadding());
         }
 
-        // Calculate content constraints (excluding padding)
         var contentConstraints = LayoutMath.calculateContentConstraints(constraints, props);
-        int rows = (int) Math.ceil((double) children.size() / this.columns);
+        int rows = calculateRowCount(children.size());
 
-        // Calculate available space per cell
-        int totalHorizontalSpacing = (this.columns - 1) * this.horizontalSpacing;
-        int totalVerticalSpacing = (rows - 1) * this.verticalSpacing;
-        int cellWidth = Math.max(0, (contentConstraints.maxWidth() - totalHorizontalSpacing) / this.columns);
-        int cellHeight = Math.max(0, (contentConstraints.maxHeight() - totalVerticalSpacing) / rows);
+        Size cellSize = calculateCellSize(contentConstraints.maxWidth(), contentConstraints.maxHeight(), rows);
+        var cellConstraints = new Constraints(0, cellSize.width(), 0, cellSize.height());
 
-        // Create constraints for each cell
-        var cellConstraints = new Constraints(0, cellWidth, 0, cellHeight);
-
-        // Track maximum dimensions actually used
         int[] columnWidths = new int[this.columns];
         int[] rowHeights = new int[rows];
 
@@ -87,18 +77,17 @@ public class Grid extends BaseContainer {
             rowHeights[row] = Math.max(rowHeights[row], childSize.height());
         }
 
-        // Calculate total size (content + padding)
-        int totalWidth = horizontalPadding;
+        int totalWidth = props.getHorizontalPadding();
         for (int width : columnWidths) {
             totalWidth += width;
         }
-        totalWidth += totalHorizontalSpacing;
+        totalWidth += (this.columns - 1) * this.horizontalSpacing;
 
-        int totalHeight = verticalPadding;
+        int totalHeight = props.getVerticalPadding();
         for (int height : rowHeights) {
             totalHeight += height;
         }
-        totalHeight += totalVerticalSpacing;
+        totalHeight += (rows - 1) * this.verticalSpacing;
 
         return new Size(
                 Math.min(totalWidth, constraints.maxWidth()),
@@ -114,38 +103,40 @@ public class Grid extends BaseContainer {
             return;
         }
 
-        // Calculate content area (excluding padding)
         var props = this.getLayoutProperties();
         var contentArea = LayoutMath.calculateContentArea(bounds, props);
 
-        int rows = (int) Math.ceil((double) children.size() / this.columns);
-
-        // Calculate available space per cell
-        int totalHorizontalSpacing = (this.columns - 1) * this.horizontalSpacing;
-        int totalVerticalSpacing = (rows - 1) * this.verticalSpacing;
-        int cellWidth = Math.max(0, (contentArea.width() - totalHorizontalSpacing) / this.columns);
-        int cellHeight = Math.max(0, (contentArea.height() - totalVerticalSpacing) / rows);
+        int rows = calculateRowCount(children.size());
+        Size cellSize = calculateCellSize(contentArea.width(), contentArea.height(), rows);
 
         for (int i = 0; i < children.size(); i++) {
             var child = children.get(i);
             int col = i % this.columns;
             int row = i / this.columns;
 
-            // Calculate position for this cell (within content area)
-            int x = contentArea.x() + (col * (cellWidth + this.horizontalSpacing));
-            int y = contentArea.y() + (row * (cellHeight + this.verticalSpacing));
+            int x = contentArea.x() + (col * (cellSize.width() + this.horizontalSpacing));
+            int y = contentArea.y() + (row * (cellSize.height() + this.verticalSpacing));
 
-            // Get child's measured size
-            var childSize = child.getBounds() != null ? child.getBounds().size() : new Size(0, 0);
+            var childSize = LayoutHelper.getMeasuredSize(child);
+            if (childSize == null) {
+                continue;
+            }
 
-            // Place child in its cell
-            var childBounds = new Bounds(
-                    new Position(x, y),
-                    childSize
-            );
-
+            var childBounds = new Bounds(new Position(x, y), childSize);
             LayoutHelper.placeChild(child, childBounds);
         }
+    }
+
+    private int calculateRowCount(int childCount) {
+        return (int) Math.ceil((double) childCount / this.columns);
+    }
+
+    private Size calculateCellSize(int availableWidth, int availableHeight, int rows) {
+        int totalHorizontalSpacing = (this.columns - 1) * this.horizontalSpacing;
+        int totalVerticalSpacing = (rows - 1) * this.verticalSpacing;
+        int cellWidth = Math.max(0, (availableWidth - totalHorizontalSpacing) / this.columns);
+        int cellHeight = Math.max(0, (availableHeight - totalVerticalSpacing) / rows);
+        return new Size(cellWidth, cellHeight);
     }
 
     public int getColumns() {
