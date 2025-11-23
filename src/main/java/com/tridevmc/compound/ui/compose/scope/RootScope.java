@@ -30,6 +30,7 @@ import com.tridevmc.compound.ui.compose.slot.SlotKey;
 import com.tridevmc.compound.ui.compose.slot.SlotMap;
 import com.tridevmc.compound.ui.compose.state.State;
 import com.tridevmc.compound.ui.compose.tree.ITreeNode;
+import com.tridevmc.compound.ui.compose.tree.TreeNode;
 import com.tridevmc.compound.ui.compose.tree.UITree;
 
 import java.util.function.Consumer;
@@ -118,6 +119,13 @@ public class RootScope implements ICompositionScope {
     }
 
     @Override
+    public void bindLayout(State<?> state) {
+        if (this.rootNode != null && this.rootNode instanceof TreeNode node) {
+            node.bindLayoutState(state);
+        }
+    }
+
+    @Override
     public void onClick(Consumer<MouseClickEvent> handler) {
         if (this.rootNode != null) {
             this.rootNode.addClickHandler(handler);
@@ -186,5 +194,10 @@ public class RootScope implements ICompositionScope {
     @Override
     public SlotMap getSlotMap() {
         throw new UnsupportedOperationException("Slots are not supported at the root level");
+    }
+
+    @Override
+    public UITree getTree() {
+        return this.tree;
     }
 }

@@ -27,9 +27,12 @@ import com.tridevmc.compound.ui.compose.event.MouseReleaseEvent;
 import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.compose.slot.SlotMap;
 import com.tridevmc.compound.ui.compose.state.State;
+import com.tridevmc.compound.ui.compose.state.StateObserver;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -37,12 +40,28 @@ import java.util.function.Consumer;
  */
 public class TreeNode implements ITreeNode {
     private final IElement element;
+    private UITree tree;
     private ITreeNode parent;
     private final List<ITreeNode> children = new ArrayList<>();
     private final List<State<?>> boundStates = new ArrayList<>();
+    private final Set<State<?>> compositionStates = new HashSet<>();
+    private final Set<State<?>> layoutStates = new HashSet<>();
     private Runnable compositionFunction;
     private SlotMap slotMap;
     private Size measuredSize;
+
+    // Two dedicated observers for different state types
+    private final StateObserver compositionObserver = state -> {
+        if (this.tree != null) {
+            this.tree.requestRecompose(this);
+        }
+    };
+
+    private final StateObserver layoutObserver = state -> {
+        if (this.tree != null) {
+            this.tree.requestRemeasure(this);
+        }
+    };
 
     private final List<Consumer<MouseClickEvent>> clickHandlers = new ArrayList<>();
     private final List<Runnable> mouseEnterHandlers = new ArrayList<>();
@@ -55,8 +74,9 @@ public class TreeNode implements ITreeNode {
     private final List<Consumer<MouseDragEvent>> mouseDragHandlers = new ArrayList<>();
     private final List<Consumer<MouseMoveEvent>> mouseMoveHandlers = new ArrayList<>();
 
-    public TreeNode(IElement element) {
+    public TreeNode(IElement element, UITree tree) {
         this.element = element;
+        this.tree = tree;
     }
 
     @Override
@@ -116,11 +136,19 @@ public class TreeNode implements ITreeNode {
 
     @Override
     public List<State<?>> getBoundStates() {
-        return new ArrayList<>(this.boundStates);
+        // Merge all state types for backward compatibility
+        Set<State<?>> all = new HashSet<>();
+        all.addAll(this.boundStates);
+        all.addAll(this.compositionStates);
+        all.addAll(this.layoutStates);
+        return new ArrayList<>(all);
     }
 
     @Override
+    @Deprecated
     public void bindState(State<?> state) {
+        // Default to composition binding for backward compatibility
+        this.bindCompositionState(state);
         if (!this.boundStates.contains(state)) {
             this.boundStates.add(state);
         }
@@ -129,11 +157,68 @@ public class TreeNode implements ITreeNode {
     @Override
     public void unbindState(State<?> state) {
         this.boundStates.remove(state);
+        // Try both types
+        this.unbindCompositionState(state);
+        this.unbindLayoutState(state);
     }
 
     @Override
     public boolean isBoundToState(State<?> state) {
-        return this.boundStates.contains(state);
+        return this.boundStates.contains(state) ||
+               this.compositionStates.contains(state) ||
+               this.layoutStates.contains(state);
+    }
+
+    @Override
+    public void bindCompositionState(State<?> state) {
+        if (this.compositionStates.add(state)) {  // Set.add returns true if added
+            state.addObserver(this.compositionObserver);
+        }
+    }
+
+    @Override
+    public void bindLayoutState(State<?> state) {
+        if (this.layoutStates.add(state)) {
+            state.addObserver(this.layoutObserver);
+        }
+    }
+
+    @Override
+    public void unbindCompositionState(State<?> state) {
+        if (this.compositionStates.remove(state)) {
+            state.removeObserver(this.compositionObserver);
+        }
+    }
+
+    @Override
+    public void unbindLayoutState(State<?> state) {
+        if (this.layoutStates.remove(state)) {
+            state.removeObserver(this.layoutObserver);
+        }
+    }
+
+    @Override
+    public Set<State<?>> getCompositionStates() {
+        return new HashSet<>(this.compositionStates);
+    }
+
+    @Override
+    public Set<State<?>> getLayoutStates() {
+        return new HashSet<>(this.layoutStates);
+    }
+
+    @Override
+    public void dispose() {
+        // Remove all state observers
+        for (State<?> state : this.compositionStates) {
+            state.removeObserver(this.compositionObserver);
+        }
+        for (State<?> state : this.layoutStates) {
+            state.removeObserver(this.layoutObserver);
+        }
+        this.compositionStates.clear();
+        this.layoutStates.clear();
+        this.boundStates.clear();
     }
 
     @Override

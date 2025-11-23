@@ -30,6 +30,7 @@ import com.tridevmc.compound.ui.compose.slot.SlotKey;
 import com.tridevmc.compound.ui.compose.slot.SlotMap;
 import com.tridevmc.compound.ui.compose.state.State;
 import com.tridevmc.compound.ui.compose.tree.ITreeNode;
+import com.tridevmc.compound.ui.compose.tree.TreeNode;
 import com.tridevmc.compound.ui.compose.tree.UITree;
 
 import java.util.function.Consumer;
@@ -97,6 +98,13 @@ public class ContainerScope<T extends IContainer> extends ElementScope<T> implem
     }
 
     @Override
+    public void bindLayout(State<?> state) {
+        if (this.parentNode instanceof TreeNode node) {
+            node.bindLayoutState(state);
+        }
+    }
+
+    @Override
     public void onClick(Consumer<MouseClickEvent> handler) {
         this.parentNode.addClickHandler(handler);
     }
@@ -149,5 +157,10 @@ public class ContainerScope<T extends IContainer> extends ElementScope<T> implem
     @Override
     public SlotMap getSlotMap() {
         throw new UnsupportedOperationException("Slots are not supported in container scopes");
+    }
+
+    @Override
+    public UITree getTree() {
+        return this.tree;
     }
 }

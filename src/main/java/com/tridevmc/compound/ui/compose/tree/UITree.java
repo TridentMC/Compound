@@ -16,6 +16,8 @@
 
 package com.tridevmc.compound.ui.compose.tree;
 
+import com.tridevmc.compound.ui.compose.animation.AnimationScheduler;
+import com.tridevmc.compound.ui.compose.state.GuiRenderStateAdapter;
 import com.tridevmc.compound.ui.compose.element.IElement;
 import com.tridevmc.compound.ui.compose.element.IPrimitiveElement;
 import com.tridevmc.compound.ui.compose.event.CharEvent;
@@ -42,18 +44,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
  * Manages the tree of nodes (like the DOM).
  * NOTE: This is internal to the framework and not exposed to elements or composition code.
  */
-public class UITree implements StateObserver {
+public class UITree {
     private ITreeNode root;
     private final Map<IElement, ITreeNode> elementToNode = new HashMap<>();
-    private final Set<State<?>> observedStates = new HashSet<>();
+    private final AnimationScheduler animationScheduler = new AnimationScheduler();
     private Size rootSize;
     private Size lastWindowSize = new Size(-1, -1);
+
+    public AnimationScheduler getAnimationScheduler() {
+        return this.animationScheduler;
+    }
 
     public void setRoot(ITreeNode root) {
         this.root = root;
@@ -79,7 +86,7 @@ public class UITree implements StateObserver {
     }
 
     public ITreeNode createNode(IElement element) {
-        TreeNode node = new TreeNode(element);
+        TreeNode node = new TreeNode(element, this);
         element.setTree(this);
         this.registerNode(node);
         return node;
@@ -96,6 +103,10 @@ public class UITree implements StateObserver {
     private void unregisterNode(ITreeNode node) {
         this.elementToNode.remove(node.getElement());
         node.getElement().setTree(null);
+
+        // Clean up state observers
+        node.dispose();
+
         for (ITreeNode child : node.getChildren()) {
             this.unregisterNode(child);
         }
@@ -112,15 +123,7 @@ public class UITree implements StateObserver {
             parent.removeChild(node);
         }
 
-        Set<State<?>> statesToCheck = new HashSet<>();
-        this.walkDepthFirst(node, n -> statesToCheck.addAll(n.getBoundStates()));
-
         this.unregisterNode(node);
-
-        for (State<?> state : statesToCheck) {
-            this.unregisterStateIfUnused(state);
-        }
-
         node.getElement().onDetached();
     }
 
@@ -142,12 +145,20 @@ public class UITree implements StateObserver {
     }
 
     public void walkDepthFirst(ITreeNode start, Consumer<ITreeNode> visitor) {
+        this.walkDepthFirstWithDepth(start, 0, (node, depth) -> visitor.accept(node));
+    }
+
+    /**
+     * Walk tree depth-first, providing depth to visitor.
+     * Depth-first composition order: parent before children.
+     */
+    public void walkDepthFirstWithDepth(ITreeNode start, int depth, BiConsumer<ITreeNode, Integer> visitor) {
         if (start == null) {
             return;
         }
-        visitor.accept(start);
+        visitor.accept(start, depth);
         for (ITreeNode child : start.getChildren()) {
-            this.walkDepthFirst(child, visitor);
+            this.walkDepthFirstWithDepth(child, depth + 1, visitor);
         }
     }
 
@@ -398,72 +409,50 @@ public class UITree implements StateObserver {
         }
     }
 
-    @Override
-    public void onStateChanged(State<?> state) {
-        List<ITreeNode> nodesToRecompose = new ArrayList<>();
-        this.walkDepthFirst(this.root, node -> {
-            if (node.isBoundToState(state)) {
-                nodesToRecompose.add(node);
-            }
-        });
-
-        for (ITreeNode node : nodesToRecompose) {
-            this.recomposeNode(node);
-        }
-    }
-
     /**
-     * Register a state for observation. The UITree will observe this state
-     * and trigger re-composition when it changes.
+     * Request recomposition of a specific node.
+     * Called directly by TreeNode composition observers.
      *
-     * @param state the state to observe
+     * @param node the node to recompose
      */
-    public void registerState(State<?> state) {
-        if (!this.observedStates.contains(state)) {
-            this.observedStates.add(state);
-            state.addObserver(this);
-        }
+    public void requestRecompose(ITreeNode node) {
+        this.recomposeNode(node);
     }
 
     /**
-     * Unregister a state from observation if it's no longer used by any nodes.
+     * Request remeasurement of a specific node without recomposition.
+     * Called directly by TreeNode layout observers for layout-only state changes.
      *
-     * @param state the state to check and potentially unregister
+     * @param node the node that needs remeasurement
      */
-    public void unregisterStateIfUnused(State<?> state) {
-        boolean[] isUsed = {false};
-        this.walkDepthFirst(this.root, node -> {
-            if (node.isBoundToState(state)) {
-                isUsed[0] = true;
-            }
-        });
-
-        if (!isUsed[0] && this.observedStates.contains(state)) {
-            this.observedStates.remove(state);
-            state.removeObserver(this);
-        }
+    public void requestRemeasure(ITreeNode node) {
+        this.requestRemeasurement(node);
     }
 
     /**
-     * Bind a node to a state and ensure the state is observed.
+     * Bind a node to a state.
+     * Deprecated: Use node.bindCompositionState() or node.bindLayoutState() directly.
      *
      * @param node  the node to bind
      * @param state the state to bind to
      */
+    @Deprecated
     public void bindNodeToState(ITreeNode node, State<?> state) {
-        node.bindState(state);
-        this.registerState(state);
+        // Default to composition binding for backward compatibility
+        node.bindCompositionState(state);
     }
 
     /**
-     * Unbind a node from a state and cleanup if no longer needed.
+     * Unbind a node from a state.
+     * Deprecated: Use node.unbindCompositionState() or node.unbindLayoutState() directly.
      *
      * @param node  the node to unbind
      * @param state the state to unbind from
      */
+    @Deprecated
     public void unbindNodeFromState(ITreeNode node, State<?> state) {
-        node.unbindState(state);
-        this.unregisterStateIfUnused(state);
+        node.unbindCompositionState(state);
+        node.unbindLayoutState(state);
     }
 
     /**
@@ -474,6 +463,10 @@ public class UITree implements StateObserver {
         if (this.root == null) {
             return;
         }
+
+        // Update animations FIRST using Minecraft's tick system
+        // This updates animation state values for the current tick
+        this.animationScheduler.updateAnimations(context.getTicks());
 
         var sizeChanged = this.lastWindowSize.width() != width || this.lastWindowSize.height() != height;
 
@@ -491,11 +484,21 @@ public class UITree implements StateObserver {
         if (this.root == null) {
             return;
         }
+
+        // Create adapter to guarantee composition order layering
+        var adapter = new GuiRenderStateAdapter(context.getGuiRenderState());
+
+        // Phase 1: Collect elements in strict composition order
+        adapter.startCollecting();
         this.walkDepthFirst(this.root, node -> {
             IElement element = node.getElement();
             if (element.isVisible() && element instanceof IPrimitiveElement primitive) {
-                primitive.draw(context);
+                primitive.draw(context); // Elements collected in order
             }
         });
+
+        // Phase 2: Submit elements to original GuiRenderState in collected order
+        // This ensures composition order = render order = layering order
+        adapter.flush();
     }
 }

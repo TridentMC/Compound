@@ -525,4 +525,12 @@ public interface IPrimitiveScreenContext {
      */
     EnumUILayer getCurrentLayer();
 
+    /**
+     * Advances to the next rendering stratum (layer).
+     * This ensures composition order is respected when rendering.
+     */
+    default void nextStratum() {
+        this.getGuiRenderState().nextStratum();
+    }
+
 }

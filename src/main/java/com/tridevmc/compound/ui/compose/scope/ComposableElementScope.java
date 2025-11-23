@@ -31,6 +31,7 @@ import com.tridevmc.compound.ui.compose.slot.SlotKey;
 import com.tridevmc.compound.ui.compose.slot.SlotMap;
 import com.tridevmc.compound.ui.compose.state.State;
 import com.tridevmc.compound.ui.compose.tree.ITreeNode;
+import com.tridevmc.compound.ui.compose.tree.TreeNode;
 import com.tridevmc.compound.ui.compose.tree.UITree;
 
 import java.util.function.Consumer;
@@ -127,6 +128,13 @@ public class ComposableElementScope<T extends IComposableElement> extends Elemen
     }
 
     @Override
+    public void bindLayout(State<?> state) {
+        if (this.parentNode instanceof TreeNode node) {
+            node.bindLayoutState(state);
+        }
+    }
+
+    @Override
     public void onClick(Consumer<MouseClickEvent> handler) {
         this.parentNode.addClickHandler(handler);
     }
@@ -169,5 +177,10 @@ public class ComposableElementScope<T extends IComposableElement> extends Elemen
     @Override
     public SlotMap getSlotMap() {
         return this.slotMap;
+    }
+
+    @Override
+    public UITree getTree() {
+        return this.tree;
     }
 }

@@ -16,6 +16,9 @@
 
 package com.tridevmc.compound.ui.compose.scope;
 
+import com.tridevmc.compound.ui.compose.animation.AnimatedState;
+import com.tridevmc.compound.ui.compose.animation.Easing;
+import com.tridevmc.compound.ui.compose.animation.Interpolators;
 import com.tridevmc.compound.ui.compose.element.IComposableElement;
 import com.tridevmc.compound.ui.compose.element.IContainer;
 import com.tridevmc.compound.ui.compose.element.IPrimitiveElement;
@@ -29,6 +32,7 @@ import com.tridevmc.compound.ui.compose.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.compose.slot.SlotKey;
 import com.tridevmc.compound.ui.compose.slot.SlotMap;
 import com.tridevmc.compound.ui.compose.state.State;
+import com.tridevmc.compound.ui.compose.tree.UITree;
 
 import java.util.function.Consumer;
 
@@ -100,6 +104,24 @@ public interface ICompositionScope {
      * @param state the state to observe
      */
     void bind(State<?> state);
+
+    /**
+     * Bind to a state for composition-only updates (triggers full recomposition).
+     * Use this when state changes affect the structure of the UI (conditional rendering, lists, etc.).
+     *
+     * @param state the state to observe for composition changes
+     */
+    default void bindComposition(State<?> state) {
+        this.bind(state);
+    }
+
+    /**
+     * Bind to a state for layout-only updates (triggers remeasure, not recomposition).
+     * Use this when state changes only affect layout properties (size, position, spacing, etc.).
+     *
+     * @param state the state to observe for layout changes
+     */
+    void bindLayout(State<?> state);
 
     /**
      * Register a click handler on the current node.
@@ -202,4 +224,80 @@ public interface ICompositionScope {
      * @return the slot map
      */
     SlotMap getSlotMap();
+
+    /**
+     * Get the UITree for accessing the animation scheduler.
+     *
+     * @return the UITree
+     */
+    UITree getTree();
+
+    /**
+     * Create an animated float state.
+     *
+     * @param initialValue the initial value
+     * @param durationMs the animation duration in milliseconds
+     * @return the animated state
+     */
+    default AnimatedState<Float> animateFloat(float initialValue, long durationMs) {
+        return animateFloat(initialValue, durationMs, Easing.EASE_IN_OUT);
+    }
+
+    /**
+     * Create an animated float state with custom easing.
+     *
+     * @param initialValue the initial value
+     * @param durationMs the animation duration in milliseconds
+     * @param easing the easing function
+     * @return the animated state
+     */
+    default AnimatedState<Float> animateFloat(float initialValue, long durationMs, Easing easing) {
+        return new AnimatedState<>(initialValue, durationMs, Interpolators.FLOAT, easing, getTree().getAnimationScheduler());
+    }
+
+    /**
+     * Create an animated integer state.
+     *
+     * @param initialValue the initial value
+     * @param durationMs the animation duration in milliseconds
+     * @return the animated state
+     */
+    default AnimatedState<Integer> animateInt(int initialValue, long durationMs) {
+        return animateInt(initialValue, durationMs, Easing.EASE_IN_OUT);
+    }
+
+    /**
+     * Create an animated integer state with custom easing.
+     *
+     * @param initialValue the initial value
+     * @param durationMs the animation duration in milliseconds
+     * @param easing the easing function
+     * @return the animated state
+     */
+    default AnimatedState<Integer> animateInt(int initialValue, long durationMs, Easing easing) {
+        return new AnimatedState<>(initialValue, durationMs, Interpolators.INT, easing, getTree().getAnimationScheduler());
+    }
+
+    /**
+     * Create an animated color state (ARGB).
+     *
+     * @param initialValue the initial color value (ARGB)
+     * @param durationMs the animation duration in milliseconds
+     * @return the animated state
+     */
+    default AnimatedState<Integer> animateColor(int initialValue, long durationMs) {
+        return animateColor(initialValue, durationMs, Easing.EASE_IN_OUT);
+    }
+
+    /**
+     * Create an animated color state with custom easing.
+     *
+     * @param initialValue the initial color value (ARGB)
+     * @param durationMs the animation duration in milliseconds
+     * @param easing the easing function
+     * @return the animated state
+     */
+    default AnimatedState<Integer> animateColor(int initialValue, long durationMs, Easing easing) {
+        return new AnimatedState<>(initialValue, durationMs, Interpolators.COLOR, easing, getTree().getAnimationScheduler());
+    }
 }

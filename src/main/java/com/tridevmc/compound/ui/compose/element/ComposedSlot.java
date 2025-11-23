@@ -49,6 +49,13 @@ public class ComposedSlot extends BaseElement implements IComposableElement {
                     1, 1, 1, 1)
     );
 
+    private static final IScreenSprite SLOT_HIGHLIGHT_BACK_SPRITE = IScreenSprite.of(
+            ResourceLocation.withDefaultNamespace("container/slot_highlight_back")
+    );
+    private static final IScreenSprite SLOT_HIGHLIGHT_FRONT_SPRITE = IScreenSprite.of(
+            ResourceLocation.withDefaultNamespace("container/slot_highlight_front")
+    );
+
     private final Slot vanillaSlot;
     private boolean drawOverlay;
     private boolean drawUnderlay;
@@ -104,12 +111,13 @@ public class ComposedSlot extends BaseElement implements IComposableElement {
     public void compose(ICompositionScope scope) {
         // Compose as a stack with proper layering
         scope.e(new Stack(), stack -> {
-            // Bottom layer: slot background sprite
+            // Bottom layer: slot background sprite (18x18)
             stack.e(new ElementSprite(SLOT_SPRITE));
 
-            // Middle layer: underlay highlight (for quick craft selection)
+            // Underlay layer: highlight sprite (24x24, positioned with -3 offset to center on slot)
             // Uses supplier so it updates dynamically without recomposition
-            stack.e(new ElementRect(() -> this.drawUnderlay ? 0x80FFFFFF : 0x00FFFFFF), r -> r.layout().margin(1));
+            stack.e(new ElementSprite(() -> this.drawUnderlay ? SLOT_HIGHLIGHT_BACK_SPRITE : null),
+                    sprite -> sprite.layout().margin(-3));
 
             // Item layer: the actual item with 1px margin so it doesn't touch slot edges
             stack.e(new ElementItem(
@@ -118,10 +126,10 @@ public class ComposedSlot extends BaseElement implements IComposableElement {
                     ), i -> i.layout().margin(1)
             );
 
-            // Top layer: overlay highlight (for hover)
+            // Overlay layer: highlight sprite (24x24, positioned with -3 offset to center on slot)
             // Uses supplier so it updates dynamically without recomposition
-            stack.e(new ElementRect(() -> this.drawOverlay ? 0x80FFFFFF : 0x00FFFFFF),
-                    r -> r.layout().margin(1));
+            stack.e(new ElementSprite(() -> this.drawOverlay ? SLOT_HIGHLIGHT_FRONT_SPRITE : null),
+                    sprite -> sprite.layout().margin(-3));
         });
 
         // TODO: Tooltip handling - implement onTooltipRender event or similar mechanism.

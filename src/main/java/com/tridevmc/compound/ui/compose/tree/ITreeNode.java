@@ -29,6 +29,7 @@ import com.tridevmc.compound.ui.compose.slot.SlotMap;
 import com.tridevmc.compound.ui.compose.state.State;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -63,6 +64,21 @@ public interface ITreeNode {
     void unbindState(State<?> state);
 
     boolean isBoundToState(State<?> state);
+
+    // New typed binding methods
+    void bindCompositionState(State<?> state);
+
+    void bindLayoutState(State<?> state);
+
+    void unbindCompositionState(State<?> state);
+
+    void unbindLayoutState(State<?> state);
+
+    Set<State<?>> getCompositionStates();
+
+    Set<State<?>> getLayoutStates();
+
+    void dispose();
 
     // Composition function (stored for re-composition)
     Runnable getCompositionFunction();
