@@ -17,7 +17,6 @@
 package com.tridevmc.compound.ui.compose.tree;
 
 import com.tridevmc.compound.ui.compose.animation.AnimationScheduler;
-import com.tridevmc.compound.ui.compose.state.GuiRenderStateAdapter;
 import com.tridevmc.compound.ui.compose.element.IElement;
 import com.tridevmc.compound.ui.compose.element.IPrimitiveElement;
 import com.tridevmc.compound.ui.compose.event.CharEvent;
@@ -530,7 +529,6 @@ public class UITree {
         }
 
         // Render tree recursively with clipping support
-        // Note: GuiRenderStateAdapter was removed as it wasn't actually being used (see ADAPTER-ISSUE.md)
         this.renderNode(this.root, context, null);
     }
 
