@@ -16,18 +16,22 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+
 /**
- * The core interface for all UI elements in the compose system.
- * All elements implement this interface directly or through sub-interfaces.
+ * Interface for layout containers that manage child elements.
+ * Containers are responsible for measuring and placing their children.
  *
- * <p>Element types:</p>
+ * <p>Built-in containers:</p>
  * <ul>
- *   <li>{@link IPrimitiveElement} - Leaf nodes that draw pixels (no children)</li>
- *   <li>{@link IComposableElement} - Elements with internal composition</li>
- *   <li>{@link IContainer} - Layout containers that manage children</li>
+ *   <li>{@link Column} - Vertical layout</li>
+ *   <li>{@link Row} - Horizontal layout</li>
+ *   <li>{@link Stack} - Z-order layering</li>
+ *   <li>{@link Box} - Single child with alignment</li>
+ *   <li>{@link Grid} - Grid layout</li>
  * </ul>
  */
-public interface IElement extends IGenericElement {
-    // Core element contract is defined in IGenericElement
-    // This interface serves as the common type for all UI elements
+public interface IContainer extends IGenericContainer {
+    // Container-specific methods could be added here if needed
+    // Currently inherits getChildren() from IGenericContainer
 }

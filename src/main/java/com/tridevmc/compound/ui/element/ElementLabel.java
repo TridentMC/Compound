@@ -16,118 +16,115 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.google.common.collect.Lists;
-import com.tridevmc.compound.ui.ICompoundUI;
-import com.tridevmc.compound.ui.Rect2F;
-import com.tridevmc.compound.ui.layout.ILayout;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.components.ComponentRenderUtils;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FormattedCharSequence;
 
 import java.util.List;
+import java.util.function.Supplier;
 
-
-/**
- * A simple text label element to add to UIs, contains auto resize and text wrapping functionality.
- */
-public class ElementLabel extends Element {
-
-    private final Font fontRenderer;
+public class ElementLabel extends BasePrimitiveElement {
 
     private Component text;
-    private boolean drawShadow, wrapText, autoSize;
-    private int maxWidth, maxHeight;
+    private Supplier<Integer> colorSupplier;
+    private Supplier<Boolean> shadowSupplier;
 
-    private List<FormattedCharSequence> lines = Lists.newArrayList();
-    private int longestLineWidth;
-
-    public ElementLabel(Rect2F dimensions, ILayout layout, Font fontRenderer, boolean drawShadow, boolean wrapText, boolean autoSize, int maxWidth, int maxHeight) {
-        super(dimensions, layout);
-        this.fontRenderer = fontRenderer;
-        this.drawShadow = drawShadow;
-        this.wrapText = wrapText;
-        this.autoSize = autoSize;
-        this.maxWidth = maxWidth;
-        this.maxHeight = maxHeight;
+    public ElementLabel(Component text) {
+        this(text, () -> 0xFFFFFF, () -> true);
     }
 
-    public ElementLabel(Rect2F dimensions, ILayout layout, Font fontRenderer, boolean drawShadow, boolean wrapText, boolean autoSize) {
-        this(dimensions, layout, fontRenderer, drawShadow, wrapText, autoSize, -1, -1);
+    public ElementLabel(Component text, int color) {
+        this(text, () -> color, () -> true);
     }
 
-    public ElementLabel(Rect2F dimensions, ILayout layout, Font fontRenderer) {
-        this(dimensions, layout, fontRenderer, true, true, true, -1, -1);
+    public ElementLabel(Component text, int color, boolean shadow) {
+        this(text, () -> color, () -> shadow);
     }
 
-    public ElementLabel(Rect2F dimensions, ILayout layout) {
-        this(dimensions, layout, Minecraft.getInstance().font);
+    public ElementLabel(Component text, Supplier<Integer> colorSupplier) {
+        this(text, colorSupplier, () -> true);
+    }
+
+    public ElementLabel(Component text, Supplier<Integer> colorSupplier, Supplier<Boolean> shadowSupplier) {
+        this.text = text;
+        this.colorSupplier = colorSupplier;
+        this.shadowSupplier = shadowSupplier;
     }
 
     @Override
-    public void drawForeground(ICompoundUI ui) {
-        IScreenContext screen = ui.getScreenContext();
-        Rect2F dimensions = this.getDrawnDimensions(screen);
+    public Size measure(Constraints constraints, List<IElement> children) {
+        var font = Minecraft.getInstance().font;
+        int width;
+        int height;
 
-        double nextYLevel = dimensions.getY();
-        for (var line : this.lines) {
-            if (nextYLevel + this.fontRenderer.lineHeight > dimensions.getY() + dimensions.getHeight()) {
-                nextYLevel = Math.min(dimensions.getY(), dimensions.getHeight() - this.fontRenderer.lineHeight);
-            }
-
-            if (this.drawShadow) {
-                screen.drawFormattedCharSequenceWithShadow(line, dimensions.getX(), (float) nextYLevel);
-            } else {
-                screen.drawFormattedCharSequence(line, dimensions.getX(), (float) nextYLevel);
-            }
-
-            nextYLevel += this.fontRenderer.lineHeight;
+        if (font != null) {
+            width = font.width(this.text);
+            height = font.lineHeight;
+        } else {
+            width = this.text.getString().length() * 6;
+            height = 9;
         }
+
+        width = Math.min(width, constraints.maxWidth());
+        height = Math.min(height, constraints.maxHeight());
+
+        return new Size(width, height);
     }
 
-    private void resize() {
-        if (this.autoSize) {
-            int newWidth = Math.min(this.getMaxWidth(), this.longestLineWidth);
-            int newHeight = Math.min(this.getMaxHeight(), this.lines.size() * (this.fontRenderer.lineHeight + 2));
-            this.setDimensions(this.getDimensions().setSize(newWidth, newHeight));
+    @Override
+    protected void drawElement(IScreenContext context, Bounds bounds) {
+        boolean shadow = this.shadowSupplier.get();
+        int color = this.colorSupplier.get();
+
+        Component coloredText = this.text.copy().withStyle(style -> style.withColor(color));
+
+        if (shadow) {
+            context.drawTextWithShadow(coloredText, bounds.x(), bounds.y());
+        } else {
+            context.drawText(coloredText, bounds.x(), bounds.y());
         }
-    }
-
-    public void setText(String text) {
-        this.setText(Component.translatable(text));
-    }
-
-    public void setText(Component text) {
-        this.text = text;
-
-        this.lines = this.wrapText ? ComponentRenderUtils.wrapComponents(this.text, this.getMaxWidth(), this.fontRenderer) : Lists.newArrayList(text.getVisualOrderText());
-        this.longestLineWidth = this.lines.stream()
-                .mapToInt(this.fontRenderer::width) // getStringWidth
-                .max()
-                .orElseGet(this::getMaxWidth);
-        this.resize();
     }
 
     public Component getText() {
         return this.text;
     }
 
-    private int getMaxWidth() {
-        if (this.autoSize) {
-            return this.maxWidth == -1 ? Integer.MAX_VALUE : this.maxWidth;
-        } else {
-            return (int) this.getDimensions().getWidth();
-        }
+    public void setText(Component text) {
+        this.text = text;
     }
 
-    private int getMaxHeight() {
-        if (this.autoSize) {
-            return this.maxHeight == -1 ? Integer.MAX_VALUE : this.maxHeight;
-        } else {
-            return (int) this.getDimensions().getHeight();
-        }
+    public int getColor() {
+        return this.colorSupplier.get();
     }
 
+    public void setColor(int color) {
+        this.colorSupplier = () -> color;
+    }
+
+    public void setColorSupplier(Supplier<Integer> colorSupplier) {
+        this.colorSupplier = colorSupplier;
+    }
+
+    public Supplier<Integer> getColorSupplier() {
+        return this.colorSupplier;
+    }
+
+    public boolean isShadow() {
+        return this.shadowSupplier.get();
+    }
+
+    public void setShadow(boolean shadow) {
+        this.shadowSupplier = () -> shadow;
+    }
+
+    public void setShadowSupplier(Supplier<Boolean> shadowSupplier) {
+        this.shadowSupplier = shadowSupplier;
+    }
+
+    public Supplier<Boolean> getShadowSupplier() {
+        return this.shadowSupplier;
+    }
 }

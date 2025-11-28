@@ -16,88 +16,147 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.tridevmc.compound.ui.ICompoundUI;
-import com.tridevmc.compound.ui.Rect2F;
-import com.tridevmc.compound.ui.UVData;
-import com.tridevmc.compound.ui.layout.ILayout;
-import com.tridevmc.compound.ui.layout.LayoutNone;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutHelper;
+import com.tridevmc.compound.ui.layout.Size;
+import com.tridevmc.compound.ui.scope.ICompositionScope;
+import com.tridevmc.compound.ui.slot.SlotKey;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
+import com.tridevmc.compound.ui.sprite.IScreenSpriteWriter;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.List;
+import java.util.function.Supplier;
 
 /**
- * A resizable box element to add to UIs, useful for backgrounds to place elements on top of.
+ * A composable box element that renders a nineslice background with content on top.
+ * By default uses the inventory container sprite.
  */
-public class ElementBox extends Element {
+public class ElementBox extends BaseElement implements IComposableElement {
 
-    private static final IScreenSprite INVENTORY_SPRITE = IScreenSprite.ofAssetLocation(ResourceLocation.withDefaultNamespace("textures/gui/container/inventory.png"), 256, 256);
+    public static final SlotKey CONTENT_SLOT = new SlotKey("content");
 
-    public ElementBox(Rect2F dimensions) {
-        this(dimensions, new LayoutNone());
+    private static final int TEXTURE_SIZE = 256;
+    private static final int SPRITE_WIDTH = 176;
+    private static final int SPRITE_HEIGHT = 166;
+    private static final int BORDER_SIZE = 4;
+    private static final int RIGHT_EDGE_X = 172;
+    private static final int BOTTOM_EDGE_Y = 162;
+
+    private static IScreenSprite DEFAULT_SPRITE = null;
+
+    private Supplier<IScreenSprite> spriteSupplier;
+
+    public ElementBox() {
+        this(ElementBox::getDefaultSprite);
     }
 
-    public ElementBox(Rect2F dimensions, ILayout layout) {
-        super(dimensions, layout);
+    public ElementBox(IScreenSprite sprite) {
+        this(() -> sprite);
+    }
+
+    public ElementBox(Supplier<IScreenSprite> spriteSupplier) {
+        this.spriteSupplier = spriteSupplier;
+    }
+
+    private static IScreenSprite getDefaultSprite() {
+        if (DEFAULT_SPRITE == null) {
+            var baseSprite = IScreenSprite.ofAssetLocation(
+                    ResourceLocation.withDefaultNamespace("textures/gui/container/inventory.png"),
+                    TEXTURE_SIZE, TEXTURE_SIZE
+            );
+            // Custom writer that matches old ElementBox behavior: 4px corners/edges, 1px gray fill
+            DEFAULT_SPRITE = wrapWithWriter(baseSprite, new IScreenSpriteWriter() {
+                @Override
+                public void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height) {
+                    screen.drawRectUsingSprite(sprite, x, y, BORDER_SIZE, BORDER_SIZE, 0, 0, BORDER_SIZE, BORDER_SIZE);
+                    screen.drawRectUsingSprite(sprite, x + width - BORDER_SIZE, y, BORDER_SIZE, BORDER_SIZE, RIGHT_EDGE_X, 0, SPRITE_WIDTH, BORDER_SIZE);
+                    screen.drawRectUsingSprite(sprite, x, y + height - BORDER_SIZE, BORDER_SIZE, BORDER_SIZE, 0, BOTTOM_EDGE_Y, BORDER_SIZE, SPRITE_HEIGHT);
+                    screen.drawRectUsingSprite(sprite, x + width - BORDER_SIZE, y + height - BORDER_SIZE, BORDER_SIZE, BORDER_SIZE, RIGHT_EDGE_X, BOTTOM_EDGE_Y, SPRITE_WIDTH, SPRITE_HEIGHT);
+
+                    screen.drawRectUsingSprite(sprite, x, y + BORDER_SIZE, BORDER_SIZE, height - BORDER_SIZE * 2, 0, BORDER_SIZE, BORDER_SIZE, BORDER_SIZE + 1);
+                    screen.drawRectUsingSprite(sprite, x + width - BORDER_SIZE, y + BORDER_SIZE, BORDER_SIZE, height - BORDER_SIZE * 2, RIGHT_EDGE_X, BORDER_SIZE, SPRITE_WIDTH, BORDER_SIZE + 1);
+                    screen.drawRectUsingSprite(sprite, x + BORDER_SIZE, y, width - BORDER_SIZE * 2, BORDER_SIZE, BORDER_SIZE, 0, BORDER_SIZE + 1, BORDER_SIZE);
+                    screen.drawRectUsingSprite(sprite, x + BORDER_SIZE, y + height - BORDER_SIZE, width - BORDER_SIZE * 2, BORDER_SIZE, BORDER_SIZE, BOTTOM_EDGE_Y, BORDER_SIZE + 1, SPRITE_HEIGHT);
+
+                    screen.drawRectUsingSprite(sprite, x + BORDER_SIZE, y + BORDER_SIZE, width - BORDER_SIZE * 2, height - BORDER_SIZE * 2, BORDER_SIZE, BORDER_SIZE, BORDER_SIZE + 1, BORDER_SIZE + 1);
+                }
+            });
+        }
+        return DEFAULT_SPRITE;
+    }
+
+    private static IScreenSprite wrapWithWriter(IScreenSprite base, IScreenSpriteWriter writer) {
+        return new IScreenSprite() {
+            public IScreenSpriteWriter getWriter() { return writer; }
+            public ResourceLocation getTextureLocation() { return base.getTextureLocation(); }
+            public float getMinU() { return 0F; }
+            public float getMinV() { return 0F; }
+            public float getMaxU() { return (float) SPRITE_WIDTH / TEXTURE_SIZE; }
+            public float getMaxV() { return (float) SPRITE_HEIGHT / TEXTURE_SIZE; }
+            public float getWidth() { return (float) SPRITE_WIDTH / TEXTURE_SIZE; }
+            public float getHeight() { return (float) SPRITE_HEIGHT / TEXTURE_SIZE; }
+            public int getWidthInPixels() { return SPRITE_WIDTH; }
+            public int getHeightInPixels() { return SPRITE_HEIGHT; }
+        };
     }
 
     @Override
-    public void drawBackground(ICompoundUI ui) {
-        IScreenContext screen = ui.getScreenContext();
+    public void compose(ICompositionScope scope) {
+        scope.e(new Stack(), stack -> {
+            stack.layout().fillMax();
 
-        this.drawCorners(ui);
-        this.drawConnectingLines(ui);
-        this.drawMiddle(ui);
+            IScreenSprite sprite = this.spriteSupplier.get();
+            if (sprite != null) {
+                stack.e(new ElementSprite(this.spriteSupplier));
+            } else {
+                stack.e(new ElementRect(0xFFC6C6C6));
+            }
+
+            scope.slotInto(CONTENT_SLOT, stack);
+        });
     }
 
-    private void drawCorners(ICompoundUI ui) {
-        IScreenContext screen = ui.getScreenContext();
-        Rect2F rect = this.getDrawnDimensions(screen);
-        float xOff = rect.getX();
-        float yOff = rect.getY();
-        float width = rect.getWidth();
-        float height = rect.getHeight();
+    @Override
+    public Size measure(Constraints constraints, List<IElement> children) {
+        var finalSize = LayoutHelper.calculateSizeWithProperties(
+            Integer.MAX_VALUE, Integer.MAX_VALUE,
+            this.getLayoutProperties(),
+            constraints
+        );
 
-        // top-left -> top-right -> bottom-left -> bottom-right
-        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff, yOff, 4, 4), new UVData(0, 0), new UVData(4, 4));
-        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff + width - 4, yOff, 4, 4),
-                new UVData(172, 0), new UVData(176, 4));
-        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff, yOff + height - 4, 4, 4),
-                new UVData(0, 162), new UVData(4, 166));
-        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff + width - 4, yOff + height - 4, 4, 4),
-                new UVData(172, 162), new UVData(176, 166));
+        if (!children.isEmpty()) {
+            var childConstraints = Constraints.fixed(finalSize.width(), finalSize.height());
+            LayoutHelper.measureChild(children.getFirst(), childConstraints);
+        }
+
+        return finalSize;
     }
 
-    private void drawConnectingLines(ICompoundUI ui) {
-        IScreenContext screen = ui.getScreenContext();
-        Rect2F rect = this.getDrawnDimensions(screen);
-        float xOff = rect.getX();
-        float yOff = rect.getY();
-        float width = rect.getWidth();
-        float height = rect.getHeight();
+    @Override
+    public void place(Bounds bounds, List<IElement> children) {
+        this.setBounds(bounds);
 
-        // left -> right -> up -> down
-        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff, yOff + 4, 4, height - 8),
-                new UVData(0, 4), new UVData(4, 5));
-        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff + width - 4, yOff + 4, 4, height - 8),
-                new UVData(172, 4), new UVData(176, 5));
-        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff + 4, yOff, width - 8, 4),
-                new UVData(4, 0), new UVData(5, 4));
-        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff + 4, yOff + height - 4, width - 8, 4),
-                new UVData(4, 162), new UVData(5, 166));
-
+        if (!children.isEmpty()) {
+            LayoutHelper.placeChild(children.getFirst(), bounds);
+        }
     }
 
-    private void drawMiddle(ICompoundUI ui) {
-        IScreenContext screen = ui.getScreenContext();
-        Rect2F rect = this.getDrawnDimensions(screen);
-        float xOff = rect.getX();
-        float yOff = rect.getY();
-        float width = rect.getWidth();
-        float height = rect.getHeight();
-
-        screen.drawRectUsingSprite(INVENTORY_SPRITE, new Rect2F(xOff + 4, yOff + 4, width - 8, height - 8),
-                new UVData(4, 4), new UVData(5, 5));
+    public IScreenSprite getSprite() {
+        return this.spriteSupplier.get();
     }
 
+    public void setSprite(IScreenSprite sprite) {
+        this.spriteSupplier = () -> sprite;
+    }
+
+    public Supplier<IScreenSprite> getSpriteSupplier() {
+        return this.spriteSupplier;
+    }
+
+    public void setSpriteSupplier(Supplier<IScreenSprite> spriteSupplier) {
+        this.spriteSupplier = spriteSupplier;
+    }
 }

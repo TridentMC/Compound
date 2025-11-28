@@ -16,18 +16,20 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.tridevmc.compound.ui.scope.ICompositionScope;
+
 /**
- * The core interface for all UI elements in the compose system.
- * All elements implement this interface directly or through sub-interfaces.
- *
- * <p>Element types:</p>
- * <ul>
- *   <li>{@link IPrimitiveElement} - Leaf nodes that draw pixels (no children)</li>
- *   <li>{@link IComposableElement} - Elements with internal composition</li>
- *   <li>{@link IContainer} - Layout containers that manage children</li>
- * </ul>
+ * "Smart" components that encapsulate behavior and have internal composition.
+ * Composable elements have internal children created via composition, but are not
+ * containers from the external perspective.
  */
-public interface IElement extends IGenericElement {
-    // Core element contract is defined in IGenericElement
-    // This interface serves as the common type for all UI elements
+public interface IComposableElement extends IElement {
+
+    /**
+     * Internal composition method.
+     * Called once during tree construction to build this element's internal UI.
+     *
+     * @param scope the composition scope for building internal UI
+     */
+    void compose(ICompositionScope scope);
 }

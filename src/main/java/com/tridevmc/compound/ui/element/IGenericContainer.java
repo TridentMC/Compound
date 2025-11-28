@@ -17,17 +17,9 @@
 package com.tridevmc.compound.ui.element;
 
 /**
- * The core interface for all UI elements in the compose system.
- * All elements implement this interface directly or through sub-interfaces.
- *
- * <p>Element types:</p>
- * <ul>
- *   <li>{@link IPrimitiveElement} - Leaf nodes that draw pixels (no children)</li>
- *   <li>{@link IComposableElement} - Elements with internal composition</li>
- *   <li>{@link IContainer} - Layout containers that manage children</li>
- * </ul>
+ * Marker interface for elements that can have children.
+ * The tree owns the parent-child relationships and provides children
+ * to elements during measure/place phases.
  */
-public interface IElement extends IGenericElement {
-    // Core element contract is defined in IGenericElement
-    // This interface serves as the common type for all UI elements
+public interface IGenericContainer extends IElement {
 }

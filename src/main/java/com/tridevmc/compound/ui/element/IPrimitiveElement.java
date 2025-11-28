@@ -16,18 +16,20 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.tridevmc.compound.ui.screen.IScreenContext;
+
 /**
- * The core interface for all UI elements in the compose system.
- * All elements implement this interface directly or through sub-interfaces.
- *
- * <p>Element types:</p>
- * <ul>
- *   <li>{@link IPrimitiveElement} - Leaf nodes that draw pixels (no children)</li>
- *   <li>{@link IComposableElement} - Elements with internal composition</li>
- *   <li>{@link IContainer} - Layout containers that manage children</li>
- * </ul>
+ * Elements that cannot have children - they draw pixels.
+ * Primitives are "terminators" in the tree that actually render to the screen.
  */
-public interface IElement extends IGenericElement {
-    // Core element contract is defined in IGenericElement
-    // This interface serves as the common type for all UI elements
+public interface IPrimitiveElement extends IElement {
+
+    /**
+     * Draw this primitive element (called every frame).
+     * Only primitive elements draw - containers and composables do not.
+     * Mouse position and partial ticks can be queried from the context if needed.
+     *
+     * @param context the screen context for drawing
+     */
+    void draw(IScreenContext context);
 }
