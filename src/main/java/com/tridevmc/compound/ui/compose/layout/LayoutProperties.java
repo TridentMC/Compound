@@ -16,6 +16,8 @@
 
 package com.tridevmc.compound.ui.compose.layout;
 
+import java.util.function.Consumer;
+
 /**
  * Configuration for how an element should be laid out by its parent.
  *
@@ -67,6 +69,36 @@ public class LayoutProperties {
     private boolean clip;
 
     protected LayoutProperties() {
+    }
+
+    /**
+     * Enter deferred layout scope for reactive property updates.
+     * Use this when layout properties need to respond to state changes without recomposition.
+     *
+     * <p>The callback will be re-executed whenever any bound state changes, allowing
+     * layout properties to be updated reactively. This triggers layout but not recomposition.</p>
+     *
+     * <p>Example:</p>
+     * <pre>
+     * var width = scope.animateInt(0, 300);
+     *
+     * box.layout()
+     *     .fillMaxHeight()
+     *     .deferred(deferred -&gt; {
+     *         deferred.bind(width);
+     *         deferred.layout().fixedWidth(width.get());
+     *     });
+     * </pre>
+     *
+     * @param configurator the deferred configuration scope
+     * @return this for continued chaining
+     */
+    public LayoutProperties deferred(Consumer<DeferredScope> configurator) {
+        // Note: Node binding will be set up when this is called from an element context
+        // For now, create scope without node (node will be injected by element)
+        DeferredScope scope = new DeferredScope(this, null, configurator);
+        configurator.accept(scope);
+        return this;
     }
 
     public static LayoutProperties create() {
