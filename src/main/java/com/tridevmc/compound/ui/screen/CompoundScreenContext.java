@@ -21,6 +21,7 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.*;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
+import com.tridevmc.compound.ui.compose.layout.Bounds;
 import com.tridevmc.compound.ui.render.CompoundRenderable;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -41,12 +42,15 @@ import org.joml.Matrix3x2f;
 import org.joml.Matrix3x2fStack;
 
 import java.net.URI;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 
 public class CompoundScreenContext implements IScreenContext {
 
     private final IInternalCompoundUI ui;
+    private final Deque<Bounds> scissorStack = new ArrayDeque<>();
 
     public CompoundScreenContext(IInternalCompoundUI ui) {
         this.ui = ui;
@@ -138,12 +142,15 @@ public class CompoundScreenContext implements IScreenContext {
 
         var bounds = new ScreenRectangle((int) x, (int) y, (int) width, (int) height).transformMaxBounds(pose);
 
+        // Capture the current scissor state from GuiGraphics for deferred rendering
+        var scissor = this.ui.getActiveGuiGraphics().peekScissorStack();
+
         this.getGuiRenderState().submitGuiElement(
             new CompoundRenderable(
                 RenderPipelines.GUI_TEXTURED,
                 textureSetup,
                 pose,
-                null,
+                scissor,
                 bounds,
                 consumer -> {
                     // Emit vertices in correct winding order: top-left, bottom-left, bottom-right, top-right
@@ -252,12 +259,44 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void enableScissor(int x, int y, int right, int bottom) {
-        this.ui.getActiveGuiGraphics().enableScissor(x, y, right, bottom);
+        Bounds newScissor = new Bounds(x, y, right - x, bottom - y);
+
+        // Intersect with current scissor if any (for nested clipping)
+        if (!this.scissorStack.isEmpty()) {
+            Bounds current = this.scissorStack.peek();
+            newScissor = current.intersection(newScissor);
+        }
+
+        this.scissorStack.push(newScissor);
+        this.applyScissorToGL(newScissor);
     }
 
     @Override
     public void disableScissor() {
+        if (this.scissorStack.isEmpty()) {
+            throw new IllegalStateException(
+                "disableScissor() called without matching enableScissor()"
+            );
+        }
+
+        // Pop from GuiGraphics's scissor stack first
         this.ui.getActiveGuiGraphics().disableScissor();
+
+        this.scissorStack.pop();
+
+        // If there's a parent scissor, re-enable it
+        if (!this.scissorStack.isEmpty()) {
+            this.applyScissorToGL(this.scissorStack.peek());
+        }
+    }
+
+    private void applyScissorToGL(Bounds scissor) {
+        this.ui.getActiveGuiGraphics().enableScissor(
+            scissor.left(),
+            scissor.top(),
+            scissor.right(),
+            scissor.bottom()
+        );
     }
 
 }

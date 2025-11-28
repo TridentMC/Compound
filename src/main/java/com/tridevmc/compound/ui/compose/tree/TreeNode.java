@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Consumer;
 
 /**
@@ -66,7 +67,7 @@ public class TreeNode implements ITreeNode {
     private final List<Consumer<MouseClickEvent>> clickHandlers = new ArrayList<>();
     private final List<Runnable> mouseEnterHandlers = new ArrayList<>();
     private final List<Runnable> mouseExitHandlers = new ArrayList<>();
-    private final List<Consumer<MouseScrollEvent>> scrollHandlers = new ArrayList<>();
+    private final List<Function<MouseScrollEvent, Boolean>> scrollHandlers = new ArrayList<>();
     private final List<Consumer<KeyInputEvent>> keyPressHandlers = new ArrayList<>();
     private final List<Consumer<KeyInputEvent>> keyReleaseHandlers = new ArrayList<>();
     private final List<Consumer<CharEvent>> charTypedHandlers = new ArrayList<>();
@@ -252,7 +253,7 @@ public class TreeNode implements ITreeNode {
     }
 
     @Override
-    public void addScrollHandler(Consumer<MouseScrollEvent> handler) {
+    public void addScrollHandler(Function<MouseScrollEvent, Boolean> handler) {
         this.scrollHandlers.add(handler);
     }
 
@@ -302,7 +303,7 @@ public class TreeNode implements ITreeNode {
     }
 
     @Override
-    public List<Consumer<MouseScrollEvent>> getScrollHandlers() {
+    public List<Function<MouseScrollEvent, Boolean>> getScrollHandlers() {
         return new ArrayList<>(this.scrollHandlers);
     }
 

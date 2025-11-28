@@ -37,6 +37,7 @@ package com.tridevmc.compound.ui.compose.layout;
  *   <li>{@link #horizontalAlignment(Alignment)} - Child alignment in Column</li>
  *   <li>{@link #verticalAlignment(Alignment)} - Child alignment in Row</li>
  *   <li>{@link #spacing(int)} - Gap between children in Column, Row</li>
+ *   <li>{@link #clip()} - Enables clipping of children to element bounds</li>
  * </ul>
  */
 public class LayoutProperties {
@@ -63,6 +64,7 @@ public class LayoutProperties {
     private int spacing;
     private Integer gridColumns;
     private Integer gridRows;
+    private boolean clip;
 
     protected LayoutProperties() {
     }
@@ -455,5 +457,33 @@ public class LayoutProperties {
 
     public Integer getGridRows() {
         return this.gridRows;
+    }
+
+    /**
+     * Enables clipping of children to this element's bounds.
+     * Used by: All containers (controls whether children are clipped during rendering)
+     *
+     * <p>When enabled, children are clipped using GPU scissor test (sharp edges, no performance cost).
+     * By default, clipping is disabled and children can render outside bounds.</p>
+     *
+     * <p><strong>Example:</strong></p>
+     * <pre>
+     * scope.e(new Box(), box -> {
+     *     box.layoutProperties()
+     *         .fixedSize(200, 100)
+     *         .clip();
+     *     // Content outside 200x100 will be clipped
+     * });
+     * </pre>
+     *
+     * @return this for chaining
+     */
+    public LayoutProperties clip() {
+        this.clip = true;
+        return this;
+    }
+
+    public boolean isClip() {
+        return this.clip;
     }
 }

@@ -34,6 +34,7 @@ import com.tridevmc.compound.ui.compose.tree.TreeNode;
 import com.tridevmc.compound.ui.compose.tree.UITree;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Scope for configuring a container element.
@@ -110,7 +111,7 @@ public class ContainerScope<T extends IContainer> extends ElementScope<T> implem
     }
 
     @Override
-    public void onScroll(Consumer<MouseScrollEvent> handler) {
+    public void onScroll(Function<MouseScrollEvent, Boolean> handler) {
         this.parentNode.addScrollHandler(handler);
     }
 
@@ -142,6 +143,16 @@ public class ContainerScope<T extends IContainer> extends ElementScope<T> implem
     @Override
     public void onMouseMove(Consumer<MouseMoveEvent> handler) {
         this.parentNode.addMouseMoveHandler(handler);
+    }
+
+    @Override
+    public void onMouseEnter(Runnable handler) {
+        this.parentNode.addMouseEnterHandler(handler);
+    }
+
+    @Override
+    public void onMouseExit(Runnable handler) {
+        this.parentNode.addMouseExitHandler(handler);
     }
 
     @Override

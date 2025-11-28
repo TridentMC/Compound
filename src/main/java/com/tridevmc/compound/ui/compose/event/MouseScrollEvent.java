@@ -18,19 +18,9 @@ package com.tridevmc.compound.ui.compose.event;
 
 /**
  * Event for mouse wheel scrolling.
+ * Event handlers should return true if they handled the event, false otherwise.
  */
 public record MouseScrollEvent(int x, int y, double scrollDelta) {
-    private static boolean consumed;
-
-    public void consume() {
-        consumed = true;
-    }
-
-    public boolean isConsumed() {
-        return consumed;
-    }
-
-    public static void resetConsumed() {
-        consumed = false;
-    }
+    // Clean immutable event - no consumption state needed
+    // Handlers return boolean to control event bubbling
 }

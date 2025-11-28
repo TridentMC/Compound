@@ -34,6 +34,7 @@ import com.tridevmc.compound.ui.compose.tree.TreeNode;
 import com.tridevmc.compound.ui.compose.tree.UITree;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Root scope for bootstrapping composition.
@@ -133,7 +134,7 @@ public class RootScope implements ICompositionScope {
     }
 
     @Override
-    public void onScroll(Consumer<MouseScrollEvent> handler) {
+    public void onScroll(Function<MouseScrollEvent, Boolean> handler) {
         if (this.rootNode != null) {
             this.rootNode.addScrollHandler(handler);
         }
@@ -178,6 +179,20 @@ public class RootScope implements ICompositionScope {
     public void onMouseMove(Consumer<MouseMoveEvent> handler) {
         if (this.rootNode != null) {
             this.rootNode.addMouseMoveHandler(handler);
+        }
+    }
+
+    @Override
+    public void onMouseEnter(Runnable handler) {
+        if (this.rootNode != null) {
+            this.rootNode.addMouseEnterHandler(handler);
+        }
+    }
+
+    @Override
+    public void onMouseExit(Runnable handler) {
+        if (this.rootNode != null) {
+            this.rootNode.addMouseExitHandler(handler);
         }
     }
 

@@ -35,6 +35,7 @@ import com.tridevmc.compound.ui.compose.state.State;
 import com.tridevmc.compound.ui.compose.tree.UITree;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * The scope given to composable elements for their internal composition.
@@ -132,10 +133,12 @@ public interface ICompositionScope {
 
     /**
      * Register a scroll handler on the current node.
+     * Handler should return true if it handled the event (stops bubbling),
+     * false otherwise (continues bubbling to parent).
      *
-     * @param handler the scroll handler
+     * @param handler the scroll handler that returns true if handled
      */
-    void onScroll(Consumer<MouseScrollEvent> handler);
+    void onScroll(Function<MouseScrollEvent, Boolean> handler);
 
     /**
      * Register a key press handler on the current node.
@@ -178,6 +181,22 @@ public interface ICompositionScope {
      * @param handler the mouse move handler
      */
     void onMouseMove(Consumer<MouseMoveEvent> handler);
+
+    /**
+     * Register a mouse enter handler on the current node.
+     * Called when the mouse enters the element's bounds.
+     *
+     * @param handler the mouse enter handler
+     */
+    void onMouseEnter(Runnable handler);
+
+    /**
+     * Register a mouse exit handler on the current node.
+     * Called when the mouse leaves the element's bounds.
+     *
+     * @param handler the mouse exit handler
+     */
+    void onMouseExit(Runnable handler);
 
     /**
      * Render a slot (used inside compose() method).

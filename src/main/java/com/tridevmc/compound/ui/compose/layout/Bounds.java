@@ -74,6 +74,27 @@ public record Bounds(Position position, Size size) {
                 this.bottom() > other.top();
     }
 
+    /**
+     * Calculates the intersection of this bounds with another bounds.
+     * Returns the overlapping rectangle, or an empty bounds if no overlap.
+     *
+     * @param other the other bounds to intersect with
+     * @return the intersection rectangle
+     */
+    public Bounds intersection(Bounds other) {
+        int left = Math.max(this.left(), other.left());
+        int top = Math.max(this.top(), other.top());
+        int right = Math.min(this.right(), other.right());
+        int bottom = Math.min(this.bottom(), other.bottom());
+
+        // No intersection - return empty bounds
+        if (left >= right || top >= bottom) {
+            return new Bounds(0, 0, 0, 0);
+        }
+
+        return new Bounds(left, top, right - left, bottom - top);
+    }
+
     // Utility methods
     public Bounds offset(int dx, int dy) {
         return new Bounds(this.position.offset(dx, dy), this.size);

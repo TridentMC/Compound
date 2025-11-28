@@ -225,7 +225,7 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
     @Override
     public boolean mouseScrolled(double x, double y, double scrollX, double scrollY) {
         MouseScrollEvent scrollEvent = new MouseScrollEvent((int) x, (int) y, scrollY);
-        this.tree.dispatchScroll((int) x, (int) y, scrollEvent);
-        return scrollEvent.isConsumed() || super.mouseScrolled(x, y, scrollX, scrollY);
+        boolean handled = this.tree.dispatchScroll((int) x, (int) y, scrollEvent);
+        return handled || super.mouseScrolled(x, y, scrollX, scrollY);
     }
 }

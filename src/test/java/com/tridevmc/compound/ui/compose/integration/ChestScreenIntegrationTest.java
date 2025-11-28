@@ -140,8 +140,8 @@ public class ChestScreenIntegrationTest {
         tree.renderTree(this.screenContext);
 
         // 6. Verify render calls
-        // Verify the main panel sprite was drawn
-        verify(this.screenContext).drawSprite(eq(inventoryPanelSprite), anyFloat(), anyFloat(), anyFloat(), anyFloat());
+        // Verify the main panel sprite was drawn (accepts any overload of drawSprite)
+        verify(this.screenContext, atLeastOnce()).drawSprite(eq(inventoryPanelSprite), any());
 
         // Verify the "Chest" label was drawn
         ArgumentCaptor<Component> textCaptor = ArgumentCaptor.forClass(Component.class);

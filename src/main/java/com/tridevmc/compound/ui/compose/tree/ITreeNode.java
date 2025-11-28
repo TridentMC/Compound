@@ -31,6 +31,7 @@ import com.tridevmc.compound.ui.compose.state.State;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Wraps an element and stores tree metadata (like DOM nodes wrap elements).
@@ -95,7 +96,7 @@ public interface ITreeNode {
 
     void addMouseExitHandler(Runnable handler);
 
-    void addScrollHandler(Consumer<MouseScrollEvent> handler);
+    void addScrollHandler(Function<MouseScrollEvent, Boolean> handler);
 
     void addKeyPressHandler(Consumer<KeyInputEvent> handler);
 
@@ -115,7 +116,7 @@ public interface ITreeNode {
 
     List<Runnable> getMouseExitHandlers();
 
-    List<Consumer<MouseScrollEvent>> getScrollHandlers();
+    List<Function<MouseScrollEvent, Boolean>> getScrollHandlers();
 
     List<Consumer<KeyInputEvent>> getKeyPressHandlers();
 

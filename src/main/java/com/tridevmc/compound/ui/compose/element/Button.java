@@ -17,6 +17,7 @@
 package com.tridevmc.compound.ui.compose.element;
 
 import com.google.common.collect.Lists;
+import com.tridevmc.compound.ui.compose.layout.Alignment;
 import com.tridevmc.compound.ui.compose.layout.Bounds;
 import com.tridevmc.compound.ui.compose.layout.Constraints;
 import com.tridevmc.compound.ui.compose.layout.LayoutHelper;
@@ -38,29 +39,22 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * A composable button element with customizable content via slots for each state.
+ * A composable button container that can have children.
  * Manages hover state, enabled/disabled state, and handles click events.
+ * Children render on top of the state-based background sprite.
  *
  * Usage:
  * <pre>
  * scope.e(new Button(), button -> {
- *     button.slot(Button.ENABLED_SLOT, content -> {
- *         content.e(new ElementSprite(BUTTON_ENABLED_SPRITE));
- *     });
- *     button.slot(Button.HIGHLIGHTED_SLOT, content -> {
- *         content.e(new ElementSprite(BUTTON_HIGHLIGHTED_SPRITE));
- *     });
- *     button.slot(Button.DISABLED_SLOT, content -> {
- *         content.e(new ElementSprite(BUTTON_DISABLED_SPRITE));
+ *     button.fillSlot(Button.CONTENT_SLOT, content -> {
+ *         content.e(new ElementLabel(Component.literal("Click me")));
  *     });
  * });
  * </pre>
  */
 public class Button extends BaseElement implements IComposableElement {
 
-    public static final SlotKey ENABLED_SLOT = new SlotKey("enabled");
-    public static final SlotKey HIGHLIGHTED_SLOT = new SlotKey("highlighted");
-    public static final SlotKey DISABLED_SLOT = new SlotKey("disabled");
+    public static final SlotKey CONTENT_SLOT = new SlotKey("content");
 
     private static final IScreenSprite DEFAULT_ENABLED_SPRITE = IScreenSprite.of(ResourceLocation.withDefaultNamespace("widget/button"));
     private static final IScreenSprite DEFAULT_DISABLED_SPRITE = IScreenSprite.of(ResourceLocation.withDefaultNamespace("widget/button_disabled"));
@@ -94,6 +88,31 @@ public class Button extends BaseElement implements IComposableElement {
         scope.bind(this.enabled);
         scope.bind(this.hovered);
 
+        // Register mouse enter/exit handlers for hover state
+        scope.onMouseEnter(() -> {
+            this.hovered.set(true);
+            var bounds = this.getBounds();
+            if (bounds != null) {
+                this.hoverListeners.forEach(listener -> listener.onButtonHover(
+                    bounds.x() + bounds.width() / 2.0,
+                    bounds.y() + bounds.height() / 2.0,
+                    true
+                ));
+            }
+        });
+
+        scope.onMouseExit(() -> {
+            this.hovered.set(false);
+            var bounds = this.getBounds();
+            if (bounds != null) {
+                this.hoverListeners.forEach(listener -> listener.onButtonHover(
+                    bounds.x() + bounds.width() / 2.0,
+                    bounds.y() + bounds.height() / 2.0,
+                    false
+                ));
+            }
+        });
+
         // Register mouse click handler on button
         scope.onClick(event -> {
             if (!this.canPress()) {
@@ -121,23 +140,27 @@ public class Button extends BaseElement implements IComposableElement {
             }
         });
 
-        // Render the appropriate slot based on current state
-        if (!this.enabled.get()) {
-            // Disabled state
-            scope.slot(DISABLED_SLOT, content -> {
-                content.e(new ElementSprite(DEFAULT_DISABLED_SPRITE));
+        // Create a Stack to layer background + user children
+        scope.e(new Stack(), stack -> {
+            stack.layout().fillMax().contentAlignment(Alignment.CENTER);
+
+            // Background sprite based on state
+            IScreenSprite backgroundSprite;
+            if (!this.enabled.get()) {
+                backgroundSprite = DEFAULT_DISABLED_SPRITE;
+            } else if (this.hovered.get()) {
+                backgroundSprite = DEFAULT_HIGHLIGHTED_SPRITE;
+            } else {
+                backgroundSprite = DEFAULT_ENABLED_SPRITE;
+            }
+
+            stack.e(new ElementSprite(backgroundSprite), sprite -> {
+                sprite.layout().fillMax();
             });
-        } else if (this.hovered.get()) {
-            // Highlighted/hover state
-            scope.slot(HIGHLIGHTED_SLOT, content -> {
-                content.e(new ElementSprite(DEFAULT_HIGHLIGHTED_SPRITE));
-            });
-        } else {
-            // Normal/enabled state
-            scope.slot(ENABLED_SLOT, content -> {
-                content.e(new ElementSprite(DEFAULT_ENABLED_SPRITE));
-            });
-        }
+
+            // Render user content slot into the stack (on top of background)
+            scope.slotInto(CONTENT_SLOT, stack);
+        });
     }
 
     @Override

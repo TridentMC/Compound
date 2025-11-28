@@ -189,17 +189,56 @@ public class UITree {
         if (this.root == null) {
             return null;
         }
-        List<ITreeNode> nodes = new ArrayList<>();
-        this.walkDepthFirst(this.root, nodes::add);
-        Collections.reverse(nodes);
+        return this.findNodeAtWithViewport(this.root, x, y, null);
+    }
 
-        for (ITreeNode node : nodes) {
-            if (node.getElement().getBounds() != null &&
-                    node.getElement().getBounds().contains(x, y)) {
-                return node;
+    /**
+     * Recursively find the deepest node at a position, respecting clipping viewports.
+     *
+     * @param node The current node being checked
+     * @param x The x coordinate to check
+     * @param y The y coordinate to check
+     * @param activeViewport The current clipping viewport, or null if unrestricted
+     * @return The deepest node at the position, or null if none found
+     */
+    private ITreeNode findNodeAtWithViewport(ITreeNode node, int x, int y, Bounds activeViewport) {
+        IElement element = node.getElement();
+        Bounds elementBounds = element.getBounds();
+
+        if (elementBounds == null) {
+            return null;
+        }
+
+        // Update viewport if this element clips
+        Bounds viewport = activeViewport;
+        if (element.getLayoutProperties().isClip()) {
+            if (activeViewport != null) {
+                viewport = activeViewport.intersection(elementBounds);
+            } else {
+                viewport = elementBounds;
             }
         }
-        return null;
+
+        // Check if point is within the active viewport (if any)
+        if (viewport != null && !viewport.contains(x, y)) {
+            return null;  // Point is clipped, no children will be visible either
+        }
+
+        // Check children first (depth-first, deepest nodes have priority)
+        ITreeNode result = null;
+        for (ITreeNode child : node.getChildren()) {
+            result = this.findNodeAtWithViewport(child, x, y, viewport);
+            if (result != null) {
+                break;  // Found a child node at this position
+            }
+        }
+
+        // If no child was found, check if this node itself is at the position
+        if (result == null && elementBounds.contains(x, y)) {
+            return node;
+        }
+
+        return result;
     }
 
     public void measureTree(Constraints rootConstraints) {
@@ -263,7 +302,10 @@ public class UITree {
         ITreeNode measureTarget = target != null ? target : changedNode;
 
         this.measureNode(measureTarget, constraints);
-        Bounds bounds = new Bounds(Position.ORIGIN, this.rootSize);
+
+        // Preserve existing bounds instead of forcing to Position.ORIGIN
+        Bounds existingBounds = measureTarget.getElement().getBounds();
+        Bounds bounds = existingBounds != null ? existingBounds : new Bounds(Position.ORIGIN, this.rootSize);
         this.placeNode(measureTarget, bounds);
     }
 
@@ -318,20 +360,22 @@ public class UITree {
         }
     }
 
-    public void dispatchScroll(int x, int y, MouseScrollEvent event) {
+    public boolean dispatchScroll(int x, int y, MouseScrollEvent event) {
         ITreeNode node = this.findNodeAt(x, y);
         if (node != null) {
             ITreeNode current = node;
-            while (current != null && !event.isConsumed()) {
+
+            while (current != null) {
                 for (var handler : current.getScrollHandlers()) {
-                    handler.accept(event);
-                    if (event.isConsumed()) {
-                        break;
+                    boolean handled = handler.apply(event);
+                    if (handled) {
+                        return true;  // Event was handled
                     }
                 }
                 current = current.getParent();
             }
         }
+        return false;  // Event was not handled
     }
 
     public void dispatchKeyPress(KeyInputEvent event) {
@@ -485,20 +529,63 @@ public class UITree {
             return;
         }
 
-        // Create adapter to guarantee composition order layering
-        var adapter = new GuiRenderStateAdapter(context.getGuiRenderState());
+        // Render tree recursively with clipping support
+        // Note: GuiRenderStateAdapter was removed as it wasn't actually being used (see ADAPTER-ISSUE.md)
+        this.renderNode(this.root, context, null);
+    }
 
-        // Phase 1: Collect elements in strict composition order
-        adapter.startCollecting();
-        this.walkDepthFirst(this.root, node -> {
-            IElement element = node.getElement();
-            if (element.isVisible() && element instanceof IPrimitiveElement primitive) {
-                primitive.draw(context); // Elements collected in order
+    /**
+     * Recursively render a node and its children.
+     * Handles clipping and viewport culling automatically.
+     *
+     * @param node The node to render
+     * @param context The screen context for drawing
+     * @param activeViewport The current clipping viewport, or null if unrestricted
+     */
+    private void renderNode(ITreeNode node, IScreenContext context, Bounds activeViewport) {
+        IElement element = node.getElement();
+
+        // Check if this element clips its children via layout properties
+        boolean shouldClip = element.getLayoutProperties().isClip();
+        boolean didEnableScissor = false;
+        Bounds viewport = activeViewport;
+
+        if (shouldClip) {
+            Bounds clipBounds = element.getBounds();
+            if (clipBounds != null) {
+                // Intersect with parent viewport if any
+                if (activeViewport != null) {
+                    clipBounds = activeViewport.intersection(clipBounds);
+                }
+
+                viewport = clipBounds;
+                context.enableScissor(
+                    clipBounds.left(),
+                    clipBounds.top(),
+                    clipBounds.right(),
+                    clipBounds.bottom()
+                );
+                didEnableScissor = true;
             }
-        });
+        }
 
-        // Phase 2: Submit elements to original GuiRenderState in collected order
-        // This ensures composition order = render order = layering order
-        adapter.flush();
+        // Render this element if it's a primitive and visible
+        if (element.isVisible() && element instanceof IPrimitiveElement primitive) {
+            // Optimization: only draw if element intersects viewport
+            if (viewport == null || viewport.intersects(element.getBounds())) {
+                primitive.draw(context);
+            }
+            // Huge performance win: skip draw() entirely for off-screen elements!
+        }
+
+        // Recursively render all children with current viewport
+        for (ITreeNode child : node.getChildren()) {
+            this.renderNode(child, context, viewport);
+        }
+
+        // Restore previous scissor state (only if we actually enabled it)
+        if (didEnableScissor) {
+            context.disableScissor();
+        }
     }
 }

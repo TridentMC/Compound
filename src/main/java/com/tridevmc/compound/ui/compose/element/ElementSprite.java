@@ -50,6 +50,8 @@ public class ElementSprite extends BasePrimitiveElement {
             return;
         }
 
+        // Note: Scissor test is handled by UITree renderNode() via context.enableScissor()
+        // GL scissor test should clip this sprite automatically
         var rect = new Rect2F(bounds.x(), bounds.y(), bounds.width(), bounds.height());
         context.drawSprite(sprite, rect);
     }
