@@ -106,7 +106,7 @@ public class ContainerScope<T extends IContainer> extends ElementScope<T> implem
     }
 
     @Override
-    public void onClick(Consumer<MouseClickEvent> handler) {
+    public void onClick(Function<MouseClickEvent, Boolean> handler) {
         this.parentNode.addClickHandler(handler);
     }
 
@@ -116,32 +116,32 @@ public class ContainerScope<T extends IContainer> extends ElementScope<T> implem
     }
 
     @Override
-    public void onKeyPress(Consumer<KeyInputEvent> handler) {
+    public void onKeyPress(Function<KeyInputEvent, Boolean> handler) {
         this.parentNode.addKeyPressHandler(handler);
     }
 
     @Override
-    public void onKeyRelease(Consumer<KeyInputEvent> handler) {
+    public void onKeyRelease(Function<KeyInputEvent, Boolean> handler) {
         this.parentNode.addKeyReleaseHandler(handler);
     }
 
     @Override
-    public void onCharTyped(Consumer<CharEvent> handler) {
+    public void onCharTyped(Function<CharEvent, Boolean> handler) {
         this.parentNode.addCharTypedHandler(handler);
     }
 
     @Override
-    public void onMouseRelease(Consumer<MouseReleaseEvent> handler) {
+    public void onMouseRelease(Function<MouseReleaseEvent, Boolean> handler) {
         this.parentNode.addMouseReleaseHandler(handler);
     }
 
     @Override
-    public void onMouseDrag(Consumer<MouseDragEvent> handler) {
+    public void onMouseDrag(Function<MouseDragEvent, Boolean> handler) {
         this.parentNode.addMouseDragHandler(handler);
     }
 
     @Override
-    public void onMouseMove(Consumer<MouseMoveEvent> handler) {
+    public void onMouseMove(Function<MouseMoveEvent, Boolean> handler) {
         this.parentNode.addMouseMoveHandler(handler);
     }
 

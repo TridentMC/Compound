@@ -30,4 +30,15 @@ package com.tridevmc.compound.ui.element;
 public interface IElement extends IGenericElement {
     // Core element contract is defined in IGenericElement
     // This interface serves as the common type for all UI elements
+
+    /**
+     * Gets the cursor to display when the mouse is at the given coordinates relative to the element.
+     *
+     * @param x the x coordinate relative to the element
+     * @param y the y coordinate relative to the element
+     * @return the cursor to display, or null to use the default
+     */
+    default com.mojang.blaze3d.platform.cursor.CursorType getCursor(int x, int y) {
+        return null;
+    }
 }

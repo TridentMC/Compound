@@ -127,9 +127,9 @@ public interface ICompositionScope {
     /**
      * Register a click handler on the current node.
      *
-     * @param handler the click handler
+     * @param handler the click handler that returns true if handled
      */
-    void onClick(Consumer<MouseClickEvent> handler);
+    void onClick(Function<MouseClickEvent, Boolean> handler);
 
     /**
      * Register a scroll handler on the current node.
@@ -143,44 +143,44 @@ public interface ICompositionScope {
     /**
      * Register a key press handler on the current node.
      *
-     * @param handler the key press handler
+     * @param handler the key press handler that returns true if handled
      */
-    void onKeyPress(Consumer<KeyInputEvent> handler);
+    void onKeyPress(Function<KeyInputEvent, Boolean> handler);
 
     /**
      * Register a key release handler on the current node.
      *
-     * @param handler the key release handler
+     * @param handler the key release handler that returns true if handled
      */
-    void onKeyRelease(Consumer<KeyInputEvent> handler);
+    void onKeyRelease(Function<KeyInputEvent, Boolean> handler);
 
     /**
      * Register a character typed handler on the current node.
      *
-     * @param handler the character typed handler
+     * @param handler the character typed handler that returns true if handled
      */
-    void onCharTyped(Consumer<CharEvent> handler);
+    void onCharTyped(Function<CharEvent, Boolean> handler);
 
     /**
      * Register a mouse release handler on the current node.
      *
-     * @param handler the mouse release handler
+     * @param handler the mouse release handler that returns true if handled
      */
-    void onMouseRelease(Consumer<MouseReleaseEvent> handler);
+    void onMouseRelease(Function<MouseReleaseEvent, Boolean> handler);
 
     /**
      * Register a mouse drag handler on the current node.
      *
-     * @param handler the mouse drag handler
+     * @param handler the mouse drag handler that returns true if handled
      */
-    void onMouseDrag(Consumer<MouseDragEvent> handler);
+    void onMouseDrag(Function<MouseDragEvent, Boolean> handler);
 
     /**
      * Register a mouse move handler on the current node.
      *
-     * @param handler the mouse move handler
+     * @param handler the mouse move handler that returns true if handled
      */
-    void onMouseMove(Consumer<MouseMoveEvent> handler);
+    void onMouseMove(Function<MouseMoveEvent, Boolean> handler);
 
     /**
      * Register a mouse enter handler on the current node.

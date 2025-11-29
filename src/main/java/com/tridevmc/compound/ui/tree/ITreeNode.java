@@ -90,7 +90,7 @@ public interface ITreeNode {
 
     // Event handlers (tied to this node, cleaned up when node is removed)
     // Elements can have multiple listeners for each event type
-    void addClickHandler(Consumer<MouseClickEvent> handler);
+    void addClickHandler(Function<MouseClickEvent, Boolean> handler);
 
     void addMouseEnterHandler(Runnable handler);
 
@@ -98,19 +98,19 @@ public interface ITreeNode {
 
     void addScrollHandler(Function<MouseScrollEvent, Boolean> handler);
 
-    void addKeyPressHandler(Consumer<KeyInputEvent> handler);
+    void addKeyPressHandler(Function<KeyInputEvent, Boolean> handler);
 
-    void addKeyReleaseHandler(Consumer<KeyInputEvent> handler);
+    void addKeyReleaseHandler(Function<KeyInputEvent, Boolean> handler);
 
-    void addCharTypedHandler(Consumer<CharEvent> handler);
+    void addCharTypedHandler(Function<CharEvent, Boolean> handler);
 
-    void addMouseReleaseHandler(Consumer<MouseReleaseEvent> handler);
+    void addMouseReleaseHandler(Function<MouseReleaseEvent, Boolean> handler);
 
-    void addMouseDragHandler(Consumer<MouseDragEvent> handler);
+    void addMouseDragHandler(Function<MouseDragEvent, Boolean> handler);
 
-    void addMouseMoveHandler(Consumer<MouseMoveEvent> handler);
+    void addMouseMoveHandler(Function<MouseMoveEvent, Boolean> handler);
 
-    List<Consumer<MouseClickEvent>> getClickHandlers();
+    List<Function<MouseClickEvent, Boolean>> getClickHandlers();
 
     List<Runnable> getMouseEnterHandlers();
 
@@ -118,17 +118,17 @@ public interface ITreeNode {
 
     List<Function<MouseScrollEvent, Boolean>> getScrollHandlers();
 
-    List<Consumer<KeyInputEvent>> getKeyPressHandlers();
+    List<Function<KeyInputEvent, Boolean>> getKeyPressHandlers();
 
-    List<Consumer<KeyInputEvent>> getKeyReleaseHandlers();
+    List<Function<KeyInputEvent, Boolean>> getKeyReleaseHandlers();
 
-    List<Consumer<CharEvent>> getCharTypedHandlers();
+    List<Function<CharEvent, Boolean>> getCharTypedHandlers();
 
-    List<Consumer<MouseReleaseEvent>> getMouseReleaseHandlers();
+    List<Function<MouseReleaseEvent, Boolean>> getMouseReleaseHandlers();
 
-    List<Consumer<MouseDragEvent>> getMouseDragHandlers();
+    List<Function<MouseDragEvent, Boolean>> getMouseDragHandlers();
 
-    List<Consumer<MouseMoveEvent>> getMouseMoveHandlers();
+    List<Function<MouseMoveEvent, Boolean>> getMouseMoveHandlers();
 
     void clearHandlers();
 

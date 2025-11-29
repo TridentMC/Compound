@@ -88,6 +88,7 @@ public class UITree {
         TreeNode node = new TreeNode(element, this);
         element.setTree(this);
         this.registerNode(node);
+        this.registerNode(node);
         return node;
     }
 
@@ -224,8 +225,11 @@ public class UITree {
         }
 
         // Check children first (depth-first, deepest nodes have priority)
+        // Iterate in REVERSE order to hit-test top-most elements first
+        List<ITreeNode> children = node.getChildren();
         ITreeNode result = null;
-        for (ITreeNode child : node.getChildren()) {
+        for (int i = children.size() - 1; i >= 0; i--) {
+            ITreeNode child = children.get(i);
             result = this.findNodeAtWithViewport(child, x, y, viewport);
             if (result != null) {
                 break;  // Found a child node at this position
@@ -306,51 +310,117 @@ public class UITree {
         Bounds existingBounds = measureTarget.getElement().getBounds();
         Bounds bounds = existingBounds != null ? existingBounds : new Bounds(Position.ORIGIN, this.rootSize);
         this.placeNode(measureTarget, bounds);
+        this.pendingHoverUpdate = true;
     }
 
-    public void dispatchClick(int x, int y, MouseClickEvent event) {
+    public boolean dispatchClick(int x, int y, MouseClickEvent event) {
         ITreeNode node = this.findNodeAt(x, y);
         if (node != null) {
             ITreeNode current = node;
-            while (current != null && !event.isConsumed()) {
+            boolean consumed = false;
+            while (current != null && !consumed) {
                 for (var handler : current.getClickHandlers()) {
-                    handler.accept(event);
-                    if (event.isConsumed()) {
+                    if (handler.apply(event)) {
+                        consumed = true;
+                        break;
+                    }
+                }
+                current = current.getParent();
+            }
+            return consumed;
+        }
+        return false;
+    }
+
+
+    private int lastMouseX, lastMouseY;
+    private com.mojang.blaze3d.platform.cursor.CursorType requestedCursor = com.mojang.blaze3d.platform.cursor.CursorType.DEFAULT;
+
+    private Set<ITreeNode> lastHoveredPath = new HashSet<>();
+    private boolean pendingHoverUpdate = false;
+
+    public com.mojang.blaze3d.platform.cursor.CursorType getRequestedCursor() {
+        return this.requestedCursor;
+    }
+
+    private void updateHoverState() {
+        int x = this.lastMouseX;
+        int y = this.lastMouseY;
+        ITreeNode node = this.findNodeAt(x, y);
+
+        // Cursor handling
+        com.mojang.blaze3d.platform.cursor.CursorType cursor = com.mojang.blaze3d.platform.cursor.CursorType.DEFAULT;
+        if (node != null) {
+            ITreeNode current = node;
+            while (current != null) {
+                Bounds bounds = current.getElement().getBounds();
+                if (bounds != null) {
+                    int localX = x - (int) bounds.x();
+                    int localY = y - (int) bounds.y();
+                    var nodeCursor = current.getElement().getCursor(localX, localY);
+                    if (nodeCursor != null) {
+                        cursor = nodeCursor;
                         break;
                     }
                 }
                 current = current.getParent();
             }
         }
-    }
+        this.requestedCursor = cursor;
 
-    private ITreeNode lastHoveredNode = null;
-
-    public void dispatchMouseMove(int x, int y, MouseMoveEvent event) {
-        ITreeNode node = this.findNodeAt(x, y);
-
-        if (node != lastHoveredNode) {
-            if (lastHoveredNode != null) {
-                for (var handler : lastHoveredNode.getMouseExitHandlers()) {
-                    handler.run();
-                }
+        // Build the current hovered path (node and all ancestors)
+        Set<ITreeNode> currentHoveredPath = new HashSet<>();
+        if (node != null) {
+            ITreeNode current = node;
+            while (current != null) {
+                currentHoveredPath.add(current);
+                current = current.getParent();
             }
-
-            if (node != null) {
-                for (var handler : node.getMouseEnterHandlers()) {
-                    handler.run();
-                }
-            }
-
-            lastHoveredNode = node;
         }
 
-        if (node != null && !event.isConsumed()) {
+        // Find nodes that were exited (in last path but not in current path)
+        Set<ITreeNode> exitedNodes = new HashSet<>(lastHoveredPath);
+        exitedNodes.removeAll(currentHoveredPath);
+
+        // Find nodes that were entered (in current path but not in last path)
+        Set<ITreeNode> enteredNodes = new HashSet<>(currentHoveredPath);
+        enteredNodes.removeAll(lastHoveredPath);
+
+        // Fire exit handlers for exited nodes
+        if (!exitedNodes.isEmpty()) {
+            for (ITreeNode exitedNode : exitedNodes) {
+                for (var handler : exitedNode.getMouseExitHandlers()) {
+                    handler.run();
+                }
+            }
+        }
+
+        // Fire enter handlers for entered nodes
+        if (!enteredNodes.isEmpty()) {
+            for (ITreeNode enteredNode : enteredNodes) {
+                for (var handler : enteredNode.getMouseEnterHandlers()) {
+                    handler.run();
+                }
+            }
+        }
+
+        // Update the last hovered path
+        lastHoveredPath = currentHoveredPath;
+    }
+
+    public void dispatchMouseMove(int x, int y, MouseMoveEvent event) {
+        this.lastMouseX = x;
+        this.lastMouseY = y;
+        this.updateHoverState();
+
+        ITreeNode node = this.findNodeAt(x, y);
+        if (node != null) {
             ITreeNode current = node;
-            while (current != null && !event.isConsumed()) {
+            boolean consumed = false;
+            while (current != null && !consumed) {
                 for (var handler : current.getMouseMoveHandlers()) {
-                    handler.accept(event);
-                    if (event.isConsumed()) {
+                    if (handler.apply(event)) {
+                        consumed = true;
                         break;
                     }
                 }
@@ -363,7 +433,6 @@ public class UITree {
         ITreeNode node = this.findNodeAt(x, y);
         if (node != null) {
             ITreeNode current = node;
-
             while (current != null) {
                 for (var handler : current.getScrollHandlers()) {
                     boolean handled = handler.apply(event);
@@ -377,79 +446,92 @@ public class UITree {
         return false;  // Event was not handled
     }
 
-    public void dispatchKeyPress(KeyInputEvent event) {
+    public boolean dispatchKeyPress(KeyInputEvent event) {
         // TODO: Focus system - add focus tracking to dispatch keyboard events only to the focused element.
         //       Current implementation broadcasts to all elements, which is inefficient for large UIs.
+        //       Using array to allow modification in lambda
+        final boolean[] consumed = {false};
         this.walkDepthFirst(this.root, node -> {
-            if (!event.isConsumed()) {
+            if (!consumed[0]) {
                 for (var handler : node.getKeyPressHandlers()) {
-                    handler.accept(event);
-                    if (event.isConsumed()) {
+                    if (handler.apply(event)) {
+                        consumed[0] = true;
                         break;
                     }
                 }
             }
         });
+        return consumed[0];
     }
 
-    public void dispatchKeyRelease(KeyInputEvent event) {
+    public boolean dispatchKeyRelease(KeyInputEvent event) {
         // TODO: Focus system - see dispatchKeyPress
+        final boolean[] consumed = {false};
         this.walkDepthFirst(this.root, node -> {
-            if (!event.isConsumed()) {
+            if (!consumed[0]) {
                 for (var handler : node.getKeyReleaseHandlers()) {
-                    handler.accept(event);
-                    if (event.isConsumed()) {
+                    if (handler.apply(event)) {
+                        consumed[0] = true;
                         break;
                     }
                 }
             }
         });
+        return consumed[0];
     }
 
-    public void dispatchCharTyped(CharEvent event) {
+    public boolean dispatchCharTyped(CharEvent event) {
         // TODO: Focus system - see dispatchKeyPress
+        final boolean[] consumed = {false};
         this.walkDepthFirst(this.root, node -> {
-            if (!event.isConsumed()) {
+            if (!consumed[0]) {
                 for (var handler : node.getCharTypedHandlers()) {
-                    handler.accept(event);
-                    if (event.isConsumed()) {
+                    if (handler.apply(event)) {
+                        consumed[0] = true;
                         break;
                     }
                 }
             }
         });
+        return consumed[0];
     }
 
-    public void dispatchMouseRelease(int x, int y, MouseReleaseEvent event) {
+    public boolean dispatchMouseRelease(int x, int y, MouseReleaseEvent event) {
         ITreeNode node = this.findNodeAt(x, y);
         if (node != null) {
             ITreeNode current = node;
-            while (current != null && !event.isConsumed()) {
+            boolean consumed = false;
+            while (current != null && !consumed) {
                 for (var handler : current.getMouseReleaseHandlers()) {
-                    handler.accept(event);
-                    if (event.isConsumed()) {
+                    if (handler.apply(event)) {
+                        consumed = true;
                         break;
                     }
                 }
                 current = current.getParent();
             }
+            return consumed;
         }
+        return false;
     }
 
-    public void dispatchMouseDrag(int x, int y, MouseDragEvent event) {
+    public boolean dispatchMouseDrag(int x, int y, MouseDragEvent event) {
         ITreeNode node = this.findNodeAt(x, y);
         if (node != null) {
             ITreeNode current = node;
-            while (current != null && !event.isConsumed()) {
+            boolean consumed = false;
+            while (current != null && !consumed) {
                 for (var handler : current.getMouseDragHandlers()) {
-                    handler.accept(event);
-                    if (event.isConsumed()) {
+                    if (handler.apply(event)) {
+                        consumed = true;
                         break;
                     }
                 }
                 current = current.getParent();
             }
+            return consumed;
         }
+        return false;
     }
 
     /**
@@ -518,6 +600,10 @@ public class UITree {
             var constraints = Constraints.loose(width, height);
             this.measureTree(constraints);
             this.placeTree(Position.ORIGIN, constraints);
+            this.updateHoverState(); // Re-evaluate hover state after layout changes
+        } else if (this.pendingHoverUpdate) {
+            this.updateHoverState();
+            this.pendingHoverUpdate = false;
         }
 
         this.renderTree(context);

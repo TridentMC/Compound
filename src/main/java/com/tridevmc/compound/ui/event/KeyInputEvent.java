@@ -20,17 +20,5 @@ package com.tridevmc.compound.ui.event;
  * Event for keyboard input.
  */
 public record KeyInputEvent(int keyCode, char character, boolean shiftDown, boolean ctrlDown, boolean altDown) {
-    private static boolean consumed;
 
-    public void consume() {
-        consumed = true;
-    }
-
-    public boolean isConsumed() {
-        return consumed;
-    }
-
-    public static void resetConsumed() {
-        consumed = false;
-    }
 }

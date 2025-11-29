@@ -89,11 +89,13 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
                     (int) this.mouseX, (int) this.mouseY,
                     (int) this.prevMouseX, (int) this.prevMouseY
             );
-            MouseMoveEvent.resetConsumed();
             this.tree.dispatchMouseMove((int) this.mouseX, (int) this.mouseY, moveEvent);
         }
 
         this.tree.layoutAndRender(this.width, this.height, this.screenContext);
+
+        // Apply cursor requested by UI tree
+        graphics.requestCursor(this.tree.getRequestedCursor());
 
         super.render(graphics, mouseX, mouseY, partialTicks);
     }
@@ -162,8 +164,8 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
                 (event.modifiers() & 2) != 0,
                 (event.modifiers() & 4) != 0
         );
-        this.tree.dispatchKeyPress(keyEvent);
-        return keyEvent.isConsumed() || super.keyPressed(event);
+        boolean consumed = this.tree.dispatchKeyPress(keyEvent);
+        return consumed || super.keyPressed(event);
     }
 
     @Override
@@ -175,16 +177,15 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
                 (event.modifiers() & 2) != 0,
                 (event.modifiers() & 4) != 0
         );
-        this.tree.dispatchKeyRelease(keyEvent);
-        return keyEvent.isConsumed() || super.keyReleased(event);
+        boolean consumed = this.tree.dispatchKeyRelease(keyEvent);
+        return consumed || super.keyReleased(event);
     }
 
     @Override
     public boolean charTyped(@NotNull CharacterEvent event) {
         CharEvent charEvent = new CharEvent((char) event.codepoint(), event.modifiers());
-        CharEvent.resetConsumed();
-        this.tree.dispatchCharTyped(charEvent);
-        return charEvent.isConsumed() || super.charTyped(event);
+        boolean consumed = this.tree.dispatchCharTyped(charEvent);
+        return consumed || super.charTyped(event);
     }
 
     @Override
@@ -194,9 +195,8 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
                 (int) event.x(), (int) event.y(),
                 pX, pY
         );
-        MouseDragEvent.resetConsumed();
-        this.tree.dispatchMouseDrag((int) event.x(), (int) event.y(), dragEvent);
-        return dragEvent.isConsumed() || super.mouseDragged(event, pX, pY);
+        boolean consumed = this.tree.dispatchMouseDrag((int) event.x(), (int) event.y(), dragEvent);
+        return consumed || super.mouseDragged(event, pX, pY);
     }
 
     @Override
@@ -208,8 +208,8 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
                 (int) event.x(), (int) event.y(), event.button(),
                 shiftDown, ctrlDown, altDown
         );
-        this.tree.dispatchClick((int) event.x(), (int) event.y(), clickEvent);
-        return clickEvent.isConsumed() || super.mouseClicked(event, isDoubleClick);
+        boolean consumed = this.tree.dispatchClick((int) event.x(), (int) event.y(), clickEvent);
+        return consumed || super.mouseClicked(event, isDoubleClick);
     }
 
     @Override
@@ -217,15 +217,16 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
         MouseReleaseEvent releaseEvent = new MouseReleaseEvent(
                 (int) event.x(), (int) event.y(), event.button()
         );
-        MouseReleaseEvent.resetConsumed();
-        this.tree.dispatchMouseRelease((int) event.x(), (int) event.y(), releaseEvent);
-        return releaseEvent.isConsumed() || super.mouseReleased(event);
+        boolean consumed = this.tree.dispatchMouseRelease((int) event.x(), (int) event.y(), releaseEvent);
+        return consumed || super.mouseReleased(event);
     }
 
     @Override
     public boolean mouseScrolled(double x, double y, double scrollX, double scrollY) {
+        System.out.println("[ComposedUI] mouseScrolled: (" + x + ", " + y + ") scrollY=" + scrollY);
         MouseScrollEvent scrollEvent = new MouseScrollEvent((int) x, (int) y, scrollY);
         boolean handled = this.tree.dispatchScroll((int) x, (int) y, scrollEvent);
+        System.out.println("[ComposedUI] Scroll handled: " + handled);
         return handled || super.mouseScrolled(x, y, scrollX, scrollY);
     }
 }

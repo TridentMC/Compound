@@ -115,16 +115,18 @@ public class Button extends BaseElement implements IComposableElement {
         // Register mouse click handler on button
         scope.onClick(event -> {
             if (!this.canPress()) {
-                return;
+                return false;
             }
 
             var bounds = this.getBounds();
             if (bounds == null) {
-                return;
+                return false;
             }
 
             int x = event.x();
             int y = event.y();
+
+
 
             // Check if click is within button bounds
             if (x >= bounds.x() && x < bounds.x() + bounds.width() &&
@@ -136,6 +138,9 @@ public class Button extends BaseElement implements IComposableElement {
 
                 // Notify listeners
                 this.pressListeners.forEach(listener -> listener.onButtonPress(x, y));
+                return true;
+            } else {
+                return false;
             }
         });
 
@@ -230,5 +235,10 @@ public class Button extends BaseElement implements IComposableElement {
 
     public State<Boolean> getHoveredState() {
         return this.hovered;
+    }
+
+    @Override
+    public com.mojang.blaze3d.platform.cursor.CursorType getCursor(int x, int y) {
+        return this.canPress() ? com.tridevmc.compound.ui.CompoundCursors.HAND : null;
     }
 }

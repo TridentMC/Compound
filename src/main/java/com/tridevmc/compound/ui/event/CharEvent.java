@@ -20,17 +20,5 @@ package com.tridevmc.compound.ui.event;
  * Event for character input (text typing).
  */
 public record CharEvent(char character, int modifiers) {
-    private static boolean consumed;
 
-    public void consume() {
-        consumed = true;
-    }
-
-    public boolean isConsumed() {
-        return consumed;
-    }
-
-    public static void resetConsumed() {
-        consumed = false;
-    }
 }

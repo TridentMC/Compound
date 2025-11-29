@@ -23,6 +23,7 @@ import com.tridevmc.compound.ui.IInternalCompoundUI;
 import com.tridevmc.compound.ui.element.ComposedSlot;
 import com.tridevmc.compound.ui.event.KeyInputEvent;
 import com.tridevmc.compound.ui.event.MouseClickEvent;
+import com.tridevmc.compound.ui.event.MouseMoveEvent;
 import com.tridevmc.compound.ui.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.scope.RootScope;
 import com.tridevmc.compound.ui.tree.UITree;
@@ -107,11 +108,26 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         this.activeGuiGraphics = gg;
     }
 
+    private float prevMouseX, prevMouseY;
+
+    // ... existing fields ...
+
     @Override
     public void render(@NotNull GuiGraphics gg, int mouseX, int mouseY, float partialTicks) {
         this.activeGuiGraphics = gg;
-        this.mouseX = mouseX;
-        this.mouseY = mouseY;
+
+        if (mouseX != this.mouseX || mouseY != this.mouseY) {
+            this.prevMouseX = this.mouseX;
+            this.prevMouseY = this.mouseY;
+            this.mouseX = mouseX;
+            this.mouseY = mouseY;
+
+            MouseMoveEvent moveEvent = new MouseMoveEvent(
+                    (int) this.mouseX, (int) this.mouseY,
+                    (int) this.prevMouseX, (int) this.prevMouseY
+            );
+            this.tree.dispatchMouseMove((int) this.mouseX, (int) this.mouseY, moveEvent);
+        }
 
         if (this.slotElements.isEmpty() && this.tree.hasRoot()) {
             this.discoverSlotElements();
@@ -119,6 +135,10 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
 
         this.tree.layoutAndRender(this.width, this.height, this.screenContext);
         this.updateSlotStates();
+
+        // Apply cursor requested by UI tree
+        gg.requestCursor(this.tree.getRequestedCursor());
+
         super.render(gg, mouseX, mouseY, partialTicks);
     }
 
@@ -266,8 +286,8 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
                 (event.modifiers() & 2) != 0,
                 (event.modifiers() & 4) != 0
         );
-        this.tree.dispatchKeyPress(keyEvent);
-        return keyEvent.isConsumed() || super.keyPressed(event);
+        boolean consumed = this.tree.dispatchKeyPress(keyEvent);
+        return consumed || super.keyPressed(event);
     }
 
     @Override
@@ -278,8 +298,8 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
                 (event.modifiers() & 2) != 0,
                 (event.modifiers() & 4) != 0
         );
-        this.tree.dispatchKeyRelease(keyEvent);
-        return keyEvent.isConsumed() || super.keyReleased(event);
+        boolean consumed = this.tree.dispatchKeyRelease(keyEvent);
+        return consumed || super.keyReleased(event);
     }
 
     @Override
@@ -301,8 +321,8 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
                 (int) event.x(), (int) event.y(), event.button(),
                 shiftDown, ctrlDown, altDown
         );
-        this.tree.dispatchClick((int) event.x(), (int) event.y(), clickEvent);
-        return clickEvent.isConsumed() || super.mouseClicked(event, isDoubleClick);
+        boolean consumed = this.tree.dispatchClick((int) event.x(), (int) event.y(), clickEvent);
+        return consumed || super.mouseClicked(event, isDoubleClick);
     }
 
     @Override

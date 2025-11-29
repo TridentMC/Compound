@@ -20,17 +20,5 @@ package com.tridevmc.compound.ui.event;
  * Event for mouse movement (hover tracking).
  */
 public record MouseMoveEvent(int x, int y, int prevX, int prevY) {
-    private static boolean consumed;
 
-    public void consume() {
-        consumed = true;
-    }
-
-    public boolean isConsumed() {
-        return consumed;
-    }
-
-    public static void resetConsumed() {
-        consumed = false;
-    }
 }

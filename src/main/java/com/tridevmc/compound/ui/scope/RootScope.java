@@ -127,7 +127,7 @@ public class RootScope implements ICompositionScope {
     }
 
     @Override
-    public void onClick(Consumer<MouseClickEvent> handler) {
+    public void onClick(Function<MouseClickEvent, Boolean> handler) {
         if (this.rootNode != null) {
             this.rootNode.addClickHandler(handler);
         }
@@ -141,42 +141,42 @@ public class RootScope implements ICompositionScope {
     }
 
     @Override
-    public void onKeyPress(Consumer<KeyInputEvent> handler) {
+    public void onKeyPress(Function<KeyInputEvent, Boolean> handler) {
         if (this.rootNode != null) {
             this.rootNode.addKeyPressHandler(handler);
         }
     }
 
     @Override
-    public void onKeyRelease(Consumer<KeyInputEvent> handler) {
+    public void onKeyRelease(Function<KeyInputEvent, Boolean> handler) {
         if (this.rootNode != null) {
             this.rootNode.addKeyReleaseHandler(handler);
         }
     }
 
     @Override
-    public void onCharTyped(Consumer<CharEvent> handler) {
+    public void onCharTyped(Function<CharEvent, Boolean> handler) {
         if (this.rootNode != null) {
             this.rootNode.addCharTypedHandler(handler);
         }
     }
 
     @Override
-    public void onMouseRelease(Consumer<MouseReleaseEvent> handler) {
+    public void onMouseRelease(Function<MouseReleaseEvent, Boolean> handler) {
         if (this.rootNode != null) {
             this.rootNode.addMouseReleaseHandler(handler);
         }
     }
 
     @Override
-    public void onMouseDrag(Consumer<MouseDragEvent> handler) {
+    public void onMouseDrag(Function<MouseDragEvent, Boolean> handler) {
         if (this.rootNode != null) {
             this.rootNode.addMouseDragHandler(handler);
         }
     }
 
     @Override
-    public void onMouseMove(Consumer<MouseMoveEvent> handler) {
+    public void onMouseMove(Function<MouseMoveEvent, Boolean> handler) {
         if (this.rootNode != null) {
             this.rootNode.addMouseMoveHandler(handler);
         }

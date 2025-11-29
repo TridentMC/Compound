@@ -20,17 +20,5 @@ package com.tridevmc.compound.ui.event;
  * Event for mouse dragging.
  */
 public record MouseDragEvent(int button, int x, int y, double deltaX, double deltaY) {
-    private static boolean consumed;
 
-    public void consume() {
-        consumed = true;
-    }
-
-    public boolean isConsumed() {
-        return consumed;
-    }
-
-    public static void resetConsumed() {
-        consumed = false;
-    }
 }

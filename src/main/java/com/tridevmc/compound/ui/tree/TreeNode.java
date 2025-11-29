@@ -64,16 +64,16 @@ public class TreeNode implements ITreeNode {
         }
     };
 
-    private final List<Consumer<MouseClickEvent>> clickHandlers = new ArrayList<>();
+    private final List<Function<MouseClickEvent, Boolean>> clickHandlers = new ArrayList<>();
     private final List<Runnable> mouseEnterHandlers = new ArrayList<>();
     private final List<Runnable> mouseExitHandlers = new ArrayList<>();
     private final List<Function<MouseScrollEvent, Boolean>> scrollHandlers = new ArrayList<>();
-    private final List<Consumer<KeyInputEvent>> keyPressHandlers = new ArrayList<>();
-    private final List<Consumer<KeyInputEvent>> keyReleaseHandlers = new ArrayList<>();
-    private final List<Consumer<CharEvent>> charTypedHandlers = new ArrayList<>();
-    private final List<Consumer<MouseReleaseEvent>> mouseReleaseHandlers = new ArrayList<>();
-    private final List<Consumer<MouseDragEvent>> mouseDragHandlers = new ArrayList<>();
-    private final List<Consumer<MouseMoveEvent>> mouseMoveHandlers = new ArrayList<>();
+    private final List<Function<KeyInputEvent, Boolean>> keyPressHandlers = new ArrayList<>();
+    private final List<Function<KeyInputEvent, Boolean>> keyReleaseHandlers = new ArrayList<>();
+    private final List<Function<CharEvent, Boolean>> charTypedHandlers = new ArrayList<>();
+    private final List<Function<MouseReleaseEvent, Boolean>> mouseReleaseHandlers = new ArrayList<>();
+    private final List<Function<MouseDragEvent, Boolean>> mouseDragHandlers = new ArrayList<>();
+    private final List<Function<MouseMoveEvent, Boolean>> mouseMoveHandlers = new ArrayList<>();
 
     public TreeNode(IElement element, UITree tree) {
         this.element = element;
@@ -238,7 +238,7 @@ public class TreeNode implements ITreeNode {
     }
 
     @Override
-    public void addClickHandler(Consumer<MouseClickEvent> handler) {
+    public void addClickHandler(Function<MouseClickEvent, Boolean> handler) {
         this.clickHandlers.add(handler);
     }
 
@@ -258,37 +258,37 @@ public class TreeNode implements ITreeNode {
     }
 
     @Override
-    public void addKeyPressHandler(Consumer<KeyInputEvent> handler) {
+    public void addKeyPressHandler(Function<KeyInputEvent, Boolean> handler) {
         this.keyPressHandlers.add(handler);
     }
 
     @Override
-    public void addKeyReleaseHandler(Consumer<KeyInputEvent> handler) {
+    public void addKeyReleaseHandler(Function<KeyInputEvent, Boolean> handler) {
         this.keyReleaseHandlers.add(handler);
     }
 
     @Override
-    public void addCharTypedHandler(Consumer<CharEvent> handler) {
+    public void addCharTypedHandler(Function<CharEvent, Boolean> handler) {
         this.charTypedHandlers.add(handler);
     }
 
     @Override
-    public void addMouseReleaseHandler(Consumer<MouseReleaseEvent> handler) {
+    public void addMouseReleaseHandler(Function<MouseReleaseEvent, Boolean> handler) {
         this.mouseReleaseHandlers.add(handler);
     }
 
     @Override
-    public void addMouseDragHandler(Consumer<MouseDragEvent> handler) {
+    public void addMouseDragHandler(Function<MouseDragEvent, Boolean> handler) {
         this.mouseDragHandlers.add(handler);
     }
 
     @Override
-    public void addMouseMoveHandler(Consumer<MouseMoveEvent> handler) {
+    public void addMouseMoveHandler(Function<MouseMoveEvent, Boolean> handler) {
         this.mouseMoveHandlers.add(handler);
     }
 
     @Override
-    public List<Consumer<MouseClickEvent>> getClickHandlers() {
+    public List<Function<MouseClickEvent, Boolean>> getClickHandlers() {
         return new ArrayList<>(this.clickHandlers);
     }
 
@@ -308,32 +308,32 @@ public class TreeNode implements ITreeNode {
     }
 
     @Override
-    public List<Consumer<KeyInputEvent>> getKeyPressHandlers() {
+    public List<Function<KeyInputEvent, Boolean>> getKeyPressHandlers() {
         return new ArrayList<>(this.keyPressHandlers);
     }
 
     @Override
-    public List<Consumer<KeyInputEvent>> getKeyReleaseHandlers() {
+    public List<Function<KeyInputEvent, Boolean>> getKeyReleaseHandlers() {
         return new ArrayList<>(this.keyReleaseHandlers);
     }
 
     @Override
-    public List<Consumer<CharEvent>> getCharTypedHandlers() {
+    public List<Function<CharEvent, Boolean>> getCharTypedHandlers() {
         return new ArrayList<>(this.charTypedHandlers);
     }
 
     @Override
-    public List<Consumer<MouseReleaseEvent>> getMouseReleaseHandlers() {
+    public List<Function<MouseReleaseEvent, Boolean>> getMouseReleaseHandlers() {
         return new ArrayList<>(this.mouseReleaseHandlers);
     }
 
     @Override
-    public List<Consumer<MouseDragEvent>> getMouseDragHandlers() {
+    public List<Function<MouseDragEvent, Boolean>> getMouseDragHandlers() {
         return new ArrayList<>(this.mouseDragHandlers);
     }
 
     @Override
-    public List<Consumer<MouseMoveEvent>> getMouseMoveHandlers() {
+    public List<Function<MouseMoveEvent, Boolean>> getMouseMoveHandlers() {
         return new ArrayList<>(this.mouseMoveHandlers);
     }
 
