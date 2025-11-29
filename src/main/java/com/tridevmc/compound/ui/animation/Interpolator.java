@@ -26,8 +26,8 @@ public interface Interpolator<T> {
     /**
      * Interpolate between start and end values.
      *
-     * @param start the starting value
-     * @param end the ending value
+     * @param start    the starting value
+     * @param end      the ending value
      * @param progress the interpolation progress (0.0 to 1.0, already eased)
      * @return the interpolated value
      */

@@ -20,6 +20,7 @@ import com.google.common.collect.Maps;
 import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
+import com.tridevmc.compound.ui.container.CompoundContainerMenu;
 import com.tridevmc.compound.ui.element.ComposedSlot;
 import com.tridevmc.compound.ui.event.KeyInputEvent;
 import com.tridevmc.compound.ui.event.MouseClickEvent;
@@ -27,8 +28,6 @@ import com.tridevmc.compound.ui.event.MouseMoveEvent;
 import com.tridevmc.compound.ui.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.scope.RootScope;
 import com.tridevmc.compound.ui.tree.UITree;
-import com.tridevmc.compound.ui.container.CompoundContainerMenu;
-import com.tridevmc.compound.ui.screen.CompoundScreenContext;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -60,10 +59,10 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     private long ticks;
     private float mouseX, mouseY;
 
-    private CompoundScreenContext screenContext;
-    private UITree tree;
-    private Map<Slot, ComposedSlot> slotElements;
-
+    private final CompoundScreenContext screenContext;
+    private final UITree tree;
+    private final Map<Slot, ComposedSlot> slotElements;
+    private float prevMouseX, prevMouseY;
 
     public ComposedUIContainer(T container) {
         super(container, Minecraft.getInstance().player.getInventory(), Component.empty());
@@ -107,8 +106,6 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     protected void renderLabels(GuiGraphics gg, int mouseX, int mouseY) {
         this.activeGuiGraphics = gg;
     }
-
-    private float prevMouseX, prevMouseY;
 
     // ... existing fields ...
 

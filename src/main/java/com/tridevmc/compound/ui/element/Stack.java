@@ -16,12 +16,7 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.tridevmc.compound.ui.layout.Bounds;
-import com.tridevmc.compound.ui.layout.Constraints;
-import com.tridevmc.compound.ui.layout.LayoutHelper;
-import com.tridevmc.compound.ui.layout.LayoutMath;
-import com.tridevmc.compound.ui.layout.Position;
-import com.tridevmc.compound.ui.layout.Size;
+import com.tridevmc.compound.ui.layout.*;
 
 import java.util.List;
 

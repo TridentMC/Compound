@@ -16,12 +16,7 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.tridevmc.compound.ui.layout.Bounds;
-import com.tridevmc.compound.ui.layout.Constraints;
-import com.tridevmc.compound.ui.layout.LayoutHelper;
-import com.tridevmc.compound.ui.layout.LayoutMath;
-import com.tridevmc.compound.ui.layout.Position;
-import com.tridevmc.compound.ui.layout.Size;
+import com.tridevmc.compound.ui.layout.*;
 
 import java.util.List;
 
@@ -82,8 +77,8 @@ public class Column extends BaseContainer {
             Bounds childBounds;
             if (horizontalAlignment != null) {
                 var alignedPos = LayoutMath.applyAlignment(
-                    new Bounds(contentArea.x(), currentY, contentArea.width(), childSize.height()),
-                    childSize, horizontalAlignment, true
+                        new Bounds(contentArea.x(), currentY, contentArea.width(), childSize.height()),
+                        childSize, horizontalAlignment, true
                 );
                 childBounds = new Bounds(alignedPos, childSize);
             } else {

@@ -228,7 +228,7 @@ public class LayoutHelper {
      * Handles margin by offsetting the placement position.
      * Automatically gets the child's children from the tree.
      *
-     * @param child          the child element to place
+     * @param child           the child element to place
      * @param allocatedBounds the bounds allocated by the parent (including margin)
      */
     public static void placeChild(IElement child, Bounds allocatedBounds) {

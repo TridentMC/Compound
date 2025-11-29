@@ -19,16 +19,9 @@ package com.tridevmc.compound.ui.screen;
 import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
-import com.tridevmc.compound.ui.event.CharEvent;
-import com.tridevmc.compound.ui.event.KeyInputEvent;
-import com.tridevmc.compound.ui.event.MouseClickEvent;
-import com.tridevmc.compound.ui.event.MouseDragEvent;
-import com.tridevmc.compound.ui.event.MouseMoveEvent;
-import com.tridevmc.compound.ui.event.MouseReleaseEvent;
-import com.tridevmc.compound.ui.event.MouseScrollEvent;
+import com.tridevmc.compound.ui.event.*;
 import com.tridevmc.compound.ui.scope.RootScope;
 import com.tridevmc.compound.ui.tree.UITree;
-import com.tridevmc.compound.ui.screen.CompoundScreenContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.render.state.GuiRenderState;
@@ -49,8 +42,8 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
     private double mouseX, mouseY;
     private double prevMouseX, prevMouseY;
 
-    private CompoundScreenContext screenContext;
-    private UITree tree;
+    private final CompoundScreenContext screenContext;
+    private final UITree tree;
 
     public ComposedUI() {
         super(Component.literal(""));

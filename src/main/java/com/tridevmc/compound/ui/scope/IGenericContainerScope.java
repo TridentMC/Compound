@@ -17,7 +17,6 @@
 package com.tridevmc.compound.ui.scope;
 
 import com.tridevmc.compound.ui.element.IGenericContainer;
-import com.tridevmc.compound.ui.layout.LayoutProperties;
 
 /**
  * Scope for configuring a container element (can add children).

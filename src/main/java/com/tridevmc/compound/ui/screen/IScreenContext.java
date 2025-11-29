@@ -38,7 +38,7 @@ public interface IScreenContext extends IPrimitiveScreenContext {
         this.drawGradientRect(rect, colour, colour);
     }
 
-  
+
     /**
      * Draws a solid gradient rect on the screen matching the provided rect data.
      *
@@ -58,7 +58,7 @@ public interface IScreenContext extends IPrimitiveScreenContext {
      * @param maxUvs the maximum uvs for the rect.
      */
     default void drawTexturedRect(ResourceLocation texture, Rect2F rect, UVData minUvs, UVData maxUvs) {
-        this.drawTexturedRect(texture, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), minUvs.getU(), minUvs.getV(), maxUvs.getU(), maxUvs.getV());
+        this.drawTexturedRect(texture, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), minUvs.u(), minUvs.v(), maxUvs.u(), maxUvs.v());
     }
 
     /**
@@ -79,7 +79,7 @@ public interface IScreenContext extends IPrimitiveScreenContext {
      * @param uv     the uv data to use for drawing the sprite.
      */
     default void drawRectUsingSprite(IScreenSprite sprite, Rect2F rect, UVData uv) {
-        this.drawRectUsingSprite(sprite, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), uv.getU(), uv.getV());
+        this.drawRectUsingSprite(sprite, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), uv.u(), uv.v());
     }
 
     /**
@@ -91,7 +91,7 @@ public interface IScreenContext extends IPrimitiveScreenContext {
      * @param maxUvs the maximum uvs for the rect.
      */
     default void drawRectUsingSprite(IScreenSprite sprite, Rect2F rect, UVData minUvs, UVData maxUvs) {
-        this.drawRectUsingSprite(sprite, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), minUvs.getU(), minUvs.getV(), maxUvs.getU(), maxUvs.getV());
+        this.drawRectUsingSprite(sprite, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), minUvs.u(), minUvs.v(), maxUvs.u(), maxUvs.v());
     }
 
     /**

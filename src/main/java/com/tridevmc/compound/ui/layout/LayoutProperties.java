@@ -71,6 +71,10 @@ public class LayoutProperties {
     protected LayoutProperties() {
     }
 
+    public static LayoutProperties create() {
+        return new LayoutProperties();
+    }
+
     /**
      * Enter deferred layout scope for reactive property updates.
      * Use this when layout properties need to respond to state changes without recomposition.
@@ -99,10 +103,6 @@ public class LayoutProperties {
         DeferredScope scope = new DeferredScope(this, null, configurator);
         configurator.accept(scope);
         return this;
-    }
-
-    public static LayoutProperties create() {
-        return new LayoutProperties();
     }
 
     /**

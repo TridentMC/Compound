@@ -17,17 +17,12 @@
 package com.tridevmc.compound.ui.element;
 
 import com.google.common.collect.Lists;
-import com.tridevmc.compound.ui.layout.Alignment;
-import com.tridevmc.compound.ui.layout.Bounds;
-import com.tridevmc.compound.ui.layout.Constraints;
-import com.tridevmc.compound.ui.layout.LayoutHelper;
-import com.tridevmc.compound.ui.layout.Size;
+import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.slot.SlotKey;
+import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
 import com.tridevmc.compound.ui.state.StateImpl;
-
-import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
@@ -35,13 +30,12 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 
 import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * A composable button container that can have children.
  * Manages hover state, enabled/disabled state, and handles click events.
  * Children render on top of the state-based background sprite.
- *
+ * <p>
  * Usage:
  * <pre>
  * scope.e(new Button(), button -> {
@@ -93,9 +87,9 @@ public class Button extends BaseElement implements IComposableElement {
             var bounds = this.getBounds();
             if (bounds != null) {
                 this.hoverListeners.forEach(listener -> listener.onButtonHover(
-                    bounds.x() + bounds.width() / 2.0,
-                    bounds.y() + bounds.height() / 2.0,
-                    true
+                        bounds.x() + bounds.width() / 2.0,
+                        bounds.y() + bounds.height() / 2.0,
+                        true
                 ));
             }
         });
@@ -105,9 +99,9 @@ public class Button extends BaseElement implements IComposableElement {
             var bounds = this.getBounds();
             if (bounds != null) {
                 this.hoverListeners.forEach(listener -> listener.onButtonHover(
-                    bounds.x() + bounds.width() / 2.0,
-                    bounds.y() + bounds.height() / 2.0,
-                    false
+                        bounds.x() + bounds.width() / 2.0,
+                        bounds.y() + bounds.height() / 2.0,
+                        false
                 ));
             }
         });
@@ -127,10 +121,9 @@ public class Button extends BaseElement implements IComposableElement {
             int y = event.y();
 
 
-
             // Check if click is within button bounds
             if (x >= bounds.x() && x < bounds.x() + bounds.width() &&
-                y >= bounds.y() && y < bounds.y() + bounds.height()) {
+                    y >= bounds.y() && y < bounds.y() + bounds.height()) {
 
                 // Play click sound
                 SoundManager soundManager = Minecraft.getInstance().getSoundManager();
@@ -171,9 +164,9 @@ public class Button extends BaseElement implements IComposableElement {
     public Size measure(Constraints constraints, List<IElement> children) {
         // Button doesn't have a natural size preference, so use max intrinsic size
         var finalSize = LayoutHelper.calculateSizeWithProperties(
-            Integer.MAX_VALUE, Integer.MAX_VALUE,
-            this.getLayoutProperties(),
-            constraints
+                Integer.MAX_VALUE, Integer.MAX_VALUE,
+                this.getLayoutProperties(),
+                constraints
         );
 
         if (!children.isEmpty()) {
@@ -205,20 +198,20 @@ public class Button extends BaseElement implements IComposableElement {
         this.hoverListeners.add(listener);
     }
 
-    public void setEnabled(boolean enabled) {
-        this.enabled.set(enabled);
-    }
-
     public boolean isEnabled() {
         return this.enabled.get();
     }
 
-    public void setVisible(boolean visible) {
-        this.visible.set(visible);
+    public void setEnabled(boolean enabled) {
+        this.enabled.set(enabled);
     }
 
     public boolean isVisible() {
         return this.visible.get();
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible.set(visible);
     }
 
     public boolean isHovered() {

@@ -17,14 +17,8 @@
 package com.tridevmc.compound.ui.tree;
 
 import com.tridevmc.compound.ui.element.IElement;
+import com.tridevmc.compound.ui.event.*;
 import com.tridevmc.compound.ui.layout.Size;
-import com.tridevmc.compound.ui.event.CharEvent;
-import com.tridevmc.compound.ui.event.KeyInputEvent;
-import com.tridevmc.compound.ui.event.MouseClickEvent;
-import com.tridevmc.compound.ui.event.MouseDragEvent;
-import com.tridevmc.compound.ui.event.MouseMoveEvent;
-import com.tridevmc.compound.ui.event.MouseReleaseEvent;
-import com.tridevmc.compound.ui.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.slot.SlotMap;
 import com.tridevmc.compound.ui.state.State;
 import com.tridevmc.compound.ui.state.StateObserver;
@@ -34,36 +28,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Consumer;
 
 /**
  * Implementation of ITreeNode that wraps an element and stores tree metadata.
  */
 public class TreeNode implements ITreeNode {
     private final IElement element;
-    private UITree tree;
-    private ITreeNode parent;
     private final List<ITreeNode> children = new ArrayList<>();
     private final List<State<?>> boundStates = new ArrayList<>();
     private final Set<State<?>> compositionStates = new HashSet<>();
     private final Set<State<?>> layoutStates = new HashSet<>();
-    private Runnable compositionFunction;
-    private SlotMap slotMap;
-    private Size measuredSize;
-
-    // Two dedicated observers for different state types
-    private final StateObserver compositionObserver = state -> {
-        if (this.tree != null) {
-            this.tree.requestRecompose(this);
-        }
-    };
-
-    private final StateObserver layoutObserver = state -> {
-        if (this.tree != null) {
-            this.tree.requestRemeasure(this);
-        }
-    };
-
     private final List<Function<MouseClickEvent, Boolean>> clickHandlers = new ArrayList<>();
     private final List<Runnable> mouseEnterHandlers = new ArrayList<>();
     private final List<Runnable> mouseExitHandlers = new ArrayList<>();
@@ -74,6 +48,22 @@ public class TreeNode implements ITreeNode {
     private final List<Function<MouseReleaseEvent, Boolean>> mouseReleaseHandlers = new ArrayList<>();
     private final List<Function<MouseDragEvent, Boolean>> mouseDragHandlers = new ArrayList<>();
     private final List<Function<MouseMoveEvent, Boolean>> mouseMoveHandlers = new ArrayList<>();
+    private UITree tree;
+    // Two dedicated observers for different state types
+    private final StateObserver compositionObserver = state -> {
+        if (this.tree != null) {
+            this.tree.requestRecompose(this);
+        }
+    };
+    private final StateObserver layoutObserver = state -> {
+        if (this.tree != null) {
+            this.tree.requestRemeasure(this);
+        }
+    };
+    private ITreeNode parent;
+    private Runnable compositionFunction;
+    private SlotMap slotMap;
+    private Size measuredSize;
 
     public TreeNode(IElement element, UITree tree) {
         this.element = element;
@@ -166,8 +156,8 @@ public class TreeNode implements ITreeNode {
     @Override
     public boolean isBoundToState(State<?> state) {
         return this.boundStates.contains(state) ||
-               this.compositionStates.contains(state) ||
-               this.layoutStates.contains(state);
+                this.compositionStates.contains(state) ||
+                this.layoutStates.contains(state);
     }
 
     @Override

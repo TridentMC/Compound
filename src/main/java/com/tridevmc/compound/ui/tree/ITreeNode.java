@@ -17,20 +17,13 @@
 package com.tridevmc.compound.ui.tree;
 
 import com.tridevmc.compound.ui.element.IElement;
+import com.tridevmc.compound.ui.event.*;
 import com.tridevmc.compound.ui.layout.Size;
-import com.tridevmc.compound.ui.event.CharEvent;
-import com.tridevmc.compound.ui.event.KeyInputEvent;
-import com.tridevmc.compound.ui.event.MouseClickEvent;
-import com.tridevmc.compound.ui.event.MouseDragEvent;
-import com.tridevmc.compound.ui.event.MouseMoveEvent;
-import com.tridevmc.compound.ui.event.MouseReleaseEvent;
-import com.tridevmc.compound.ui.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.slot.SlotMap;
 import com.tridevmc.compound.ui.state.State;
 
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**

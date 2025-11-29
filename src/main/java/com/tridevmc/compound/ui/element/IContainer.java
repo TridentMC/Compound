@@ -16,8 +16,6 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.tridevmc.compound.ui.layout.LayoutProperties;
-
 /**
  * Interface for layout containers that manage child elements.
  * Containers are responsible for measuring and placing their children.

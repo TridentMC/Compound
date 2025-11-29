@@ -34,7 +34,7 @@ public interface IScreenSprite {
      * @param writer the writer to use for the screen sprite.
      * @return a new screen sprite.
      */
-    public static IScreenSprite of(TextureAtlasSprite sprite, IScreenSpriteWriter writer) {
+    static IScreenSprite of(TextureAtlasSprite sprite, IScreenSpriteWriter writer) {
         var location = sprite.atlasLocation();
         var minU = sprite.getU0();
         var minV = sprite.getV0();
@@ -89,7 +89,7 @@ public interface IScreenSprite {
      * @param sprite the sprite to create a screen sprite from.
      * @return a new screen sprite.
      */
-    public static IScreenSprite of(TextureAtlasSprite sprite) {
+    static IScreenSprite of(TextureAtlasSprite sprite) {
         return of(sprite, IScreenSpriteWriter.forTextureAtlasSprite(sprite));
     }
 

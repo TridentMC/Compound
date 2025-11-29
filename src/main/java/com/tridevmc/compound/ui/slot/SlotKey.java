@@ -21,27 +21,13 @@ import java.util.Objects;
 /**
  * Identifier for a customization slot in a composable element.
  */
-public class SlotKey {
-    private final String name;
-
-    public SlotKey(String name) {
-        this.name = name;
-    }
-
-    public String getName() {
-        return this.name;
-    }
+public record SlotKey(String name) {
 
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (!(obj instanceof SlotKey other)) return false;
         return Objects.equals(this.name, other.name);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(this.name);
     }
 
     @Override

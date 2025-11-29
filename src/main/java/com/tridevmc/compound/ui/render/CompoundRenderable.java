@@ -37,12 +37,12 @@ import java.util.function.Consumer;
  * The vertex emitter lambda allows flexible vertex generation while keeping the record generic
  * enough to handle any primitive type (textured quads, gradients, etc.).
  *
- * @param pipeline    The render pipeline to use (e.g., GUI, GUI_TEXTURED)
+ * @param pipeline     The render pipeline to use (e.g., GUI, GUI_TEXTURED)
  * @param textureSetup The texture configuration for this renderable
- * @param pose        The transformation matrix to apply to vertices
- * @param scissorArea Optional scissor rectangle to clip rendering
- * @param bounds      The screen-space bounds of this element (for culling and debug)
- * @param emitter     Lambda that emits vertices to the provided VertexConsumer
+ * @param pose         The transformation matrix to apply to vertices
+ * @param scissorArea  Optional scissor rectangle to clip rendering
+ * @param bounds       The screen-space bounds of this element (for culling and debug)
+ * @param emitter      Lambda that emits vertices to the provided VertexConsumer
  */
 public record CompoundRenderable(
         RenderPipeline pipeline,

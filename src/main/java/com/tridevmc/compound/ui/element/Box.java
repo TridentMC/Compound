@@ -16,12 +16,7 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.tridevmc.compound.ui.layout.Bounds;
-import com.tridevmc.compound.ui.layout.Constraints;
-import com.tridevmc.compound.ui.layout.LayoutHelper;
-import com.tridevmc.compound.ui.layout.LayoutMath;
-import com.tridevmc.compound.ui.layout.Position;
-import com.tridevmc.compound.ui.layout.Size;
+import com.tridevmc.compound.ui.layout.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +45,7 @@ public class Box extends BaseContainer {
 
         if (children.size() > 1) {
             LOGGER.debug("Box element contains {} children, but Box is designed for a single child. " +
-                    "Only the first child will be rendered. Consider using Stack for multiple children.",
+                            "Only the first child will be rendered. Consider using Stack for multiple children.",
                     children.size());
         }
 

@@ -75,10 +75,10 @@ public final class LayoutMath {
     /**
      * Applies alignment to position a child within a content area.
      *
-     * @param contentArea     the content area bounds
-     * @param childSize       the child's size
-     * @param alignment       the alignment to apply
-     * @param isHorizontal    if true, align horizontally; if false, align vertically
+     * @param contentArea  the content area bounds
+     * @param childSize    the child's size
+     * @param alignment    the alignment to apply
+     * @param isHorizontal if true, align horizontally; if false, align vertically
      * @return the position for the child
      */
     public static Position applyAlignment(Bounds contentArea, Size childSize, Alignment alignment, boolean isHorizontal) {

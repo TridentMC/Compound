@@ -23,14 +23,14 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
  */
 public class ScreenSpriteWriterNineSlice implements IScreenSpriteWriter {
 
+    private final int leftBorder, rightBorder, topBorder, bottomBorder;
+
     public ScreenSpriteWriterNineSlice(int leftBorder, int rightBorder, int topBorder, int bottomBorder) {
         this.leftBorder = leftBorder;
         this.rightBorder = rightBorder;
         this.topBorder = topBorder;
         this.bottomBorder = bottomBorder;
     }
-
-    private final int leftBorder, rightBorder, topBorder, bottomBorder;
 
     @Override
     public void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height) {

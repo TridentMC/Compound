@@ -17,7 +17,6 @@
 package com.tridevmc.compound.ui.scope;
 
 import com.tridevmc.compound.ui.element.IContainer;
-import com.tridevmc.compound.ui.layout.LayoutProperties;
 
 /**
  * Default scope for configuring a container element.

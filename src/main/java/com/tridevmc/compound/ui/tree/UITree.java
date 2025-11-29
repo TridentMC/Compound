@@ -19,30 +19,15 @@ package com.tridevmc.compound.ui.tree;
 import com.tridevmc.compound.ui.animation.AnimationScheduler;
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.element.IPrimitiveElement;
-import com.tridevmc.compound.ui.event.CharEvent;
-import com.tridevmc.compound.ui.event.KeyInputEvent;
-import com.tridevmc.compound.ui.event.MouseClickEvent;
-import com.tridevmc.compound.ui.event.MouseDragEvent;
-import com.tridevmc.compound.ui.event.MouseMoveEvent;
-import com.tridevmc.compound.ui.event.MouseReleaseEvent;
-import com.tridevmc.compound.ui.event.MouseScrollEvent;
+import com.tridevmc.compound.ui.event.*;
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.Constraints;
 import com.tridevmc.compound.ui.layout.Position;
 import com.tridevmc.compound.ui.layout.Size;
-import com.tridevmc.compound.ui.state.State;
-import com.tridevmc.compound.ui.state.StateObserver;
 import com.tridevmc.compound.ui.screen.IScreenContext;
+import com.tridevmc.compound.ui.state.State;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -51,14 +36,22 @@ import java.util.function.Consumer;
  * NOTE: This is internal to the framework and not exposed to elements or composition code.
  */
 public class UITree {
-    private ITreeNode root;
     private final Map<IElement, ITreeNode> elementToNode = new HashMap<>();
     private final AnimationScheduler animationScheduler = new AnimationScheduler();
+    private ITreeNode root;
     private Size rootSize;
     private Size lastWindowSize = new Size(-1, -1);
+    private int lastMouseX, lastMouseY;
+    private com.mojang.blaze3d.platform.cursor.CursorType requestedCursor = com.mojang.blaze3d.platform.cursor.CursorType.DEFAULT;
+    private Set<ITreeNode> lastHoveredPath = new HashSet<>();
+    private boolean pendingHoverUpdate = false;
 
     public AnimationScheduler getAnimationScheduler() {
         return this.animationScheduler;
+    }
+
+    public ITreeNode getRoot() {
+        return this.root;
     }
 
     public void setRoot(ITreeNode root) {
@@ -66,10 +59,6 @@ public class UITree {
         if (root != null) {
             this.registerNode(root);
         }
-    }
-
-    public ITreeNode getRoot() {
-        return this.root;
     }
 
     public boolean hasRoot() {
@@ -195,9 +184,9 @@ public class UITree {
     /**
      * Recursively find the deepest node at a position, respecting clipping viewports.
      *
-     * @param node The current node being checked
-     * @param x The x coordinate to check
-     * @param y The y coordinate to check
+     * @param node           The current node being checked
+     * @param x              The x coordinate to check
+     * @param y              The y coordinate to check
      * @param activeViewport The current clipping viewport, or null if unrestricted
      * @return The deepest node at the position, or null if none found
      */
@@ -260,8 +249,8 @@ public class UITree {
     public void placeTree(Position rootPosition, Constraints rootConstraints) {
         if (this.root != null && this.rootSize != null) {
             Size constraintSize = new Size(
-                rootConstraints.hasBoundedWidth() ? rootConstraints.maxWidth() : this.rootSize.width(),
-                rootConstraints.hasBoundedHeight() ? rootConstraints.maxHeight() : this.rootSize.height()
+                    rootConstraints.hasBoundedWidth() ? rootConstraints.maxWidth() : this.rootSize.width(),
+                    rootConstraints.hasBoundedHeight() ? rootConstraints.maxHeight() : this.rootSize.height()
             );
             Bounds rootBounds = new Bounds(rootPosition, constraintSize);
             this.placeNode(this.root, rootBounds);
@@ -332,13 +321,6 @@ public class UITree {
         return false;
     }
 
-
-    private int lastMouseX, lastMouseY;
-    private com.mojang.blaze3d.platform.cursor.CursorType requestedCursor = com.mojang.blaze3d.platform.cursor.CursorType.DEFAULT;
-
-    private Set<ITreeNode> lastHoveredPath = new HashSet<>();
-    private boolean pendingHoverUpdate = false;
-
     public com.mojang.blaze3d.platform.cursor.CursorType getRequestedCursor() {
         return this.requestedCursor;
     }
@@ -355,8 +337,8 @@ public class UITree {
             while (current != null) {
                 Bounds bounds = current.getElement().getBounds();
                 if (bounds != null) {
-                    int localX = x - (int) bounds.x();
-                    int localY = y - (int) bounds.y();
+                    int localX = x - bounds.x();
+                    int localY = y - bounds.y();
                     var nodeCursor = current.getElement().getCursor(localX, localY);
                     if (nodeCursor != null) {
                         cursor = nodeCursor;
@@ -622,8 +604,8 @@ public class UITree {
      * Recursively render a node and its children.
      * Handles clipping and viewport culling automatically.
      *
-     * @param node The node to render
-     * @param context The screen context for drawing
+     * @param node           The node to render
+     * @param context        The screen context for drawing
      * @param activeViewport The current clipping viewport, or null if unrestricted
      */
     private void renderNode(ITreeNode node, IScreenContext context, Bounds activeViewport) {
@@ -644,10 +626,10 @@ public class UITree {
 
                 viewport = clipBounds;
                 context.enableScissor(
-                    clipBounds.left(),
-                    clipBounds.top(),
-                    clipBounds.right(),
-                    clipBounds.bottom()
+                        clipBounds.left(),
+                        clipBounds.top(),
+                        clipBounds.right(),
+                        clipBounds.bottom()
                 );
                 didEnableScissor = true;
             }

@@ -16,9 +16,6 @@
 
 package com.tridevmc.compound.ui.screen;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.GpuTextureView;
-import com.mojang.blaze3d.vertex.*;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
 import com.tridevmc.compound.ui.render.CompoundRenderable;
@@ -30,7 +27,6 @@ import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
@@ -142,21 +138,21 @@ public class CompoundScreenContext implements IScreenContext {
         var scissor = this.ui.getActiveGuiGraphics().peekScissorStack();
 
         this.getGuiRenderState().submitGuiElement(
-            new CompoundRenderable(
-                RenderPipelines.GUI_TEXTURED,
-                textureSetup,
-                pose,
-                scissor,
-                bounds,
-                consumer -> {
-                    // Emit vertices in correct winding order: top-left, bottom-left, bottom-right, top-right
-                    int color = -1;
-                    consumer.addVertexWith2DPose(pose, x, y).setUv(minU, minV).setColor(color);
-                    consumer.addVertexWith2DPose(pose, x, y + height).setUv(minU, maxV).setColor(color);
-                    consumer.addVertexWith2DPose(pose, x + width, y + height).setUv(maxU, maxV).setColor(color);
-                    consumer.addVertexWith2DPose(pose, x + width, y).setUv(maxU, minV).setColor(color);
-                }
-            )
+                new CompoundRenderable(
+                        RenderPipelines.GUI_TEXTURED,
+                        textureSetup,
+                        pose,
+                        scissor,
+                        bounds,
+                        consumer -> {
+                            // Emit vertices in correct winding order: top-left, bottom-left, bottom-right, top-right
+                            int color = -1;
+                            consumer.addVertexWith2DPose(pose, x, y).setUv(minU, minV).setColor(color);
+                            consumer.addVertexWith2DPose(pose, x, y + height).setUv(minU, maxV).setColor(color);
+                            consumer.addVertexWith2DPose(pose, x + width, y + height).setUv(maxU, maxV).setColor(color);
+                            consumer.addVertexWith2DPose(pose, x + width, y).setUv(maxU, minV).setColor(color);
+                        }
+                )
         );
     }
 
@@ -193,21 +189,21 @@ public class CompoundScreenContext implements IScreenContext {
         var bounds = new ScreenRectangle((int) x, (int) y, (int) width, (int) height).transformMaxBounds(pose);
 
         this.getGuiRenderState().submitGuiElement(
-            new CompoundRenderable(
-                RenderPipelines.GUI,
-                TextureSetup.noTexture(),
-                pose,
-                null,
-                bounds,
-                consumer -> {
-                    // Emit vertices in correct winding order: top-left, bottom-left, bottom-right, top-right
-                    // Top two vertices use startColour, bottom two use endColour
-                    consumer.addVertexWith2DPose(pose, x, y).setColor(startColour);
-                    consumer.addVertexWith2DPose(pose, x, y + height).setColor(endColour);
-                    consumer.addVertexWith2DPose(pose, x + width, y + height).setColor(endColour);
-                    consumer.addVertexWith2DPose(pose, x + width, y).setColor(startColour);
-                }
-            )
+                new CompoundRenderable(
+                        RenderPipelines.GUI,
+                        TextureSetup.noTexture(),
+                        pose,
+                        null,
+                        bounds,
+                        consumer -> {
+                            // Emit vertices in correct winding order: top-left, bottom-left, bottom-right, top-right
+                            // Top two vertices use startColour, bottom two use endColour
+                            consumer.addVertexWith2DPose(pose, x, y).setColor(startColour);
+                            consumer.addVertexWith2DPose(pose, x, y + height).setColor(endColour);
+                            consumer.addVertexWith2DPose(pose, x + width, y + height).setColor(endColour);
+                            consumer.addVertexWith2DPose(pose, x + width, y).setColor(startColour);
+                        }
+                )
         );
     }
 

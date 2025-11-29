@@ -22,6 +22,22 @@ package com.tridevmc.compound.ui.animation;
  */
 @FunctionalInterface
 public interface Easing {
+    // Common easing functions
+    Easing LINEAR = t -> t;
+    Easing EASE_IN = t -> t * t;
+    Easing EASE_OUT = t -> t * (2 - t);
+    Easing EASE_IN_OUT = t -> t < 0.5f
+            ? 2 * t * t
+            : -1 + (4 - 2 * t) * t;
+    Easing EASE_IN_CUBIC = t -> t * t * t;
+    Easing EASE_OUT_CUBIC = t -> {
+        float f = t - 1;
+        return f * f * f + 1;
+    };
+    Easing EASE_IN_OUT_CUBIC = t -> t < 0.5f
+            ? 4 * t * t * t
+            : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+
     /**
      * Apply easing to linear progress.
      *
@@ -29,26 +45,4 @@ public interface Easing {
      * @return eased progress from 0.0 to 1.0
      */
     float apply(float t);
-
-    // Common easing functions
-    Easing LINEAR = t -> t;
-
-    Easing EASE_IN = t -> t * t;
-
-    Easing EASE_OUT = t -> t * (2 - t);
-
-    Easing EASE_IN_OUT = t -> t < 0.5f
-        ? 2 * t * t
-        : -1 + (4 - 2 * t) * t;
-
-    Easing EASE_IN_CUBIC = t -> t * t * t;
-
-    Easing EASE_OUT_CUBIC = t -> {
-        float f = t - 1;
-        return f * f * f + 1;
-    };
-
-    Easing EASE_IN_OUT_CUBIC = t -> t < 0.5f
-        ? 4 * t * t * t
-        : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
 }

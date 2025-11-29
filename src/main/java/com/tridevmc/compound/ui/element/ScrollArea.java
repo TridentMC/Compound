@@ -16,11 +16,7 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.tridevmc.compound.ui.layout.Bounds;
-import com.tridevmc.compound.ui.layout.Constraints;
-import com.tridevmc.compound.ui.layout.LayoutHelper;
-import com.tridevmc.compound.ui.layout.Position;
-import com.tridevmc.compound.ui.layout.Size;
+import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.slot.SlotKey;
 import com.tridevmc.compound.ui.state.State;
@@ -55,19 +51,10 @@ import java.util.List;
 public class ScrollArea extends BaseElement implements IComposableElement {
 
     public static final SlotKey CONTENT_SLOT = new SlotKey("content");
-
-    public enum Direction {
-        /** Scroll vertically only */
-        VERTICAL,
-        /** Scroll horizontally only */
-        HORIZONTAL
-    }
-
-    private Direction direction = Direction.VERTICAL;
     private final State<Integer> scrollX = new StateImpl<>(0);
     private final State<Integer> scrollY = new StateImpl<>(0);
+    private Direction direction = Direction.VERTICAL;
     private int scrollSpeed = 20;
-
     public ScrollArea() {
         this(Direction.VERTICAL);
     }
@@ -158,7 +145,7 @@ public class ScrollArea extends BaseElement implements IComposableElement {
 
         if (children.size() > 1) {
             System.err.println("WARNING: ScrollArea should have exactly one child, but has " +
-                children.size() + ". Only the first child will be scrolled.");
+                    children.size() + ". Only the first child will be scrolled.");
         }
 
         var child = children.get(0);
@@ -166,12 +153,12 @@ public class ScrollArea extends BaseElement implements IComposableElement {
         // Allow child to be larger than viewport based on direction
         var childConstraints = switch (direction) {
             case VERTICAL -> Constraints.loose(
-                constraints.maxWidth(),
-                Integer.MAX_VALUE  // Unlimited height
+                    constraints.maxWidth(),
+                    Integer.MAX_VALUE  // Unlimited height
             );
             case HORIZONTAL -> Constraints.loose(
-                Integer.MAX_VALUE,  // Unlimited width
-                constraints.maxHeight()
+                    Integer.MAX_VALUE,  // Unlimited width
+                    constraints.maxHeight()
             );
         };
 
@@ -179,8 +166,8 @@ public class ScrollArea extends BaseElement implements IComposableElement {
 
         // ScrollArea fills available space (viewport size)
         return constraints.constrain(new Size(
-            constraints.maxWidth(),
-            constraints.maxHeight()
+                constraints.maxWidth(),
+                constraints.maxHeight()
         ));
     }
 
@@ -210,13 +197,24 @@ public class ScrollArea extends BaseElement implements IComposableElement {
 
         // Place child with scroll offset
         var childBounds = new Bounds(
-            new Position(
-                bounds.x() - scrollX.get(),
-                bounds.y() - scrollY.get()
-            ),
-            childSize
+                new Position(
+                        bounds.x() - scrollX.get(),
+                        bounds.y() - scrollY.get()
+                ),
+                childSize
         );
 
         LayoutHelper.placeChild(child, childBounds);
+    }
+
+    public enum Direction {
+        /**
+         * Scroll vertically only
+         */
+        VERTICAL,
+        /**
+         * Scroll horizontally only
+         */
+        HORIZONTAL
     }
 }

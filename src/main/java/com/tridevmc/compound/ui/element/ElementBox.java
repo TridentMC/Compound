@@ -21,8 +21,8 @@ import com.tridevmc.compound.ui.layout.Constraints;
 import com.tridevmc.compound.ui.layout.LayoutHelper;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
-import com.tridevmc.compound.ui.slot.SlotKey;
 import com.tridevmc.compound.ui.screen.IScreenContext;
+import com.tridevmc.compound.ui.slot.SlotKey;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.sprite.IScreenSpriteWriter;
 import net.minecraft.resources.ResourceLocation;
@@ -90,16 +90,45 @@ public class ElementBox extends BaseElement implements IComposableElement {
 
     private static IScreenSprite wrapWithWriter(IScreenSprite base, IScreenSpriteWriter writer) {
         return new IScreenSprite() {
-            public IScreenSpriteWriter getWriter() { return writer; }
-            public ResourceLocation getTextureLocation() { return base.getTextureLocation(); }
-            public float getMinU() { return 0F; }
-            public float getMinV() { return 0F; }
-            public float getMaxU() { return (float) SPRITE_WIDTH / TEXTURE_SIZE; }
-            public float getMaxV() { return (float) SPRITE_HEIGHT / TEXTURE_SIZE; }
-            public float getWidth() { return (float) SPRITE_WIDTH / TEXTURE_SIZE; }
-            public float getHeight() { return (float) SPRITE_HEIGHT / TEXTURE_SIZE; }
-            public int getWidthInPixels() { return SPRITE_WIDTH; }
-            public int getHeightInPixels() { return SPRITE_HEIGHT; }
+            public IScreenSpriteWriter getWriter() {
+                return writer;
+            }
+
+            public ResourceLocation getTextureLocation() {
+                return base.getTextureLocation();
+            }
+
+            public float getMinU() {
+                return 0F;
+            }
+
+            public float getMinV() {
+                return 0F;
+            }
+
+            public float getMaxU() {
+                return (float) SPRITE_WIDTH / TEXTURE_SIZE;
+            }
+
+            public float getMaxV() {
+                return (float) SPRITE_HEIGHT / TEXTURE_SIZE;
+            }
+
+            public float getWidth() {
+                return (float) SPRITE_WIDTH / TEXTURE_SIZE;
+            }
+
+            public float getHeight() {
+                return (float) SPRITE_HEIGHT / TEXTURE_SIZE;
+            }
+
+            public int getWidthInPixels() {
+                return SPRITE_WIDTH;
+            }
+
+            public int getHeightInPixels() {
+                return SPRITE_HEIGHT;
+            }
         };
     }
 
@@ -122,9 +151,9 @@ public class ElementBox extends BaseElement implements IComposableElement {
     @Override
     public Size measure(Constraints constraints, List<IElement> children) {
         var finalSize = LayoutHelper.calculateSizeWithProperties(
-            Integer.MAX_VALUE, Integer.MAX_VALUE,
-            this.getLayoutProperties(),
-            constraints
+                Integer.MAX_VALUE, Integer.MAX_VALUE,
+                this.getLayoutProperties(),
+                constraints
         );
 
         if (!children.isEmpty()) {

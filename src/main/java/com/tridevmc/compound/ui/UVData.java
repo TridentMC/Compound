@@ -21,29 +21,14 @@ import com.google.common.base.MoreObjects;
 /**
  * Used for defining UV data of rects to draw on the screen.
  */
-public class UVData {
-
-    private final float u, v;
-
-    public UVData(float u, float v) {
-        this.u = u;
-        this.v = v;
-    }
-
-    public float getU() {
-        return this.u;
-    }
-
-    public float getV() {
-        return this.v;
-    }
+public record UVData(float u, float v) {
 
     public UVData add(float u, float v) {
         return new UVData(this.u + u, this.v + v);
     }
 
     public UVData add(UVData uv) {
-        return this.add(uv.getU(), uv.getV());
+        return this.add(uv.u(), uv.v());
     }
 
     public UVData sub(float u, float v) {
@@ -51,7 +36,7 @@ public class UVData {
     }
 
     public UVData sub(UVData uv) {
-        return this.sub(uv.getU(), uv.getV());
+        return this.sub(uv.u(), uv.v());
     }
 
     @Override

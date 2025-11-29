@@ -25,11 +25,22 @@ import java.util.function.Function;
  * Implementation of State that manages a single value and notifies observers on change.
  */
 public class StateImpl<T> implements State<T> {
-    private T value;
     private final List<StateObserver> observers = new ArrayList<>();
+    private T value;
 
     public StateImpl(T initialValue) {
         this.value = initialValue;
+    }
+
+    /**
+     * Create a new State with the given initial value.
+     *
+     * @param initialValue the initial value
+     * @param <T>          the type of the value
+     * @return a new State instance
+     */
+    public static <T> State<T> of(T initialValue) {
+        return new StateImpl<>(initialValue);
     }
 
     @Override
@@ -76,16 +87,5 @@ public class StateImpl<T> implements State<T> {
         for (StateObserver observer : observersCopy) {
             observer.onStateChanged(this);
         }
-    }
-
-    /**
-     * Create a new State with the given initial value.
-     *
-     * @param initialValue the initial value
-     * @param <T>          the type of the value
-     * @return a new State instance
-     */
-    public static <T> State<T> of(T initialValue) {
-        return new StateImpl<>(initialValue);
     }
 }

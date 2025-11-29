@@ -22,13 +22,7 @@ import com.tridevmc.compound.ui.animation.Interpolators;
 import com.tridevmc.compound.ui.element.IComposableElement;
 import com.tridevmc.compound.ui.element.IContainer;
 import com.tridevmc.compound.ui.element.IPrimitiveElement;
-import com.tridevmc.compound.ui.event.CharEvent;
-import com.tridevmc.compound.ui.event.KeyInputEvent;
-import com.tridevmc.compound.ui.event.MouseClickEvent;
-import com.tridevmc.compound.ui.event.MouseDragEvent;
-import com.tridevmc.compound.ui.event.MouseMoveEvent;
-import com.tridevmc.compound.ui.event.MouseReleaseEvent;
-import com.tridevmc.compound.ui.event.MouseScrollEvent;
+import com.tridevmc.compound.ui.event.*;
 import com.tridevmc.compound.ui.slot.SlotKey;
 import com.tridevmc.compound.ui.slot.SlotMap;
 import com.tridevmc.compound.ui.state.State;
@@ -76,7 +70,7 @@ public interface ICompositionScope {
      * @param <T>     the element type
      */
     default <T extends IPrimitiveElement> void e(T element) {
-        this.e(element, (Consumer<IElementScope<T>>) null);
+        this.e(element, null);
     }
 
     /**
@@ -86,7 +80,7 @@ public interface ICompositionScope {
      * @param <T>     the element type
      */
     default <T extends IContainer> void e(T element) {
-        this.e(element, (Consumer<IContainerScope<T>>) null);
+        this.e(element, null);
     }
 
     /**
@@ -96,7 +90,7 @@ public interface ICompositionScope {
      * @param <T>     the element type
      */
     default <T extends IComposableElement> void e(T element) {
-        this.e(element, (Consumer<IComposableElementScope<T>>) null);
+        this.e(element, null);
     }
 
     /**
@@ -255,7 +249,7 @@ public interface ICompositionScope {
      * Create an animated float state.
      *
      * @param initialValue the initial value
-     * @param durationMs the animation duration in milliseconds
+     * @param durationMs   the animation duration in milliseconds
      * @return the animated state
      */
     default AnimatedState<Float> animateFloat(float initialValue, long durationMs) {
@@ -266,8 +260,8 @@ public interface ICompositionScope {
      * Create an animated float state with custom easing.
      *
      * @param initialValue the initial value
-     * @param durationMs the animation duration in milliseconds
-     * @param easing the easing function
+     * @param durationMs   the animation duration in milliseconds
+     * @param easing       the easing function
      * @return the animated state
      */
     default AnimatedState<Float> animateFloat(float initialValue, long durationMs, Easing easing) {
@@ -278,7 +272,7 @@ public interface ICompositionScope {
      * Create an animated integer state.
      *
      * @param initialValue the initial value
-     * @param durationMs the animation duration in milliseconds
+     * @param durationMs   the animation duration in milliseconds
      * @return the animated state
      */
     default AnimatedState<Integer> animateInt(int initialValue, long durationMs) {
@@ -289,8 +283,8 @@ public interface ICompositionScope {
      * Create an animated integer state with custom easing.
      *
      * @param initialValue the initial value
-     * @param durationMs the animation duration in milliseconds
-     * @param easing the easing function
+     * @param durationMs   the animation duration in milliseconds
+     * @param easing       the easing function
      * @return the animated state
      */
     default AnimatedState<Integer> animateInt(int initialValue, long durationMs, Easing easing) {
@@ -301,7 +295,7 @@ public interface ICompositionScope {
      * Create an animated color state (ARGB).
      *
      * @param initialValue the initial color value (ARGB)
-     * @param durationMs the animation duration in milliseconds
+     * @param durationMs   the animation duration in milliseconds
      * @return the animated state
      */
     default AnimatedState<Integer> animateColor(int initialValue, long durationMs) {
@@ -312,8 +306,8 @@ public interface ICompositionScope {
      * Create an animated color state with custom easing.
      *
      * @param initialValue the initial color value (ARGB)
-     * @param durationMs the animation duration in milliseconds
-     * @param easing the easing function
+     * @param durationMs   the animation duration in milliseconds
+     * @param easing       the easing function
      * @return the animated state
      */
     default AnimatedState<Integer> animateColor(int initialValue, long durationMs, Easing easing) {

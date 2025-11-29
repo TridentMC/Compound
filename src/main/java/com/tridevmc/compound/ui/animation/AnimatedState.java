@@ -26,24 +26,24 @@ import java.util.function.Function;
 
 /**
  * A state that automatically animates to new target values using interpolation.
- *
+ * <p>
  * Unlike StateImpl, this state updates itself over time via the AnimationScheduler.
  * Set a new target value and it smoothly animates from current to target.
- *
+ * <p>
  * Uses Minecraft's tick system (20 TPS) with partial tick interpolation for smooth rendering.
  */
 public class AnimatedState<T> implements State<T> {
+    private final long durationTicks;  // Animation duration in ticks
+    private final Interpolator<T> interpolator;
+    private final Easing easing;
+    private final AnimationScheduler scheduler;
+    private final List<StateObserver> observers = new ArrayList<>();
     private T lastTickValue;      // Value at start of current tick (for partial tick interpolation)
     private T currentTickValue;   // Target value for current tick
     private T targetValue;        // Final target value
     private T animationStartValue; // Value when animation started
     private long startTick;       // Tick when animation started
     private long lastUpdateTick = -1;  // Last tick we updated on
-    private final long durationTicks;  // Animation duration in ticks
-    private final Interpolator<T> interpolator;
-    private final Easing easing;
-    private final AnimationScheduler scheduler;
-    private final List<StateObserver> observers = new ArrayList<>();
     private boolean isAnimating = false;
 
     public AnimatedState(T initialValue, long durationMillis,

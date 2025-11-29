@@ -104,12 +104,12 @@ public class ElementLabel extends BasePrimitiveElement {
         this.colorSupplier = () -> color;
     }
 
-    public void setColorSupplier(Supplier<Integer> colorSupplier) {
-        this.colorSupplier = colorSupplier;
-    }
-
     public Supplier<Integer> getColorSupplier() {
         return this.colorSupplier;
+    }
+
+    public void setColorSupplier(Supplier<Integer> colorSupplier) {
+        this.colorSupplier = colorSupplier;
     }
 
     public boolean isShadow() {
@@ -120,11 +120,11 @@ public class ElementLabel extends BasePrimitiveElement {
         this.shadowSupplier = () -> shadow;
     }
 
-    public void setShadowSupplier(Supplier<Boolean> shadowSupplier) {
-        this.shadowSupplier = shadowSupplier;
-    }
-
     public Supplier<Boolean> getShadowSupplier() {
         return this.shadowSupplier;
+    }
+
+    public void setShadowSupplier(Supplier<Boolean> shadowSupplier) {
+        this.shadowSupplier = shadowSupplier;
     }
 }

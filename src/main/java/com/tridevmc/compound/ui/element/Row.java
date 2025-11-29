@@ -16,12 +16,7 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.tridevmc.compound.ui.layout.Bounds;
-import com.tridevmc.compound.ui.layout.Constraints;
-import com.tridevmc.compound.ui.layout.LayoutHelper;
-import com.tridevmc.compound.ui.layout.LayoutMath;
-import com.tridevmc.compound.ui.layout.Position;
-import com.tridevmc.compound.ui.layout.Size;
+import com.tridevmc.compound.ui.layout.*;
 
 import java.util.List;
 
@@ -82,8 +77,8 @@ public class Row extends BaseContainer {
             Bounds childBounds;
             if (verticalAlignment != null) {
                 var alignedPos = LayoutMath.applyAlignment(
-                    new Bounds(currentX, contentArea.y(), childSize.width(), contentArea.height()),
-                    childSize, verticalAlignment, false
+                        new Bounds(currentX, contentArea.y(), childSize.width(), contentArea.height()),
+                        childSize, verticalAlignment, false
                 );
                 childBounds = new Bounds(alignedPos, childSize);
             } else {

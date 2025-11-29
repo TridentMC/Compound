@@ -64,7 +64,7 @@ public class DeferredScope {
         if (boundNode instanceof TreeNode node) {
             // Bind for layout-only updates (triggers remeasure, not recompose)
             node.bindLayoutState(state);
-            
+
             // Add observer to re-run the callback when state changes
             state.addObserver(ignored -> callback.accept(this));
         }

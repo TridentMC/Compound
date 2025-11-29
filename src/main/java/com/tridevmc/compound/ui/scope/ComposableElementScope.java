@@ -19,13 +19,7 @@ package com.tridevmc.compound.ui.scope;
 import com.tridevmc.compound.ui.element.IComposableElement;
 import com.tridevmc.compound.ui.element.IContainer;
 import com.tridevmc.compound.ui.element.IPrimitiveElement;
-import com.tridevmc.compound.ui.event.CharEvent;
-import com.tridevmc.compound.ui.event.KeyInputEvent;
-import com.tridevmc.compound.ui.event.MouseClickEvent;
-import com.tridevmc.compound.ui.event.MouseDragEvent;
-import com.tridevmc.compound.ui.event.MouseMoveEvent;
-import com.tridevmc.compound.ui.event.MouseReleaseEvent;
-import com.tridevmc.compound.ui.event.MouseScrollEvent;
+import com.tridevmc.compound.ui.event.*;
 import com.tridevmc.compound.ui.slot.SlotContent;
 import com.tridevmc.compound.ui.slot.SlotKey;
 import com.tridevmc.compound.ui.slot.SlotMap;
@@ -79,7 +73,7 @@ public class ComposableElementScope<T extends IComposableElement> extends Elemen
         }
     }
 
-    
+
     @Override
     public <E extends IPrimitiveElement> void e(E element, Consumer<IElementScope<E>> configurator) {
         ITreeNode node = this.tree.createNode(element);
