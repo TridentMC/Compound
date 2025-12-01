@@ -18,7 +18,6 @@ package com.tridevmc.compound.ui.element;
 
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.Constraints;
-import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.tree.UITree;
 
@@ -31,7 +30,6 @@ import java.util.List;
 public abstract class BaseElement implements IElement {
     private UITree tree;
     private Bounds bounds;
-    private LayoutProperties layoutProperties = LayoutProperties.create();
     private boolean visible = true;
 
     @Override
@@ -51,16 +49,6 @@ public abstract class BaseElement implements IElement {
 
     protected void setBounds(Bounds bounds) {
         this.bounds = bounds;
-    }
-
-    @Override
-    public LayoutProperties getLayoutProperties() {
-        return this.layoutProperties;
-    }
-
-    @Override
-    public void setLayoutProperties(LayoutProperties properties) {
-        this.layoutProperties = properties;
     }
 
     @Override

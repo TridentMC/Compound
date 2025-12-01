@@ -53,6 +53,7 @@ public class ContainerScope<T extends IContainer> extends ElementScope<T> implem
         if (configurator != null) {
             ElementScope<E> scope = new ElementScope<>(element);
             configurator.accept(scope);
+            node.setLayoutProperties(scope.getLayoutProperties());
         }
     }
 
@@ -65,6 +66,7 @@ public class ContainerScope<T extends IContainer> extends ElementScope<T> implem
         if (configurator != null) {
             ContainerScope<E> scope = new ContainerScope<>(this.tree, node, element);
             configurator.accept(scope);
+            node.setLayoutProperties(scope.getLayoutProperties());
         }
     }
 
@@ -81,6 +83,7 @@ public class ContainerScope<T extends IContainer> extends ElementScope<T> implem
 
         if (configurator != null) {
             configurator.accept(scope);
+            node.setLayoutProperties(scope.getLayoutProperties());
         }
 
         node.setCompositionFunction(() -> element.compose(scope));

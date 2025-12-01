@@ -45,6 +45,19 @@ public class LayoutHelper {
     }
 
     /**
+     * Gets the layout properties for an element from its tree node.
+     * Returns null if the element is not attached to a tree or has no node.
+     */
+    private static LayoutProperties getLayoutPropertiesForElement(IElement element) {
+        var tree = element.getTree();
+        if (tree == null) {
+            return null;
+        }
+        var node = tree.getNodeForElement(element);
+        return node != null ? node.getLayoutProperties() : null;
+    }
+
+    /**
      * Calculates an element's final size based on its intrinsic size, layout properties, and parent constraints.
      * This is a common helper for elements to determine their own size.
      *
@@ -116,7 +129,7 @@ public class LayoutHelper {
      * @return the measured size including margin
      */
     public static Size measureChild(IElement child, Constraints constraints) {
-        var props = child.getLayoutProperties();
+        var props = getLayoutPropertiesForElement(child);
         var grandchildren = getChildrenFromTree(child);
 
         if (props == null) {
@@ -232,7 +245,7 @@ public class LayoutHelper {
      * @param allocatedBounds the bounds allocated by the parent (including margin)
      */
     public static void placeChild(IElement child, Bounds allocatedBounds) {
-        var props = child.getLayoutProperties();
+        var props = getLayoutPropertiesForElement(child);
         var grandchildren = getChildrenFromTree(child);
 
         if (props == null) {

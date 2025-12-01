@@ -17,12 +17,14 @@
 package com.tridevmc.compound.ui.scope;
 
 import com.tridevmc.compound.ui.element.IElement;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
 
 /**
  * Scope for configuring a basic element (no children, no composition).
  */
 public class ElementScope<T extends IElement> implements IElementScope<T> {
     protected final T element;
+    private final LayoutProperties layoutProperties = LayoutProperties.create();
 
     public ElementScope(T element) {
         this.element = element;
@@ -31,5 +33,9 @@ public class ElementScope<T extends IElement> implements IElementScope<T> {
     @Override
     public T getElement() {
         return this.element;
+    }
+
+    public LayoutProperties getLayoutProperties() {
+        return this.layoutProperties;
     }
 }

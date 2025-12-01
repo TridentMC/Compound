@@ -40,6 +40,10 @@ public interface IGenericElementScope<T extends IGenericElement> {
      * @return the element's layout properties
      */
     default LayoutProperties layout() {
-        return this.getElement().getLayoutProperties();
+        // ElementScope and its subclasses provide getLayoutProperties()
+        if (this instanceof ElementScope<?> scope) {
+            return scope.getLayoutProperties();
+        }
+        throw new UnsupportedOperationException("Scope must extend ElementScope to access layout properties");
     }
 }

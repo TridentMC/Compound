@@ -58,6 +58,7 @@ public class RootScope implements ICompositionScope {
         if (configurator != null) {
             ElementScope<T> scope = new ElementScope<>(element);
             configurator.accept(scope);
+            node.setLayoutProperties(scope.getLayoutProperties());
         }
     }
 
@@ -77,6 +78,7 @@ public class RootScope implements ICompositionScope {
         if (configurator != null) {
             ContainerScope<T> scope = new ContainerScope<>(this.tree, node, element);
             configurator.accept(scope);
+            node.setLayoutProperties(scope.getLayoutProperties());
         }
     }
 
@@ -100,6 +102,7 @@ public class RootScope implements ICompositionScope {
 
         if (configurator != null) {
             configurator.accept(scope);
+            node.setLayoutProperties(scope.getLayoutProperties());
         }
 
         node.setCompositionFunction(() -> element.compose(scope));

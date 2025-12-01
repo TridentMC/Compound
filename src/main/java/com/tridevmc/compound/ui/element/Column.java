@@ -28,7 +28,7 @@ public class Column extends BaseContainer {
 
     @Override
     public Size measure(Constraints constraints, List<IElement> children) {
-        var props = this.getLayoutProperties();
+        var props = this.getOwnLayoutProperties();
 
         if (children.isEmpty()) {
             return constraints.constrain(new Size(props.getHorizontalPadding(), props.getVerticalPadding()));
@@ -62,7 +62,7 @@ public class Column extends BaseContainer {
             return;
         }
 
-        var props = this.getLayoutProperties();
+        var props = this.getOwnLayoutProperties();
         var horizontalAlignment = props.getHorizontalAlignment();
         var contentArea = LayoutMath.calculateContentArea(bounds, props);
 

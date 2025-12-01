@@ -162,10 +162,15 @@ public class Button extends BaseElement implements IComposableElement {
 
     @Override
     public Size measure(Constraints constraints, List<IElement> children) {
-        // Button doesn't have a natural size preference, so use max intrinsic size
+        // Composable elements are measured directly by UITree, so must apply their own layout properties
+        // Read from tree node instead of element (Button extends BaseElement, not BaseContainer, so use tree lookup)
+        var tree = this.getTree();
+        var props = tree != null ? tree.getNodeForElement(this).getLayoutProperties() : null;
+
+        // Button has no fixed intrinsic size - flexible by default
         var finalSize = LayoutHelper.calculateSizeWithProperties(
                 Integer.MAX_VALUE, Integer.MAX_VALUE,
-                this.getLayoutProperties(),
+                props,
                 constraints
         );
 

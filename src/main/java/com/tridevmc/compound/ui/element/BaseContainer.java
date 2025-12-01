@@ -16,9 +16,26 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+
 /**
  * Base implementation for container elements.
  * Provides common functionality for elements that can have children.
  */
 public abstract class BaseContainer extends BaseElement implements IContainer {
+
+    /**
+     * Gets this container's own layout properties from its tree node.
+     * Used by container implementations to access their padding, alignment, etc.
+     *
+     * @return the container's layout properties, or default empty properties if not attached
+     */
+    protected LayoutProperties getOwnLayoutProperties() {
+        var tree = this.getTree();
+        if (tree == null) {
+            return LayoutProperties.create(); // Default empty properties
+        }
+        var node = tree.getNodeForElement(this);
+        return node != null ? node.getLayoutProperties() : LayoutProperties.create();
+    }
 }

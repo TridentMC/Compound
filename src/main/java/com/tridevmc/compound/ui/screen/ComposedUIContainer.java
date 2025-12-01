@@ -54,14 +54,12 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     private static final WrappedField<ItemStack> draggingItem = WrappedField.create(AbstractContainerScreen.class, "draggingItem", "field_147012_x");
     private static final WrappedField<Integer> quickCraftingType = WrappedField.create(AbstractContainerScreen.class, "quickCraftingType", "field_146987_F");
     private static final WrappedField<GuiRenderState> guiRenderState = WrappedField.create(GuiGraphics.class, "guiRenderState", "f_399111_");
-
-    private GuiGraphics activeGuiGraphics;
-    private long ticks;
-    private float mouseX, mouseY;
-
     private final CompoundScreenContext screenContext;
     private final UITree tree;
     private final Map<Slot, ComposedSlot> slotElements;
+    private GuiGraphics activeGuiGraphics;
+    private long ticks;
+    private float mouseX, mouseY;
     private float prevMouseX, prevMouseY;
 
     public ComposedUIContainer(T container) {

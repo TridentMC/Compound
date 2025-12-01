@@ -200,7 +200,7 @@ public class UITree {
 
         // Update viewport if this element clips
         Bounds viewport = activeViewport;
-        if (element.getLayoutProperties().isClip()) {
+        if (node.getLayoutProperties().isClip()) {
             if (activeViewport != null) {
                 viewport = activeViewport.intersection(elementBounds);
             } else {
@@ -612,7 +612,7 @@ public class UITree {
         IElement element = node.getElement();
 
         // Check if this element clips its children via layout properties
-        boolean shouldClip = element.getLayoutProperties().isClip();
+        boolean shouldClip = node.getLayoutProperties().isClip();
         boolean didEnableScissor = false;
         Bounds viewport = activeViewport;
 

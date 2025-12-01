@@ -150,9 +150,14 @@ public class ElementBox extends BaseElement implements IComposableElement {
 
     @Override
     public Size measure(Constraints constraints, List<IElement> children) {
+        // Composable elements are measured directly by UITree, so must apply their own layout properties
+        var tree = this.getTree();
+        var props = tree != null ? tree.getNodeForElement(this).getLayoutProperties() : null;
+
+        // ElementBox has no fixed intrinsic size - flexible by default
         var finalSize = LayoutHelper.calculateSizeWithProperties(
                 Integer.MAX_VALUE, Integer.MAX_VALUE,
-                this.getLayoutProperties(),
+                props,
                 constraints
         );
 

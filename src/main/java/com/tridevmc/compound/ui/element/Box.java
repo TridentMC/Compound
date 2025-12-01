@@ -35,7 +35,7 @@ public class Box extends BaseContainer {
 
     @Override
     public Size measure(Constraints constraints, List<IElement> children) {
-        var props = this.getLayoutProperties();
+        var props = this.getOwnLayoutProperties();
         int horizontalPadding = props.getPaddingLeft() + props.getPaddingRight();
         int verticalPadding = props.getPaddingTop() + props.getPaddingBottom();
 
@@ -72,7 +72,7 @@ public class Box extends BaseContainer {
             return;
         }
 
-        var props = this.getLayoutProperties();
+        var props = this.getOwnLayoutProperties();
         var contentArea = LayoutMath.calculateContentArea(bounds, props);
 
         var alignment = props.getContentAlignment();

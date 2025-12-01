@@ -18,7 +18,6 @@ package com.tridevmc.compound.ui.element;
 
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.Constraints;
-import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.tree.UITree;
 
@@ -73,20 +72,6 @@ public interface IGenericElement {
      * Lifecycle: Called when element is detached from the tree.
      */
     void onDetached();
-
-    /**
-     * Gets the layout properties for this element.
-     *
-     * @return the layout properties
-     */
-    LayoutProperties getLayoutProperties();
-
-    /**
-     * Sets the layout properties for this element.
-     *
-     * @param properties the layout properties to set
-     */
-    void setLayoutProperties(LayoutProperties properties);
 
     /**
      * Gets the current bounds after placement.

@@ -18,6 +18,7 @@ package com.tridevmc.compound.ui.tree;
 
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.event.*;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.slot.SlotMap;
 import com.tridevmc.compound.ui.state.State;
@@ -64,6 +65,7 @@ public class TreeNode implements ITreeNode {
     private Runnable compositionFunction;
     private SlotMap slotMap;
     private Size measuredSize;
+    private LayoutProperties layoutProperties = LayoutProperties.create();
 
     public TreeNode(IElement element, UITree tree) {
         this.element = element;
@@ -390,5 +392,15 @@ public class TreeNode implements ITreeNode {
     @Override
     public void setMeasuredSize(Size size) {
         this.measuredSize = size;
+    }
+
+    @Override
+    public LayoutProperties getLayoutProperties() {
+        return this.layoutProperties;
+    }
+
+    @Override
+    public void setLayoutProperties(LayoutProperties properties) {
+        this.layoutProperties = properties;
     }
 }

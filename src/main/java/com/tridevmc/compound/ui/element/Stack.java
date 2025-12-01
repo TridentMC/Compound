@@ -28,7 +28,7 @@ public class Stack extends BaseContainer {
 
     @Override
     public Size measure(Constraints constraints, List<IElement> children) {
-        var props = this.getLayoutProperties();
+        var props = this.getOwnLayoutProperties();
 
         if (children.isEmpty()) {
             return constraints.constrain(new Size(props.getHorizontalPadding(), props.getVerticalPadding()));
@@ -59,7 +59,7 @@ public class Stack extends BaseContainer {
             return;
         }
 
-        var props = this.getLayoutProperties();
+        var props = this.getOwnLayoutProperties();
         var contentAlignment = props.getContentAlignment();
         var contentArea = LayoutMath.calculateContentArea(bounds, props);
 

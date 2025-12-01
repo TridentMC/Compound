@@ -35,15 +35,13 @@ import org.joml.Matrix3x2fStack;
 public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
     private static final WrappedField<GuiRenderState> guiRenderState = WrappedField.create(GuiGraphics.class, "guiRenderState", "f_399111_");
-
+    private final CompoundScreenContext screenContext;
+    private final UITree tree;
     private GuiGraphics activeGuiGraphics;
     private Matrix3x2fStack activeStack;
     private long ticks;
     private double mouseX, mouseY;
     private double prevMouseX, prevMouseY;
-
-    private final CompoundScreenContext screenContext;
-    private final UITree tree;
 
     public ComposedUI() {
         super(Component.literal(""));

@@ -47,7 +47,7 @@ public class Grid extends BaseContainer {
 
     @Override
     public Size measure(Constraints constraints, List<IElement> children) {
-        var props = this.getLayoutProperties();
+        var props = this.getOwnLayoutProperties();
 
         if (children.isEmpty() || this.columns <= 0) {
             return new Size(props.getHorizontalPadding(), props.getVerticalPadding());
@@ -98,7 +98,7 @@ public class Grid extends BaseContainer {
             return;
         }
 
-        var props = this.getLayoutProperties();
+        var props = this.getOwnLayoutProperties();
         var contentArea = LayoutMath.calculateContentArea(bounds, props);
 
         int rows = calculateRowCount(children.size());

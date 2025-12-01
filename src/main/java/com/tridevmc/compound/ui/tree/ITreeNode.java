@@ -18,6 +18,7 @@ package com.tridevmc.compound.ui.tree;
 
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.event.*;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.slot.SlotMap;
 import com.tridevmc.compound.ui.state.State;
@@ -141,4 +142,9 @@ public interface ITreeNode {
     Size getMeasuredSize();
 
     void setMeasuredSize(Size size);
+
+    // Layout properties (stored on node, not element)
+    LayoutProperties getLayoutProperties();
+
+    void setLayoutProperties(LayoutProperties properties);
 }

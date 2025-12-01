@@ -55,14 +55,14 @@ public class ScrollArea extends BaseElement implements IComposableElement {
     private final State<Integer> scrollY = new StateImpl<>(0);
     private Direction direction = Direction.VERTICAL;
     private int scrollSpeed = 20;
+
     public ScrollArea() {
         this(Direction.VERTICAL);
     }
 
     public ScrollArea(Direction direction) {
         this.direction = direction;
-        // ScrollArea always clips to its viewport
-        this.getLayoutProperties().clip();
+        // Clipping is automatically enabled in onAttached() for viewport culling optimization
     }
 
     public ScrollArea direction(Direction direction) {
@@ -93,6 +93,16 @@ public class ScrollArea extends BaseElement implements IComposableElement {
 
     @Override
     public void compose(ICompositionScope scope) {
+        // ScrollArea MUST clip to its viewport for proper rendering and viewport culling
+        // Enable clipping on our own node's layout properties during composition
+        var tree = this.getTree();
+        if (tree != null) {
+            var node = tree.getNodeForElement(this);
+            if (node != null) {
+                node.getLayoutProperties().clip();
+            }
+        }
+
         // Bind scroll states so changes trigger layout
         scope.bindLayout(scrollX);
         scope.bindLayout(scrollY);

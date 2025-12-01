@@ -84,9 +84,14 @@ public class ComposedSlot extends BaseElement implements IComposableElement {
 
     @Override
     public Size measure(Constraints constraints, List<IElement> children) {
+        // Composable elements are measured directly by UITree, so must apply their own layout properties
+        var tree = this.getTree();
+        var props = tree != null ? tree.getNodeForElement(this).getLayoutProperties() : null;
+
+        // ComposedSlot has fixed intrinsic size (18x18)
         var finalSize = LayoutHelper.calculateSizeWithProperties(
                 SLOT_SIZE, SLOT_SIZE,
-                this.getLayoutProperties(),
+                props,
                 constraints
         );
 

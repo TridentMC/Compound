@@ -26,8 +26,8 @@ public record SlotKey(String name) {
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
-        if (!(obj instanceof SlotKey other)) return false;
-        return Objects.equals(this.name, other.name);
+        if (!(obj instanceof SlotKey(String name1))) return false;
+        return Objects.equals(this.name, name1);
     }
 
     @Override
