@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MinecraftMockExtension.class, MockitoExtension.class})
@@ -32,6 +33,27 @@ public class CrateUIIntegrationTest {
 
     @Mock
     private IScreenContext screenContext;
+
+    // Gold bounds for regression testing - captured from working implementation
+    // These represent expected positions/dimensions that should remain stable
+    private static final Bounds GOLD_ROOT_BOUNDS = new Bounds(0, 0, 800, 600);
+    private static final Bounds GOLD_ROW_BOUNDS = new Bounds(247, 205, 306, 190);
+    private static final Bounds GOLD_MAIN_BOX_BOUNDS = new Bounds(247, 205, 178, 190);
+    private static final Bounds GOLD_MAIN_STACK_BOUNDS = new Bounds(247, 205, 178, 190);
+    private static final Bounds GOLD_PADDED_CONTENT_BOUNDS = new Bounds(247, 205, 178, 190);
+    private static final Bounds GOLD_COLUMN_BOUNDS = new Bounds(255, 213, 162, 174);
+    private static final Bounds GOLD_CRATE_LABEL_BOUNDS = new Bounds(255, 213, 30, 9);
+    private static final Bounds GOLD_CRATE_GRID_BOUNDS = new Bounds(255, 226, 162, 54);
+    private static final Bounds GOLD_INVENTORY_LABEL_BOUNDS = new Bounds(255, 284, 54, 9);
+    private static final Bounds GOLD_PLAYER_GRID_BOUNDS = new Bounds(255, 297, 162, 54);
+    private static final Bounds GOLD_SPACER_BOUNDS = new Bounds(255, 355, 0, 4);
+    private static final Bounds GOLD_HOTBAR_GRID_BOUNDS = new Bounds(255, 363, 162, 18);
+    private static final Bounds GOLD_SCROLL_BOX_BOUNDS = new Bounds(433, 205, 120, 190);
+    private static final Bounds GOLD_SCROLL_STACK_BOUNDS = new Bounds(433, 205, 120, 190);
+    private static final Bounds GOLD_SCROLL_PADDED_BOUNDS = new Bounds(433, 205, 120, 190);
+    private static final Bounds GOLD_SCROLL_AREA_BOUNDS = new Bounds(437, 209, 112, 182);
+    private static final Bounds GOLD_SCROLL_INNER_BOX_BOUNDS = new Bounds(437, 209, 112, 1098);
+    private static final Bounds GOLD_SCROLL_COLUMN_BOUNDS = new Bounds(437, 209, 112, 1098);
 
     @Test
     void testCrateUIComposition() {
@@ -257,8 +279,36 @@ public class CrateUIIntegrationTest {
                 ITreeNode slotNode = crateGridNode.getChildren().get(slotIndex);
                 assertEquals(ComposedSlot.class, slotNode.getElement().getClass());
                 Bounds slotBounds = slotNode.getElement().getBounds();
-                assertEquals(new Bounds(255 + col * 18, 226 + row * 18, 18, 18),
-                    slotBounds, "Crate slot [" + row + "," + col + "] bounds");
+                switch (row * 9 + col) {
+                    case 0 -> assertEquals(new Bounds(255, 226, 18, 18), slotBounds, "Crate slot [0,0] bounds");
+                    case 1 -> assertEquals(new Bounds(273, 226, 18, 18), slotBounds, "Crate slot [0,1] bounds");
+                    case 2 -> assertEquals(new Bounds(291, 226, 18, 18), slotBounds, "Crate slot [0,2] bounds");
+                    case 3 -> assertEquals(new Bounds(309, 226, 18, 18), slotBounds, "Crate slot [0,3] bounds");
+                    case 4 -> assertEquals(new Bounds(327, 226, 18, 18), slotBounds, "Crate slot [0,4] bounds");
+                    case 5 -> assertEquals(new Bounds(345, 226, 18, 18), slotBounds, "Crate slot [0,5] bounds");
+                    case 6 -> assertEquals(new Bounds(363, 226, 18, 18), slotBounds, "Crate slot [0,6] bounds");
+                    case 7 -> assertEquals(new Bounds(381, 226, 18, 18), slotBounds, "Crate slot [0,7] bounds");
+                    case 8 -> assertEquals(new Bounds(399, 226, 18, 18), slotBounds, "Crate slot [0,8] bounds");
+                    case 9 -> assertEquals(new Bounds(255, 244, 18, 18), slotBounds, "Crate slot [1,0] bounds");
+                    case 10 -> assertEquals(new Bounds(273, 244, 18, 18), slotBounds, "Crate slot [1,1] bounds");
+                    case 11 -> assertEquals(new Bounds(291, 244, 18, 18), slotBounds, "Crate slot [1,2] bounds");
+                    case 12 -> assertEquals(new Bounds(309, 244, 18, 18), slotBounds, "Crate slot [1,3] bounds");
+                    case 13 -> assertEquals(new Bounds(327, 244, 18, 18), slotBounds, "Crate slot [1,4] bounds");
+                    case 14 -> assertEquals(new Bounds(345, 244, 18, 18), slotBounds, "Crate slot [1,5] bounds");
+                    case 15 -> assertEquals(new Bounds(363, 244, 18, 18), slotBounds, "Crate slot [1,6] bounds");
+                    case 16 -> assertEquals(new Bounds(381, 244, 18, 18), slotBounds, "Crate slot [1,7] bounds");
+                    case 17 -> assertEquals(new Bounds(399, 244, 18, 18), slotBounds, "Crate slot [1,8] bounds");
+                    case 18 -> assertEquals(new Bounds(255, 262, 18, 18), slotBounds, "Crate slot [2,0] bounds");
+                    case 19 -> assertEquals(new Bounds(273, 262, 18, 18), slotBounds, "Crate slot [2,1] bounds");
+                    case 20 -> assertEquals(new Bounds(291, 262, 18, 18), slotBounds, "Crate slot [2,2] bounds");
+                    case 21 -> assertEquals(new Bounds(309, 262, 18, 18), slotBounds, "Crate slot [2,3] bounds");
+                    case 22 -> assertEquals(new Bounds(327, 262, 18, 18), slotBounds, "Crate slot [2,4] bounds");
+                    case 23 -> assertEquals(new Bounds(345, 262, 18, 18), slotBounds, "Crate slot [2,5] bounds");
+                    case 24 -> assertEquals(new Bounds(363, 262, 18, 18), slotBounds, "Crate slot [2,6] bounds");
+                    case 25 -> assertEquals(new Bounds(381, 262, 18, 18), slotBounds, "Crate slot [2,7] bounds");
+                    case 26 -> assertEquals(new Bounds(399, 262, 18, 18), slotBounds, "Crate slot [2,8] bounds");
+                    default -> fail("Unexpected slot index: " + (row * 9 + col));
+                }
             }
         }
 
@@ -285,8 +335,36 @@ public class CrateUIIntegrationTest {
                 ITreeNode slotNode = playerGridNode.getChildren().get(slotIndex);
                 assertEquals(ComposedSlot.class, slotNode.getElement().getClass());
                 Bounds slotBounds = slotNode.getElement().getBounds();
-                assertEquals(new Bounds(255 + col * 18, 297 + row * 18, 18, 18),
-                    slotBounds, "Player slot [" + row + "," + col + "] bounds");
+                switch (row * 9 + col) {
+                    case 0 -> assertEquals(new Bounds(255, 297, 18, 18), slotBounds, "Player slot [0,0] bounds");
+                    case 1 -> assertEquals(new Bounds(273, 297, 18, 18), slotBounds, "Player slot [0,1] bounds");
+                    case 2 -> assertEquals(new Bounds(291, 297, 18, 18), slotBounds, "Player slot [0,2] bounds");
+                    case 3 -> assertEquals(new Bounds(309, 297, 18, 18), slotBounds, "Player slot [0,3] bounds");
+                    case 4 -> assertEquals(new Bounds(327, 297, 18, 18), slotBounds, "Player slot [0,4] bounds");
+                    case 5 -> assertEquals(new Bounds(345, 297, 18, 18), slotBounds, "Player slot [0,5] bounds");
+                    case 6 -> assertEquals(new Bounds(363, 297, 18, 18), slotBounds, "Player slot [0,6] bounds");
+                    case 7 -> assertEquals(new Bounds(381, 297, 18, 18), slotBounds, "Player slot [0,7] bounds");
+                    case 8 -> assertEquals(new Bounds(399, 297, 18, 18), slotBounds, "Player slot [0,8] bounds");
+                    case 9 -> assertEquals(new Bounds(255, 315, 18, 18), slotBounds, "Player slot [1,0] bounds");
+                    case 10 -> assertEquals(new Bounds(273, 315, 18, 18), slotBounds, "Player slot [1,1] bounds");
+                    case 11 -> assertEquals(new Bounds(291, 315, 18, 18), slotBounds, "Player slot [1,2] bounds");
+                    case 12 -> assertEquals(new Bounds(309, 315, 18, 18), slotBounds, "Player slot [1,3] bounds");
+                    case 13 -> assertEquals(new Bounds(327, 315, 18, 18), slotBounds, "Player slot [1,4] bounds");
+                    case 14 -> assertEquals(new Bounds(345, 315, 18, 18), slotBounds, "Player slot [1,5] bounds");
+                    case 15 -> assertEquals(new Bounds(363, 315, 18, 18), slotBounds, "Player slot [1,6] bounds");
+                    case 16 -> assertEquals(new Bounds(381, 315, 18, 18), slotBounds, "Player slot [1,7] bounds");
+                    case 17 -> assertEquals(new Bounds(399, 315, 18, 18), slotBounds, "Player slot [1,8] bounds");
+                    case 18 -> assertEquals(new Bounds(255, 333, 18, 18), slotBounds, "Player slot [2,0] bounds");
+                    case 19 -> assertEquals(new Bounds(273, 333, 18, 18), slotBounds, "Player slot [2,1] bounds");
+                    case 20 -> assertEquals(new Bounds(291, 333, 18, 18), slotBounds, "Player slot [2,2] bounds");
+                    case 21 -> assertEquals(new Bounds(309, 333, 18, 18), slotBounds, "Player slot [2,3] bounds");
+                    case 22 -> assertEquals(new Bounds(327, 333, 18, 18), slotBounds, "Player slot [2,4] bounds");
+                    case 23 -> assertEquals(new Bounds(345, 333, 18, 18), slotBounds, "Player slot [2,5] bounds");
+                    case 24 -> assertEquals(new Bounds(363, 333, 18, 18), slotBounds, "Player slot [2,6] bounds");
+                    case 25 -> assertEquals(new Bounds(381, 333, 18, 18), slotBounds, "Player slot [2,7] bounds");
+                    case 26 -> assertEquals(new Bounds(399, 333, 18, 18), slotBounds, "Player slot [2,8] bounds");
+                    default -> fail("Unexpected slot index: " + (row * 9 + col));
+                }
             }
         }
 
@@ -311,8 +389,18 @@ public class CrateUIIntegrationTest {
             ITreeNode slotNode = hotbarGridNode.getChildren().get(col);
             assertEquals(ComposedSlot.class, slotNode.getElement().getClass());
             Bounds slotBounds = slotNode.getElement().getBounds();
-            assertEquals(new Bounds(255 + col * 18, 363, 18, 18),
-                slotBounds, "Hotbar slot [" + col + "] bounds");
+            switch (col) {
+                case 0 -> assertEquals(new Bounds(255, 363, 18, 18), slotBounds, "Hotbar slot [0] bounds");
+                case 1 -> assertEquals(new Bounds(273, 363, 18, 18), slotBounds, "Hotbar slot [1] bounds");
+                case 2 -> assertEquals(new Bounds(291, 363, 18, 18), slotBounds, "Hotbar slot [2] bounds");
+                case 3 -> assertEquals(new Bounds(309, 363, 18, 18), slotBounds, "Hotbar slot [3] bounds");
+                case 4 -> assertEquals(new Bounds(327, 363, 18, 18), slotBounds, "Hotbar slot [4] bounds");
+                case 5 -> assertEquals(new Bounds(345, 363, 18, 18), slotBounds, "Hotbar slot [5] bounds");
+                case 6 -> assertEquals(new Bounds(363, 363, 18, 18), slotBounds, "Hotbar slot [6] bounds");
+                case 7 -> assertEquals(new Bounds(381, 363, 18, 18), slotBounds, "Hotbar slot [7] bounds");
+                case 8 -> assertEquals(new Bounds(399, 363, 18, 18), slotBounds, "Hotbar slot [8] bounds");
+                default -> fail("Unexpected slot index: " + col);
+            }
         }
 
         // --- Verify Scroll UI Box ---
@@ -371,8 +459,59 @@ public class CrateUIIntegrationTest {
 
             Bounds buttonBounds = buttonNode.getElement().getBounds();
             // Each button: full width (112), fixed height (20), 2px spacing between buttons
-            int expectedY = 209 + (i * 22); // 209 + (i * (20 height + 2 spacing))
-            assertEquals(new Bounds(437, expectedY, 112, 20), buttonBounds, "Button " + i + " bounds");
+            switch (i) {
+                case 0 -> assertEquals(new Bounds(437, 209, 112, 20), buttonBounds, "Button 0 bounds");
+                case 1 -> assertEquals(new Bounds(437, 231, 112, 20), buttonBounds, "Button 1 bounds");
+                case 2 -> assertEquals(new Bounds(437, 253, 112, 20), buttonBounds, "Button 2 bounds");
+                case 3 -> assertEquals(new Bounds(437, 275, 112, 20), buttonBounds, "Button 3 bounds");
+                case 4 -> assertEquals(new Bounds(437, 297, 112, 20), buttonBounds, "Button 4 bounds");
+                case 5 -> assertEquals(new Bounds(437, 319, 112, 20), buttonBounds, "Button 5 bounds");
+                case 6 -> assertEquals(new Bounds(437, 341, 112, 20), buttonBounds, "Button 6 bounds");
+                case 7 -> assertEquals(new Bounds(437, 363, 112, 20), buttonBounds, "Button 7 bounds");
+                case 8 -> assertEquals(new Bounds(437, 385, 112, 20), buttonBounds, "Button 8 bounds");
+                case 9 -> assertEquals(new Bounds(437, 407, 112, 20), buttonBounds, "Button 9 bounds");
+                case 10 -> assertEquals(new Bounds(437, 429, 112, 20), buttonBounds, "Button 10 bounds");
+                case 11 -> assertEquals(new Bounds(437, 451, 112, 20), buttonBounds, "Button 11 bounds");
+                case 12 -> assertEquals(new Bounds(437, 473, 112, 20), buttonBounds, "Button 12 bounds");
+                case 13 -> assertEquals(new Bounds(437, 495, 112, 20), buttonBounds, "Button 13 bounds");
+                case 14 -> assertEquals(new Bounds(437, 517, 112, 20), buttonBounds, "Button 14 bounds");
+                case 15 -> assertEquals(new Bounds(437, 539, 112, 20), buttonBounds, "Button 15 bounds");
+                case 16 -> assertEquals(new Bounds(437, 561, 112, 20), buttonBounds, "Button 16 bounds");
+                case 17 -> assertEquals(new Bounds(437, 583, 112, 20), buttonBounds, "Button 17 bounds");
+                case 18 -> assertEquals(new Bounds(437, 605, 112, 20), buttonBounds, "Button 18 bounds");
+                case 19 -> assertEquals(new Bounds(437, 627, 112, 20), buttonBounds, "Button 19 bounds");
+                case 20 -> assertEquals(new Bounds(437, 649, 112, 20), buttonBounds, "Button 20 bounds");
+                case 21 -> assertEquals(new Bounds(437, 671, 112, 20), buttonBounds, "Button 21 bounds");
+                case 22 -> assertEquals(new Bounds(437, 693, 112, 20), buttonBounds, "Button 22 bounds");
+                case 23 -> assertEquals(new Bounds(437, 715, 112, 20), buttonBounds, "Button 23 bounds");
+                case 24 -> assertEquals(new Bounds(437, 737, 112, 20), buttonBounds, "Button 24 bounds");
+                case 25 -> assertEquals(new Bounds(437, 759, 112, 20), buttonBounds, "Button 25 bounds");
+                case 26 -> assertEquals(new Bounds(437, 781, 112, 20), buttonBounds, "Button 26 bounds");
+                case 27 -> assertEquals(new Bounds(437, 803, 112, 20), buttonBounds, "Button 27 bounds");
+                case 28 -> assertEquals(new Bounds(437, 825, 112, 20), buttonBounds, "Button 28 bounds");
+                case 29 -> assertEquals(new Bounds(437, 847, 112, 20), buttonBounds, "Button 29 bounds");
+                case 30 -> assertEquals(new Bounds(437, 869, 112, 20), buttonBounds, "Button 30 bounds");
+                case 31 -> assertEquals(new Bounds(437, 891, 112, 20), buttonBounds, "Button 31 bounds");
+                case 32 -> assertEquals(new Bounds(437, 913, 112, 20), buttonBounds, "Button 32 bounds");
+                case 33 -> assertEquals(new Bounds(437, 935, 112, 20), buttonBounds, "Button 33 bounds");
+                case 34 -> assertEquals(new Bounds(437, 957, 112, 20), buttonBounds, "Button 34 bounds");
+                case 35 -> assertEquals(new Bounds(437, 979, 112, 20), buttonBounds, "Button 35 bounds");
+                case 36 -> assertEquals(new Bounds(437, 1001, 112, 20), buttonBounds, "Button 36 bounds");
+                case 37 -> assertEquals(new Bounds(437, 1023, 112, 20), buttonBounds, "Button 37 bounds");
+                case 38 -> assertEquals(new Bounds(437, 1045, 112, 20), buttonBounds, "Button 38 bounds");
+                case 39 -> assertEquals(new Bounds(437, 1067, 112, 20), buttonBounds, "Button 39 bounds");
+                case 40 -> assertEquals(new Bounds(437, 1089, 112, 20), buttonBounds, "Button 40 bounds");
+                case 41 -> assertEquals(new Bounds(437, 1111, 112, 20), buttonBounds, "Button 41 bounds");
+                case 42 -> assertEquals(new Bounds(437, 1133, 112, 20), buttonBounds, "Button 42 bounds");
+                case 43 -> assertEquals(new Bounds(437, 1155, 112, 20), buttonBounds, "Button 43 bounds");
+                case 44 -> assertEquals(new Bounds(437, 1177, 112, 20), buttonBounds, "Button 44 bounds");
+                case 45 -> assertEquals(new Bounds(437, 1199, 112, 20), buttonBounds, "Button 45 bounds");
+                case 46 -> assertEquals(new Bounds(437, 1221, 112, 20), buttonBounds, "Button 46 bounds");
+                case 47 -> assertEquals(new Bounds(437, 1243, 112, 20), buttonBounds, "Button 47 bounds");
+                case 48 -> assertEquals(new Bounds(437, 1265, 112, 20), buttonBounds, "Button 48 bounds");
+                case 49 -> assertEquals(new Bounds(437, 1287, 112, 20), buttonBounds, "Button 49 bounds");
+                default -> fail("Unexpected button index: " + i);
+            }
 
             // Validate button content (Stack containing label)
             assertEquals(1, buttonNode.getChildren().size(), "Button " + i + " should have 1 child (Stack with label)");
@@ -392,14 +531,317 @@ public class CrateUIIntegrationTest {
 
             Bounds labelBounds = labelNode.getElement().getBounds();
             // Validate label position and size (content varies by button number)
-            // Label is vertically centered in button: button Y + (button height - label height) / 2
-            int expectedLabelY = expectedY + (20 - 9) / 2; // Center 9px label in 20px button
-            assertEquals(expectedLabelY, labelBounds.y(), "Button " + i + " label Y position (centered)");
+            // Label is vertically centered in button
+            switch (i) {
+                case 0 -> assertEquals(214, labelBounds.y(), "Button 0 label Y position (centered)");
+                case 1 -> assertEquals(236, labelBounds.y(), "Button 1 label Y position (centered)");
+                case 2 -> assertEquals(258, labelBounds.y(), "Button 2 label Y position (centered)");
+                case 3 -> assertEquals(280, labelBounds.y(), "Button 3 label Y position (centered)");
+                case 4 -> assertEquals(302, labelBounds.y(), "Button 4 label Y position (centered)");
+                case 5 -> assertEquals(324, labelBounds.y(), "Button 5 label Y position (centered)");
+                case 6 -> assertEquals(346, labelBounds.y(), "Button 6 label Y position (centered)");
+                case 7 -> assertEquals(368, labelBounds.y(), "Button 7 label Y position (centered)");
+                case 8 -> assertEquals(390, labelBounds.y(), "Button 8 label Y position (centered)");
+                case 9 -> assertEquals(412, labelBounds.y(), "Button 9 label Y position (centered)");
+                case 10 -> assertEquals(434, labelBounds.y(), "Button 10 label Y position (centered)");
+                case 11 -> assertEquals(456, labelBounds.y(), "Button 11 label Y position (centered)");
+                case 12 -> assertEquals(478, labelBounds.y(), "Button 12 label Y position (centered)");
+                case 13 -> assertEquals(500, labelBounds.y(), "Button 13 label Y position (centered)");
+                case 14 -> assertEquals(522, labelBounds.y(), "Button 14 label Y position (centered)");
+                case 15 -> assertEquals(544, labelBounds.y(), "Button 15 label Y position (centered)");
+                case 16 -> assertEquals(566, labelBounds.y(), "Button 16 label Y position (centered)");
+                case 17 -> assertEquals(588, labelBounds.y(), "Button 17 label Y position (centered)");
+                case 18 -> assertEquals(610, labelBounds.y(), "Button 18 label Y position (centered)");
+                case 19 -> assertEquals(632, labelBounds.y(), "Button 19 label Y position (centered)");
+                case 20 -> assertEquals(654, labelBounds.y(), "Button 20 label Y position (centered)");
+                case 21 -> assertEquals(676, labelBounds.y(), "Button 21 label Y position (centered)");
+                case 22 -> assertEquals(698, labelBounds.y(), "Button 22 label Y position (centered)");
+                case 23 -> assertEquals(720, labelBounds.y(), "Button 23 label Y position (centered)");
+                case 24 -> assertEquals(742, labelBounds.y(), "Button 24 label Y position (centered)");
+                case 25 -> assertEquals(764, labelBounds.y(), "Button 25 label Y position (centered)");
+                case 26 -> assertEquals(786, labelBounds.y(), "Button 26 label Y position (centered)");
+                case 27 -> assertEquals(808, labelBounds.y(), "Button 27 label Y position (centered)");
+                case 28 -> assertEquals(830, labelBounds.y(), "Button 28 label Y position (centered)");
+                case 29 -> assertEquals(852, labelBounds.y(), "Button 29 label Y position (centered)");
+                case 30 -> assertEquals(874, labelBounds.y(), "Button 30 label Y position (centered)");
+                case 31 -> assertEquals(896, labelBounds.y(), "Button 31 label Y position (centered)");
+                case 32 -> assertEquals(918, labelBounds.y(), "Button 32 label Y position (centered)");
+                case 33 -> assertEquals(940, labelBounds.y(), "Button 33 label Y position (centered)");
+                case 34 -> assertEquals(962, labelBounds.y(), "Button 34 label Y position (centered)");
+                case 35 -> assertEquals(984, labelBounds.y(), "Button 35 label Y position (centered)");
+                case 36 -> assertEquals(1006, labelBounds.y(), "Button 36 label Y position (centered)");
+                case 37 -> assertEquals(1028, labelBounds.y(), "Button 37 label Y position (centered)");
+                case 38 -> assertEquals(1050, labelBounds.y(), "Button 38 label Y position (centered)");
+                case 39 -> assertEquals(1072, labelBounds.y(), "Button 39 label Y position (centered)");
+                case 40 -> assertEquals(1094, labelBounds.y(), "Button 40 label Y position (centered)");
+                case 41 -> assertEquals(1116, labelBounds.y(), "Button 41 label Y position (centered)");
+                case 42 -> assertEquals(1138, labelBounds.y(), "Button 42 label Y position (centered)");
+                case 43 -> assertEquals(1160, labelBounds.y(), "Button 43 label Y position (centered)");
+                case 44 -> assertEquals(1182, labelBounds.y(), "Button 44 label Y position (centered)");
+                case 45 -> assertEquals(1204, labelBounds.y(), "Button 45 label Y position (centered)");
+                case 46 -> assertEquals(1226, labelBounds.y(), "Button 46 label Y position (centered)");
+                case 47 -> assertEquals(1248, labelBounds.y(), "Button 47 label Y position (centered)");
+                case 48 -> assertEquals(1270, labelBounds.y(), "Button 48 label Y position (centered)");
+                case 49 -> assertEquals(1292, labelBounds.y(), "Button 49 label Y position (centered)");
+                default -> fail("Unexpected button index: " + i);
+            }
             assertEquals(9, labelBounds.height(), "Button " + i + " label height");
             // Label should be within button bounds and reasonable size
-            assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
-                "Button " + i + " label should be within button X bounds");
-            assertTrue(labelBounds.width() >= 40 && labelBounds.width() <= 70, "Button " + i + " label width reasonable");
+            switch (i) {
+                // All buttons seem to have the same label width
+                case 0 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 0 label should be within button X bounds");
+                    assertEquals(48, labelBounds.width(), "Button 0 label width");
+                }
+                case 1 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 1 label should be within button X bounds");
+                    assertEquals(48, labelBounds.width(), "Button 1 label width");
+                }
+                case 2 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 2 label should be within button X bounds");
+                    assertEquals(48, labelBounds.width(), "Button 2 label width");
+                }
+                case 3 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 3 label should be within button X bounds");
+                    assertEquals(48, labelBounds.width(), "Button 3 label width");
+                }
+                case 4 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 4 label should be within button X bounds");
+                    assertEquals(48, labelBounds.width(), "Button 4 label width");
+                }
+                case 5 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 5 label should be within button X bounds");
+                    assertEquals(48, labelBounds.width(), "Button 5 label width");
+                }
+                case 6 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 6 label should be within button X bounds");
+                    assertEquals(48, labelBounds.width(), "Button 6 label width");
+                }
+                case 7 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 7 label should be within button X bounds");
+                    assertEquals(48, labelBounds.width(), "Button 7 label width");
+                }
+                case 8 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 8 label should be within button X bounds");
+                    assertEquals(48, labelBounds.width(), "Button 8 label width");
+                }
+                case 9 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 9 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 9 label width");
+                }
+                // Buttons 10-99 (double digits): width around 50-60
+                case 10 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 10 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 10 label width");
+                }
+                case 11 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 11 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 11 label width");
+                }
+                case 12 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 12 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 12 label width");
+                }
+                case 13 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 13 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 13 label width");
+                }
+                case 14 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 14 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 14 label width");
+                }
+                case 15 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 15 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 15 label width");
+                }
+                case 16 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 16 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 16 label width");
+                }
+                case 17 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 17 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 17 label width");
+                }
+                case 18 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 18 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 18 label width");
+                }
+                case 19 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 19 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 19 label width");
+                }
+                case 20 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 20 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 20 label width");
+                }
+                case 21 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 21 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 21 label width");
+                }
+                case 22 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 22 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 22 label width");
+                }
+                case 23 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 23 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 23 label width");
+                }
+                case 24 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 24 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 24 label width");
+                }
+                case 25 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 25 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 25 label width");
+                }
+                case 26 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 26 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 26 label width");
+                }
+                case 27 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 27 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 27 label width");
+                }
+                case 28 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 28 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 28 label width");
+                }
+                case 29 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 29 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 29 label width");
+                }
+                case 30 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 30 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 30 label width");
+                }
+                case 31 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 31 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 31 label width");
+                }
+                case 32 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 32 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 32 label width");
+                }
+                case 33 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 33 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 33 label width");
+                }
+                case 34 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 34 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 34 label width");
+                }
+                case 35 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 35 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 35 label width");
+                }
+                case 36 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 36 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 36 label width");
+                }
+                case 37 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 37 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 37 label width");
+                }
+                case 38 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 38 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 38 label width");
+                }
+                case 39 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 39 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 39 label width");
+                }
+                case 40 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 40 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 40 label width");
+                }
+                case 41 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 41 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 41 label width");
+                }
+                case 42 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 42 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 42 label width");
+                }
+                case 43 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 43 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 43 label width");
+                }
+                case 44 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 44 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 44 label width");
+                }
+                case 45 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 45 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 45 label width");
+                }
+                case 46 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 46 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 46 label width");
+                }
+                case 47 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 47 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 47 label width");
+                }
+                case 48 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 48 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 48 label width");
+                }
+                case 49 -> {
+                    assertTrue(labelBounds.x() >= 437 && labelBounds.x() + labelBounds.width() <= 549,
+                        "Button 49 label should be within button X bounds");
+                    assertEquals(54, labelBounds.width(), "Button 49 label width");
+                }
+                default -> fail("Unexpected button index: " + i);
+            }
         }
 
         // 5. Rendering
