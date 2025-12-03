@@ -16,7 +16,11 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.tridevmc.compound.ui.layout.*;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Position;
+import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.slot.SlotKey;
 import com.tridevmc.compound.ui.state.State;
@@ -95,7 +99,7 @@ public class ScrollArea extends BaseElement implements IComposableElement {
     public void compose(ICompositionScope scope) {
         // ScrollArea MUST clip to its viewport for proper rendering and viewport culling
         // Enable clipping on our own node's layout properties during composition
-        var tree = this.getTree();
+        var tree = scope.getTree();
         if (tree != null) {
             var node = tree.getNodeForElement(this);
             if (node != null) {
@@ -108,8 +112,13 @@ public class ScrollArea extends BaseElement implements IComposableElement {
         scope.bindLayout(scrollY);
 
         // Create internal box to hold scrollable content
-        // Don't use fillMax - let it size based on content, otherwise it fills Integer.MAX_VALUE
+        // Set unbounded max size in scrolling dimension to allow content to expand beyond viewport
         scope.e(new Box(), box -> {
+            if (direction == Direction.VERTICAL) {
+                box.layout().maxHeight(Integer.MAX_VALUE);
+            } else if (direction == Direction.HORIZONTAL) {
+                box.layout().maxWidth(Integer.MAX_VALUE);
+            }
             scope.slotInto(CONTENT_SLOT, box);
         });
 
@@ -148,73 +157,37 @@ public class ScrollArea extends BaseElement implements IComposableElement {
     }
 
     @Override
-    public Size measure(Constraints constraints, List<IElement> children) {
-        if (children.isEmpty()) {
-            return constraints.constrain(new Size(0, 0));
-        }
-
-        if (children.size() > 1) {
-            System.err.println("WARNING: ScrollArea should have exactly one child, but has " +
-                    children.size() + ". Only the first child will be scrolled.");
-        }
-
-        var child = children.get(0);
-
-        // Allow child to be larger than viewport based on direction
-        var childConstraints = switch (direction) {
-            case VERTICAL -> Constraints.loose(
-                    constraints.maxWidth(),
-                    Integer.MAX_VALUE  // Unlimited height
-            );
-            case HORIZONTAL -> Constraints.loose(
-                    Integer.MAX_VALUE,  // Unlimited width
-                    constraints.maxHeight()
-            );
-        };
-
-        LayoutHelper.measureChild(child, childConstraints);
-
+    public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         // ScrollArea fills available space (viewport size)
-        return constraints.constrain(new Size(
-                constraints.maxWidth(),
-                constraints.maxHeight()
-        ));
+        // Child size determines scroll range, not viewport size
+        return new Size(constraints.maxWidth(), constraints.maxHeight());
     }
 
     @Override
-    public void place(Bounds bounds, List<IElement> children) {
-        this.setBounds(bounds);
+    public List<Bounds> place(Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+        if (measuredChildren.isEmpty()) {
+            return List.of();
+        }
 
-        if (children.isEmpty()) return;
+        Size childSize = measuredChildren.get(0);
 
-        var child = children.get(0);
-        var childSize = LayoutHelper.getMeasuredSize(child);
-        if (childSize == null) return;
-
-        // Clamp scroll to valid range (only update if changed to avoid layout loop)
+        // Clamp scroll to valid range
         int maxScrollX = Math.max(0, childSize.width() - bounds.width());
         int maxScrollY = Math.max(0, childSize.height() - bounds.height());
 
         int clampedX = Math.clamp(scrollX.get(), 0, maxScrollX);
         int clampedY = Math.clamp(scrollY.get(), 0, maxScrollY);
 
-        if (scrollX.get() != clampedX) {
-            scrollX.set(clampedX);
-        }
-        if (scrollY.get() != clampedY) {
-            scrollY.set(clampedY);
-        }
+        if (scrollX.get() != clampedX) scrollX.set(clampedX);
+        if (scrollY.get() != clampedY) scrollY.set(clampedY);
 
         // Place child with scroll offset
-        var childBounds = new Bounds(
-                new Position(
-                        bounds.x() - scrollX.get(),
-                        bounds.y() - scrollY.get()
-                ),
+        Bounds childBounds = new Bounds(
+                new Position(bounds.x() - scrollX.get(), bounds.y() - scrollY.get()),
                 childSize
         );
 
-        LayoutHelper.placeChild(child, childBounds);
+        return List.of(childBounds);
     }
 
     public enum Direction {

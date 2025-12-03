@@ -138,8 +138,8 @@ public class Button extends BaseElement implements IComposableElement {
         });
 
         // Create a Stack to layer background + user children
-        scope.e(new Stack(), stack -> {
-            stack.layout().fillMax().contentAlignment(Alignment.CENTER);
+        scope.e(new WrappingStack(), stack -> {
+            stack.layout().contentAlignment(Alignment.CENTER);
 
             // Background sprite based on state
             IScreenSprite backgroundSprite;
@@ -161,34 +161,23 @@ public class Button extends BaseElement implements IComposableElement {
     }
 
     @Override
-    public Size measure(Constraints constraints, List<IElement> children) {
-        // Composable elements are measured directly by UITree, so must apply their own layout properties
-        // Read from tree node instead of element (Button extends BaseElement, not BaseContainer, so use tree lookup)
-        var tree = this.getTree();
-        var props = tree != null ? tree.getNodeForElement(this).getLayoutProperties() : null;
-
+    public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         // Button has no fixed intrinsic size - flexible by default
-        var finalSize = LayoutHelper.calculateSizeWithProperties(
-                Integer.MAX_VALUE, Integer.MAX_VALUE,
-                props,
-                constraints
-        );
-
-        if (!children.isEmpty()) {
-            var childConstraints = Constraints.fixed(finalSize.width(), finalSize.height());
-            LayoutHelper.measureChild(children.getFirst(), childConstraints);
+        // Return size of composed Stack child, or fill available space
+        if (!measuredChildren.isEmpty()) {
+            return measuredChildren.get(0);
         }
-
-        return finalSize;
+        return new Size(0, 0);
     }
 
     @Override
-    public void place(Bounds bounds, List<IElement> children) {
-        this.setBounds(bounds);
-
-        if (!children.isEmpty()) {
-            LayoutHelper.placeChild(children.getFirst(), bounds);
+    public List<Bounds> place(Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+        if (measuredChildren.isEmpty()) {
+            return List.of();
         }
+
+        // Place Stack child at full bounds
+        return List.of(bounds);
     }
 
     private boolean canPress() {
@@ -238,5 +227,47 @@ public class Button extends BaseElement implements IComposableElement {
     @Override
     public com.mojang.blaze3d.platform.cursor.CursorType getCursor(int x, int y) {
         return this.canPress() ? com.tridevmc.compound.ui.CompoundCursors.HAND : null;
+    }
+
+    /**
+     * A specialized Stack that ignores the first child (background) for measurement
+     * and forces the first child to match the stack's bounds during placement.
+     */
+    private static class WrappingStack extends Stack {
+        @Override
+        public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
+            if (measuredChildren.isEmpty()) {
+                return new Size(0, 0);
+            }
+
+            // If only background, return its size (likely max)
+            if (measuredChildren.size() == 1) {
+                return measuredChildren.get(0);
+            }
+
+            int maxWidth = 0;
+            int maxHeight = 0;
+
+            // Skip first child (background) for size calculation
+            for (int i = 1; i < measuredChildren.size(); i++) {
+                Size childSize = measuredChildren.get(i);
+                maxWidth = Math.max(maxWidth, childSize.width());
+                maxHeight = Math.max(maxHeight, childSize.height());
+            }
+
+            return new Size(maxWidth, maxHeight);
+        }
+
+        @Override
+        public List<Bounds> place(Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+            List<Bounds> childBounds = super.place(bounds, props, measuredChildren);
+            
+            // Force background (index 0) to match stack bounds
+            if (!childBounds.isEmpty()) {
+                childBounds.set(0, new Bounds(bounds.position(), bounds.size()));
+            }
+            
+            return childBounds;
+        }
     }
 }

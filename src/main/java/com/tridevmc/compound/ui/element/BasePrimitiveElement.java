@@ -17,6 +17,8 @@
 package com.tridevmc.compound.ui.element;
 
 import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 
 import java.util.List;
@@ -28,8 +30,9 @@ import java.util.List;
 public abstract class BasePrimitiveElement extends BaseElement implements IPrimitiveElement {
 
     @Override
-    public void place(Bounds bounds, List<IElement> children) {
-        this.setBounds(bounds);
+    public List<Bounds> place(Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren) {
+        // Primitives have no children
+        return List.of();
     }
 
     @Override

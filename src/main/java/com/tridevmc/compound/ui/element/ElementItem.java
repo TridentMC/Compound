@@ -19,6 +19,7 @@ package com.tridevmc.compound.ui.element;
 import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.world.item.ItemStack;
@@ -48,7 +49,7 @@ public class ElementItem extends BasePrimitiveElement {
     }
 
     @Override
-    public Size measure(Constraints constraints, List<IElement> children) {
+    public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
         int size = Math.min(constraints.maxWidth(), constraints.maxHeight());
         size = Math.min(size, 16);
         return new Size(size, size);

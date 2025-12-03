@@ -16,6 +16,8 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.mojang.blaze3d.platform.cursor.CursorType;
+
 /**
  * The core interface for all UI elements in the compose system.
  * All elements implement this interface directly or through sub-interfaces.
@@ -38,7 +40,7 @@ public interface IElement extends IGenericElement {
      * @param y the y coordinate relative to the element
      * @return the cursor to display, or null to use the default
      */
-    default com.mojang.blaze3d.platform.cursor.CursorType getCursor(int x, int y) {
+    default CursorType getCursor(int x, int y) {
         return null;
     }
 }

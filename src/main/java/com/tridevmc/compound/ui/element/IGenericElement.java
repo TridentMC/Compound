@@ -18,8 +18,8 @@ package com.tridevmc.compound.ui.element;
 
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
-import com.tridevmc.compound.ui.tree.UITree;
 
 import java.util.List;
 
@@ -30,38 +30,37 @@ public interface IGenericElement {
 
     /**
      * Layout Phase 1: Measure (bottom-up).
-     * Returns the desired size given the constraints.
-     * Children are provided by the tree - elements don't query for them.
+     * Returns the intrinsic size given constraints, layout properties, and measured child sizes.
+     * The tree has already measured children with their layout properties applied.
+     * Element calculates its intrinsic size based on measured children (for containers)
+     * or its own content (for primitives).
      *
-     * @param constraints the constraints for measuring this element
-     * @param children    the child elements (empty for primitives)
-     * @return the desired size of this element
+     * @param constraints       the constraints for measuring this element's content
+     * @param ownProperties     this element's layout properties (padding, spacing, alignment, etc.)
+     * @param measuredChildren  sizes of children (INCLUDING their margins) already measured by tree
+     * @return the intrinsic size of this element (tree will add padding and apply other properties)
      */
-    Size measure(Constraints constraints, List<IElement> children);
+    Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren);
 
     /**
      * Layout Phase 2: Place (top-down).
-     * Sets the final bounds for this element.
-     * Children are provided by the tree - elements don't query for them.
+     * Calculates bounds for children based on this element's layout algorithm.
+     * Element is a pure function - all inputs provided as parameters.
+     * Tree will apply child margins and recursively place children.
      *
-     * @param bounds   the final bounds for this element
-     * @param children the child elements (empty for primitives)
+     * @param bounds            this element's final bounds (set via setBounds before this is called)
+     * @param ownProperties     this element's layout properties
+     * @param measuredChildren  sizes of children (INCLUDING their margins)
+     * @return bounds for each child (INCLUDING space for margins), tree will offset by child's margin
      */
-    void place(Bounds bounds, List<IElement> children);
+    List<Bounds> place(Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren);
 
     /**
-     * Gets the tree this element belongs to.
+     * Sets the bounds for this element (called by tree during placement).
      *
-     * @return the UI tree
+     * @param bounds the bounds to set
      */
-    UITree getTree();
-
-    /**
-     * Sets the tree this element belongs to (called by framework).
-     *
-     * @param tree the UI tree
-     */
-    void setTree(UITree tree);
+    void setBounds(Bounds bounds);
 
     /**
      * Lifecycle: Called when element is attached to the tree.

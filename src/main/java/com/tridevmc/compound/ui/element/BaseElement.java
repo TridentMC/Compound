@@ -18,8 +18,8 @@ package com.tridevmc.compound.ui.element;
 
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
-import com.tridevmc.compound.ui.tree.UITree;
 
 import java.util.List;
 
@@ -28,26 +28,16 @@ import java.util.List;
  * Concrete elements should extend this class.
  */
 public abstract class BaseElement implements IElement {
-    private UITree tree;
     private Bounds bounds;
     private boolean visible = true;
-
-    @Override
-    public UITree getTree() {
-        return this.tree;
-    }
-
-    @Override
-    public void setTree(UITree tree) {
-        this.tree = tree;
-    }
 
     @Override
     public Bounds getBounds() {
         return this.bounds;
     }
 
-    protected void setBounds(Bounds bounds) {
+    @Override
+    public void setBounds(Bounds bounds) {
         this.bounds = bounds;
     }
 
@@ -73,8 +63,8 @@ public abstract class BaseElement implements IElement {
 
     // Subclasses must implement layout
     @Override
-    public abstract Size measure(Constraints constraints, List<IElement> children);
+    public abstract Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren);
 
     @Override
-    public abstract void place(Bounds bounds, List<IElement> children);
+    public abstract List<Bounds> place(Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren);
 }

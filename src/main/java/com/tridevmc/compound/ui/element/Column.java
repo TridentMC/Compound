@@ -18,6 +18,7 @@ package com.tridevmc.compound.ui.element;
 
 import com.tridevmc.compound.ui.layout.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -27,66 +28,52 @@ import java.util.List;
 public class Column extends BaseContainer {
 
     @Override
-    public Size measure(Constraints constraints, List<IElement> children) {
-        var props = this.getOwnLayoutProperties();
-
-        if (children.isEmpty()) {
-            return constraints.constrain(new Size(props.getHorizontalPadding(), props.getVerticalPadding()));
+    public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
+        if (measuredChildren.isEmpty()) {
+            return new Size(0, 0);
         }
-
-        var contentConstraints = LayoutMath.calculateContentConstraints(constraints, props);
 
         int maxWidth = 0;
         int totalHeight = 0;
 
-        for (var child : children) {
-            var childSize = LayoutHelper.measureChild(child, contentConstraints);
+        for (Size childSize : measuredChildren) {
             maxWidth = Math.max(maxWidth, childSize.width());
             totalHeight += childSize.height();
         }
 
-        int totalSpacing = LayoutMath.calculateTotalSpacing(children.size(), props.getSpacing());
-        totalHeight += totalSpacing;
+        totalHeight += LayoutMath.calculateTotalSpacing(measuredChildren.size(), props.getSpacing());
 
-        int totalWidth = maxWidth + props.getHorizontalPadding();
-        totalHeight += props.getVerticalPadding();
-
-        return constraints.constrain(new Size(totalWidth, totalHeight));
+        return new Size(maxWidth, totalHeight);
     }
 
     @Override
-    public void place(Bounds bounds, List<IElement> children) {
-        this.setBounds(bounds);
-
-        if (children.isEmpty()) {
-            return;
+    public List<Bounds> place(Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+        if (measuredChildren.isEmpty()) {
+            return List.of();
         }
 
-        var props = this.getOwnLayoutProperties();
-        var horizontalAlignment = props.getHorizontalAlignment();
         var contentArea = LayoutMath.calculateContentArea(bounds, props);
+        var horizontalAlignment = props.getHorizontalAlignment();
 
+        List<Bounds> childBounds = new ArrayList<>();
         int currentY = contentArea.y();
 
-        for (var child : children) {
-            var childSize = LayoutHelper.getMeasuredSize(child);
-            if (childSize == null) {
-                continue;
-            }
-
-            Bounds childBounds;
+        for (Size childSize : measuredChildren) {
+            Bounds childBound;
             if (horizontalAlignment != null) {
                 var alignedPos = LayoutMath.applyAlignment(
                         new Bounds(contentArea.x(), currentY, contentArea.width(), childSize.height()),
                         childSize, horizontalAlignment, true
                 );
-                childBounds = new Bounds(alignedPos, childSize);
+                childBound = new Bounds(alignedPos, childSize);
             } else {
-                childBounds = new Bounds(new Position(contentArea.x(), currentY), childSize);
+                childBound = new Bounds(new Position(contentArea.x(), currentY), childSize);
             }
 
-            LayoutHelper.placeChild(child, childBounds);
+            childBounds.add(childBound);
             currentY += childSize.height() + props.getSpacing();
         }
+
+        return childBounds;
     }
 }

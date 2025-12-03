@@ -34,59 +34,59 @@ public class Box extends BaseContainer {
     private static final Logger LOGGER = LoggerFactory.getLogger(Box.class);
 
     @Override
-    public Size measure(Constraints constraints, List<IElement> children) {
-        var props = this.getOwnLayoutProperties();
-        int horizontalPadding = props.getPaddingLeft() + props.getPaddingRight();
-        int verticalPadding = props.getPaddingTop() + props.getPaddingBottom();
-
-        if (children.isEmpty()) {
-            return constraints.constrain(new Size(horizontalPadding, verticalPadding));
+    public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
+        if (measuredChildren.isEmpty()) {
+            return new Size(0, 0);
         }
 
-        if (children.size() > 1) {
+        if (measuredChildren.size() > 1) {
             LOGGER.debug("Box element contains {} children, but Box is designed for a single child. " +
-                            "Only the first child will be rendered. Consider using Stack for multiple children.",
-                    children.size());
+                            "Only the first child will be rendered.",
+                    measuredChildren.size());
         }
 
-        var contentConstraints = LayoutMath.calculateContentConstraints(constraints, props);
-        var childSize = LayoutHelper.measureChild(children.getFirst(), contentConstraints);
+        Size childSize = measuredChildren.get(0);
+        // Box behavior depends on whether it has padding:
+        // - With padding: fill available space to properly apply padding and alignment
+        // - Without padding: wrap content (allow child to determine size, including overflow for scrolling)
+        boolean hasPadding = props.getHorizontalPadding() > 0 || props.getVerticalPadding() > 0;
 
-        return constraints.constrain(new Size(
-                childSize.width() + horizontalPadding,
-                childSize.height() + verticalPadding
-        ));
+        int width, height;
+        if (hasPadding) {
+            // Fill available space when padding is present
+            width = Math.max(constraints.maxWidth(), childSize.width());
+            height = Math.max(constraints.maxHeight(), childSize.height());
+        } else {
+            // Wrap content when no padding - just return child size
+            width = childSize.width();
+            height = childSize.height();
+        }
+        return new Size(width, height);
     }
 
     @Override
-    public void place(Bounds bounds, List<IElement> children) {
-        this.setBounds(bounds);
-
-        if (children.isEmpty()) {
-            return;
+    public List<Bounds> place(Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+        if (measuredChildren.isEmpty()) {
+            return List.of();
         }
 
-        var child = children.getFirst();
-        var childSize = LayoutHelper.getMeasuredSize(child);
-        if (childSize == null) {
-            return;
-        }
-
-        var props = this.getOwnLayoutProperties();
         var contentArea = LayoutMath.calculateContentArea(bounds, props);
-
         var alignment = props.getContentAlignment();
-        Bounds childBounds;
+
+        Size childSize = measuredChildren.get(0);
+        Bounds childBound;
+
         if (alignment != null) {
             var alignedPos = alignment.align(childSize, contentArea.size());
-            childBounds = new Bounds(
+            childBound = new Bounds(
                     new Position(contentArea.x() + alignedPos.x(), contentArea.y() + alignedPos.y()),
                     childSize
             );
         } else {
-            childBounds = new Bounds(contentArea.position(), childSize);
+            // When no alignment is specified, child should fill the full content area
+            childBound = new Bounds(contentArea.position(), contentArea.size());
         }
 
-        LayoutHelper.placeChild(child, childBounds);
+        return List.of(childBound);
     }
 }

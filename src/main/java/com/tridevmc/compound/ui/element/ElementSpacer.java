@@ -18,6 +18,7 @@ package com.tridevmc.compound.ui.element;
 
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 
@@ -57,7 +58,7 @@ public class ElementSpacer extends BaseElement implements IPrimitiveElement {
     }
 
     @Override
-    public Size measure(Constraints constraints, List<IElement> children) {
+    public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
         if (this.flexible) {
             // Flexible spacer fills available space
             return new Size(constraints.maxWidth(), constraints.maxHeight());
@@ -71,8 +72,9 @@ public class ElementSpacer extends BaseElement implements IPrimitiveElement {
     }
 
     @Override
-    public void place(Bounds bounds, List<IElement> children) {
-        this.setBounds(bounds);
+    public List<Bounds> place(Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren) {
+        // Spacers have no children
+        return List.of();
     }
 
     @Override

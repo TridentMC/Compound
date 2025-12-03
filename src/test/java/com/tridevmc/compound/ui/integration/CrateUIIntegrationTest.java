@@ -285,7 +285,7 @@ public class CrateUIIntegrationTest {
         // Verify content of Main UI Box
         // ElementBox -> Stack -> Box (padding) -> Column
         ITreeNode mainStackNode = mainBoxNode.getChildren().getFirst();
-        assertEquals(Stack.class, mainStackNode.getElement().getClass());
+        assertTrue(mainStackNode.getElement() instanceof Stack, "Main Stack should be a Stack");
         Bounds mainStackBounds = mainStackNode.getElement().getBounds();
         assertEquals(new Bounds(247, 205, 178, 190), mainStackBounds, "Main Stack should fill ElementBox");
 
@@ -542,7 +542,7 @@ public class CrateUIIntegrationTest {
         // Verify ScrollArea content - Complete structure validation
         // ScrollBox -> Stack -> Box -> ScrollArea
         ITreeNode scrollStackNode = scrollBoxNode.getChildren().getFirst();
-        assertEquals(Stack.class, scrollStackNode.getElement().getClass());
+        assertTrue(scrollStackNode.getElement() instanceof Stack, "Scroll Stack should be a Stack");
         Bounds scrollStackBounds = scrollStackNode.getElement().getBounds();
         assertEquals(new Bounds(433, 205, 120, 190), scrollStackBounds, "Scroll Stack should fill ElementBox");
 
@@ -653,7 +653,7 @@ public class CrateUIIntegrationTest {
             // Validate button content (Stack containing sprite and content stack)
             assertEquals(1, buttonNode.getChildren().size(), "Button " + i + " should have 1 child (Stack)");
             ITreeNode buttonStackNode = buttonNode.getChildren().getFirst();
-            assertEquals(Stack.class, buttonStackNode.getElement().getClass(), "Button " + i + " child should be Stack");
+            assertTrue(buttonStackNode.getElement() instanceof Stack, "Button " + i + " child should be Stack");
             Bounds buttonStackBounds = buttonStackNode.getElement().getBounds();
             assertEquals(buttonBounds, buttonStackBounds, "Button " + i + " Stack should fill button");
 

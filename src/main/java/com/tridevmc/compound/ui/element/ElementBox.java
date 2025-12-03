@@ -18,7 +18,7 @@ package com.tridevmc.compound.ui.element;
 
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.Constraints;
-import com.tridevmc.compound.ui.layout.LayoutHelper;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.screen.IScreenContext;
@@ -134,9 +134,7 @@ public class ElementBox extends BaseElement implements IComposableElement {
 
     @Override
     public void compose(ICompositionScope scope) {
-        scope.e(new Stack(), stack -> {
-            stack.layout().fillMax();
-
+        scope.e(new WrappingStack(), stack -> {
             IScreenSprite sprite = this.spriteSupplier.get();
             if (sprite != null) {
                 stack.e(new ElementSprite(this.spriteSupplier));
@@ -149,33 +147,23 @@ public class ElementBox extends BaseElement implements IComposableElement {
     }
 
     @Override
-    public Size measure(Constraints constraints, List<IElement> children) {
-        // Composable elements are measured directly by UITree, so must apply their own layout properties
-        var tree = this.getTree();
-        var props = tree != null ? tree.getNodeForElement(this).getLayoutProperties() : null;
-
+    public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         // ElementBox has no fixed intrinsic size - flexible by default
-        var finalSize = LayoutHelper.calculateSizeWithProperties(
-                Integer.MAX_VALUE, Integer.MAX_VALUE,
-                props,
-                constraints
-        );
-
-        if (!children.isEmpty()) {
-            var childConstraints = Constraints.fixed(finalSize.width(), finalSize.height());
-            LayoutHelper.measureChild(children.getFirst(), childConstraints);
+        // Return size of composed Stack child, or fill available space
+        if (!measuredChildren.isEmpty()) {
+            return measuredChildren.get(0);
         }
-
-        return finalSize;
+        return new Size(0, 0);
     }
 
     @Override
-    public void place(Bounds bounds, List<IElement> children) {
-        this.setBounds(bounds);
-
-        if (!children.isEmpty()) {
-            LayoutHelper.placeChild(children.getFirst(), bounds);
+    public List<Bounds> place(Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+        if (measuredChildren.isEmpty()) {
+            return List.of();
         }
+
+        // Place Stack child at full bounds
+        return List.of(bounds);
     }
 
     public IScreenSprite getSprite() {
@@ -192,5 +180,47 @@ public class ElementBox extends BaseElement implements IComposableElement {
 
     public void setSpriteSupplier(Supplier<IScreenSprite> spriteSupplier) {
         this.spriteSupplier = spriteSupplier;
+    }
+
+    /**
+     * A specialized Stack that ignores the first child (background) for measurement
+     * and forces the first child to match the stack's bounds during placement.
+     */
+    private static class WrappingStack extends Stack {
+        @Override
+        public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
+            if (measuredChildren.isEmpty()) {
+                return new Size(0, 0);
+            }
+
+            // If only background, return its size (likely max)
+            if (measuredChildren.size() == 1) {
+                return measuredChildren.get(0);
+            }
+
+            int maxWidth = 0;
+            int maxHeight = 0;
+
+            // Skip first child (background) for size calculation
+            for (int i = 1; i < measuredChildren.size(); i++) {
+                Size childSize = measuredChildren.get(i);
+                maxWidth = Math.max(maxWidth, childSize.width());
+                maxHeight = Math.max(maxHeight, childSize.height());
+            }
+
+            return new Size(maxWidth, maxHeight);
+        }
+
+        @Override
+        public List<Bounds> place(Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+            List<Bounds> childBounds = super.place(bounds, props, measuredChildren);
+            
+            // Force background (index 0) to match stack bounds
+            if (!childBounds.isEmpty()) {
+                childBounds.set(0, new Bounds(bounds.position(), bounds.size()));
+            }
+            
+            return childBounds;
+        }
     }
 }

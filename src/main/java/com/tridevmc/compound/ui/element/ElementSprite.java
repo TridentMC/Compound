@@ -19,6 +19,7 @@ package com.tridevmc.compound.ui.element;
 import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
@@ -39,7 +40,7 @@ public class ElementSprite extends BasePrimitiveElement {
     }
 
     @Override
-    public Size measure(Constraints constraints, List<IElement> children) {
+    public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
         return new Size(constraints.maxWidth(), constraints.maxHeight());
     }
 

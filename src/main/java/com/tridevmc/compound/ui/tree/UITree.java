@@ -22,6 +22,8 @@ import com.tridevmc.compound.ui.element.IPrimitiveElement;
 import com.tridevmc.compound.ui.event.*;
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutMath;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Position;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.screen.IScreenContext;
@@ -75,15 +77,12 @@ public class UITree {
 
     public ITreeNode createNode(IElement element) {
         TreeNode node = new TreeNode(element, this);
-        element.setTree(this);
-        this.registerNode(node);
         this.registerNode(node);
         return node;
     }
 
     private void registerNode(ITreeNode node) {
         this.elementToNode.put(node.getElement(), node);
-        node.getElement().setTree(this);
         for (ITreeNode child : node.getChildren()) {
             this.registerNode(child);
         }
@@ -91,7 +90,6 @@ public class UITree {
 
     private void unregisterNode(ITreeNode node) {
         this.elementToNode.remove(node.getElement());
-        node.getElement().setTree(null);
 
         // Clean up state observers
         node.dispose();
@@ -257,27 +255,224 @@ public class UITree {
         }
     }
 
+    /**
+     * Measures a node and returns its size WITH margin included.
+     *
+     * Steps:
+     * 1. Account for margin in available constraints
+     * 2. Apply layout properties (fixed/min/max/fillMax) to get element constraints
+     * 3. Calculate content constraints (accounting for padding)
+     * 4. Recursively measure children with content constraints
+     * 5. Call element.measure() with pre-measured child sizes
+     * 6. Add padding and constrain to element constraints
+     * 7. Add margin to get final size
+     * 8. Store and return
+     */
     private Size measureNode(ITreeNode node, Constraints constraints) {
-        List<IElement> children = node.getChildren().stream()
-                .map(ITreeNode::getElement)
-                .toList();
-        Size size = node.getElement().measure(constraints, children);
-        node.setMeasuredSize(size);
-        return size;
-    }
-
-    private void placeNode(ITreeNode node, Bounds bounds) {
-        List<IElement> children = node.getChildren().stream()
-                .map(ITreeNode::getElement)
-                .toList();
-
-        Bounds placementBounds = bounds;
-        if ((bounds.width() == 0 || bounds.height() == 0) && node.getMeasuredSize() != null) {
-            Size measuredSize = node.getMeasuredSize();
-            placementBounds = new Bounds(bounds.position(), measuredSize);
+        LayoutProperties props = node.getLayoutProperties();
+        if (props == null) {
+            props = LayoutProperties.create();
         }
 
-        node.getElement().place(placementBounds, children);
+        // Step 1: Account for margin in available space
+        int marginHorizontal = props.getMarginLeft() + props.getMarginRight();
+        int marginVertical = props.getMarginTop() + props.getMarginBottom();
+
+        Constraints constraintsWithoutMargin = new Constraints(
+                Math.max(0, constraints.minWidth() - marginHorizontal),
+                Math.max(0, constraints.maxWidth() - marginHorizontal),
+                Math.max(0, constraints.minHeight() - marginVertical),
+                Math.max(0, constraints.maxHeight() - marginVertical)
+        );
+
+        // Step 2: Apply layout properties to constraints BEFORE measuring children
+        Constraints elementConstraints = this.applyLayoutPropertiesToConstraints(constraintsWithoutMargin, props);
+
+        // Step 2.5: Relax min constraints for children
+        // Children should not be forced to be as large as the parent's minimum size
+        // They are constrained by the parent's maximum size
+        Constraints childConstraints = new Constraints(
+                0,
+                elementConstraints.maxWidth(),
+                0,
+                elementConstraints.maxHeight()
+        );
+
+        // Step 3: Calculate content constraints (accounting for padding)
+        Constraints contentConstraints = LayoutMath.calculateContentConstraints(childConstraints, props);
+
+        // Step 4: Recursively measure children with content constraints
+        List<Size> measuredChildren = new ArrayList<>();
+        for (ITreeNode child : node.getChildren()) {
+            Size childSize = this.measureNode(child, contentConstraints);
+            measuredChildren.add(childSize);
+        }
+
+        // Step 5: Element calculates intrinsic size
+        Size intrinsicSize = node.getElement().measure(contentConstraints, props, measuredChildren);
+
+        // Step 6: Add padding to get element's total size and constrain to element constraints
+        int withPaddingWidth = intrinsicSize.width() + props.getHorizontalPadding();
+        int withPaddingHeight = intrinsicSize.height() + props.getVerticalPadding();
+        Size elementSize = new Size(withPaddingWidth, withPaddingHeight);
+
+        // Apply fillMax after measurement (not before, so children get loose constraints)
+        int finalWidth = elementSize.width();
+        int finalHeight = elementSize.height();
+        if (props.isFillMaxWidth()) {
+            finalWidth = constraintsWithoutMargin.maxWidth();
+        }
+        if (props.isFillMaxHeight()) {
+            finalHeight = constraintsWithoutMargin.maxHeight();
+        }
+
+        // Constrain to element constraints (respects fixedSize, min/max)
+        // However, allow exceeding maxWidth/maxHeight if explicitly set to Integer.MAX_VALUE (for scrolling content)
+        int constrainedWidth = finalWidth;
+        int constrainedHeight = finalHeight;
+
+        if (props.getMaxWidth() != null && props.getMaxWidth() == Integer.MAX_VALUE) {
+            // Allow exceeding parent maxWidth - only apply minWidth constraint
+            constrainedWidth = Math.max(elementConstraints.minWidth(), finalWidth);
+        } else {
+            constrainedWidth = elementConstraints.constrainWidth(finalWidth);
+        }
+
+        if (props.getMaxHeight() != null && props.getMaxHeight() == Integer.MAX_VALUE) {
+            // Allow exceeding parent maxHeight - only apply minHeight constraint
+            constrainedHeight = Math.max(elementConstraints.minHeight(), finalHeight);
+        } else {
+            constrainedHeight = elementConstraints.constrainHeight(finalHeight);
+        }
+
+        Size finalSize = new Size(constrainedWidth, constrainedHeight);
+
+        // Step 7: Add margin to get total size (what parent sees)
+        int totalWidth = finalSize.width() + marginHorizontal;
+        int totalHeight = finalSize.height() + marginVertical;
+        Size sizeWithMargin = new Size(totalWidth, totalHeight);
+
+        // Store for placement phase
+        node.setMeasuredSize(sizeWithMargin);
+
+        return sizeWithMargin;
+    }
+
+    /**
+     * Applies layout properties to constraints to determine the element's target size.
+     * This is called BEFORE measuring children so they receive the correct constraints.
+     *
+     * Note: fillMax is NOT applied here - it's applied after measurement. This allows
+     * children to be measured with loose constraints while the element itself fills max.
+     */
+    private Constraints applyLayoutPropertiesToConstraints(Constraints constraints, LayoutProperties props) {
+        int minWidth = constraints.minWidth();
+        int maxWidth = constraints.maxWidth();
+        int minHeight = constraints.minHeight();
+        int maxHeight = constraints.maxHeight();
+
+        // Apply fixed size (tightest constraints)
+        if (props.getFixedWidth() != null) {
+            minWidth = props.getFixedWidth();
+            maxWidth = props.getFixedWidth();
+        }
+        if (props.getFixedHeight() != null) {
+            minHeight = props.getFixedHeight();
+            maxHeight = props.getFixedHeight();
+        }
+
+        // Apply min/max constraints
+        if (props.getMinWidth() != null) {
+            minWidth = Math.max(minWidth, props.getMinWidth());
+        }
+        if (props.getMaxWidth() != null) {
+            // If maxWidth is Integer.MAX_VALUE, use it to unbind the constraint (for scrolling content)
+            if (props.getMaxWidth() == Integer.MAX_VALUE) {
+                maxWidth = Integer.MAX_VALUE;
+            } else {
+                maxWidth = Math.min(maxWidth, props.getMaxWidth());
+            }
+        }
+        if (props.getMinHeight() != null) {
+            minHeight = Math.max(minHeight, props.getMinHeight());
+        }
+        if (props.getMaxHeight() != null) {
+            // If maxHeight is Integer.MAX_VALUE, use it to unbind the constraint (for scrolling content)
+            if (props.getMaxHeight() == Integer.MAX_VALUE) {
+                maxHeight = Integer.MAX_VALUE;
+            } else {
+                maxHeight = Math.min(maxHeight, props.getMaxHeight());
+            }
+        }
+
+        // Ensure min <= max
+        maxWidth = Math.max(minWidth, maxWidth);
+        maxHeight = Math.max(minHeight, maxHeight);
+
+        return new Constraints(minWidth, maxWidth, minHeight, maxHeight);
+    }
+
+    /**
+     * Places a node and all its children.
+     *
+     * Steps:
+     * 1. Set element's bounds
+     * 2. Get measured child sizes
+     * 3. Call element.place() to get child bound allocations
+     * 4. Apply child margins and recursively place children
+     */
+    private void placeNode(ITreeNode node, Bounds bounds) {
+        IElement element = node.getElement();
+        LayoutProperties props = node.getLayoutProperties();
+        if (props == null) {
+            props = LayoutProperties.create();
+        }
+
+        // Step 1: Set element's bounds
+        element.setBounds(bounds);
+
+        List<ITreeNode> children = node.getChildren();
+        if (children.isEmpty()) {
+            return;
+        }
+
+        // Step 2: Get measured child sizes
+        List<Size> measuredChildren = children.stream()
+                .map(ITreeNode::getMeasuredSize)
+                .toList();
+
+        // Step 3: Element calculates child bounds
+        List<Bounds> childBounds = element.place(bounds, props, measuredChildren);
+
+        if (childBounds.size() != children.size()) {
+            throw new IllegalStateException(
+                    "Element " + element.getClass().getSimpleName() + " returned " +
+                            childBounds.size() + " bounds but has " + children.size() + " children"
+            );
+        }
+
+        // Step 4: Apply margins and recursively place
+        for (int i = 0; i < children.size(); i++) {
+            ITreeNode child = children.get(i);
+            Bounds allocatedBounds = childBounds.get(i);
+            LayoutProperties childProps = child.getLayoutProperties();
+            if (childProps == null) {
+                childProps = LayoutProperties.create();
+            }
+
+            // Offset by child's margin
+            int contentX = allocatedBounds.x() + childProps.getMarginLeft();
+            int contentY = allocatedBounds.y() + childProps.getMarginTop();
+            int contentWidth = allocatedBounds.width() - childProps.getMarginLeft() - childProps.getMarginRight();
+            int contentHeight = allocatedBounds.height() - childProps.getMarginTop() - childProps.getMarginBottom();
+
+            Bounds contentBounds = new Bounds(
+                    new Position(contentX, contentY),
+                    new Size(contentWidth, contentHeight)
+            );
+
+            this.placeNode(child, contentBounds);
+        }
     }
 
     private void requestRemeasurement(ITreeNode changedNode) {

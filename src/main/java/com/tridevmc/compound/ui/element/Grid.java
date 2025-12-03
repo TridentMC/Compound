@@ -18,6 +18,7 @@ package com.tridevmc.compound.ui.element;
 
 import com.tridevmc.compound.ui.layout.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -46,92 +47,94 @@ public class Grid extends BaseContainer {
     }
 
     @Override
-    public Size measure(Constraints constraints, List<IElement> children) {
-        var props = this.getOwnLayoutProperties();
-
-        if (children.isEmpty() || this.columns <= 0) {
-            return new Size(props.getHorizontalPadding(), props.getVerticalPadding());
+    public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
+        if (measuredChildren.isEmpty() || this.columns <= 0) {
+            return new Size(0, 0);
         }
 
-        var contentConstraints = LayoutMath.calculateContentConstraints(constraints, props);
-        int rows = calculateRowCount(children.size());
-
-        Size cellSize = calculateCellSize(contentConstraints.maxWidth(), contentConstraints.maxHeight(), rows);
-        var cellConstraints = new Constraints(0, cellSize.width(), 0, cellSize.height());
-
+        int rows = calculateRowCount(measuredChildren.size());
         int[] columnWidths = new int[this.columns];
         int[] rowHeights = new int[rows];
 
-        for (int i = 0; i < children.size(); i++) {
-            var child = children.get(i);
+        for (int i = 0; i < measuredChildren.size(); i++) {
+            Size childSize = measuredChildren.get(i);
             int col = i % this.columns;
             int row = i / this.columns;
 
-            var childSize = LayoutHelper.measureChild(child, cellConstraints);
             columnWidths[col] = Math.max(columnWidths[col], childSize.width());
             rowHeights[row] = Math.max(rowHeights[row], childSize.height());
         }
 
-        int totalWidth = props.getHorizontalPadding();
+        int totalWidth = 0;
         for (int width : columnWidths) {
             totalWidth += width;
         }
         totalWidth += (this.columns - 1) * this.horizontalSpacing;
 
-        int totalHeight = props.getVerticalPadding();
+        int totalHeight = 0;
         for (int height : rowHeights) {
             totalHeight += height;
         }
         totalHeight += (rows - 1) * this.verticalSpacing;
 
-        return new Size(
-                Math.min(totalWidth, constraints.maxWidth()),
-                Math.min(totalHeight, constraints.maxHeight())
-        );
+        return new Size(totalWidth, totalHeight);
     }
 
     @Override
-    public void place(Bounds bounds, List<IElement> children) {
-        this.setBounds(bounds);
-
-        if (children.isEmpty() || this.columns <= 0) {
-            return;
+    public List<Bounds> place(Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+        if (measuredChildren.isEmpty() || this.columns <= 0) {
+            return List.of();
         }
 
-        var props = this.getOwnLayoutProperties();
         var contentArea = LayoutMath.calculateContentArea(bounds, props);
 
-        int rows = calculateRowCount(children.size());
-        Size cellSize = calculateCellSize(contentArea.width(), contentArea.height(), rows);
+        // Calculate column widths and row heights from measured children
+        int rows = calculateRowCount(measuredChildren.size());
+        int[] columnWidths = new int[this.columns];
+        int[] rowHeights = new int[rows];
 
-        for (int i = 0; i < children.size(); i++) {
-            var child = children.get(i);
+        for (int i = 0; i < measuredChildren.size(); i++) {
+            Size childSize = measuredChildren.get(i);
             int col = i % this.columns;
             int row = i / this.columns;
 
-            int x = contentArea.x() + (col * (cellSize.width() + this.horizontalSpacing));
-            int y = contentArea.y() + (row * (cellSize.height() + this.verticalSpacing));
-
-            var childSize = LayoutHelper.getMeasuredSize(child);
-            if (childSize == null) {
-                continue;
-            }
-
-            var childBounds = new Bounds(new Position(x, y), childSize);
-            LayoutHelper.placeChild(child, childBounds);
+            columnWidths[col] = Math.max(columnWidths[col], childSize.width());
+            rowHeights[row] = Math.max(rowHeights[row], childSize.height());
         }
+
+        // Calculate cumulative positions for each column/row
+        int[] columnPositions = new int[this.columns];
+        int currentX = contentArea.x();
+        for (int col = 0; col < this.columns; col++) {
+            columnPositions[col] = currentX;
+            currentX += columnWidths[col] + this.horizontalSpacing;
+        }
+
+        int[] rowPositions = new int[rows];
+        int currentY = contentArea.y();
+        for (int row = 0; row < rows; row++) {
+            rowPositions[row] = currentY;
+            currentY += rowHeights[row] + this.verticalSpacing;
+        }
+
+        // Calculate bounds for each child
+        List<Bounds> childBounds = new ArrayList<>();
+        for (int i = 0; i < measuredChildren.size(); i++) {
+            Size childSize = measuredChildren.get(i);
+            int col = i % this.columns;
+            int row = i / this.columns;
+
+            int x = columnPositions[col];
+            int y = rowPositions[row];
+
+            childBounds.add(new Bounds(new Position(x, y), childSize));
+        }
+
+        return childBounds;
     }
 
     private int calculateRowCount(int childCount) {
         return (int) Math.ceil((double) childCount / this.columns);
-    }
-
-    private Size calculateCellSize(int availableWidth, int availableHeight, int rows) {
-        int totalHorizontalSpacing = (this.columns - 1) * this.horizontalSpacing;
-        int totalVerticalSpacing = (rows - 1) * this.verticalSpacing;
-        int cellWidth = Math.max(0, (availableWidth - totalHorizontalSpacing) / this.columns);
-        int cellHeight = Math.max(0, (availableHeight - totalVerticalSpacing) / rows);
-        return new Size(cellWidth, cellHeight);
     }
 
     public int getColumns() {

@@ -18,7 +18,7 @@ package com.tridevmc.compound.ui.element;
 
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.Constraints;
-import com.tridevmc.compound.ui.layout.LayoutHelper;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
@@ -83,39 +83,27 @@ public class ComposedSlot extends BaseElement implements IComposableElement {
     }
 
     @Override
-    public Size measure(Constraints constraints, List<IElement> children) {
-        // Composable elements are measured directly by UITree, so must apply their own layout properties
-        var tree = this.getTree();
-        var props = tree != null ? tree.getNodeForElement(this).getLayoutProperties() : null;
-
+    public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         // ComposedSlot has fixed intrinsic size (18x18)
-        var finalSize = LayoutHelper.calculateSizeWithProperties(
-                SLOT_SIZE, SLOT_SIZE,
-                props,
-                constraints
-        );
-
-        if (!children.isEmpty()) {
-            Constraints childConstraints = Constraints.fixed(finalSize.width(), finalSize.height());
-            LayoutHelper.measureChild(children.getFirst(), childConstraints);
-        }
-
-        return finalSize;
+        // If it has a child (Stack), ignore its size - slot is always 18x18
+        return new Size(SLOT_SIZE, SLOT_SIZE);
     }
 
     @Override
-    public void place(Bounds bounds, List<IElement> children) {
-        this.setBounds(bounds);
-
-        if (!children.isEmpty()) {
-            LayoutHelper.placeChild(children.getFirst(), bounds);
+    public List<Bounds> place(Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+        if (measuredChildren.isEmpty()) {
+            return List.of();
         }
+
+        // Place Stack child at full slot bounds
+        return List.of(bounds);
     }
 
     @Override
     public void compose(ICompositionScope scope) {
         // Compose as a stack with proper layering
         scope.e(new Stack(), stack -> {
+            stack.layout().fixedSize(SLOT_SIZE, SLOT_SIZE);
             // Bottom layer: slot background sprite (18x18)
             stack.e(new ElementSprite(SLOT_SPRITE));
 
