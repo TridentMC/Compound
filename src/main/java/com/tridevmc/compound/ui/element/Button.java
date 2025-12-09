@@ -17,6 +17,8 @@
 package com.tridevmc.compound.ui.element;
 
 import com.google.common.collect.Lists;
+import com.mojang.blaze3d.platform.cursor.CursorType;
+import com.tridevmc.compound.ui.CompoundCursors;
 import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.slot.SlotKey;
@@ -29,6 +31,7 @@ import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
@@ -77,11 +80,9 @@ public class Button extends BaseElement implements IComposableElement {
 
     @Override
     public void compose(ICompositionScope scope) {
-        // Bind to state changes to trigger recomposition
         scope.bind(this.enabled);
         scope.bind(this.hovered);
 
-        // Register mouse enter/exit handlers for hover state
         scope.onMouseEnter(() -> {
             this.hovered.set(true);
             var bounds = this.getBounds();
@@ -106,30 +107,21 @@ public class Button extends BaseElement implements IComposableElement {
             }
         });
 
-        // Register mouse click handler on button
         scope.onClick(event -> {
             if (!this.canPress()) {
                 return false;
             }
 
             var bounds = this.getBounds();
-            if (bounds == null) {
-                return false;
-            }
-
             int x = event.x();
             int y = event.y();
 
-
-            // Check if click is within button bounds
             if (x >= bounds.x() && x < bounds.x() + bounds.width() &&
                     y >= bounds.y() && y < bounds.y() + bounds.height()) {
 
-                // Play click sound
                 SoundManager soundManager = Minecraft.getInstance().getSoundManager();
                 soundManager.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 
-                // Notify listeners
                 this.pressListeners.forEach(listener -> listener.onButtonPress(x, y));
                 return true;
             } else {
@@ -137,11 +129,9 @@ public class Button extends BaseElement implements IComposableElement {
             }
         });
 
-        // Create a Stack to layer background + user children
         scope.e(new WrappingStack(), stack -> {
             stack.layout().contentAlignment(Alignment.CENTER);
 
-            // Background sprite based on state
             IScreenSprite backgroundSprite;
             if (!this.enabled.get()) {
                 backgroundSprite = DEFAULT_DISABLED_SPRITE;
@@ -155,15 +145,12 @@ public class Button extends BaseElement implements IComposableElement {
                 sprite.layout().fillMax();
             });
 
-            // Render user content slot into the stack (on top of background)
             scope.slotInto(CONTENT_SLOT, stack);
         });
     }
 
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
-        // Button has no fixed intrinsic size - flexible by default
-        // Return size of composed Stack child, or fill available space
         if (!measuredChildren.isEmpty()) {
             return measuredChildren.get(0);
         }
@@ -171,12 +158,11 @@ public class Button extends BaseElement implements IComposableElement {
     }
 
     @Override
-    public List<Bounds> place(Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+    public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
             return List.of();
         }
 
-        // Place Stack child at full bounds
         return List.of(bounds);
     }
 
@@ -225,8 +211,8 @@ public class Button extends BaseElement implements IComposableElement {
     }
 
     @Override
-    public com.mojang.blaze3d.platform.cursor.CursorType getCursor(int x, int y) {
-        return this.canPress() ? com.tridevmc.compound.ui.CompoundCursors.HAND : null;
+    public CursorType getCursor(int x, int y) {
+        return this.canPress() ? CompoundCursors.HAND : null;
     }
 
     /**
@@ -240,7 +226,6 @@ public class Button extends BaseElement implements IComposableElement {
                 return new Size(0, 0);
             }
 
-            // If only background, return its size (likely max)
             if (measuredChildren.size() == 1) {
                 return measuredChildren.get(0);
             }
@@ -248,7 +233,6 @@ public class Button extends BaseElement implements IComposableElement {
             int maxWidth = 0;
             int maxHeight = 0;
 
-            // Skip first child (background) for size calculation
             for (int i = 1; i < measuredChildren.size(); i++) {
                 Size childSize = measuredChildren.get(i);
                 maxWidth = Math.max(maxWidth, childSize.width());
@@ -259,14 +243,13 @@ public class Button extends BaseElement implements IComposableElement {
         }
 
         @Override
-        public List<Bounds> place(Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+        public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
             List<Bounds> childBounds = super.place(bounds, props, measuredChildren);
-            
-            // Force background (index 0) to match stack bounds
+
             if (!childBounds.isEmpty()) {
                 childBounds.set(0, new Bounds(bounds.position(), bounds.size()));
             }
-            
+
             return childBounds;
         }
     }

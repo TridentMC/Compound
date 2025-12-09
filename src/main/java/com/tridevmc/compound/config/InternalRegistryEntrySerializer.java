@@ -27,7 +27,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.stats.StatType;
-import net.minecraft.stats.Stats;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
@@ -109,7 +108,7 @@ public class InternalRegistryEntrySerializer<T> implements IConfigObjectSerializ
     private final Class<?> registryType;
     private final ResourceKey<Registry<T>> registryKey;
     private Registry<T> registry;
-    private Supplier<T> defaultValue;
+    private final Supplier<T> defaultValue;
 
     public InternalRegistryEntrySerializer(Class<?> registryType, ResourceKey<Registry<T>> registryKey, T defaultValue) {
         this.registryType = registryType;

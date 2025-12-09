@@ -21,6 +21,7 @@ import com.tridevmc.compound.ui.layout.Constraints;
 import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
@@ -35,9 +36,9 @@ public interface IGenericElement {
      * Element calculates its intrinsic size based on measured children (for containers)
      * or its own content (for primitives).
      *
-     * @param constraints       the constraints for measuring this element's content
-     * @param ownProperties     this element's layout properties (padding, spacing, alignment, etc.)
-     * @param measuredChildren  sizes of children (INCLUDING their margins) already measured by tree
+     * @param constraints      the constraints for measuring this element's content
+     * @param ownProperties    this element's layout properties (padding, spacing, alignment, etc.)
+     * @param measuredChildren sizes of children (INCLUDING their margins) already measured by tree
      * @return the intrinsic size of this element (tree will add padding and apply other properties)
      */
     Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren);
@@ -48,19 +49,12 @@ public interface IGenericElement {
      * Element is a pure function - all inputs provided as parameters.
      * Tree will apply child margins and recursively place children.
      *
-     * @param bounds            this element's final bounds (set via setBounds before this is called)
-     * @param ownProperties     this element's layout properties
-     * @param measuredChildren  sizes of children (INCLUDING their margins)
+     * @param bounds           this element's final bounds (set via setBounds before this is called)
+     * @param ownProperties    this element's layout properties
+     * @param measuredChildren sizes of children (INCLUDING their margins)
      * @return bounds for each child (INCLUDING space for margins), tree will offset by child's margin
      */
-    List<Bounds> place(Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren);
-
-    /**
-     * Sets the bounds for this element (called by tree during placement).
-     *
-     * @param bounds the bounds to set
-     */
-    void setBounds(Bounds bounds);
+    List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren);
 
     /**
      * Lifecycle: Called when element is attached to the tree.
@@ -78,18 +72,4 @@ public interface IGenericElement {
      * @return the current bounds
      */
     Bounds getBounds();
-
-    /**
-     * Checks if this element is visible.
-     *
-     * @return true if visible, false otherwise
-     */
-    boolean isVisible();
-
-    /**
-     * Sets the visibility of this element.
-     *
-     * @param visible true to make visible, false to hide
-     */
-    void setVisible(boolean visible);
 }

@@ -183,6 +183,21 @@ public class ComposableElementScope<T extends IComposableElement> extends Elemen
     }
 
     @Override
+    public void onFocusGained(Runnable handler) {
+        this.parentNode.addFocusGainedHandler(handler);
+    }
+
+    @Override
+    public void onFocusLost(Runnable handler) {
+        this.parentNode.addFocusLostHandler(handler);
+    }
+
+    @Override
+    public void requestFocus() {
+        this.parentNode.getTree().requestFocus(this.parentNode);
+    }
+
+    @Override
     public SlotMap getSlotMap() {
         return this.slotMap;
     }

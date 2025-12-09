@@ -45,19 +45,46 @@ public class AnimatedState<T> implements State<T> {
     private long startTick;       // Tick when animation started
     private long lastUpdateTick = -1;  // Last tick we updated on
     private boolean isAnimating = false;
+    private boolean looping = false;  // Whether to loop when animation completes
+    private T loopStartValue;     // Value to return to when looping
+    private T loopEndValue;       // Value to animate to when looping
+    private final T originalLoopStart;  // Original loop start (for reset)
+    private final T originalLoopEnd;    // Original loop end (for reset)
 
     public AnimatedState(T initialValue, long durationMillis,
                          Interpolator<T> interpolator, Easing easing,
                          AnimationScheduler scheduler) {
+        this(initialValue, durationMillis, interpolator, easing, scheduler, false, null, null);
+    }
+
+    /**
+     * Public constructor for looping animations.
+     * Used by composition scope factory methods.
+     */
+    public AnimatedState(T initialValue, long durationMillis,
+                         Interpolator<T> interpolator, Easing easing,
+                         AnimationScheduler scheduler,
+                         boolean looping, T loopStartValue, T loopEndValue) {
         this.lastTickValue = initialValue;
         this.currentTickValue = initialValue;
-        this.targetValue = initialValue;
+        this.targetValue = looping ? loopEndValue : initialValue;
         this.animationStartValue = initialValue;
         // Convert milliseconds to ticks (20 TPS = 50ms per tick)
         this.durationTicks = Math.max(1, durationMillis / 50);
         this.interpolator = interpolator;
         this.easing = easing;
         this.scheduler = scheduler;
+        this.looping = looping;
+        this.loopStartValue = loopStartValue;
+        this.loopEndValue = loopEndValue;
+        this.originalLoopStart = loopStartValue;
+        this.originalLoopEnd = loopEndValue;
+
+        // Start looping animation immediately if requested
+        if (looping) {
+            this.isAnimating = true;
+            this.scheduler.registerAnimation(this);
+        }
     }
 
     @Override
@@ -101,14 +128,27 @@ public class AnimatedState<T> implements State<T> {
 
     /**
      * Set value immediately without animation.
+     * For looping animations, jumps to the value and fully resets the loop cycle.
      */
     public void setImmediate(T value) {
         this.lastTickValue = value;
         this.currentTickValue = value;
-        this.targetValue = value;
-        this.animationStartValue = value;
-        this.isAnimating = false;
-        this.scheduler.unregisterAnimation(this);
+
+        if (this.looping) {
+            // Reset loop to original state and restart from the given value
+            this.loopStartValue = this.originalLoopStart;
+            this.loopEndValue = this.originalLoopEnd;
+            this.animationStartValue = value;
+            this.targetValue = this.originalLoopEnd;  // Always animate toward the end value first
+            this.lastUpdateTick = -1;  // Reset timing so next update starts fresh
+        } else {
+            // Stop animation (existing behavior for non-looping)
+            this.targetValue = value;
+            this.animationStartValue = value;
+            this.isAnimating = false;
+            this.scheduler.unregisterAnimation(this);
+        }
+
         this.notifyObservers();
     }
 
@@ -144,9 +184,23 @@ public class AnimatedState<T> implements State<T> {
         if (progress >= 1.0f) {
             // Animation complete
             newValue = this.targetValue;
-            this.isAnimating = false;
-            this.scheduler.unregisterAnimation(this);
-            this.lastUpdateTick = -1;
+
+            if (this.looping) {
+                // Restart animation with swapped start/end values
+                this.animationStartValue = this.loopEndValue;
+                this.targetValue = this.loopStartValue;
+                // Swap for next iteration
+                T temp = this.loopStartValue;
+                this.loopStartValue = this.loopEndValue;
+                this.loopEndValue = temp;
+                // Reset timing
+                this.startTick = currentTick;
+                this.lastUpdateTick = currentTick;
+            } else {
+                this.isAnimating = false;
+                this.scheduler.unregisterAnimation(this);
+                this.lastUpdateTick = -1;
+            }
         } else {
             // Interpolate from animation start to target
             float easedProgress = this.easing.apply(progress);
@@ -166,6 +220,14 @@ public class AnimatedState<T> implements State<T> {
 
     public boolean isAnimating() {
         return this.isAnimating;
+    }
+
+    /**
+     * Stop looping and complete the current animation.
+     * The animation will finish its current cycle and then stop.
+     */
+    public void stopLooping() {
+        this.looping = false;
     }
 
     @Override

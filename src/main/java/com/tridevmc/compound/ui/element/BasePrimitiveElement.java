@@ -21,6 +21,7 @@ import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
@@ -30,30 +31,23 @@ import java.util.List;
 public abstract class BasePrimitiveElement extends BaseElement implements IPrimitiveElement {
 
     @Override
-    public List<Bounds> place(Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren) {
+    public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren) {
         // Primitives have no children
         return List.of();
     }
 
     @Override
     public final void draw(IScreenContext context) {
-        if (!this.isVisible()) {
-            return;
-        }
-
-        var bounds = this.getBounds();
-        if (bounds == null) {
-            return;
-        }
-
-        this.drawElement(context, bounds);
+        this.drawElement(context, this.getBounds());
     }
 
     /**
-     * Draws this element. Called only when visible and bounds are set.
+     * Draws this element. Called only when bounds are set.
+     * Elements that need visibility control should check their own visibility state
+     * in drawElement() before rendering.
      *
      * @param context the screen context for drawing
      * @param bounds  the element's bounds (guaranteed non-null)
      */
-    protected abstract void drawElement(IScreenContext context, Bounds bounds);
+    protected abstract void drawElement(IScreenContext context, @Nonnull Bounds bounds);
 }

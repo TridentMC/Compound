@@ -16,16 +16,13 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.tridevmc.compound.ui.layout.Bounds;
-import com.tridevmc.compound.ui.layout.Constraints;
-import com.tridevmc.compound.ui.layout.LayoutProperties;
-import com.tridevmc.compound.ui.layout.Position;
-import com.tridevmc.compound.ui.layout.Size;
+import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.slot.SlotKey;
 import com.tridevmc.compound.ui.state.State;
 import com.tridevmc.compound.ui.state.StateImpl;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
@@ -111,7 +108,6 @@ public class ScrollArea extends BaseElement implements IComposableElement {
         scope.bindLayout(scrollX);
         scope.bindLayout(scrollY);
 
-        // Create internal box to hold scrollable content
         // Set unbounded max size in scrolling dimension to allow content to expand beyond viewport
         scope.e(new Box(), box -> {
             if (direction == Direction.VERTICAL) {
@@ -122,10 +118,8 @@ public class ScrollArea extends BaseElement implements IComposableElement {
             scope.slotInto(CONTENT_SLOT, box);
         });
 
-        // Register scroll event handler
         scope.onScroll(event -> {
             var bounds = this.getBounds();
-            if (bounds == null) return false;
 
             var node = scope.getTree().getNodeForElement(this);
             if (node == null || node.getChildren().isEmpty()) return false;
@@ -164,14 +158,13 @@ public class ScrollArea extends BaseElement implements IComposableElement {
     }
 
     @Override
-    public List<Bounds> place(Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+    public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
             return List.of();
         }
 
         Size childSize = measuredChildren.get(0);
 
-        // Clamp scroll to valid range
         int maxScrollX = Math.max(0, childSize.width() - bounds.width());
         int maxScrollY = Math.max(0, childSize.height() - bounds.height());
 
@@ -181,7 +174,6 @@ public class ScrollArea extends BaseElement implements IComposableElement {
         if (scrollX.get() != clampedX) scrollX.set(clampedX);
         if (scrollY.get() != clampedY) scrollY.set(clampedY);
 
-        // Place child with scroll offset
         Bounds childBounds = new Bounds(
                 new Position(bounds.x() - scrollX.get(), bounds.y() - scrollY.get()),
                 childSize

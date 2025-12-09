@@ -28,7 +28,7 @@ public class ForgeRegistryEntrySerializer<T> implements IConfigFieldSerializer<T
         } else {
             var key = field.getRegistry().getKey(value);
             if (key == null) {
-                throw new NullPointerException("Unable to find valid key for value " + value.toString());
+                throw new NullPointerException("Unable to find valid key for value " + value);
             } else {
                 return key.toString();
             }

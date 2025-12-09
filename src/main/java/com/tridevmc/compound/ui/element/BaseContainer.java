@@ -16,8 +16,6 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.tridevmc.compound.ui.layout.LayoutProperties;
-
 /**
  * Base implementation for container elements.
  * Provides common functionality for elements that can have children.

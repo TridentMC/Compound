@@ -19,6 +19,7 @@ package com.tridevmc.compound.ui.layout;
 /**
  * Represents position and size together.
  */
+
 public record Bounds(Position position, Size size) {
 
     public Bounds(int x, int y, int width, int height) {

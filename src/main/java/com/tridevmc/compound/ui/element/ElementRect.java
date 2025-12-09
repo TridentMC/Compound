@@ -22,6 +22,7 @@ import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -43,7 +44,7 @@ public class ElementRect extends BasePrimitiveElement {
     }
 
     @Override
-    protected void drawElement(IScreenContext context, Bounds bounds) {
+    protected void drawElement(IScreenContext context, @Nonnull Bounds bounds) {
         int color = this.colorSupplier.get();
         context.drawRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), color);
     }

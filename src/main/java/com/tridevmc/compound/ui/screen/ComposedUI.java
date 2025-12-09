@@ -51,7 +51,6 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
         Minecraft mc = Minecraft.getInstance();
         this.init(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
 
-        // Bootstrap composition
         RootScope scope = new RootScope(this.tree);
         this.compose(scope);
 
@@ -85,7 +84,6 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
         this.tree.layoutAndRender(this.width, this.height, this.screenContext);
 
-        // Apply cursor requested by UI tree
         graphics.requestCursor(this.tree.getRequestedCursor());
 
         super.render(graphics, mouseX, mouseY, partialTicks);
@@ -214,10 +212,8 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
     @Override
     public boolean mouseScrolled(double x, double y, double scrollX, double scrollY) {
-        System.out.println("[ComposedUI] mouseScrolled: (" + x + ", " + y + ") scrollY=" + scrollY);
         MouseScrollEvent scrollEvent = new MouseScrollEvent((int) x, (int) y, scrollY);
         boolean handled = this.tree.dispatchScroll((int) x, (int) y, scrollEvent);
-        System.out.println("[ComposedUI] Scroll handled: " + handled);
         return handled || super.mouseScrolled(x, y, scrollX, scrollY);
     }
 }

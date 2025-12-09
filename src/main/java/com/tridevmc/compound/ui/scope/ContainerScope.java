@@ -153,6 +153,21 @@ public class ContainerScope<T extends IContainer> extends ElementScope<T> implem
     }
 
     @Override
+    public void onFocusGained(Runnable handler) {
+        this.parentNode.addFocusGainedHandler(handler);
+    }
+
+    @Override
+    public void onFocusLost(Runnable handler) {
+        this.parentNode.addFocusLostHandler(handler);
+    }
+
+    @Override
+    public void requestFocus() {
+        this.parentNode.getTree().requestFocus(this.parentNode);
+    }
+
+    @Override
     public void slot(SlotKey key, Consumer<ICompositionScope> defaultContent) {
         throw new UnsupportedOperationException("Slots are not supported in container scopes");
     }

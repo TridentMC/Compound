@@ -24,33 +24,42 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Supplier;
 
 public class ElementLabel extends BasePrimitiveElement {
 
-    private Component text;
+    private Supplier<Component> textSupplier;
     private Supplier<Integer> colorSupplier;
     private Supplier<Boolean> shadowSupplier;
 
     public ElementLabel(Component text) {
-        this(text, () -> 0xFFFFFF, () -> true);
+        this(() -> text, () -> 0xFFFFFF, () -> true);
     }
 
     public ElementLabel(Component text, int color) {
-        this(text, () -> color, () -> true);
+        this(() -> text, () -> color, () -> true);
     }
 
     public ElementLabel(Component text, int color, boolean shadow) {
-        this(text, () -> color, () -> shadow);
+        this(() -> text, () -> color, () -> shadow);
     }
 
     public ElementLabel(Component text, Supplier<Integer> colorSupplier) {
-        this(text, colorSupplier, () -> true);
+        this(() -> text, colorSupplier, () -> true);
     }
 
     public ElementLabel(Component text, Supplier<Integer> colorSupplier, Supplier<Boolean> shadowSupplier) {
-        this.text = text;
+        this(() -> text, colorSupplier, shadowSupplier);
+    }
+
+    public ElementLabel(Supplier<Component> textSupplier, Supplier<Integer> colorSupplier) {
+        this(textSupplier, colorSupplier, () -> true);
+    }
+
+    public ElementLabel(Supplier<Component> textSupplier, Supplier<Integer> colorSupplier, Supplier<Boolean> shadowSupplier) {
+        this.textSupplier = textSupplier;
         this.colorSupplier = colorSupplier;
         this.shadowSupplier = shadowSupplier;
     }
@@ -58,14 +67,15 @@ public class ElementLabel extends BasePrimitiveElement {
     @Override
     public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
         var font = Minecraft.getInstance().font;
+        var text = this.textSupplier.get();
         int width;
         int height;
 
         if (font != null) {
-            width = font.width(this.text);
+            width = font.width(text);
             height = font.lineHeight;
         } else {
-            width = this.text.getString().length() * 6;
+            width = text.getString().length() * 6;
             height = 9;
         }
 
@@ -76,11 +86,12 @@ public class ElementLabel extends BasePrimitiveElement {
     }
 
     @Override
-    protected void drawElement(IScreenContext context, Bounds bounds) {
+    protected void drawElement(IScreenContext context, @Nonnull Bounds bounds) {
         boolean shadow = this.shadowSupplier.get();
         int color = this.colorSupplier.get();
+        var text = this.textSupplier.get();
 
-        Component coloredText = this.text.copy().withStyle(style -> style.withColor(color));
+        Component coloredText = text.copy().withStyle(style -> style.withColor(color));
 
         if (shadow) {
             context.drawTextWithShadow(coloredText, bounds.x(), bounds.y());
@@ -90,11 +101,19 @@ public class ElementLabel extends BasePrimitiveElement {
     }
 
     public Component getText() {
-        return this.text;
+        return this.textSupplier.get();
     }
 
     public void setText(Component text) {
-        this.text = text;
+        this.textSupplier = () -> text;
+    }
+
+    public Supplier<Component> getTextSupplier() {
+        return this.textSupplier;
+    }
+
+    public void setTextSupplier(Supplier<Component> textSupplier) {
+        this.textSupplier = textSupplier;
     }
 
     public int getColor() {

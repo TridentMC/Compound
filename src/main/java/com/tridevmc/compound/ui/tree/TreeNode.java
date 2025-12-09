@@ -18,6 +18,7 @@ package com.tridevmc.compound.ui.tree;
 
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.event.*;
+import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.slot.SlotMap;
@@ -42,6 +43,8 @@ public class TreeNode implements ITreeNode {
     private final List<Function<MouseClickEvent, Boolean>> clickHandlers = new ArrayList<>();
     private final List<Runnable> mouseEnterHandlers = new ArrayList<>();
     private final List<Runnable> mouseExitHandlers = new ArrayList<>();
+    private final List<Runnable> focusGainedHandlers = new ArrayList<>();
+    private final List<Runnable> focusLostHandlers = new ArrayList<>();
     private final List<Function<MouseScrollEvent, Boolean>> scrollHandlers = new ArrayList<>();
     private final List<Function<KeyInputEvent, Boolean>> keyPressHandlers = new ArrayList<>();
     private final List<Function<KeyInputEvent, Boolean>> keyReleaseHandlers = new ArrayList<>();
@@ -65,6 +68,7 @@ public class TreeNode implements ITreeNode {
     private Runnable compositionFunction;
     private SlotMap slotMap;
     private Size measuredSize;
+    private Bounds bounds;
     private LayoutProperties layoutProperties = LayoutProperties.create();
 
     public TreeNode(IElement element, UITree tree) {
@@ -75,6 +79,11 @@ public class TreeNode implements ITreeNode {
     @Override
     public IElement getElement() {
         return this.element;
+    }
+
+    @Override
+    public UITree getTree() {
+        return this.tree;
     }
 
     @Override
@@ -245,6 +254,16 @@ public class TreeNode implements ITreeNode {
     }
 
     @Override
+    public void addFocusGainedHandler(Runnable handler) {
+        this.focusGainedHandlers.add(handler);
+    }
+
+    @Override
+    public void addFocusLostHandler(Runnable handler) {
+        this.focusLostHandlers.add(handler);
+    }
+
+    @Override
     public void addScrollHandler(Function<MouseScrollEvent, Boolean> handler) {
         this.scrollHandlers.add(handler);
     }
@@ -295,6 +314,16 @@ public class TreeNode implements ITreeNode {
     }
 
     @Override
+    public List<Runnable> getFocusGainedHandlers() {
+        return new ArrayList<>(this.focusGainedHandlers);
+    }
+
+    @Override
+    public List<Runnable> getFocusLostHandlers() {
+        return new ArrayList<>(this.focusLostHandlers);
+    }
+
+    @Override
     public List<Function<MouseScrollEvent, Boolean>> getScrollHandlers() {
         return new ArrayList<>(this.scrollHandlers);
     }
@@ -334,6 +363,8 @@ public class TreeNode implements ITreeNode {
         this.clickHandlers.clear();
         this.mouseEnterHandlers.clear();
         this.mouseExitHandlers.clear();
+        this.focusGainedHandlers.clear();
+        this.focusLostHandlers.clear();
         this.scrollHandlers.clear();
         this.keyPressHandlers.clear();
         this.keyReleaseHandlers.clear();
@@ -392,6 +423,16 @@ public class TreeNode implements ITreeNode {
     @Override
     public void setMeasuredSize(Size size) {
         this.measuredSize = size;
+    }
+
+    @Override
+    public Bounds getBounds() {
+        return this.bounds;
+    }
+
+    @Override
+    public void setBounds(Bounds bounds) {
+        this.bounds = bounds;
     }
 
     @Override

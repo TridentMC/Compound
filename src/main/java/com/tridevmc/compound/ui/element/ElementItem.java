@@ -24,6 +24,7 @@ import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.world.item.ItemStack;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -56,7 +57,7 @@ public class ElementItem extends BasePrimitiveElement {
     }
 
     @Override
-    protected void drawElement(IScreenContext context, Bounds bounds) {
+    protected void drawElement(IScreenContext context, @Nonnull Bounds bounds) {
         ItemStack itemStack = this.itemStackSupplier.get();
         if (itemStack == null || itemStack.isEmpty()) {
             return;

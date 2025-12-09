@@ -193,6 +193,28 @@ public interface ICompositionScope {
     void onMouseExit(Runnable handler);
 
     /**
+     * Register a focus gained handler on the current node.
+     * Called when this element receives keyboard focus.
+     *
+     * @param handler the focus gained handler
+     */
+    void onFocusGained(Runnable handler);
+
+    /**
+     * Register a focus lost handler on the current node.
+     * Called when this element loses keyboard focus.
+     *
+     * @param handler the focus lost handler
+     */
+    void onFocusLost(Runnable handler);
+
+    /**
+     * Request keyboard focus for the current element.
+     * This will cause the previously focused element (if any) to lose focus.
+     */
+    void requestFocus();
+
+    /**
      * Render a slot (used inside compose() method).
      * This renders user-provided slot content, or falls back to default content if no content was provided.
      *
@@ -312,5 +334,86 @@ public interface ICompositionScope {
      */
     default AnimatedState<Integer> animateColor(int initialValue, long durationMs, Easing easing) {
         return new AnimatedState<>(initialValue, durationMs, Interpolators.COLOR, easing, getTree().getAnimationScheduler());
+    }
+
+    /**
+     * Create a looping animated float state that alternates between two values.
+     * The animation will continuously cycle between startValue and endValue with the specified easing.
+     *
+     * @param startValue the first value in the loop
+     * @param endValue   the second value in the loop
+     * @param intervalMs the duration of each transition in milliseconds
+     * @param easing     the easing function (use Easing.STEP for instant toggles)
+     * @return the looping animated state
+     */
+    default AnimatedState<Float> animateFloatLooping(float startValue, float endValue, long intervalMs, Easing easing) {
+        return new AnimatedState<Float>(startValue, intervalMs, Interpolators.FLOAT, easing,
+                getTree().getAnimationScheduler(), true, startValue, endValue);
+    }
+
+    /**
+     * Create a looping animated float state with STEP easing (instant toggle).
+     *
+     * @param startValue the first value in the loop
+     * @param endValue   the second value in the loop
+     * @param intervalMs the duration of each transition in milliseconds
+     * @return the looping animated state
+     */
+    default AnimatedState<Float> animateFloatLooping(float startValue, float endValue, long intervalMs) {
+        return animateFloatLooping(startValue, endValue, intervalMs, Easing.STEP);
+    }
+
+    /**
+     * Create a looping animated integer state that alternates between two values.
+     * The animation will continuously cycle between startValue and endValue with the specified easing.
+     *
+     * @param startValue the first value in the loop
+     * @param endValue   the second value in the loop
+     * @param intervalMs the duration of each transition in milliseconds
+     * @param easing     the easing function (use Easing.STEP for instant toggles)
+     * @return the looping animated state
+     */
+    default AnimatedState<Integer> animateIntLooping(int startValue, int endValue, long intervalMs, Easing easing) {
+        return new AnimatedState<Integer>(startValue, intervalMs, Interpolators.INT, easing,
+                getTree().getAnimationScheduler(), true, startValue, endValue);
+    }
+
+    /**
+     * Create a looping animated integer state with STEP easing (instant toggle).
+     *
+     * @param startValue the first value in the loop
+     * @param endValue   the second value in the loop
+     * @param intervalMs the duration of each transition in milliseconds
+     * @return the looping animated state
+     */
+    default AnimatedState<Integer> animateIntLooping(int startValue, int endValue, long intervalMs) {
+        return animateIntLooping(startValue, endValue, intervalMs, Easing.STEP);
+    }
+
+    /**
+     * Create a looping animated color state (ARGB) that alternates between two colors.
+     * The animation will continuously cycle between startColor and endColor with the specified easing.
+     *
+     * @param startColor the first color value (ARGB) in the loop
+     * @param endColor   the second color value (ARGB) in the loop
+     * @param intervalMs the duration of each transition in milliseconds
+     * @param easing     the easing function
+     * @return the looping animated state
+     */
+    default AnimatedState<Integer> animateColorLooping(int startColor, int endColor, long intervalMs, Easing easing) {
+        return new AnimatedState<Integer>(startColor, intervalMs, Interpolators.COLOR, easing,
+                getTree().getAnimationScheduler(), true, startColor, endColor);
+    }
+
+    /**
+     * Create a looping animated color state with default EASE_IN_OUT easing.
+     *
+     * @param startColor the first color value (ARGB) in the loop
+     * @param endColor   the second color value (ARGB) in the loop
+     * @param intervalMs the duration of each transition in milliseconds
+     * @return the looping animated state
+     */
+    default AnimatedState<Integer> animateColorLooping(int startColor, int endColor, long intervalMs) {
+        return animateColorLooping(startColor, endColor, intervalMs, Easing.EASE_IN_OUT);
     }
 }

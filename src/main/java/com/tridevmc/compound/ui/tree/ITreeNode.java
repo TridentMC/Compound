@@ -18,6 +18,7 @@ package com.tridevmc.compound.ui.tree;
 
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.event.*;
+import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.slot.SlotMap;
@@ -35,6 +36,9 @@ public interface ITreeNode {
 
     // Element reference
     IElement getElement();
+
+    // Tree reference
+    UITree getTree();
 
     // Parent-child relationships (stored in the node, not the element)
     ITreeNode getParent();
@@ -90,6 +94,10 @@ public interface ITreeNode {
 
     void addMouseExitHandler(Runnable handler);
 
+    void addFocusGainedHandler(Runnable handler);
+
+    void addFocusLostHandler(Runnable handler);
+
     void addScrollHandler(Function<MouseScrollEvent, Boolean> handler);
 
     void addKeyPressHandler(Function<KeyInputEvent, Boolean> handler);
@@ -109,6 +117,10 @@ public interface ITreeNode {
     List<Runnable> getMouseEnterHandlers();
 
     List<Runnable> getMouseExitHandlers();
+
+    List<Runnable> getFocusGainedHandlers();
+
+    List<Runnable> getFocusLostHandlers();
 
     List<Function<MouseScrollEvent, Boolean>> getScrollHandlers();
 
@@ -142,6 +154,11 @@ public interface ITreeNode {
     Size getMeasuredSize();
 
     void setMeasuredSize(Size size);
+
+    // Placed bounds (stored on node, not element - single source of truth)
+    Bounds getBounds();
+
+    void setBounds(Bounds bounds);
 
     // Layout properties (stored on node, not element)
     LayoutProperties getLayoutProperties();

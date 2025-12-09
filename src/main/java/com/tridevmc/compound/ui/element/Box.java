@@ -20,6 +20,7 @@ import com.tridevmc.compound.ui.layout.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
@@ -65,7 +66,7 @@ public class Box extends BaseContainer {
     }
 
     @Override
-    public List<Bounds> place(Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+    public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
             return List.of();
         }

@@ -194,6 +194,27 @@ public class RootScope implements ICompositionScope {
     }
 
     @Override
+    public void onFocusGained(Runnable handler) {
+        if (this.rootNode != null) {
+            this.rootNode.addFocusGainedHandler(handler);
+        }
+    }
+
+    @Override
+    public void onFocusLost(Runnable handler) {
+        if (this.rootNode != null) {
+            this.rootNode.addFocusLostHandler(handler);
+        }
+    }
+
+    @Override
+    public void requestFocus() {
+        if (this.rootNode != null) {
+            this.rootNode.getTree().requestFocus(this.rootNode);
+        }
+    }
+
+    @Override
     public void slot(SlotKey key, Consumer<ICompositionScope> defaultContent) {
         throw new UnsupportedOperationException("Slots are not supported at the root level");
     }

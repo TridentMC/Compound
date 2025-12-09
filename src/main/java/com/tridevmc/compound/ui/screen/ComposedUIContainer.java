@@ -131,7 +131,6 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         this.tree.layoutAndRender(this.width, this.height, this.screenContext);
         this.updateSlotStates();
 
-        // Apply cursor requested by UI tree
         gg.requestCursor(this.tree.getRequestedCursor());
 
         super.render(gg, mouseX, mouseY, partialTicks);
@@ -299,7 +298,9 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
 
     @Override
     public boolean charTyped(@NotNull CharacterEvent event) {
-        return super.charTyped(event);
+        com.tridevmc.compound.ui.event.CharEvent charEvent = new com.tridevmc.compound.ui.event.CharEvent((char) event.codepoint(), event.modifiers());
+        boolean consumed = this.tree.dispatchCharTyped(charEvent);
+        return consumed || super.charTyped(event);
     }
 
     @Override

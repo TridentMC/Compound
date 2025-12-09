@@ -20,35 +20,31 @@ import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.Constraints;
 import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
+import com.tridevmc.compound.ui.tree.ITreeNode;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
  * Base implementation of IElement with common functionality.
  * Concrete elements should extend this class.
  */
-public abstract class BaseElement implements IElement {
-    private Bounds bounds;
-    private boolean visible = true;
+public abstract class BaseElement implements IElementInternal {
+    private ITreeNode node;
 
     @Override
     public Bounds getBounds() {
-        return this.bounds;
+        return this.node != null ? this.node.getBounds() : new Bounds(0, 0, 0, 0);
     }
 
     @Override
-    public void setBounds(Bounds bounds) {
-        this.bounds = bounds;
+    public ITreeNode getNode() {
+        return this.node;
     }
 
     @Override
-    public boolean isVisible() {
-        return this.visible;
-    }
-
-    @Override
-    public void setVisible(boolean visible) {
-        this.visible = visible;
+    public void setNode(ITreeNode node) {
+        this.node = node;
     }
 
     @Override
@@ -66,5 +62,5 @@ public abstract class BaseElement implements IElement {
     public abstract Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren);
 
     @Override
-    public abstract List<Bounds> place(Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren);
+    public abstract List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren);
 }

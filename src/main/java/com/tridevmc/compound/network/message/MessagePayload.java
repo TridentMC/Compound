@@ -18,7 +18,6 @@ package com.tridevmc.compound.network.message;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 
 /**
  * Small dummy class that routes our own network messages to the vanilla packet system.

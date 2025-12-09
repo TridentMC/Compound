@@ -18,6 +18,7 @@ package com.tridevmc.compound.ui.element;
 
 import com.tridevmc.compound.ui.layout.*;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,7 +48,7 @@ public class Row extends BaseContainer {
     }
 
     @Override
-    public List<Bounds> place(Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+    public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
             return List.of();
         }

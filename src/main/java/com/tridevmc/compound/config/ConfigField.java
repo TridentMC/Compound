@@ -83,7 +83,7 @@ public class ConfigField<T> {
             }
         });
 
-        ConfigValue configValue = (ConfigValue) field.getAnnotation(ConfigValue.class);
+        ConfigValue configValue = field.getAnnotation(ConfigValue.class);
         this.name = configValue.name().isEmpty() ? this.getField().getName() : configValue.name();
         this.comment = configValue.comment();
         this.langKey = configValue.langKey().isEmpty() ? config.getModId() + ".compoundconfig.gui.property." + this.getName() : configValue.langKey();
@@ -179,13 +179,11 @@ public class ConfigField<T> {
                     this.specValue = (ModConfigSpec.ConfigValue<T>) builder.defineInRange(this.getName(), (long) this.getDefaultValue(), (long) this.minValue, (long) this.maxValue);
             case DOUBLE ->
                     this.specValue = (ModConfigSpec.ConfigValue<T>) builder.defineInRange(this.getName(), (double) this.getDefaultValue(), (double) this.minValue, (double) this.maxValue);
-            case BOOLEAN ->
-                    this.specValue = (ModConfigSpec.ConfigValue<T>) builder.define(this.getName(), (boolean) this.getDefaultValue());
+            case BOOLEAN -> this.specValue = (ModConfigSpec.ConfigValue<T>) builder.define(this.getName(), (boolean) this.getDefaultValue());
             case ENUM -> this.specValue = builder.defineEnum(this.getName(), (Enum) this.getDefaultValue());
             case LIST ->
                     this.specValue = (ModConfigSpec.ConfigValue<T>) builder.defineList(this.getName(), (List<?>) this.getDefaultValue(), () -> this.serializer.defaultListValue(this), (o) -> true);
-            case OBJECT ->
-                    this.specValue = (ModConfigSpec.ConfigValue<T>) builder.define(this.getName(), this.getDefaultValue());
+            case OBJECT -> this.specValue = (ModConfigSpec.ConfigValue<T>) builder.define(this.getName(), this.getDefaultValue());
         }
     }
 

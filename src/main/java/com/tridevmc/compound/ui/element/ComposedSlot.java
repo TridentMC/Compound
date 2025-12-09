@@ -90,7 +90,7 @@ public class ComposedSlot extends BaseElement implements IComposableElement {
     }
 
     @Override
-    public List<Bounds> place(Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+    public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
             return List.of();
         }

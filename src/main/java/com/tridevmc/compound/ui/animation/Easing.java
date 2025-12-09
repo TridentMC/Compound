@@ -37,6 +37,11 @@ public interface Easing {
     Easing EASE_IN_OUT_CUBIC = t -> t < 0.5f
             ? 4 * t * t * t
             : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+    /**
+     * Step function - stays at start value until animation completes, then instantly jumps to end value.
+     * Useful for instant toggles and periodic blinking effects.
+     */
+    Easing STEP = t -> t >= 1.0f ? 1.0f : 0.0f;
 
     /**
      * Apply easing to linear progress.

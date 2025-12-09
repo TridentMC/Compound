@@ -58,9 +58,9 @@ public class CompoundNetwork {
     private final ResourceLocation networkId;
     private final String name;
 
-    private Map<Class<? extends Message>, MessageConcept> messageConcepts;
-    private Map<String, Marshaller> marshallers;
-    private Map<Class, String> marshallerIds;
+    private final Map<Class<? extends Message>, MessageConcept> messageConcepts;
+    private final Map<String, Marshaller> marshallers;
+    private final Map<Class, String> marshallerIds;
 
 
     private CompoundNetwork(ResourceLocation name, String version) {

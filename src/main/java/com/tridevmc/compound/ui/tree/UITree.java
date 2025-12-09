@@ -18,14 +18,10 @@ package com.tridevmc.compound.ui.tree;
 
 import com.tridevmc.compound.ui.animation.AnimationScheduler;
 import com.tridevmc.compound.ui.element.IElement;
+import com.tridevmc.compound.ui.element.IElementInternal;
 import com.tridevmc.compound.ui.element.IPrimitiveElement;
 import com.tridevmc.compound.ui.event.*;
-import com.tridevmc.compound.ui.layout.Bounds;
-import com.tridevmc.compound.ui.layout.Constraints;
-import com.tridevmc.compound.ui.layout.LayoutMath;
-import com.tridevmc.compound.ui.layout.LayoutProperties;
-import com.tridevmc.compound.ui.layout.Position;
-import com.tridevmc.compound.ui.layout.Size;
+import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import com.tridevmc.compound.ui.state.State;
 
@@ -47,6 +43,7 @@ public class UITree {
     private com.mojang.blaze3d.platform.cursor.CursorType requestedCursor = com.mojang.blaze3d.platform.cursor.CursorType.DEFAULT;
     private Set<ITreeNode> lastHoveredPath = new HashSet<>();
     private boolean pendingHoverUpdate = false;
+    private ITreeNode focusedNode = null; // Global focus tracking
 
     public AnimationScheduler getAnimationScheduler() {
         return this.animationScheduler;
@@ -67,6 +64,52 @@ public class UITree {
         return this.root != null;
     }
 
+    // Focus management
+    public ITreeNode getFocusedNode() {
+        return this.focusedNode;
+    }
+
+    public void requestFocus(ITreeNode node) {
+        if (this.focusedNode == node) return;
+
+        // Clear focus from previous node
+        var previousFocused = this.focusedNode;
+        this.focusedNode = null;
+
+        // Notify the previous focused element that it lost focus (via handlers)
+        if (previousFocused != null) {
+            for (var handler : previousFocused.getFocusLostHandlers()) {
+                handler.run();
+            }
+        }
+
+        // Set new focused node
+        this.focusedNode = node;
+
+        // Notify the new focused element that it gained focus (via handlers)
+        if (node != null) {
+            for (var handler : node.getFocusGainedHandlers()) {
+                handler.run();
+            }
+        }
+    }
+
+    public void clearFocus() {
+        if (this.focusedNode != null) {
+            var previousFocused = this.focusedNode;
+            this.focusedNode = null;
+
+            // Notify the element that it lost focus (via handlers)
+            for (var handler : previousFocused.getFocusLostHandlers()) {
+                handler.run();
+            }
+        }
+    }
+
+    public boolean hasFocus(ITreeNode node) {
+        return this.focusedNode == node;
+    }
+
     public ITreeNode getNodeForElement(IElement element) {
         return this.elementToNode.get(element);
     }
@@ -77,6 +120,9 @@ public class UITree {
 
     public ITreeNode createNode(IElement element) {
         TreeNode node = new TreeNode(element, this);
+        if (element instanceof IElementInternal internal) {
+            internal.setNode(node);
+        }
         this.registerNode(node);
         return node;
     }
@@ -91,7 +137,11 @@ public class UITree {
     private void unregisterNode(ITreeNode node) {
         this.elementToNode.remove(node.getElement());
 
-        // Clean up state observers
+        // Clear focus if this node is focused
+        if (this.focusedNode == node) {
+            clearFocus();
+        }
+
         node.dispose();
 
         for (ITreeNode child : node.getChildren()) {
@@ -206,12 +256,10 @@ public class UITree {
             }
         }
 
-        // Check if point is within the active viewport (if any)
         if (viewport != null && !viewport.contains(x, y)) {
-            return null;  // Point is clipped, no children will be visible either
+            return null;
         }
 
-        // Check children first (depth-first, deepest nodes have priority)
         // Iterate in REVERSE order to hit-test top-most elements first
         List<ITreeNode> children = node.getChildren();
         ITreeNode result = null;
@@ -223,7 +271,6 @@ public class UITree {
             }
         }
 
-        // If no child was found, check if this node itself is at the position
         if (result == null && elementBounds.contains(x, y)) {
             return node;
         }
@@ -257,7 +304,7 @@ public class UITree {
 
     /**
      * Measures a node and returns its size WITH margin included.
-     *
+     * <p>
      * Steps:
      * 1. Account for margin in available constraints
      * 2. Apply layout properties (fixed/min/max/fillMax) to get element constraints
@@ -352,7 +399,6 @@ public class UITree {
         int totalHeight = finalSize.height() + marginVertical;
         Size sizeWithMargin = new Size(totalWidth, totalHeight);
 
-        // Store for placement phase
         node.setMeasuredSize(sizeWithMargin);
 
         return sizeWithMargin;
@@ -361,7 +407,7 @@ public class UITree {
     /**
      * Applies layout properties to constraints to determine the element's target size.
      * This is called BEFORE measuring children so they receive the correct constraints.
-     *
+     * <p>
      * Note: fillMax is NOT applied here - it's applied after measurement. This allows
      * children to be measured with loose constraints while the element itself fills max.
      */
@@ -381,7 +427,6 @@ public class UITree {
             maxHeight = props.getFixedHeight();
         }
 
-        // Apply min/max constraints
         if (props.getMinWidth() != null) {
             minWidth = Math.max(minWidth, props.getMinWidth());
         }
@@ -405,7 +450,6 @@ public class UITree {
             }
         }
 
-        // Ensure min <= max
         maxWidth = Math.max(minWidth, maxWidth);
         maxHeight = Math.max(minHeight, maxHeight);
 
@@ -414,7 +458,7 @@ public class UITree {
 
     /**
      * Places a node and all its children.
-     *
+     * <p>
      * Steps:
      * 1. Set element's bounds
      * 2. Get measured child sizes
@@ -428,8 +472,8 @@ public class UITree {
             props = LayoutProperties.create();
         }
 
-        // Step 1: Set element's bounds
-        element.setBounds(bounds);
+        // Step 1: Set node's bounds (element's getBounds() delegates to node)
+        node.setBounds(bounds);
 
         List<ITreeNode> children = node.getChildren();
         if (children.isEmpty()) {
@@ -460,7 +504,6 @@ public class UITree {
                 childProps = LayoutProperties.create();
             }
 
-            // Offset by child's margin
             int contentX = allocatedBounds.x() + childProps.getMarginLeft();
             int contentY = allocatedBounds.y() + childProps.getMarginTop();
             int contentWidth = allocatedBounds.width() - childProps.getMarginLeft() - childProps.getMarginRight();
@@ -499,6 +542,25 @@ public class UITree {
 
     public boolean dispatchClick(int x, int y, MouseClickEvent event) {
         ITreeNode node = this.findNodeAt(x, y);
+
+        // Check if we clicked on an element that can receive focus (has focus handlers registered)
+        boolean clickedOnFocusable = false;
+        if (node != null) {
+            ITreeNode current = node;
+            while (current != null) {
+                if (!current.getFocusGainedHandlers().isEmpty()) {
+                    clickedOnFocusable = true;
+                    break;
+                }
+                current = current.getParent();
+            }
+        }
+
+        // Clear focus if clicking outside focusable elements (focusable elements will call scope.requestFocus() in their handlers)
+        if (!clickedOnFocusable && this.focusedNode != null) {
+            clearFocus();
+        }
+
         if (node != null) {
             ITreeNode current = node;
             boolean consumed = false;
@@ -525,7 +587,6 @@ public class UITree {
         int y = this.lastMouseY;
         ITreeNode node = this.findNodeAt(x, y);
 
-        // Cursor handling
         com.mojang.blaze3d.platform.cursor.CursorType cursor = com.mojang.blaze3d.platform.cursor.CursorType.DEFAULT;
         if (node != null) {
             ITreeNode current = node;
@@ -563,7 +624,6 @@ public class UITree {
         Set<ITreeNode> enteredNodes = new HashSet<>(currentHoveredPath);
         enteredNodes.removeAll(lastHoveredPath);
 
-        // Fire exit handlers for exited nodes
         if (!exitedNodes.isEmpty()) {
             for (ITreeNode exitedNode : exitedNodes) {
                 for (var handler : exitedNode.getMouseExitHandlers()) {
@@ -572,7 +632,6 @@ public class UITree {
             }
         }
 
-        // Fire enter handlers for entered nodes
         if (!enteredNodes.isEmpty()) {
             for (ITreeNode enteredNode : enteredNodes) {
                 for (var handler : enteredNode.getMouseEnterHandlers()) {
@@ -581,7 +640,6 @@ public class UITree {
             }
         }
 
-        // Update the last hovered path
         lastHoveredPath = currentHoveredPath;
     }
 
@@ -624,53 +682,39 @@ public class UITree {
     }
 
     public boolean dispatchKeyPress(KeyInputEvent event) {
-        // TODO: Focus system - add focus tracking to dispatch keyboard events only to the focused element.
-        //       Current implementation broadcasts to all elements, which is inefficient for large UIs.
-        //       Using array to allow modification in lambda
-        final boolean[] consumed = {false};
-        this.walkDepthFirst(this.root, node -> {
-            if (!consumed[0]) {
-                for (var handler : node.getKeyPressHandlers()) {
-                    if (handler.apply(event)) {
-                        consumed[0] = true;
-                        break;
-                    }
+        // Dispatch keyboard events only to the focused element
+        if (this.focusedNode != null) {
+            for (var handler : this.focusedNode.getKeyPressHandlers()) {
+                if (handler.apply(event)) {
+                    return true;
                 }
             }
-        });
-        return consumed[0];
+        }
+        return false;
     }
 
     public boolean dispatchKeyRelease(KeyInputEvent event) {
-        // TODO: Focus system - see dispatchKeyPress
-        final boolean[] consumed = {false};
-        this.walkDepthFirst(this.root, node -> {
-            if (!consumed[0]) {
-                for (var handler : node.getKeyReleaseHandlers()) {
-                    if (handler.apply(event)) {
-                        consumed[0] = true;
-                        break;
-                    }
+        // Dispatch keyboard events only to the focused element
+        if (this.focusedNode != null) {
+            for (var handler : this.focusedNode.getKeyReleaseHandlers()) {
+                if (handler.apply(event)) {
+                    return true;
                 }
             }
-        });
-        return consumed[0];
+        }
+        return false;
     }
 
     public boolean dispatchCharTyped(CharEvent event) {
-        // TODO: Focus system - see dispatchKeyPress
-        final boolean[] consumed = {false};
-        this.walkDepthFirst(this.root, node -> {
-            if (!consumed[0]) {
-                for (var handler : node.getCharTypedHandlers()) {
-                    if (handler.apply(event)) {
-                        consumed[0] = true;
-                        break;
-                    }
+        // Dispatch character events only to the focused element
+        if (this.focusedNode != null) {
+            for (var handler : this.focusedNode.getCharTypedHandlers()) {
+                if (handler.apply(event)) {
+                    return true;
                 }
             }
-        });
-        return consumed[0];
+        }
+        return false;
     }
 
     public boolean dispatchMouseRelease(int x, int y, MouseReleaseEvent event) {
@@ -791,7 +835,6 @@ public class UITree {
             return;
         }
 
-        // Render tree recursively with clipping support
         this.renderNode(this.root, context, null);
     }
 
@@ -806,7 +849,6 @@ public class UITree {
     private void renderNode(ITreeNode node, IScreenContext context, Bounds activeViewport) {
         IElement element = node.getElement();
 
-        // Check if this element clips its children via layout properties
         boolean shouldClip = node.getLayoutProperties().isClip();
         boolean didEnableScissor = false;
         Bounds viewport = activeViewport;
@@ -814,7 +856,6 @@ public class UITree {
         if (shouldClip) {
             Bounds clipBounds = element.getBounds();
             if (clipBounds != null) {
-                // Intersect with parent viewport if any
                 if (activeViewport != null) {
                     clipBounds = activeViewport.intersection(clipBounds);
                 }
@@ -830,21 +871,17 @@ public class UITree {
             }
         }
 
-        // Render this element if it's a primitive and visible
-        if (element.isVisible() && element instanceof IPrimitiveElement primitive) {
+        if (element instanceof IPrimitiveElement primitive) {
             // Optimization: only draw if element intersects viewport
             if (viewport == null || viewport.intersects(element.getBounds())) {
                 primitive.draw(context);
             }
-            // Huge performance win: skip draw() entirely for off-screen elements!
         }
 
-        // Recursively render all children with current viewport
         for (ITreeNode child : node.getChildren()) {
             this.renderNode(child, context, viewport);
         }
 
-        // Restore previous scissor state (only if we actually enabled it)
         if (didEnableScissor) {
             context.disableScissor();
         }

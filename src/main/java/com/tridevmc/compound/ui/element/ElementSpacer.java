@@ -22,6 +22,7 @@ import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
@@ -60,10 +61,8 @@ public class ElementSpacer extends BaseElement implements IPrimitiveElement {
     @Override
     public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
         if (this.flexible) {
-            // Flexible spacer fills available space
             return new Size(constraints.maxWidth(), constraints.maxHeight());
         } else {
-            // Fixed spacer uses specified dimensions
             return new Size(
                     Math.min(this.width, constraints.maxWidth()),
                     Math.min(this.height, constraints.maxHeight())
@@ -72,14 +71,12 @@ public class ElementSpacer extends BaseElement implements IPrimitiveElement {
     }
 
     @Override
-    public List<Bounds> place(Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren) {
-        // Spacers have no children
+    public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren) {
         return List.of();
     }
 
     @Override
     public void draw(IScreenContext context) {
-        // Spacers don't draw anything
     }
 
     public int getWidth() {

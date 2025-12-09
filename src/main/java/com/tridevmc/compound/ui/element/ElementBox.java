@@ -27,6 +27,7 @@ import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.sprite.IScreenSpriteWriter;
 import net.minecraft.resources.ResourceLocation;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -157,7 +158,7 @@ public class ElementBox extends BaseElement implements IComposableElement {
     }
 
     @Override
-    public List<Bounds> place(Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+    public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
             return List.of();
         }
@@ -212,14 +213,14 @@ public class ElementBox extends BaseElement implements IComposableElement {
         }
 
         @Override
-        public List<Bounds> place(Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+        public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
             List<Bounds> childBounds = super.place(bounds, props, measuredChildren);
-            
+
             // Force background (index 0) to match stack bounds
             if (!childBounds.isEmpty()) {
                 childBounds.set(0, new Bounds(bounds.position(), bounds.size()));
             }
-            
+
             return childBounds;
         }
     }
