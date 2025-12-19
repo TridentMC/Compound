@@ -43,12 +43,12 @@ public class CrateUIIntegrationTest {
     private static final Bounds GOLD_MAIN_STACK_BOUNDS = new Bounds(247, 205, 178, 190);
     private static final Bounds GOLD_PADDED_CONTENT_BOUNDS = new Bounds(247, 205, 178, 190);
     private static final Bounds GOLD_COLUMN_BOUNDS = new Bounds(255, 213, 162, 174);
-    private static final Bounds GOLD_CRATE_LABEL_BOUNDS = new Bounds(255, 213, 30, 9);
-    private static final Bounds GOLD_CRATE_GRID_BOUNDS = new Bounds(255, 226, 162, 54);
-    private static final Bounds GOLD_INVENTORY_LABEL_BOUNDS = new Bounds(255, 284, 54, 9);
-    private static final Bounds GOLD_PLAYER_GRID_BOUNDS = new Bounds(255, 297, 162, 54);
-    private static final Bounds GOLD_SPACER_BOUNDS = new Bounds(255, 355, 0, 4);
-    private static final Bounds GOLD_HOTBAR_GRID_BOUNDS = new Bounds(255, 363, 162, 18);
+    private static final Bounds GOLD_CRATE_LABEL_BOUNDS = new Bounds(255, 213, 30, 8);
+    private static final Bounds GOLD_CRATE_GRID_BOUNDS = new Bounds(255, 225, 162, 54);
+    private static final Bounds GOLD_INVENTORY_LABEL_BOUNDS = new Bounds(255, 283, 54, 8);
+    private static final Bounds GOLD_PLAYER_GRID_BOUNDS = new Bounds(255, 295, 162, 54);
+    private static final Bounds GOLD_SPACER_BOUNDS = new Bounds(255, 353, 0, 4);
+    private static final Bounds GOLD_HOTBAR_GRID_BOUNDS = new Bounds(255, 361, 162, 18);
     private static final Bounds GOLD_SCROLL_BOX_BOUNDS = new Bounds(433, 205, 120, 190);
     private static final Bounds GOLD_SCROLL_STACK_BOUNDS = new Bounds(433, 205, 120, 190);
     private static final Bounds GOLD_SCROLL_PADDED_BOUNDS = new Bounds(433, 205, 120, 190);
@@ -321,14 +321,14 @@ public class CrateUIIntegrationTest {
         assertEquals(ElementLabel.class, crateLabelNode.getElement().getClass());
         Bounds crateLabelBounds = crateLabelNode.getElement().getBounds();
         // Labels only take up width they need, not full column width
-        assertEquals(new Bounds(255, 213, 30, 9), crateLabelBounds, "Crate label bounds");
+        assertEquals(new Bounds(255, 213, 30, 8), crateLabelBounds, "Crate label bounds");
 
         // 2. Crate Grid (9x3)
         // Y = 213 + 9 (Label) + 4 (Spacing) = 226
         ITreeNode crateGridNode = columnNode.getChildren().get(1);
         assertEquals(Grid.class, crateGridNode.getElement().getClass());
         Bounds crateGridBounds = crateGridNode.getElement().getBounds();
-        assertEquals(new Bounds(255, 226, 162, 54), crateGridBounds, "Crate Grid bounds");
+        assertEquals(new Bounds(255, 225, 162, 54), crateGridBounds, "Crate Grid bounds");
         assertEquals(27, crateGridNode.getChildren().size(), "Crate grid should have 27 slots");
 
         // Validate individual crate slots
@@ -340,13 +340,13 @@ public class CrateUIIntegrationTest {
                 Bounds slotBounds = slotNode.getElement().getBounds();
                 switch (row * 9 + col) {
                     case 0 -> {
-                        assertEquals(new Bounds(255, 226, 18, 18), slotBounds, "Crate slot [0,0] bounds");
+                        assertEquals(new Bounds(255, 225, 18, 18), slotBounds, "Crate slot [0,0] bounds");
                         // Validate first slot's internal structure comprehensively
                         // ComposedSlot -> Stack -> ElementSprite (bg) + ElementSprite (underlay) + ElementItem + ElementSprite (overlay)
                         ITreeNode slotStackNode = slotNode.getChildren().getFirst();
                         assertEquals(Stack.class, slotStackNode.getElement().getClass());
                         Bounds slotStackBounds = slotStackNode.getElement().getBounds();
-                        assertEquals(new Bounds(255, 226, 18, 18), slotStackBounds, "Crate slot [0,0] Stack bounds");
+                        assertEquals(new Bounds(255, 225, 18, 18), slotStackBounds, "Crate slot [0,0] Stack bounds");
 
                         // Should have 4 children: bg sprite, underlay sprite, item, overlay sprite
                         assertEquals(4, slotStackNode.getChildren().size(), "Crate slot [0,0] should have 4 children");
@@ -355,7 +355,7 @@ public class CrateUIIntegrationTest {
                         ITreeNode slotBgNode = slotStackNode.getChildren().get(0);
                         assertEquals(ElementSprite.class, slotBgNode.getElement().getClass());
                         Bounds slotBgBounds = slotBgNode.getElement().getBounds();
-                        assertEquals(new Bounds(255, 226, 18, 18), slotBgBounds, "Crate slot [0,0] background sprite bounds");
+                        assertEquals(new Bounds(255, 225, 18, 18), slotBgBounds, "Crate slot [0,0] background sprite bounds");
 
                         // Child 1: Underlay sprite (null by default, so would be 24x24 with -3 margin if present)
                         ITreeNode slotUnderlayNode = slotStackNode.getChildren().get(1);
@@ -363,47 +363,47 @@ public class CrateUIIntegrationTest {
                         ElementSprite slotUnderlaySprite = (ElementSprite) slotUnderlayNode.getElement();
                         // Underlay is null by default, but element exists with bounds calculated as if it would render
                         Bounds slotUnderlayBounds = slotUnderlayNode.getElement().getBounds();
-                        assertEquals(new Bounds(252, 223, 24, 24), slotUnderlayBounds, "Crate slot [0,0] underlay sprite bounds (with -3 margin)");
+                        assertEquals(new Bounds(252, 222, 24, 24), slotUnderlayBounds, "Crate slot [0,0] underlay sprite bounds (with -3 margin)");
 
                         // Child 2: Item element (16x16 with 1px margin)
                         ITreeNode slotItemNode = slotStackNode.getChildren().get(2);
                         assertEquals(ElementItem.class, slotItemNode.getElement().getClass());
                         Bounds slotItemBounds = slotItemNode.getElement().getBounds();
-                        assertEquals(new Bounds(256, 227, 16, 16), slotItemBounds, "Crate slot [0,0] item bounds (with 1px margin)");
+                        assertEquals(new Bounds(256, 226, 16, 16), slotItemBounds, "Crate slot [0,0] item bounds (with 1px margin)");
 
                         // Child 3: Overlay sprite (null by default, so would be 24x24 with -3 margin if present)
                         ITreeNode slotOverlayNode = slotStackNode.getChildren().get(3);
                         assertEquals(ElementSprite.class, slotOverlayNode.getElement().getClass());
                         ElementSprite slotOverlaySprite = (ElementSprite) slotOverlayNode.getElement();
                         Bounds slotOverlayBounds = slotOverlayNode.getElement().getBounds();
-                        assertEquals(new Bounds(252, 223, 24, 24), slotOverlayBounds, "Crate slot [0,0] overlay sprite bounds (with -3 margin)");
+                        assertEquals(new Bounds(252, 222, 24, 24), slotOverlayBounds, "Crate slot [0,0] overlay sprite bounds (with -3 margin)");
                     }
-                    case 1 -> assertEquals(new Bounds(273, 226, 18, 18), slotBounds, "Crate slot [0,1] bounds");
-                    case 2 -> assertEquals(new Bounds(291, 226, 18, 18), slotBounds, "Crate slot [0,2] bounds");
-                    case 3 -> assertEquals(new Bounds(309, 226, 18, 18), slotBounds, "Crate slot [0,3] bounds");
-                    case 4 -> assertEquals(new Bounds(327, 226, 18, 18), slotBounds, "Crate slot [0,4] bounds");
-                    case 5 -> assertEquals(new Bounds(345, 226, 18, 18), slotBounds, "Crate slot [0,5] bounds");
-                    case 6 -> assertEquals(new Bounds(363, 226, 18, 18), slotBounds, "Crate slot [0,6] bounds");
-                    case 7 -> assertEquals(new Bounds(381, 226, 18, 18), slotBounds, "Crate slot [0,7] bounds");
-                    case 8 -> assertEquals(new Bounds(399, 226, 18, 18), slotBounds, "Crate slot [0,8] bounds");
-                    case 9 -> assertEquals(new Bounds(255, 244, 18, 18), slotBounds, "Crate slot [1,0] bounds");
-                    case 10 -> assertEquals(new Bounds(273, 244, 18, 18), slotBounds, "Crate slot [1,1] bounds");
-                    case 11 -> assertEquals(new Bounds(291, 244, 18, 18), slotBounds, "Crate slot [1,2] bounds");
-                    case 12 -> assertEquals(new Bounds(309, 244, 18, 18), slotBounds, "Crate slot [1,3] bounds");
-                    case 13 -> assertEquals(new Bounds(327, 244, 18, 18), slotBounds, "Crate slot [1,4] bounds");
-                    case 14 -> assertEquals(new Bounds(345, 244, 18, 18), slotBounds, "Crate slot [1,5] bounds");
-                    case 15 -> assertEquals(new Bounds(363, 244, 18, 18), slotBounds, "Crate slot [1,6] bounds");
-                    case 16 -> assertEquals(new Bounds(381, 244, 18, 18), slotBounds, "Crate slot [1,7] bounds");
-                    case 17 -> assertEquals(new Bounds(399, 244, 18, 18), slotBounds, "Crate slot [1,8] bounds");
-                    case 18 -> assertEquals(new Bounds(255, 262, 18, 18), slotBounds, "Crate slot [2,0] bounds");
-                    case 19 -> assertEquals(new Bounds(273, 262, 18, 18), slotBounds, "Crate slot [2,1] bounds");
-                    case 20 -> assertEquals(new Bounds(291, 262, 18, 18), slotBounds, "Crate slot [2,2] bounds");
-                    case 21 -> assertEquals(new Bounds(309, 262, 18, 18), slotBounds, "Crate slot [2,3] bounds");
-                    case 22 -> assertEquals(new Bounds(327, 262, 18, 18), slotBounds, "Crate slot [2,4] bounds");
-                    case 23 -> assertEquals(new Bounds(345, 262, 18, 18), slotBounds, "Crate slot [2,5] bounds");
-                    case 24 -> assertEquals(new Bounds(363, 262, 18, 18), slotBounds, "Crate slot [2,6] bounds");
-                    case 25 -> assertEquals(new Bounds(381, 262, 18, 18), slotBounds, "Crate slot [2,7] bounds");
-                    case 26 -> assertEquals(new Bounds(399, 262, 18, 18), slotBounds, "Crate slot [2,8] bounds");
+                    case 1 -> assertEquals(new Bounds(273, 225, 18, 18), slotBounds, "Crate slot [0,1] bounds");
+                    case 2 -> assertEquals(new Bounds(291, 225, 18, 18), slotBounds, "Crate slot [0,2] bounds");
+                    case 3 -> assertEquals(new Bounds(309, 225, 18, 18), slotBounds, "Crate slot [0,3] bounds");
+                    case 4 -> assertEquals(new Bounds(327, 225, 18, 18), slotBounds, "Crate slot [0,4] bounds");
+                    case 5 -> assertEquals(new Bounds(345, 225, 18, 18), slotBounds, "Crate slot [0,5] bounds");
+                    case 6 -> assertEquals(new Bounds(363, 225, 18, 18), slotBounds, "Crate slot [0,6] bounds");
+                    case 7 -> assertEquals(new Bounds(381, 225, 18, 18), slotBounds, "Crate slot [0,7] bounds");
+                    case 8 -> assertEquals(new Bounds(399, 225, 18, 18), slotBounds, "Crate slot [0,8] bounds");
+                    case 9 -> assertEquals(new Bounds(255, 243, 18, 18), slotBounds, "Crate slot [1,0] bounds");
+                    case 10 -> assertEquals(new Bounds(273, 243, 18, 18), slotBounds, "Crate slot [1,1] bounds");
+                    case 11 -> assertEquals(new Bounds(291, 243, 18, 18), slotBounds, "Crate slot [1,2] bounds");
+                    case 12 -> assertEquals(new Bounds(309, 243, 18, 18), slotBounds, "Crate slot [1,3] bounds");
+                    case 13 -> assertEquals(new Bounds(327, 243, 18, 18), slotBounds, "Crate slot [1,4] bounds");
+                    case 14 -> assertEquals(new Bounds(345, 243, 18, 18), slotBounds, "Crate slot [1,5] bounds");
+                    case 15 -> assertEquals(new Bounds(363, 243, 18, 18), slotBounds, "Crate slot [1,6] bounds");
+                    case 16 -> assertEquals(new Bounds(381, 243, 18, 18), slotBounds, "Crate slot [1,7] bounds");
+                    case 17 -> assertEquals(new Bounds(399, 243, 18, 18), slotBounds, "Crate slot [1,8] bounds");
+                    case 18 -> assertEquals(new Bounds(255, 261, 18, 18), slotBounds, "Crate slot [2,0] bounds");
+                    case 19 -> assertEquals(new Bounds(273, 261, 18, 18), slotBounds, "Crate slot [2,1] bounds");
+                    case 20 -> assertEquals(new Bounds(291, 261, 18, 18), slotBounds, "Crate slot [2,2] bounds");
+                    case 21 -> assertEquals(new Bounds(309, 261, 18, 18), slotBounds, "Crate slot [2,3] bounds");
+                    case 22 -> assertEquals(new Bounds(327, 261, 18, 18), slotBounds, "Crate slot [2,4] bounds");
+                    case 23 -> assertEquals(new Bounds(345, 261, 18, 18), slotBounds, "Crate slot [2,5] bounds");
+                    case 24 -> assertEquals(new Bounds(363, 261, 18, 18), slotBounds, "Crate slot [2,6] bounds");
+                    case 25 -> assertEquals(new Bounds(381, 261, 18, 18), slotBounds, "Crate slot [2,7] bounds");
+                    case 26 -> assertEquals(new Bounds(399, 261, 18, 18), slotBounds, "Crate slot [2,8] bounds");
                     default -> fail("Unexpected slot index: " + (row * 9 + col));
                 }
             }
@@ -415,14 +415,14 @@ public class CrateUIIntegrationTest {
         assertEquals(ElementLabel.class, invLabelNode.getElement().getClass());
         Bounds invLabelBounds = invLabelNode.getElement().getBounds();
         // "Inventory" text width is exactly 54px
-        assertEquals(new Bounds(255, 284, 54, 9), invLabelBounds, "Inventory label bounds");
+        assertEquals(new Bounds(255, 283, 54, 8), invLabelBounds, "Inventory label bounds");
 
         // 4. Player Grid (9x3)
         // Y = 284 + 9 (Label) + 4 (Spacing) = 297
         ITreeNode playerGridNode = columnNode.getChildren().get(3);
         assertEquals(Grid.class, playerGridNode.getElement().getClass());
         Bounds playerGridBounds = playerGridNode.getElement().getBounds();
-        assertEquals(new Bounds(255, 297, 162, 54), playerGridBounds, "Player Grid bounds");
+        assertEquals(new Bounds(255, 295, 162, 54), playerGridBounds, "Player Grid bounds");
         assertEquals(27, playerGridNode.getChildren().size(), "Player grid should have 27 slots");
 
         // Validate individual player slots
@@ -434,7 +434,7 @@ public class CrateUIIntegrationTest {
                 Bounds slotBounds = slotNode.getElement().getBounds();
                 switch (row * 9 + col) {
                     case 0 -> {
-                        assertEquals(new Bounds(255, 297, 18, 18), slotBounds, "Player slot [0,0] bounds");
+                        assertEquals(new Bounds(255, 295, 18, 18), slotBounds, "Player slot [0,0] bounds");
                         // Validate first player slot's internal structure
                         ITreeNode slotStackNode = slotNode.getChildren().getFirst();
                         assertEquals(Stack.class, slotStackNode.getElement().getClass());
@@ -443,39 +443,39 @@ public class CrateUIIntegrationTest {
                         // Background sprite
                         ITreeNode slotBgNode = slotStackNode.getChildren().get(0);
                         assertEquals(ElementSprite.class, slotBgNode.getElement().getClass());
-                        assertEquals(new Bounds(255, 297, 18, 18), slotBgNode.getElement().getBounds(), "Player slot [0,0] background sprite bounds");
+                        assertEquals(new Bounds(255, 295, 18, 18), slotBgNode.getElement().getBounds(), "Player slot [0,0] background sprite bounds");
 
                         // Item element
                         ITreeNode slotItemNode = slotStackNode.getChildren().get(2);
                         assertEquals(ElementItem.class, slotItemNode.getElement().getClass());
-                        assertEquals(new Bounds(256, 298, 16, 16), slotItemNode.getElement().getBounds(), "Player slot [0,0] item bounds");
+                        assertEquals(new Bounds(256, 296, 16, 16), slotItemNode.getElement().getBounds(), "Player slot [0,0] item bounds");
                     }
-                    case 1 -> assertEquals(new Bounds(273, 297, 18, 18), slotBounds, "Player slot [0,1] bounds");
-                    case 2 -> assertEquals(new Bounds(291, 297, 18, 18), slotBounds, "Player slot [0,2] bounds");
-                    case 3 -> assertEquals(new Bounds(309, 297, 18, 18), slotBounds, "Player slot [0,3] bounds");
-                    case 4 -> assertEquals(new Bounds(327, 297, 18, 18), slotBounds, "Player slot [0,4] bounds");
-                    case 5 -> assertEquals(new Bounds(345, 297, 18, 18), slotBounds, "Player slot [0,5] bounds");
-                    case 6 -> assertEquals(new Bounds(363, 297, 18, 18), slotBounds, "Player slot [0,6] bounds");
-                    case 7 -> assertEquals(new Bounds(381, 297, 18, 18), slotBounds, "Player slot [0,7] bounds");
-                    case 8 -> assertEquals(new Bounds(399, 297, 18, 18), slotBounds, "Player slot [0,8] bounds");
-                    case 9 -> assertEquals(new Bounds(255, 315, 18, 18), slotBounds, "Player slot [1,0] bounds");
-                    case 10 -> assertEquals(new Bounds(273, 315, 18, 18), slotBounds, "Player slot [1,1] bounds");
-                    case 11 -> assertEquals(new Bounds(291, 315, 18, 18), slotBounds, "Player slot [1,2] bounds");
-                    case 12 -> assertEquals(new Bounds(309, 315, 18, 18), slotBounds, "Player slot [1,3] bounds");
-                    case 13 -> assertEquals(new Bounds(327, 315, 18, 18), slotBounds, "Player slot [1,4] bounds");
-                    case 14 -> assertEquals(new Bounds(345, 315, 18, 18), slotBounds, "Player slot [1,5] bounds");
-                    case 15 -> assertEquals(new Bounds(363, 315, 18, 18), slotBounds, "Player slot [1,6] bounds");
-                    case 16 -> assertEquals(new Bounds(381, 315, 18, 18), slotBounds, "Player slot [1,7] bounds");
-                    case 17 -> assertEquals(new Bounds(399, 315, 18, 18), slotBounds, "Player slot [1,8] bounds");
-                    case 18 -> assertEquals(new Bounds(255, 333, 18, 18), slotBounds, "Player slot [2,0] bounds");
-                    case 19 -> assertEquals(new Bounds(273, 333, 18, 18), slotBounds, "Player slot [2,1] bounds");
-                    case 20 -> assertEquals(new Bounds(291, 333, 18, 18), slotBounds, "Player slot [2,2] bounds");
-                    case 21 -> assertEquals(new Bounds(309, 333, 18, 18), slotBounds, "Player slot [2,3] bounds");
-                    case 22 -> assertEquals(new Bounds(327, 333, 18, 18), slotBounds, "Player slot [2,4] bounds");
-                    case 23 -> assertEquals(new Bounds(345, 333, 18, 18), slotBounds, "Player slot [2,5] bounds");
-                    case 24 -> assertEquals(new Bounds(363, 333, 18, 18), slotBounds, "Player slot [2,6] bounds");
-                    case 25 -> assertEquals(new Bounds(381, 333, 18, 18), slotBounds, "Player slot [2,7] bounds");
-                    case 26 -> assertEquals(new Bounds(399, 333, 18, 18), slotBounds, "Player slot [2,8] bounds");
+                    case 1 -> assertEquals(new Bounds(273, 295, 18, 18), slotBounds, "Player slot [0,1] bounds");
+                    case 2 -> assertEquals(new Bounds(291, 295, 18, 18), slotBounds, "Player slot [0,2] bounds");
+                    case 3 -> assertEquals(new Bounds(309, 295, 18, 18), slotBounds, "Player slot [0,3] bounds");
+                    case 4 -> assertEquals(new Bounds(327, 295, 18, 18), slotBounds, "Player slot [0,4] bounds");
+                    case 5 -> assertEquals(new Bounds(345, 295, 18, 18), slotBounds, "Player slot [0,5] bounds");
+                    case 6 -> assertEquals(new Bounds(363, 295, 18, 18), slotBounds, "Player slot [0,6] bounds");
+                    case 7 -> assertEquals(new Bounds(381, 295, 18, 18), slotBounds, "Player slot [0,7] bounds");
+                    case 8 -> assertEquals(new Bounds(399, 295, 18, 18), slotBounds, "Player slot [0,8] bounds");
+                    case 9 -> assertEquals(new Bounds(255, 313, 18, 18), slotBounds, "Player slot [1,0] bounds");
+                    case 10 -> assertEquals(new Bounds(273, 313, 18, 18), slotBounds, "Player slot [1,1] bounds");
+                    case 11 -> assertEquals(new Bounds(291, 313, 18, 18), slotBounds, "Player slot [1,2] bounds");
+                    case 12 -> assertEquals(new Bounds(309, 313, 18, 18), slotBounds, "Player slot [1,3] bounds");
+                    case 13 -> assertEquals(new Bounds(327, 313, 18, 18), slotBounds, "Player slot [1,4] bounds");
+                    case 14 -> assertEquals(new Bounds(345, 313, 18, 18), slotBounds, "Player slot [1,5] bounds");
+                    case 15 -> assertEquals(new Bounds(363, 313, 18, 18), slotBounds, "Player slot [1,6] bounds");
+                    case 16 -> assertEquals(new Bounds(381, 313, 18, 18), slotBounds, "Player slot [1,7] bounds");
+                    case 17 -> assertEquals(new Bounds(399, 313, 18, 18), slotBounds, "Player slot [1,8] bounds");
+                    case 18 -> assertEquals(new Bounds(255, 331, 18, 18), slotBounds, "Player slot [2,0] bounds");
+                    case 19 -> assertEquals(new Bounds(273, 331, 18, 18), slotBounds, "Player slot [2,1] bounds");
+                    case 20 -> assertEquals(new Bounds(291, 331, 18, 18), slotBounds, "Player slot [2,2] bounds");
+                    case 21 -> assertEquals(new Bounds(309, 331, 18, 18), slotBounds, "Player slot [2,3] bounds");
+                    case 22 -> assertEquals(new Bounds(327, 331, 18, 18), slotBounds, "Player slot [2,4] bounds");
+                    case 23 -> assertEquals(new Bounds(345, 331, 18, 18), slotBounds, "Player slot [2,5] bounds");
+                    case 24 -> assertEquals(new Bounds(363, 331, 18, 18), slotBounds, "Player slot [2,6] bounds");
+                    case 25 -> assertEquals(new Bounds(381, 331, 18, 18), slotBounds, "Player slot [2,7] bounds");
+                    case 26 -> assertEquals(new Bounds(399, 331, 18, 18), slotBounds, "Player slot [2,8] bounds");
                     default -> fail("Unexpected slot index: " + (row * 9 + col));
                 }
             }
@@ -487,14 +487,14 @@ public class CrateUIIntegrationTest {
         assertEquals(ElementSpacer.class, spacerNode.getElement().getClass());
         Bounds spacerBounds = spacerNode.getElement().getBounds();
         // Spacer has no width (0) but takes full column height with padding
-        assertEquals(new Bounds(255, 355, 0, 4), spacerBounds, "Spacer bounds");
+        assertEquals(new Bounds(255, 353, 0, 4), spacerBounds, "Spacer bounds");
 
         // 6. Hotbar Grid (9x1)
         // Y = 355 + 4 (Spacer) + 4 (Spacing) = 363
         ITreeNode hotbarGridNode = columnNode.getChildren().get(5);
         assertEquals(Grid.class, hotbarGridNode.getElement().getClass());
         Bounds hotbarGridBounds = hotbarGridNode.getElement().getBounds();
-        assertEquals(new Bounds(255, 363, 162, 18), hotbarGridBounds, "Hotbar Grid bounds");
+        assertEquals(new Bounds(255, 361, 162, 18), hotbarGridBounds, "Hotbar Grid bounds");
         assertEquals(9, hotbarGridNode.getChildren().size(), "Hotbar grid should have 9 slots");
 
         // Validate individual hotbar slots
@@ -504,7 +504,7 @@ public class CrateUIIntegrationTest {
             Bounds slotBounds = slotNode.getElement().getBounds();
             switch (col) {
                 case 0 -> {
-                    assertEquals(new Bounds(255, 363, 18, 18), slotBounds, "Hotbar slot [0] bounds");
+                    assertEquals(new Bounds(255, 361, 18, 18), slotBounds, "Hotbar slot [0] bounds");
                     // Validate first hotbar slot's internal structure
                     ITreeNode slotStackNode = slotNode.getChildren().getFirst();
                     assertEquals(Stack.class, slotStackNode.getElement().getClass());
@@ -513,21 +513,21 @@ public class CrateUIIntegrationTest {
                     // Background sprite
                     ITreeNode slotBgNode = slotStackNode.getChildren().get(0);
                     assertEquals(ElementSprite.class, slotBgNode.getElement().getClass());
-                    assertEquals(new Bounds(255, 363, 18, 18), slotBgNode.getElement().getBounds(), "Hotbar slot [0] background sprite bounds");
+                    assertEquals(new Bounds(255, 361, 18, 18), slotBgNode.getElement().getBounds(), "Hotbar slot [0] background sprite bounds");
 
                     // Item element
                     ITreeNode slotItemNode = slotStackNode.getChildren().get(2);
                     assertEquals(ElementItem.class, slotItemNode.getElement().getClass());
-                    assertEquals(new Bounds(256, 364, 16, 16), slotItemNode.getElement().getBounds(), "Hotbar slot [0] item bounds");
+                    assertEquals(new Bounds(256, 362, 16, 16), slotItemNode.getElement().getBounds(), "Hotbar slot [0] item bounds");
                 }
-                case 1 -> assertEquals(new Bounds(273, 363, 18, 18), slotBounds, "Hotbar slot [1] bounds");
-                case 2 -> assertEquals(new Bounds(291, 363, 18, 18), slotBounds, "Hotbar slot [2] bounds");
-                case 3 -> assertEquals(new Bounds(309, 363, 18, 18), slotBounds, "Hotbar slot [3] bounds");
-                case 4 -> assertEquals(new Bounds(327, 363, 18, 18), slotBounds, "Hotbar slot [4] bounds");
-                case 5 -> assertEquals(new Bounds(345, 363, 18, 18), slotBounds, "Hotbar slot [5] bounds");
-                case 6 -> assertEquals(new Bounds(363, 363, 18, 18), slotBounds, "Hotbar slot [6] bounds");
-                case 7 -> assertEquals(new Bounds(381, 363, 18, 18), slotBounds, "Hotbar slot [7] bounds");
-                case 8 -> assertEquals(new Bounds(399, 363, 18, 18), slotBounds, "Hotbar slot [8] bounds");
+                case 1 -> assertEquals(new Bounds(273, 361, 18, 18), slotBounds, "Hotbar slot [1] bounds");
+                case 2 -> assertEquals(new Bounds(291, 361, 18, 18), slotBounds, "Hotbar slot [2] bounds");
+                case 3 -> assertEquals(new Bounds(309, 361, 18, 18), slotBounds, "Hotbar slot [3] bounds");
+                case 4 -> assertEquals(new Bounds(327, 361, 18, 18), slotBounds, "Hotbar slot [4] bounds");
+                case 5 -> assertEquals(new Bounds(345, 361, 18, 18), slotBounds, "Hotbar slot [5] bounds");
+                case 6 -> assertEquals(new Bounds(363, 361, 18, 18), slotBounds, "Hotbar slot [6] bounds");
+                case 7 -> assertEquals(new Bounds(381, 361, 18, 18), slotBounds, "Hotbar slot [7] bounds");
+                case 8 -> assertEquals(new Bounds(399, 361, 18, 18), slotBounds, "Hotbar slot [8] bounds");
                 default -> fail("Unexpected slot index: " + col);
             }
         }
@@ -1026,7 +1026,7 @@ public class CrateUIIntegrationTest {
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
                 float x = 255f + col * 18f;
-                float y = 226f + row * 18f;
+                float y = 225f + row * 18f;
                 final float fx = x, fy = y;
                 assertTrue(spriteRects.stream().anyMatch(r -> matches.test(r, new Rect2F(fx, fy, 18f, 18f))),
                         String.format("Crate slot [%d,%d] sprite at (%.0f, %.0f, 18, 18)", row, col, x, y));
@@ -1037,7 +1037,7 @@ public class CrateUIIntegrationTest {
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
                 float x = 255f + col * 18f;
-                float y = 297f + row * 18f;
+                float y = 295f + row * 18f;
                 final float fx = x, fy = y;
                 assertTrue(spriteRects.stream().anyMatch(r -> matches.test(r, new Rect2F(fx, fy, 18f, 18f))),
                         String.format("Player slot [%d,%d] sprite at (%.0f, %.0f, 18, 18)", row, col, x, y));
@@ -1047,7 +1047,7 @@ public class CrateUIIntegrationTest {
         // 56-64. All 9 hotbar slot sprites (9 columns × 1 row)
         for (int col = 0; col < 9; col++) {
             float x = 255f + col * 18f;
-            float y = 363f;
+            float y = 361f;
             final float fx = x;
             assertTrue(spriteRects.stream().anyMatch(r -> matches.test(r, new Rect2F(fx, y, 18f, 18f))),
                     String.format("Hotbar slot [%d] sprite at (%.0f, 363, 18, 18)", col, x));
@@ -1104,7 +1104,7 @@ public class CrateUIIntegrationTest {
         for (int i = 0; i < capturedTexts.size(); i++) {
             if (capturedTexts.get(i).getString().equals("Inventory")) {
                 assertEquals(255f, textXs.get(i), "Inventory label X position");
-                assertEquals(284f, textYs.get(i), "Inventory label Y position");
+                assertEquals(283f, textYs.get(i), "Inventory label Y position");
                 foundInventory = true;
                 break;
             }

@@ -218,7 +218,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         return matchingSlot.map(slot -> {
             var composedSlot = this.slotElements.get(slot);
             var bounds = composedSlot.getBounds();
-            return bounds.contains((int) mouseX, (int) mouseY);
+            return bounds != null && bounds.contains((int) mouseX, (int) mouseY);
         }).orElse(super.isHovering(x, y, width, height, mouseX, mouseY));
     }
 

@@ -20,15 +20,14 @@ import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.Constraints;
 import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
-import com.tridevmc.compound.ui.screen.IScreenContext;
-import net.minecraft.client.Minecraft;
+import com.tridevmc.compound.ui.scope.ICompositionScope;
 import net.minecraft.network.chat.Component;
 
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Supplier;
 
-public class ElementLabel extends BasePrimitiveElement {
+public class ElementLabel extends BaseElement implements IComposableElement {
 
     private Supplier<Component> textSupplier;
     private Supplier<Integer> colorSupplier;
@@ -65,39 +64,24 @@ public class ElementLabel extends BasePrimitiveElement {
     }
 
     @Override
-    public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
-        var font = Minecraft.getInstance().font;
-        var text = this.textSupplier.get();
-        int width;
-        int height;
-
-        if (font != null) {
-            width = font.width(text);
-            height = font.lineHeight;
-        } else {
-            width = text.getString().length() * 6;
-            height = 9;
-        }
-
-        width = Math.min(width, constraints.maxWidth());
-        height = Math.min(height, constraints.maxHeight());
-
-        return new Size(width, height);
+    public void compose(ICompositionScope scope) {
+        scope.e(new TextElement(this.textSupplier, this.colorSupplier, this.shadowSupplier));
     }
 
     @Override
-    protected void drawElement(IScreenContext context, @Nonnull Bounds bounds) {
-        boolean shadow = this.shadowSupplier.get();
-        int color = this.colorSupplier.get();
-        var text = this.textSupplier.get();
-
-        Component coloredText = text.copy().withStyle(style -> style.withColor(color));
-
-        if (shadow) {
-            context.drawTextWithShadow(coloredText, bounds.x(), bounds.y());
-        } else {
-            context.drawText(coloredText, bounds.x(), bounds.y());
+    public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
+        if (!measuredChildren.isEmpty()) {
+            return measuredChildren.get(0);
         }
+        return new Size(0, 0);
+    }
+
+    @Override
+    public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren) {
+        if (!measuredChildren.isEmpty()) {
+            return List.of(bounds);
+        }
+        return List.of();
     }
 
     public Component getText() {
