@@ -101,9 +101,7 @@ public class Text extends BasePrimitiveElement {
         int height;
 
         width = font.width(text);
-        // Height is font line height + 1px for shadow if enabled
         height = font.lineHeight;
-        height += shadow ? 1 : 0;
 
         width = Math.min(width, constraints.maxWidth());
         height = Math.min(height, constraints.maxHeight());
