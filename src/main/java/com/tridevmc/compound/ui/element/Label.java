@@ -27,37 +27,37 @@ import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Supplier;
 
-public class ElementLabel extends BaseElement implements IComposableElement {
+public class Label extends BaseElement implements IComposableElement {
 
     private Supplier<Component> textSupplier;
     private Supplier<Integer> colorSupplier;
     private Supplier<Boolean> shadowSupplier;
 
-    public ElementLabel(Component text) {
+    public Label(Component text) {
         this(() -> text, () -> 0xFFFFFF, () -> true);
     }
 
-    public ElementLabel(Component text, int color) {
+    public Label(Component text, int color) {
         this(() -> text, () -> color, () -> true);
     }
 
-    public ElementLabel(Component text, int color, boolean shadow) {
+    public Label(Component text, int color, boolean shadow) {
         this(() -> text, () -> color, () -> shadow);
     }
 
-    public ElementLabel(Component text, Supplier<Integer> colorSupplier) {
+    public Label(Component text, Supplier<Integer> colorSupplier) {
         this(() -> text, colorSupplier, () -> true);
     }
 
-    public ElementLabel(Component text, Supplier<Integer> colorSupplier, Supplier<Boolean> shadowSupplier) {
+    public Label(Component text, Supplier<Integer> colorSupplier, Supplier<Boolean> shadowSupplier) {
         this(() -> text, colorSupplier, shadowSupplier);
     }
 
-    public ElementLabel(Supplier<Component> textSupplier, Supplier<Integer> colorSupplier) {
+    public Label(Supplier<Component> textSupplier, Supplier<Integer> colorSupplier) {
         this(textSupplier, colorSupplier, () -> true);
     }
 
-    public ElementLabel(Supplier<Component> textSupplier, Supplier<Integer> colorSupplier, Supplier<Boolean> shadowSupplier) {
+    public Label(Supplier<Component> textSupplier, Supplier<Integer> colorSupplier, Supplier<Boolean> shadowSupplier) {
         this.textSupplier = textSupplier;
         this.colorSupplier = colorSupplier;
         this.shadowSupplier = shadowSupplier;
@@ -65,7 +65,7 @@ public class ElementLabel extends BaseElement implements IComposableElement {
 
     @Override
     public void compose(ICompositionScope scope) {
-        scope.e(new TextElement(this.textSupplier, this.colorSupplier, this.shadowSupplier));
+        scope.e(new Text(this.textSupplier, this.colorSupplier, this.shadowSupplier));
     }
 
     @Override

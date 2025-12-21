@@ -36,7 +36,7 @@ import java.util.List;
  *     scroll.layoutProperties().fixedSize(200, 300);
  *     scroll.e(new Column(), col -> {
  *         for (int i = 0; i < 100; i++) {
- *             col.e(new ElementLabel("Item " + i));
+ *             col.e(new Label("Item " + i));
  *         }
  *     });
  * });

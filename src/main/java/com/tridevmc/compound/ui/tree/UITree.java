@@ -17,6 +17,7 @@
 package com.tridevmc.compound.ui.tree;
 
 import com.tridevmc.compound.ui.animation.AnimationScheduler;
+import com.tridevmc.compound.ui.debug.DebugOverlayConfig;
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.element.IElementInternal;
 import com.tridevmc.compound.ui.element.IPrimitiveElement;
@@ -836,6 +837,12 @@ public class UITree {
         }
 
         this.renderNode(this.root, context, null);
+
+        // Debug overlay rendered AFTER normal rendering (on top)
+        // Individual elements have zero awareness of debug mode
+        if (DebugOverlayConfig.get().isEnabled()) {
+            this.renderDebugOverlay(context);
+        }
     }
 
     /**
@@ -886,4 +893,160 @@ public class UITree {
             context.disableScissor();
         }
     }
+
+    /**
+     * Renders debug overlay showing bounds, margins, and padding for the hovered element
+     * and its ancestors. This is rendered after normal rendering so it appears on top.
+     * Individual elements have zero awareness of debug mode.
+     *
+     * @param context the screen context for drawing
+     */
+    private void renderDebugOverlay(IScreenContext context) {
+        var config = DebugOverlayConfig.get();
+
+        // Find the currently hovered node
+        ITreeNode hoveredNode = this.findNodeAt(this.lastMouseX, this.lastMouseY);
+        if (hoveredNode == null) {
+            return;
+        }
+
+        // Build the ancestor chain from root to hovered node
+        var ancestorChain = new java.util.ArrayList<ITreeNode>();
+        ITreeNode current = hoveredNode;
+        while (current != null) {
+            ancestorChain.add(0, current); // Add at beginning to get root-to-node order
+            current = current.getParent();
+        }
+
+        // Render debug for each node in the chain (ancestors get outline, hovered gets full detail)
+        for (int i = 0; i < ancestorChain.size(); i++) {
+            ITreeNode node = ancestorChain.get(i);
+            boolean isHoveredNode = (node == hoveredNode);
+
+            var bounds = node.getBounds();
+            if (bounds == null || bounds.width() <= 0 || bounds.height() <= 0) {
+                continue;
+            }
+
+            float x = bounds.x();
+            float y = bounds.y();
+            float w = bounds.width();
+            float h = bounds.height();
+
+            if (isHoveredNode) {
+                // Full detail for hovered element
+                var props = node.getLayoutProperties();
+                if (props == null) {
+                    props = LayoutProperties.create();
+                }
+
+                int marginL = props.getMarginLeft();
+                int marginT = props.getMarginTop();
+                int marginR = props.getMarginRight();
+                int marginB = props.getMarginBottom();
+
+                int paddingL = props.getPaddingLeft();
+                int paddingT = props.getPaddingTop();
+                int paddingR = props.getPaddingRight();
+                int paddingB = props.getPaddingBottom();
+
+                // Draw margin areas (orange)
+                if (marginL > 0) {
+                    context.drawRect(x - marginL, y, marginL, h, config.getMarginColor());
+                    drawArrowLabel(context, x - marginL / 2f, y + h / 2f, marginL, true, config.getMarginColor());
+                }
+                if (marginR > 0) {
+                    context.drawRect(x + w, y, marginR, h, config.getMarginColor());
+                    drawArrowLabel(context, x + w + marginR / 2f, y + h / 2f, marginR, true, config.getMarginColor());
+                }
+                if (marginT > 0) {
+                    context.drawRect(x, y - marginT, w, marginT, config.getMarginColor());
+                    drawArrowLabel(context, x + w / 2f, y - marginT / 2f, marginT, false, config.getMarginColor());
+                }
+                if (marginB > 0) {
+                    context.drawRect(x, y + h, w, marginB, config.getMarginColor());
+                    drawArrowLabel(context, x + w / 2f, y + h + marginB / 2f, marginB, false, config.getMarginColor());
+                }
+
+                // Draw padding areas (green)
+                if (paddingL > 0) {
+                    context.drawRect(x, y, paddingL, h, config.getPaddingColor());
+                    drawArrowLabel(context, x + paddingL / 2f, y + h / 2f, paddingL, true, config.getPaddingColor());
+                }
+                if (paddingR > 0) {
+                    context.drawRect(x + w - paddingR, y, paddingR, h, config.getPaddingColor());
+                    drawArrowLabel(context, x + w - paddingR / 2f, y + h / 2f, paddingR, true, config.getPaddingColor());
+                }
+                if (paddingT > 0) {
+                    context.drawRect(x + paddingL, y, w - paddingL - paddingR, paddingT, config.getPaddingColor());
+                    drawArrowLabel(context, x + w / 2f, y + paddingT / 2f, paddingT, false, config.getPaddingColor());
+                }
+                if (paddingB > 0) {
+                    context.drawRect(x + paddingL, y + h - paddingB, w - paddingL - paddingR, paddingB, config.getPaddingColor());
+                    drawArrowLabel(context, x + w / 2f, y + h - paddingB / 2f, paddingB, false, config.getPaddingColor());
+                }
+
+                // Draw bounds outline (thicker for hovered)
+                context.drawRectOutline(x, y, w, h, config.getBoundsOutlineColor(), 2);
+
+                // Draw dimension label
+                if (config.shouldShowDimensions()) {
+                    String dimensionText = bounds.width() + " × " + bounds.height();
+                    int textWidth = context.getFont().width(dimensionText);
+                    int textHeight = 9;
+                    int pad = 2;
+
+                    float labelX = x;
+                    float labelY = y - textHeight - pad * 2 - 2;
+                    if (labelY < 0) {
+                        labelY = y + h + 2;
+                    }
+
+                    context.drawRect(labelX, labelY, textWidth + pad * 2, textHeight + pad * 2, 0xDD000000);
+                    context.drawStringWithShadow(dimensionText, labelX + pad, labelY + pad, 0xFFFFFF);
+                }
+            } else {
+                // Just thin outline for ancestors
+                context.drawRectOutline(x, y, w, h, 0x80888888, 1); // Gray outline for parents
+            }
+        }
+    }
+
+    /**
+     * Draws a measurement arrow label at the specified position.
+     */
+    private void drawArrowLabel(IScreenContext context, float centerX, float centerY,
+                                 int value, boolean horizontal, int color) {
+        String text = String.valueOf(value);
+        int textWidth = context.getFont().width(text);
+        int textHeight = 7;
+
+        float textX = centerX - textWidth / 2f;
+        float textY = centerY - textHeight / 2f;
+
+        // Draw background for readability
+        context.drawRect(textX - 1, textY - 1, textWidth + 2, textHeight + 2, 0xAA000000);
+
+        // Draw arrow lines
+        int arrowColor = 0xFFFFFFFF;
+        if (horizontal) {
+            // Horizontal arrows
+            float arrowLen = Math.max(4, (value - textWidth) / 2f - 4);
+            if (arrowLen > 2) {
+                context.drawRect(centerX - textWidth / 2f - arrowLen, centerY - 0.5f, arrowLen - 2, 1, arrowColor);
+                context.drawRect(centerX + textWidth / 2f + 2, centerY - 0.5f, arrowLen - 2, 1, arrowColor);
+            }
+        } else {
+            // Vertical arrows
+            float arrowLen = Math.max(4, (value - textHeight) / 2f - 4);
+            if (arrowLen > 2) {
+                context.drawRect(centerX - 0.5f, centerY - textHeight / 2f - arrowLen, 1, arrowLen - 2, arrowColor);
+                context.drawRect(centerX - 0.5f, centerY + textHeight / 2f + 2, 1, arrowLen - 2, arrowColor);
+            }
+        }
+
+        // Draw value text
+        context.drawStringWithShadow(text, textX, textY, 0xFFFFFF);
+    }
 }
+

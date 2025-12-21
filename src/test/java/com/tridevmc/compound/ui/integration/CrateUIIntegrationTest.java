@@ -43,9 +43,9 @@ public class CrateUIIntegrationTest {
     private static final Bounds GOLD_MAIN_STACK_BOUNDS = new Bounds(247, 205, 178, 190);
     private static final Bounds GOLD_PADDED_CONTENT_BOUNDS = new Bounds(247, 205, 178, 190);
     private static final Bounds GOLD_COLUMN_BOUNDS = new Bounds(255, 213, 162, 174);
-    private static final Bounds GOLD_CRATE_LABEL_BOUNDS = new Bounds(255, 213, 30, 8);
-    private static final Bounds GOLD_CRATE_GRID_BOUNDS = new Bounds(255, 225, 162, 54);
-    private static final Bounds GOLD_INVENTORY_LABEL_BOUNDS = new Bounds(255, 283, 54, 8);
+    private static final Bounds GOLD_CRATE_LABEL_BOUNDS = new Bounds(255, 213, 30, 9);
+    private static final Bounds GOLD_CRATE_GRID_BOUNDS = new Bounds(255, 226, 162, 54);
+    private static final Bounds GOLD_INVENTORY_LABEL_BOUNDS = new Bounds(255, 283, 54, 9);
     private static final Bounds GOLD_PLAYER_GRID_BOUNDS = new Bounds(255, 295, 162, 54);
     private static final Bounds GOLD_SPACER_BOUNDS = new Bounds(255, 353, 0, 4);
     private static final Bounds GOLD_HOTBAR_GRID_BOUNDS = new Bounds(255, 361, 162, 18);
@@ -63,24 +63,24 @@ public class CrateUIIntegrationTest {
      * <ul>
      *   <li>Root Stack: (0, 0, 800, 600)</li>
      *   <li>Centered Row: (247, 205, 306, 190)</li>
-     *   <li>Main ElementBox: (247, 205, 178, 190) with all nested elements</li>
-     *   <li>Scroll ElementBox: (433, 205, 120, 190) with ScrollArea</li>
+     *   <li>Main Panel: (247, 205, 178, 190) with all nested elements</li>
+     *   <li>Scroll Panel: (433, 205, 120, 190) with ScrollArea</li>
      *   <li>All 63 slot positions (27 crate + 27 player + 9 hotbar)</li>
      *   <li>All 50 button positions (only 9 visible within ScrollArea scissor)</li>
      * </ul>
      *
      * <h3>Internal Element Structure:</h3>
      * <ul>
-     *   <li>ComposedSlot: Stack → [sprite(bg), sprite(underlay), item, sprite(overlay)]</li>
+     *   <li>InventorySlot: Stack → [sprite(bg), sprite(underlay), item, sprite(overlay)]</li>
      *   <li>Button: Stack → [sprite(bg), label]</li>
-     *   <li>ElementBox: Stack → [sprite(bg), content]</li>
+     *   <li>Panel: Stack → [sprite(bg), content]</li>
      * </ul>
      *
      * <h3>Render Call Validation (exact coordinates):</h3>
      * <ul>
      *   <li><b>74 sprite draws:</b>
      *     <ul>
-     *       <li>2 ElementBox backgrounds at (247,205,178,190) and (433,205,120,190)</li>
+     *       <li>2 Panel backgrounds at (247,205,178,190) and (433,205,120,190)</li>
      *       <li>27 crate slots: grid starting at (255,226) with 18px spacing</li>
      *       <li>27 player slots: grid starting at (255,297) with 18px spacing</li>
      *       <li>9 hotbar slots: row at (255,363) with 18px spacing</li>
@@ -133,12 +133,12 @@ public class CrateUIIntegrationTest {
                 row.layout().spacing(8); // 8px gap between main UI and scroll area
 
                 // Background box with default inventory sprite
-                row.e(new ElementBox(), box -> {
-                    // ElementBox just specifies its size
+                row.e(new Panel(), box -> {
+                    // Panel just specifies its size
                     box.layout().fixedSize(178, 190);
 
                     // Fill content slot with Box for padding
-                    box.fillSlot(ElementBox.CONTENT_SLOT, content -> {
+                    box.fillSlot(Panel.CONTENT_SLOT, content -> {
                         content.e(new Box(), paddedContent -> {
                             // Set padding on the box
                             paddedContent.layout().padding(8);
@@ -148,7 +148,7 @@ public class CrateUIIntegrationTest {
                                 // Set spacing on the column
                                 column.layout().spacing(4);
                                 // "Crate" label - no shadow for Minecraft inventory style
-                                column.e(new ElementLabel(
+                                column.e(new Label(
                                         Component.literal("Crate"),
                                         0x404040,
                                         false  // No shadow for inventory labels
@@ -157,12 +157,12 @@ public class CrateUIIntegrationTest {
                                 // Crate slots grid (9x3 = 27 slots)
                                 column.e(new Grid(9, 0, 0), crateGrid -> {
                                     for (int i = 0; i < 27; i++) {
-                                        crateGrid.e(new ComposedSlot(this.menu.getSlot(i)));
+                                        crateGrid.e(new InventorySlot(this.menu.getSlot(i)));
                                     }
                                 });
 
                                 // "Inventory" label - no shadow for Minecraft inventory style
-                                column.e(new ElementLabel(
+                                column.e(new Label(
                                         Component.literal("Inventory"),
                                         0x404040,
                                         false  // No shadow for inventory labels
@@ -171,17 +171,17 @@ public class CrateUIIntegrationTest {
                                 // Player inventory grid (9x3 = 27 slots)
                                 column.e(new Grid(9, 0, 0), playerGrid -> {
                                     for (int i = 0; i < 27; i++) {
-                                        playerGrid.e(new ComposedSlot(this.menu.getSlot(27 + i)));
+                                        playerGrid.e(new InventorySlot(this.menu.getSlot(27 + i)));
                                     }
                                 });
 
                                 // Spacer before hotbar
-                                column.e(new ElementSpacer(0, 4));
+                                column.e(new Spacer(0, 4));
 
                                 // Hotbar grid (9x1 = 9 slots)
                                 column.e(new Grid(9, 0, 0), hotbarGrid -> {
                                     for (int i = 0; i < 9; i++) {
-                                        hotbarGrid.e(new ComposedSlot(this.menu.getSlot(54 + i)));
+                                        hotbarGrid.e(new InventorySlot(this.menu.getSlot(54 + i)));
                                     }
                                 });
                             });
@@ -190,10 +190,10 @@ public class CrateUIIntegrationTest {
                 });
 
                 // Scrollable list of buttons on the right side
-                row.e(new ElementBox(), scrollBox -> {
+                row.e(new Panel(), scrollBox -> {
                     scrollBox.layout().fixedSize(120, 190); // Match height of main UI
 
-                    scrollBox.fillSlot(ElementBox.CONTENT_SLOT, content -> {
+                    scrollBox.fillSlot(Panel.CONTENT_SLOT, content -> {
                         content.e(new Box(), paddedBox -> {
                             paddedBox.layout().padding(4);
 
@@ -220,7 +220,7 @@ public class CrateUIIntegrationTest {
 
                                                 // Add label to the button via slot
                                                 button.fillSlot(Button.CONTENT_SLOT, buttonContent -> {
-                                                    buttonContent.e(new ElementLabel(
+                                                    buttonContent.e(new Label(
                                                             Component.literal("Button " + buttonIndex),
                                                             0xFFFFFF,
                                                             true
@@ -262,7 +262,7 @@ public class CrateUIIntegrationTest {
         ITreeNode rowNode = rootStackNode.getChildren().getFirst();
         assertEquals(Row.class, rowNode.getElement().getClass());
 
-        // Row should have 2 children: Main UI ElementBox and ScrollArea ElementBox
+        // Row should have 2 children: Main UI Panel and ScrollArea Panel
         assertEquals(2, rowNode.getChildren().size());
 
         // 5. Assertions - Layout & Positioning
@@ -278,24 +278,24 @@ public class CrateUIIntegrationTest {
 
         // --- Verify Main UI Box ---
         ITreeNode mainBoxNode = rowNode.getChildren().get(0);
-        assertEquals(ElementBox.class, mainBoxNode.getElement().getClass());
+        assertEquals(Panel.class, mainBoxNode.getElement().getClass());
         Bounds mainBoxBounds = mainBoxNode.getElement().getBounds();
         assertEquals(new Bounds(247, 205, 178, 190), mainBoxBounds, "Main Box should be centered");
 
         // Verify content of Main UI Box
-        // ElementBox -> Stack -> Box (padding) -> Column
+        // Panel -> Stack -> Box (padding) -> Column
         ITreeNode mainStackNode = mainBoxNode.getChildren().getFirst();
         assertTrue(mainStackNode.getElement() instanceof Stack, "Main Stack should be a Stack");
         Bounds mainStackBounds = mainStackNode.getElement().getBounds();
-        assertEquals(new Bounds(247, 205, 178, 190), mainStackBounds, "Main Stack should fill ElementBox");
+        assertEquals(new Bounds(247, 205, 178, 190), mainStackBounds, "Main Stack should fill Panel");
 
-        // Validate ElementBox sprite (background) - should be first child of Stack
+        // Validate Panel sprite (background) - should be first child of Stack
         ITreeNode mainBoxSpriteNode = mainStackNode.getChildren().stream()
-                .filter(n -> n.getElement() instanceof ElementSprite)
+                .filter(n -> n.getElement() instanceof Sprite)
                 .findFirst().orElseThrow();
-        assertEquals(ElementSprite.class, mainBoxSpriteNode.getElement().getClass());
+        assertEquals(Sprite.class, mainBoxSpriteNode.getElement().getClass());
         Bounds mainBoxSpriteBounds = mainBoxSpriteNode.getElement().getBounds();
-        assertEquals(new Bounds(247, 205, 178, 190), mainBoxSpriteBounds, "Main ElementBox sprite should fill ElementBox");
+        assertEquals(new Bounds(247, 205, 178, 190), mainBoxSpriteBounds, "Main Panel sprite should fill Panel");
 
         ITreeNode paddedContentNode = mainStackNode.getChildren().stream()
                 .filter(n -> n.getElement() instanceof Box)
@@ -303,7 +303,7 @@ public class CrateUIIntegrationTest {
         assertEquals(Box.class, paddedContentNode.getElement().getClass());
         Bounds paddedContentBounds = paddedContentNode.getElement().getBounds();
         // Box with padding actually fills the same bounds as its parent, but applies padding to its children
-        assertEquals(new Bounds(247, 205, 178, 190), paddedContentBounds, "Padded Box should fill ElementBox");
+        assertEquals(new Bounds(247, 205, 178, 190), paddedContentBounds, "Padded Box should fill Panel");
 
         ITreeNode columnNode = paddedContentNode.getChildren().stream()
                 .filter(n -> n.getElement() instanceof Column)
@@ -318,17 +318,17 @@ public class CrateUIIntegrationTest {
 
         // 1. "Crate" Label
         ITreeNode crateLabelNode = columnNode.getChildren().get(0);
-        assertEquals(ElementLabel.class, crateLabelNode.getElement().getClass());
+        assertEquals(Label.class, crateLabelNode.getElement().getClass());
         Bounds crateLabelBounds = crateLabelNode.getElement().getBounds();
         // Labels only take up width they need, not full column width
-        assertEquals(new Bounds(255, 213, 30, 8), crateLabelBounds, "Crate label bounds");
+        assertEquals(new Bounds(255, 213, 30, 9), crateLabelBounds, "Crate label bounds");
 
         // 2. Crate Grid (9x3)
         // Y = 213 + 9 (Label) + 4 (Spacing) = 226
         ITreeNode crateGridNode = columnNode.getChildren().get(1);
         assertEquals(Grid.class, crateGridNode.getElement().getClass());
         Bounds crateGridBounds = crateGridNode.getElement().getBounds();
-        assertEquals(new Bounds(255, 225, 162, 54), crateGridBounds, "Crate Grid bounds");
+        assertEquals(new Bounds(255, 226, 162, 54), crateGridBounds, "Crate Grid bounds");
         assertEquals(27, crateGridNode.getChildren().size(), "Crate grid should have 27 slots");
 
         // Validate individual crate slots
@@ -336,13 +336,13 @@ public class CrateUIIntegrationTest {
             for (int col = 0; col < 9; col++) {
                 int slotIndex = row * 9 + col;
                 ITreeNode slotNode = crateGridNode.getChildren().get(slotIndex);
-                assertEquals(ComposedSlot.class, slotNode.getElement().getClass());
+                assertEquals(InventorySlot.class, slotNode.getElement().getClass());
                 Bounds slotBounds = slotNode.getElement().getBounds();
                 switch (row * 9 + col) {
                     case 0 -> {
                         assertEquals(new Bounds(255, 225, 18, 18), slotBounds, "Crate slot [0,0] bounds");
                         // Validate first slot's internal structure comprehensively
-                        // ComposedSlot -> Stack -> ElementSprite (bg) + ElementSprite (underlay) + ElementItem + ElementSprite (overlay)
+                        // InventorySlot -> Stack -> Sprite (bg) + Sprite (underlay) + ItemDisplay + Sprite (overlay)
                         ITreeNode slotStackNode = slotNode.getChildren().getFirst();
                         assertEquals(Stack.class, slotStackNode.getElement().getClass());
                         Bounds slotStackBounds = slotStackNode.getElement().getBounds();
@@ -353,28 +353,28 @@ public class CrateUIIntegrationTest {
 
                         // Child 0: Background sprite (18x18)
                         ITreeNode slotBgNode = slotStackNode.getChildren().get(0);
-                        assertEquals(ElementSprite.class, slotBgNode.getElement().getClass());
+                        assertEquals(Sprite.class, slotBgNode.getElement().getClass());
                         Bounds slotBgBounds = slotBgNode.getElement().getBounds();
                         assertEquals(new Bounds(255, 225, 18, 18), slotBgBounds, "Crate slot [0,0] background sprite bounds");
 
                         // Child 1: Underlay sprite (null by default, so would be 24x24 with -3 margin if present)
                         ITreeNode slotUnderlayNode = slotStackNode.getChildren().get(1);
-                        assertEquals(ElementSprite.class, slotUnderlayNode.getElement().getClass());
-                        ElementSprite slotUnderlaySprite = (ElementSprite) slotUnderlayNode.getElement();
+                        assertEquals(Sprite.class, slotUnderlayNode.getElement().getClass());
+                        Sprite slotUnderlaySprite = (Sprite) slotUnderlayNode.getElement();
                         // Underlay is null by default, but element exists with bounds calculated as if it would render
                         Bounds slotUnderlayBounds = slotUnderlayNode.getElement().getBounds();
                         assertEquals(new Bounds(252, 222, 24, 24), slotUnderlayBounds, "Crate slot [0,0] underlay sprite bounds (with -3 margin)");
 
                         // Child 2: Item element (16x16 with 1px margin)
                         ITreeNode slotItemNode = slotStackNode.getChildren().get(2);
-                        assertEquals(ElementItem.class, slotItemNode.getElement().getClass());
+                        assertEquals(ItemDisplay.class, slotItemNode.getElement().getClass());
                         Bounds slotItemBounds = slotItemNode.getElement().getBounds();
                         assertEquals(new Bounds(256, 226, 16, 16), slotItemBounds, "Crate slot [0,0] item bounds (with 1px margin)");
 
                         // Child 3: Overlay sprite (null by default, so would be 24x24 with -3 margin if present)
                         ITreeNode slotOverlayNode = slotStackNode.getChildren().get(3);
-                        assertEquals(ElementSprite.class, slotOverlayNode.getElement().getClass());
-                        ElementSprite slotOverlaySprite = (ElementSprite) slotOverlayNode.getElement();
+                        assertEquals(Sprite.class, slotOverlayNode.getElement().getClass());
+                        Sprite slotOverlaySprite = (Sprite) slotOverlayNode.getElement();
                         Bounds slotOverlayBounds = slotOverlayNode.getElement().getBounds();
                         assertEquals(new Bounds(252, 222, 24, 24), slotOverlayBounds, "Crate slot [0,0] overlay sprite bounds (with -3 margin)");
                     }
@@ -412,10 +412,10 @@ public class CrateUIIntegrationTest {
         // 3. "Inventory" Label
         // Y = 226 + 54 (Grid) + 4 (Spacing) = 284
         ITreeNode invLabelNode = columnNode.getChildren().get(2);
-        assertEquals(ElementLabel.class, invLabelNode.getElement().getClass());
+        assertEquals(Label.class, invLabelNode.getElement().getClass());
         Bounds invLabelBounds = invLabelNode.getElement().getBounds();
         // "Inventory" text width is exactly 54px
-        assertEquals(new Bounds(255, 283, 54, 8), invLabelBounds, "Inventory label bounds");
+        assertEquals(new Bounds(255, 283, 54, 9), invLabelBounds, "Inventory label bounds");
 
         // 4. Player Grid (9x3)
         // Y = 284 + 9 (Label) + 4 (Spacing) = 297
@@ -430,7 +430,7 @@ public class CrateUIIntegrationTest {
             for (int col = 0; col < 9; col++) {
                 int slotIndex = row * 9 + col;
                 ITreeNode slotNode = playerGridNode.getChildren().get(slotIndex);
-                assertEquals(ComposedSlot.class, slotNode.getElement().getClass());
+                assertEquals(InventorySlot.class, slotNode.getElement().getClass());
                 Bounds slotBounds = slotNode.getElement().getBounds();
                 switch (row * 9 + col) {
                     case 0 -> {
@@ -442,12 +442,12 @@ public class CrateUIIntegrationTest {
 
                         // Background sprite
                         ITreeNode slotBgNode = slotStackNode.getChildren().get(0);
-                        assertEquals(ElementSprite.class, slotBgNode.getElement().getClass());
+                        assertEquals(Sprite.class, slotBgNode.getElement().getClass());
                         assertEquals(new Bounds(255, 295, 18, 18), slotBgNode.getElement().getBounds(), "Player slot [0,0] background sprite bounds");
 
                         // Item element
                         ITreeNode slotItemNode = slotStackNode.getChildren().get(2);
-                        assertEquals(ElementItem.class, slotItemNode.getElement().getClass());
+                        assertEquals(ItemDisplay.class, slotItemNode.getElement().getClass());
                         assertEquals(new Bounds(256, 296, 16, 16), slotItemNode.getElement().getBounds(), "Player slot [0,0] item bounds");
                     }
                     case 1 -> assertEquals(new Bounds(273, 295, 18, 18), slotBounds, "Player slot [0,1] bounds");
@@ -484,7 +484,7 @@ public class CrateUIIntegrationTest {
         // 5. Spacer (Height 4)
         // Y = 297 + 54 (Grid) + 4 (Spacing) = 355
         ITreeNode spacerNode = columnNode.getChildren().get(4);
-        assertEquals(ElementSpacer.class, spacerNode.getElement().getClass());
+        assertEquals(Spacer.class, spacerNode.getElement().getClass());
         Bounds spacerBounds = spacerNode.getElement().getBounds();
         // Spacer has no width (0) but takes full column height with padding
         assertEquals(new Bounds(255, 353, 0, 4), spacerBounds, "Spacer bounds");
@@ -500,7 +500,7 @@ public class CrateUIIntegrationTest {
         // Validate individual hotbar slots
         for (int col = 0; col < 9; col++) {
             ITreeNode slotNode = hotbarGridNode.getChildren().get(col);
-            assertEquals(ComposedSlot.class, slotNode.getElement().getClass());
+            assertEquals(InventorySlot.class, slotNode.getElement().getClass());
             Bounds slotBounds = slotNode.getElement().getBounds();
             switch (col) {
                 case 0 -> {
@@ -512,12 +512,12 @@ public class CrateUIIntegrationTest {
 
                     // Background sprite
                     ITreeNode slotBgNode = slotStackNode.getChildren().get(0);
-                    assertEquals(ElementSprite.class, slotBgNode.getElement().getClass());
+                    assertEquals(Sprite.class, slotBgNode.getElement().getClass());
                     assertEquals(new Bounds(255, 361, 18, 18), slotBgNode.getElement().getBounds(), "Hotbar slot [0] background sprite bounds");
 
                     // Item element
                     ITreeNode slotItemNode = slotStackNode.getChildren().get(2);
-                    assertEquals(ElementItem.class, slotItemNode.getElement().getClass());
+                    assertEquals(ItemDisplay.class, slotItemNode.getElement().getClass());
                     assertEquals(new Bounds(256, 362, 16, 16), slotItemNode.getElement().getBounds(), "Hotbar slot [0] item bounds");
                 }
                 case 1 -> assertEquals(new Bounds(273, 361, 18, 18), slotBounds, "Hotbar slot [1] bounds");
@@ -534,7 +534,7 @@ public class CrateUIIntegrationTest {
 
         // --- Verify Scroll UI Box ---
         ITreeNode scrollBoxNode = rowNode.getChildren().get(1);
-        assertEquals(ElementBox.class, scrollBoxNode.getElement().getClass());
+        assertEquals(Panel.class, scrollBoxNode.getElement().getClass());
         Bounds scrollBoxBounds = scrollBoxNode.getElement().getBounds();
         // X = 247 + 178 + 8 = 433
         assertEquals(new Bounds(433, 205, 120, 190), scrollBoxBounds, "Scroll Box position");
@@ -544,15 +544,15 @@ public class CrateUIIntegrationTest {
         ITreeNode scrollStackNode = scrollBoxNode.getChildren().getFirst();
         assertTrue(scrollStackNode.getElement() instanceof Stack, "Scroll Stack should be a Stack");
         Bounds scrollStackBounds = scrollStackNode.getElement().getBounds();
-        assertEquals(new Bounds(433, 205, 120, 190), scrollStackBounds, "Scroll Stack should fill ElementBox");
+        assertEquals(new Bounds(433, 205, 120, 190), scrollStackBounds, "Scroll Stack should fill Panel");
 
         // Validate ScrollBox sprite (background) - should be first child of Stack
         ITreeNode scrollBoxSpriteNode = scrollStackNode.getChildren().stream()
-                .filter(n -> n.getElement() instanceof ElementSprite)
+                .filter(n -> n.getElement() instanceof Sprite)
                 .findFirst().orElseThrow();
-        assertEquals(ElementSprite.class, scrollBoxSpriteNode.getElement().getClass());
+        assertEquals(Sprite.class, scrollBoxSpriteNode.getElement().getClass());
         Bounds scrollBoxSpriteBounds = scrollBoxSpriteNode.getElement().getBounds();
-        assertEquals(new Bounds(433, 205, 120, 190), scrollBoxSpriteBounds, "Scroll ElementBox sprite should fill ElementBox");
+        assertEquals(new Bounds(433, 205, 120, 190), scrollBoxSpriteBounds, "Scroll Panel sprite should fill Panel");
 
         ITreeNode scrollPaddedBoxNode = scrollStackNode.getChildren().stream()
                 .filter(n -> n.getElement() instanceof Box)
@@ -560,7 +560,7 @@ public class CrateUIIntegrationTest {
         assertEquals(Box.class, scrollPaddedBoxNode.getElement().getClass());
         Bounds scrollPaddedBoxBounds = scrollPaddedBoxNode.getElement().getBounds();
         // Box with padding fills same bounds as parent, but applies 4px padding to children
-        assertEquals(new Bounds(433, 205, 120, 190), scrollPaddedBoxBounds, "Scroll Padded Box should fill ElementBox");
+        assertEquals(new Bounds(433, 205, 120, 190), scrollPaddedBoxBounds, "Scroll Padded Box should fill Panel");
 
         ITreeNode scrollAreaNode = scrollPaddedBoxNode.getChildren().stream()
                 .filter(n -> n.getElement() instanceof ScrollArea)
@@ -657,18 +657,18 @@ public class CrateUIIntegrationTest {
             Bounds buttonStackBounds = buttonStackNode.getElement().getBounds();
             assertEquals(buttonBounds, buttonStackBounds, "Button " + i + " Stack should fill button");
 
-            // The Stack should contain 2 children: ElementSprite (background) and ElementLabel (content)
+            // The Stack should contain 2 children: Sprite (background) and Label (content)
             assertEquals(2, buttonStackNode.getChildren().size(), "Button " + i + " Stack should have 2 children (sprite + label)");
 
-            // First child should be ElementSprite (button background) - should fill entire button
+            // First child should be Sprite (button background) - should fill entire button
             ITreeNode spriteNode = buttonStackNode.getChildren().get(0);
-            assertEquals(ElementSprite.class, spriteNode.getElement().getClass(), "Button " + i + " first child should be ElementSprite");
+            assertEquals(Sprite.class, spriteNode.getElement().getClass(), "Button " + i + " first child should be Sprite");
             Bounds spriteBounds = spriteNode.getElement().getBounds();
             assertEquals(buttonBounds, spriteBounds, "Button " + i + " sprite should fill button");
 
-            // Second child should be ElementLabel (content)
+            // Second child should be Label (content)
             ITreeNode labelNode = buttonStackNode.getChildren().get(1);
-            assertEquals(ElementLabel.class, labelNode.getElement().getClass(), "Button " + i + " second child should be ElementLabel");
+            assertEquals(Label.class, labelNode.getElement().getClass(), "Button " + i + " second child should be Label");
 
             Bounds labelBounds = labelNode.getElement().getBounds();
             // Validate label position and size (content varies by button number)
@@ -989,12 +989,12 @@ public class CrateUIIntegrationTest {
         tree.renderTree(this.screenContext);
 
         // 6. Verify render calls
-        // Verify sprites are rendered (ElementBox backgrounds, slot backgrounds, button backgrounds)
+        // Verify sprites are rendered (Panel backgrounds, slot backgrounds, button backgrounds)
         ArgumentCaptor<IScreenSprite> spriteCaptor = ArgumentCaptor.forClass(IScreenSprite.class);
         ArgumentCaptor<Rect2F> rectCaptor = ArgumentCaptor.forClass(Rect2F.class);
 
         // Should have many sprite draw calls:
-        // - 2 ElementBox backgrounds (main + scroll)
+        // - 2 Panel backgrounds (main + scroll)
         // - 63 slot backgrounds (27 crate + 27 player + 9 hotbar)
         // - 9 button backgrounds (only those visible in ScrollArea scissor bounds)
         // Total: 74 sprite calls (scissor test clips the other 41 buttons)
@@ -1018,9 +1018,9 @@ public class CrateUIIntegrationTest {
                 r.getWidth() == expected.getWidth() && r.getHeight() == expected.getHeight();
 
         // Validate EVERY sprite draw call with exact coordinates
-        // 1. Main ElementBox sprite
+        // 1. Main Panel sprite
         assertTrue(spriteRects.stream().anyMatch(r -> matches.test(r, new Rect2F(247f, 205f, 178f, 190f))),
-                "Main ElementBox sprite at (247, 205, 178, 190)");
+                "Main Panel sprite at (247, 205, 178, 190)");
 
         // 2-28. All 27 crate slot sprites (9 columns × 3 rows)
         for (int row = 0; row < 3; row++) {
@@ -1053,9 +1053,9 @@ public class CrateUIIntegrationTest {
                     String.format("Hotbar slot [%d] sprite at (%.0f, 363, 18, 18)", col, x));
         }
 
-        // 65. Scroll ElementBox sprite
+        // 65. Scroll Panel sprite
         assertTrue(spriteRects.stream().anyMatch(r -> matches.test(r, new Rect2F(433f, 205f, 120f, 190f))),
-                "Scroll ElementBox sprite at (433, 205, 120, 190)");
+                "Scroll Panel sprite at (433, 205, 120, 190)");
 
         // 66-74. All 9 visible button sprites (only those within scissor bounds)
         for (int i = 0; i < 9; i++) {

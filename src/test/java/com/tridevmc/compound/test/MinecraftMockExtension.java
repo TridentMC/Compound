@@ -64,6 +64,34 @@ public class MinecraftMockExtension implements BeforeAllCallback, ExtensionConte
             lenient().when(minecraft.getAtlasManager().getAtlasOrThrow(any()).getSprite(any()))
                     .thenReturn(mockSprite);
 
+            // Create a mock Font for Text.measure()
+            net.minecraft.client.gui.Font mockFont = mock(net.minecraft.client.gui.Font.class, withSettings().lenient());
+            lenient().when(mockFont.width((net.minecraft.network.chat.FormattedText) any())).thenAnswer(invocation -> {
+                net.minecraft.network.chat.FormattedText text = invocation.getArgument(0);
+                // Return 6 pixels per character as a reasonable approximation
+                return text.getString().length() * 6;
+            });
+            lenient().when(mockFont.width((String) any())).thenAnswer(invocation -> {
+                String text = invocation.getArgument(0);
+                return text.length() * 6;
+            });
+            // Set lineHeight to 9 (vanilla font height) using reflection
+            try {
+                var lineHeightField = net.minecraft.client.gui.Font.class.getDeclaredField("lineHeight");
+                lineHeightField.setAccessible(true);
+                lineHeightField.set(mockFont, 9);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                // lineHeight is public final, may fail - font mock will still work for width()
+            }
+            // Assign the font mock to the minecraft.font field using reflection (it's final)
+            try {
+                var fontField = Minecraft.class.getDeclaredField("font");
+                fontField.setAccessible(true);
+                fontField.set(minecraft, mockFont);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                throw new RuntimeException("Failed to set minecraft.font via reflection", e);
+            }
+
             // Create static mock
             minecraftMock = mockStatic(Minecraft.class);
             minecraftMock.when(Minecraft::getInstance).thenReturn(minecraft);

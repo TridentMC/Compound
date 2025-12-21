@@ -31,20 +31,20 @@ import java.util.function.Supplier;
 /**
  * A primitive element that renders an item stack.
  */
-public class ElementItem extends BasePrimitiveElement {
+public class ItemDisplay extends BasePrimitiveElement {
 
     private Supplier<ItemStack> itemStackSupplier;
     private Supplier<String> countOverrideSupplier;
 
-    public ElementItem(ItemStack itemStack) {
+    public ItemDisplay(ItemStack itemStack) {
         this(() -> itemStack, () -> null);
     }
 
-    public ElementItem(Supplier<ItemStack> itemStackSupplier) {
+    public ItemDisplay(Supplier<ItemStack> itemStackSupplier) {
         this(itemStackSupplier, () -> null);
     }
 
-    public ElementItem(Supplier<ItemStack> itemStackSupplier, Supplier<String> countOverrideSupplier) {
+    public ItemDisplay(Supplier<ItemStack> itemStackSupplier, Supplier<String> countOverrideSupplier) {
         this.itemStackSupplier = itemStackSupplier;
         this.countOverrideSupplier = countOverrideSupplier;
     }

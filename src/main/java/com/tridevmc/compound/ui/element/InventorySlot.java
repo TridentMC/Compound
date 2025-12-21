@@ -38,7 +38,7 @@ import java.util.List;
  * Integrates with vanilla inventory management while providing declarative composition.
  * Composes several primitives: background sprite, underlay rect, item, label, overlay rect.
  */
-public class ComposedSlot extends BaseElement implements IComposableElement {
+public class InventorySlot extends BaseElement implements IComposableElement {
 
     private static final int SLOT_SIZE = 18;
 
@@ -68,7 +68,7 @@ public class ComposedSlot extends BaseElement implements IComposableElement {
      * @param menu      the container menu
      * @param slotIndex the slot index in the menu
      */
-    public ComposedSlot(@Nonnull AbstractContainerMenu menu, int slotIndex) {
+    public InventorySlot(@Nonnull AbstractContainerMenu menu, int slotIndex) {
         this(menu.getSlot(slotIndex));
     }
 
@@ -77,14 +77,14 @@ public class ComposedSlot extends BaseElement implements IComposableElement {
      *
      * @param vanillaSlot the vanilla slot
      */
-    public ComposedSlot(@Nonnull Slot vanillaSlot) {
+    public InventorySlot(@Nonnull Slot vanillaSlot) {
         this.vanillaSlot = vanillaSlot;
         this.displayStack = vanillaSlot.getItem();
     }
 
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
-        // ComposedSlot has fixed intrinsic size (18x18)
+        // InventorySlot has fixed intrinsic size (18x18)
         // If it has a child (Stack), ignore its size - slot is always 18x18
         return new Size(SLOT_SIZE, SLOT_SIZE);
     }
@@ -105,15 +105,15 @@ public class ComposedSlot extends BaseElement implements IComposableElement {
         scope.e(new Stack(), stack -> {
             stack.layout().fixedSize(SLOT_SIZE, SLOT_SIZE);
             // Bottom layer: slot background sprite (18x18)
-            stack.e(new ElementSprite(SLOT_SPRITE));
+            stack.e(new Sprite(SLOT_SPRITE));
 
             // Underlay layer: highlight sprite (24x24, positioned with -3 offset to center on slot)
             // Uses supplier so it updates dynamically without recomposition
-            stack.e(new ElementSprite(() -> this.drawUnderlay ? SLOT_HIGHLIGHT_BACK_SPRITE : null),
+            stack.e(new Sprite(() -> this.drawUnderlay ? SLOT_HIGHLIGHT_BACK_SPRITE : null),
                     sprite -> sprite.layout().margin(-3));
 
             // Item layer: the actual item with 1px margin so it doesn't touch slot edges
-            stack.e(new ElementItem(
+            stack.e(new ItemDisplay(
                             () -> this.displayStack != null ? this.displayStack : ItemStack.EMPTY,
                             () -> this.displayString
                     ), i -> i.layout().margin(1)
@@ -121,7 +121,7 @@ public class ComposedSlot extends BaseElement implements IComposableElement {
 
             // Overlay layer: highlight sprite (24x24, positioned with -3 offset to center on slot)
             // Uses supplier so it updates dynamically without recomposition
-            stack.e(new ElementSprite(() -> this.drawOverlay ? SLOT_HIGHLIGHT_FRONT_SPRITE : null),
+            stack.e(new Sprite(() -> this.drawOverlay ? SLOT_HIGHLIGHT_FRONT_SPRITE : null),
                     sprite -> sprite.layout().margin(-3));
         });
 

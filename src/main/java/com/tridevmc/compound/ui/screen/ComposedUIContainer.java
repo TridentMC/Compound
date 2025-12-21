@@ -21,7 +21,8 @@ import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
 import com.tridevmc.compound.ui.container.CompoundContainerMenu;
-import com.tridevmc.compound.ui.element.ComposedSlot;
+import com.tridevmc.compound.ui.debug.DebugOverlayConfig;
+import com.tridevmc.compound.ui.element.InventorySlot;
 import com.tridevmc.compound.ui.event.KeyInputEvent;
 import com.tridevmc.compound.ui.event.MouseClickEvent;
 import com.tridevmc.compound.ui.event.MouseMoveEvent;
@@ -56,7 +57,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     private static final WrappedField<GuiRenderState> guiRenderState = WrappedField.create(GuiGraphics.class, "guiRenderState", "f_399111_");
     private final CompoundScreenContext screenContext;
     private final UITree tree;
-    private final Map<Slot, ComposedSlot> slotElements;
+    private final Map<Slot, InventorySlot> slotElements;
     private GuiGraphics activeGuiGraphics;
     private long ticks;
     private float mouseX, mouseY;
@@ -78,12 +79,12 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     }
 
     /**
-     * Traverses the tree to find all ComposedSlot instances and register them.
+     * Traverses the tree to find all InventorySlot instances and register them.
      */
     private void discoverSlotElements() {
         this.tree.walkDepthFirst(this.tree.getRoot(), node -> {
-            if (node.getElement() instanceof ComposedSlot composedSlot) {
-                this.slotElements.put(composedSlot.getVanillaSlot(), composedSlot);
+            if (node.getElement() instanceof InventorySlot InventorySlot) {
+                this.slotElements.put(InventorySlot.getVanillaSlot(), InventorySlot);
             }
         });
     }
@@ -216,8 +217,8 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
                 .findFirst();
 
         return matchingSlot.map(slot -> {
-            var composedSlot = this.slotElements.get(slot);
-            var bounds = composedSlot.getBounds();
+            var InventorySlot = this.slotElements.get(slot);
+            var bounds = InventorySlot.getBounds();
             return bounds != null && bounds.contains((int) mouseX, (int) mouseY);
         }).orElse(super.isHovering(x, y, width, height, mouseX, mouseY));
     }
@@ -273,6 +274,14 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
 
     @Override
     public boolean keyPressed(@NotNull KeyEvent event) {
+        // F3+B toggles debug overlay (matches Minecraft's hitbox debug pattern)
+        long windowHandle = this.minecraft.getWindow().handle();
+        boolean f3Down = org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_F3) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+        if (event.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_B && f3Down) {
+            DebugOverlayConfig.get().toggle();
+            return true;
+        }
+
         KeyInputEvent keyEvent = new KeyInputEvent(
                 event.key(),
                 (char) event.scancode(),

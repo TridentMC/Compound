@@ -133,6 +133,27 @@ public interface IPrimitiveScreenContext {
     }
 
     /**
+     * Draws a hollow rectangle outline.
+     *
+     * @param x         the x position of the rectangle
+     * @param y         the y position of the rectangle
+     * @param width     the width of the rectangle
+     * @param height    the height of the rectangle
+     * @param colour    the colour of the outline
+     * @param thickness the thickness of the outline in pixels
+     */
+    default void drawRectOutline(float x, float y, float width, float height, int colour, int thickness) {
+        // Top edge
+        this.drawRect(x, y, width, thickness, colour);
+        // Bottom edge
+        this.drawRect(x, y + height - thickness, width, thickness, colour);
+        // Left edge
+        this.drawRect(x, y + thickness, thickness, height - thickness * 2, colour);
+        // Right edge
+        this.drawRect(x + width - thickness, y + thickness, thickness, height - thickness * 2, colour);
+    }
+
+    /**
      * Draws a solid gradient rect on the screen matching the provided rect data.
      *
      * @param startColour the colour at the beginning of the gradient.

@@ -43,7 +43,7 @@ import java.util.List;
  * <pre>
  * scope.e(new Button(), button -> {
  *     button.fillSlot(Button.CONTENT_SLOT, content -> {
- *         content.e(new ElementLabel(Component.literal("Click me")));
+ *         content.e(new Label(Component.literal("Click me")));
  *     });
  * });
  * </pre>
@@ -55,6 +55,12 @@ public class Button extends BaseElement implements IComposableElement {
     private static final IScreenSprite DEFAULT_ENABLED_SPRITE = IScreenSprite.of(ResourceLocation.withDefaultNamespace("widget/button"));
     private static final IScreenSprite DEFAULT_DISABLED_SPRITE = IScreenSprite.of(ResourceLocation.withDefaultNamespace("widget/button_disabled"));
     private static final IScreenSprite DEFAULT_HIGHLIGHTED_SPRITE = IScreenSprite.of(ResourceLocation.withDefaultNamespace("widget/button_highlighted"));
+
+    /**
+     * Vanilla-style Y offset for button text. Vanilla adds +1 to text Y position
+     * to make it appear more visually centered. Adjust for debugging.
+     */
+    public static int VANILLA_TEXT_Y_OFFSET = 1;
 
     private final State<Boolean> enabled;
     private final State<Boolean> visible;
@@ -141,11 +147,15 @@ public class Button extends BaseElement implements IComposableElement {
                 backgroundSprite = DEFAULT_ENABLED_SPRITE;
             }
 
-            stack.e(new ElementSprite(backgroundSprite), sprite -> {
+            stack.e(new Sprite(backgroundSprite), sprite -> {
                 sprite.layout().fillMax();
             });
 
-            scope.slotInto(CONTENT_SLOT, stack);
+            // Wrap content in Box with 1px top margin to match vanilla button text offset
+            stack.e(new Box(), contentWrapper -> {
+                contentWrapper.layout().margin(0, VANILLA_TEXT_Y_OFFSET, 0, 0);
+                scope.slotInto(CONTENT_SLOT, contentWrapper);
+            });
         });
     }
 
@@ -227,7 +237,7 @@ public class Button extends BaseElement implements IComposableElement {
             }
 
             if (measuredChildren.size() == 1) {
-                return measuredChildren.get(0);
+                return measuredChildren.getFirst();
             }
 
             int maxWidth = 0;
@@ -246,6 +256,7 @@ public class Button extends BaseElement implements IComposableElement {
         public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
             List<Bounds> childBounds = super.place(bounds, props, measuredChildren);
 
+            // Force first child (background) to fill entire button bounds
             if (!childBounds.isEmpty()) {
                 childBounds.set(0, new Bounds(bounds.position(), bounds.size()));
             }

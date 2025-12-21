@@ -27,15 +27,15 @@ import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import java.util.List;
 import java.util.function.Supplier;
 
-public class ElementSprite extends BasePrimitiveElement {
+public class Sprite extends BasePrimitiveElement {
 
     private Supplier<IScreenSprite> spriteSupplier;
 
-    public ElementSprite(IScreenSprite sprite) {
+    public Sprite(IScreenSprite sprite) {
         this(() -> sprite);
     }
 
-    public ElementSprite(Supplier<IScreenSprite> spriteSupplier) {
+    public Sprite(Supplier<IScreenSprite> spriteSupplier) {
         this.spriteSupplier = spriteSupplier;
     }
 

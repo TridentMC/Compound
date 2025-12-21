@@ -26,15 +26,15 @@ import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Supplier;
 
-public class ElementRect extends BasePrimitiveElement {
+public class Rect extends BasePrimitiveElement {
 
     private Supplier<Integer> colorSupplier;
 
-    public ElementRect(int color) {
+    public Rect(int color) {
         this(() -> color);
     }
 
-    public ElementRect(Supplier<Integer> colorSupplier) {
+    public Rect(Supplier<Integer> colorSupplier) {
         this.colorSupplier = colorSupplier;
     }
 

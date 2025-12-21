@@ -159,7 +159,7 @@ public class TextInput extends BaseElement implements IComposableElement {
             // Background sprite (if bordered)
             if (this.bordered) {
                 IScreenSprite bgSprite = this.focused.get() ? SPRITE_FOCUSED : SPRITE_NORMAL;
-                stack.e(new ElementSprite(bgSprite), bg -> bg.layout().fillMax());
+                stack.e(new Sprite(bgSprite), bg -> bg.layout().fillMax());
             }
 
             // Content area with padding
@@ -192,7 +192,7 @@ public class TextInput extends BaseElement implements IComposableElement {
 
         // Show hint if empty and not focused
         if (currentText.isEmpty() && !isFocused && this.hint != null) {
-            scope.e(new ElementLabel(this.hint, DEFAULT_HINT_COLOR, false));
+            scope.e(new Label(this.hint, DEFAULT_HINT_COLOR, false));
             return;
         }
 
@@ -216,7 +216,7 @@ public class TextInput extends BaseElement implements IComposableElement {
                 int selWidth = font != null ? font.width(selected) : selected.length() * 6;
 
                 // Selection rectangle
-                scope.e(new ElementRect(SELECTION_COLOR), rect -> {
+                scope.e(new Rect(SELECTION_COLOR), rect -> {
                     rect.layout()
                             .fixedSize(selWidth, font != null ? font.lineHeight : 9)
                             .margin(xOffset, 0, 0, 0);
@@ -226,7 +226,7 @@ public class TextInput extends BaseElement implements IComposableElement {
 
         // Main text label
         if (!visibleText.isEmpty()) {
-            scope.e(new ElementLabel(Component.literal(visibleText), color, true));
+            scope.e(new Label(Component.literal(visibleText), color, true));
         }
 
         // Cursor (only when focused and visible based on blink)
@@ -240,7 +240,7 @@ public class TextInput extends BaseElement implements IComposableElement {
                 float blinkVal = this.cursorBlink != null ? this.cursorBlink.get() : 1f;
                 if (blinkVal > 0.5f) {
                     // Show cursor as a thin rectangle
-                    scope.e(new ElementRect(CURSOR_COLOR), cursorRect -> {
+                    scope.e(new Rect(CURSOR_COLOR), cursorRect -> {
                         cursorRect.layout()
                                 .fixedSize(1, font != null ? font.lineHeight : 9)
                                 .margin(xOffset, 0, 0, 0);

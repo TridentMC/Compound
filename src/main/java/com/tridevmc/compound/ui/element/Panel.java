@@ -35,7 +35,7 @@ import java.util.function.Supplier;
  * A composable box element that renders a nineslice background with content on top.
  * By default uses the inventory container sprite.
  */
-public class ElementBox extends BaseElement implements IComposableElement {
+public class Panel extends BaseElement implements IComposableElement {
 
     public static final SlotKey CONTENT_SLOT = new SlotKey("content");
 
@@ -50,15 +50,15 @@ public class ElementBox extends BaseElement implements IComposableElement {
 
     private Supplier<IScreenSprite> spriteSupplier;
 
-    public ElementBox() {
-        this(ElementBox::getDefaultSprite);
+    public Panel() {
+        this(Panel::getDefaultSprite);
     }
 
-    public ElementBox(IScreenSprite sprite) {
+    public Panel(IScreenSprite sprite) {
         this(() -> sprite);
     }
 
-    public ElementBox(Supplier<IScreenSprite> spriteSupplier) {
+    public Panel(Supplier<IScreenSprite> spriteSupplier) {
         this.spriteSupplier = spriteSupplier;
     }
 
@@ -68,7 +68,7 @@ public class ElementBox extends BaseElement implements IComposableElement {
                     ResourceLocation.withDefaultNamespace("textures/gui/container/inventory.png"),
                     TEXTURE_SIZE, TEXTURE_SIZE
             );
-            // Custom writer that matches old ElementBox behavior: 4px corners/edges, 1px gray fill
+            // Custom writer that matches old Panel behavior: 4px corners/edges, 1px gray fill
             DEFAULT_SPRITE = wrapWithWriter(baseSprite, new IScreenSpriteWriter() {
                 @Override
                 public void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height) {
@@ -138,9 +138,9 @@ public class ElementBox extends BaseElement implements IComposableElement {
         scope.e(new WrappingStack(), stack -> {
             IScreenSprite sprite = this.spriteSupplier.get();
             if (sprite != null) {
-                stack.e(new ElementSprite(this.spriteSupplier));
+                stack.e(new Sprite(this.spriteSupplier));
             } else {
-                stack.e(new ElementRect(0xFFC6C6C6));
+                stack.e(new Rect(0xFFC6C6C6));
             }
 
             scope.slotInto(CONTENT_SLOT, stack);
@@ -149,7 +149,7 @@ public class ElementBox extends BaseElement implements IComposableElement {
 
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
-        // ElementBox has no fixed intrinsic size - flexible by default
+        // Panel has no fixed intrinsic size - flexible by default
         // Return size of composed Stack child, or fill available space
         if (!measuredChildren.isEmpty()) {
             return measuredChildren.get(0);

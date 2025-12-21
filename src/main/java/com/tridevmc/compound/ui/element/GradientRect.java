@@ -29,16 +29,16 @@ import java.util.function.Supplier;
 /**
  * A primitive element that renders a gradient rectangle.
  */
-public class ElementGradientRect extends BasePrimitiveElement {
+public class GradientRect extends BasePrimitiveElement {
 
     private Supplier<Integer> topColorSupplier;
     private Supplier<Integer> bottomColorSupplier;
 
-    public ElementGradientRect(int topColor, int bottomColor) {
+    public GradientRect(int topColor, int bottomColor) {
         this(() -> topColor, () -> bottomColor);
     }
 
-    public ElementGradientRect(Supplier<Integer> topColorSupplier, Supplier<Integer> bottomColorSupplier) {
+    public GradientRect(Supplier<Integer> topColorSupplier, Supplier<Integer> bottomColorSupplier) {
         this.topColorSupplier = topColorSupplier;
         this.bottomColorSupplier = bottomColorSupplier;
     }

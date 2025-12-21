@@ -19,6 +19,7 @@ package com.tridevmc.compound.ui.screen;
 import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
+import com.tridevmc.compound.ui.debug.DebugOverlayConfig;
 import com.tridevmc.compound.ui.event.*;
 import com.tridevmc.compound.ui.scope.RootScope;
 import com.tridevmc.compound.ui.tree.UITree;
@@ -146,6 +147,15 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
     @Override
     public boolean keyPressed(@NotNull net.minecraft.client.input.KeyEvent event) {
+        // F3+B toggles debug overlay (matches Minecraft's hitbox debug pattern)
+        // Use GLFW directly for key state checking
+        long windowHandle = this.minecraft.getWindow().handle();
+        boolean f3Down = org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_F3) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+        if (event.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_B && f3Down) {
+            DebugOverlayConfig.get().toggle();
+            return true;
+        }
+
         KeyInputEvent keyEvent = new KeyInputEvent(
                 event.key(),
                 '\0',

@@ -29,7 +29,7 @@ import java.util.List;
  * A primitive element that takes up space but doesn't render anything.
  * Useful for creating gaps and flexible spacing in layouts.
  */
-public class ElementSpacer extends BaseElement implements IPrimitiveElement {
+public class Spacer extends BaseElement implements IPrimitiveElement {
 
     private int width;
     private int height;
@@ -38,7 +38,7 @@ public class ElementSpacer extends BaseElement implements IPrimitiveElement {
     /**
      * Creates a flexible spacer that expands to fill available space.
      */
-    public ElementSpacer() {
+    public Spacer() {
         this(0, 0, true);
     }
 
@@ -48,11 +48,11 @@ public class ElementSpacer extends BaseElement implements IPrimitiveElement {
      * @param width  the width of the spacer
      * @param height the height of the spacer
      */
-    public ElementSpacer(int width, int height) {
+    public Spacer(int width, int height) {
         this(width, height, false);
     }
 
-    private ElementSpacer(int width, int height, boolean flexible) {
+    private Spacer(int width, int height, boolean flexible) {
         this.width = width;
         this.height = height;
         this.flexible = flexible;
