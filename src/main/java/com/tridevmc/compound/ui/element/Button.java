@@ -135,7 +135,7 @@ public class Button extends BaseElement implements IComposableElement {
             }
         });
 
-        scope.e(new WrappingStack(), stack -> {
+        scope.e(new Stack(), stack -> {
             stack.layout().contentAlignment(Alignment.CENTER);
 
             IScreenSprite backgroundSprite;
@@ -147,6 +147,7 @@ public class Button extends BaseElement implements IComposableElement {
                 backgroundSprite = DEFAULT_ENABLED_SPRITE;
             }
 
+            // Background sprite fills the button but doesn't affect sizing (due to fillMax)
             stack.e(new Sprite(backgroundSprite), sprite -> {
                 sprite.layout().fillMax();
             });
@@ -223,45 +224,5 @@ public class Button extends BaseElement implements IComposableElement {
     @Override
     public CursorType getCursor(int x, int y) {
         return this.canPress() ? CompoundCursors.HAND : null;
-    }
-
-    /**
-     * A specialized Stack that ignores the first child (background) for measurement
-     * and forces the first child to match the stack's bounds during placement.
-     */
-    private static class WrappingStack extends Stack {
-        @Override
-        public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
-            if (measuredChildren.isEmpty()) {
-                return new Size(0, 0);
-            }
-
-            if (measuredChildren.size() == 1) {
-                return measuredChildren.getFirst();
-            }
-
-            int maxWidth = 0;
-            int maxHeight = 0;
-
-            for (int i = 1; i < measuredChildren.size(); i++) {
-                Size childSize = measuredChildren.get(i);
-                maxWidth = Math.max(maxWidth, childSize.width());
-                maxHeight = Math.max(maxHeight, childSize.height());
-            }
-
-            return new Size(maxWidth, maxHeight);
-        }
-
-        @Override
-        public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
-            List<Bounds> childBounds = super.place(bounds, props, measuredChildren);
-
-            // Force first child (background) to fill entire button bounds
-            if (!childBounds.isEmpty()) {
-                childBounds.set(0, new Bounds(bounds.position(), bounds.size()));
-            }
-
-            return childBounds;
-        }
     }
 }

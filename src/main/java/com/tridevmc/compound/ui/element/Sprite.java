@@ -41,6 +41,17 @@ public class Sprite extends BasePrimitiveElement {
 
     @Override
     public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
+        // If fillMax is set, the sprite should NOT affect parent sizing
+        // This allows sprites to fill available space in Stack without dominating measurement
+        if (ownProperties.isFillMaxWidth() && ownProperties.isFillMaxHeight()) {
+            return new Size(0, 0);
+        }
+        if (ownProperties.isFillMaxWidth()) {
+            return new Size(0, constraints.maxHeight());
+        }
+        if (ownProperties.isFillMaxHeight()) {
+            return new Size(constraints.maxWidth(), 0);
+        }
         return new Size(constraints.maxWidth(), constraints.maxHeight());
     }
 

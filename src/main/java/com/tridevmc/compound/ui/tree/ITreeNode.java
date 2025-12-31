@@ -164,4 +164,10 @@ public interface ITreeNode {
     LayoutProperties getLayoutProperties();
 
     void setLayoutProperties(LayoutProperties properties);
+
+    // Debug: Allocated bounds from parent (before alignment/centering was applied)
+    // This represents what the parent gave us, vs getBounds() which is where we ended up
+    Bounds getAllocatedBounds();
+
+    void setAllocatedBounds(Bounds bounds);
 }

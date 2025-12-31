@@ -444,4 +444,18 @@ public class TreeNode implements ITreeNode {
     public void setLayoutProperties(LayoutProperties properties) {
         this.layoutProperties = properties;
     }
+
+    // Debug: Tracks what the parent allocated before alignment/centering
+    private Bounds allocatedBounds;
+
+    @Override
+    public Bounds getAllocatedBounds() {
+        return this.allocatedBounds;
+    }
+
+    @Override
+    public void setAllocatedBounds(Bounds bounds) {
+        this.allocatedBounds = bounds;
+    }
 }
+

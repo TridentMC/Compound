@@ -18,15 +18,20 @@ package com.tridevmc.compound.ui.tree;
 
 import com.tridevmc.compound.ui.animation.AnimationScheduler;
 import com.tridevmc.compound.ui.debug.DebugOverlayConfig;
-import com.tridevmc.compound.ui.element.IElement;
-import com.tridevmc.compound.ui.element.IElementInternal;
-import com.tridevmc.compound.ui.element.IPrimitiveElement;
+import com.tridevmc.compound.ui.element.*;
 import com.tridevmc.compound.ui.event.*;
 import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import com.tridevmc.compound.ui.state.State;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -505,6 +510,9 @@ public class UITree {
                 childProps = LayoutProperties.create();
             }
 
+            // Store what parent allocated (for debug overlay)
+            child.setAllocatedBounds(allocatedBounds);
+
             int contentX = allocatedBounds.x() + childProps.getMarginLeft();
             int contentY = allocatedBounds.y() + childProps.getMarginTop();
             int contentWidth = allocatedBounds.width() - childProps.getMarginLeft() - childProps.getMarginRight();
@@ -896,8 +904,7 @@ public class UITree {
 
     /**
      * Renders debug overlay showing bounds, margins, and padding for the hovered element
-     * and its ancestors. This is rendered after normal rendering so it appears on top.
-     * Individual elements have zero awareness of debug mode.
+     * and its ancestors. Includes layout driver visualization (alignment springs, spacing bars).
      *
      * @param context the screen context for drawing
      */
@@ -911,104 +918,631 @@ public class UITree {
         }
 
         // Build the ancestor chain from root to hovered node
-        var ancestorChain = new java.util.ArrayList<ITreeNode>();
+        var ancestorChain = new ArrayList<ITreeNode>();
         ITreeNode current = hoveredNode;
         while (current != null) {
             ancestorChain.add(0, current); // Add at beginning to get root-to-node order
             current = current.getParent();
         }
 
-        // Render debug for each node in the chain (ancestors get outline, hovered gets full detail)
-        for (int i = 0; i < ancestorChain.size(); i++) {
+        // 1. Render Ancestors (Dimmed Box Model)
+        for (int i = 0; i < ancestorChain.size() - 1; i++) {
             ITreeNode node = ancestorChain.get(i);
-            boolean isHoveredNode = (node == hoveredNode);
+            drawBoxModel(context, node, false);
+        }
 
-            var bounds = node.getBounds();
-            if (bounds == null || bounds.width() <= 0 || bounds.height() <= 0) {
-                continue;
+        // 2. Render Allocated Bounds (what parent gave us) vs Actual Bounds
+        drawAllocatedVsActual(context, hoveredNode);
+
+        // 3. Render Hovered Element (Full Box Model)
+        drawBoxModel(context, hoveredNode, true);
+
+        // 4. Render Layout Drivers for ALL Column/Row ancestors in the chain
+        // This is critical: For composed elements like Label->Text, the Column
+        // might be 2+ levels up, not the immediate parent!
+        for (int i = 0; i < ancestorChain.size() - 1; i++) {
+            ITreeNode ancestor = ancestorChain.get(i);
+            ITreeNode childInAncestor = ancestorChain.get(i + 1);
+            
+            // Visualize spacing for Column/Row ancestors
+            if (ancestor.getElement() instanceof Column || ancestor.getElement() instanceof Row) {
+                drawLayoutDrivers(context, childInAncestor, ancestor, childInAncestor == hoveredNode);
+            }
+            
+            // Visualize alignment springs for ancestors with contentAlignment (Stack, Box, etc.)
+            // This is key for showing WHY text is centered in buttons!
+            var ancestorProps = ancestor.getLayoutProperties();
+            if (ancestorProps != null && ancestorProps.getContentAlignment() != null) {
+                drawAlignmentDrivers(context, childInAncestor, ancestor);
+            }
+        }
+
+        // 5. Render Enhanced Info Panel
+        drawDebugInfoPanel(context, hoveredNode, ancestorChain);
+    }
+
+    /**
+     * Visualizes the difference between allocated bounds (what parent gave) and actual bounds.
+     * This shows WHY there are gaps around elements due to centering/alignment.
+     */
+    private void drawAllocatedVsActual(IScreenContext context, ITreeNode node) {
+        var allocatedBounds = node.getAllocatedBounds();
+        var actualBounds = node.getBounds();
+        
+        if (allocatedBounds == null || actualBounds == null) {
+            return;
+        }
+        
+        // Only draw if there's actually a difference
+        if (allocatedBounds.equals(actualBounds)) {
+            return;
+        }
+        
+        int unusedColor = DebugOverlayConfig.COLOR_UNUSED_SPACE;
+        
+        // Draw unused space as yellow fill
+        // Top gap
+        if (actualBounds.y() > allocatedBounds.y()) {
+            float gapHeight = actualBounds.y() - allocatedBounds.y();
+            context.drawRect(allocatedBounds.x(), allocatedBounds.y(), 
+                    allocatedBounds.width(), gapHeight, unusedColor);
+        }
+        
+        // Bottom gap
+        float actualBottom = actualBounds.y() + actualBounds.height();
+        float allocBottom = allocatedBounds.y() + allocatedBounds.height();
+        if (actualBottom < allocBottom) {
+            float gapHeight = allocBottom - actualBottom;
+            context.drawRect(allocatedBounds.x(), actualBottom, 
+                    allocatedBounds.width(), gapHeight, unusedColor);
+        }
+        
+        // Left gap
+        if (actualBounds.x() > allocatedBounds.x()) {
+            float gapWidth = actualBounds.x() - allocatedBounds.x();
+            context.drawRect(allocatedBounds.x(), actualBounds.y(), 
+                    gapWidth, actualBounds.height(), unusedColor);
+        }
+        
+        // Right gap
+        float actualRight = actualBounds.x() + actualBounds.width();
+        float allocRight = allocatedBounds.x() + allocatedBounds.width();
+        if (actualRight < allocRight) {
+            float gapWidth = allocRight - actualRight;
+            context.drawRect(actualRight, actualBounds.y(), 
+                    gapWidth, actualBounds.height(), unusedColor);
+        }
+        
+        // Draw dashed outline for allocated bounds
+        int allocOutlineColor = DebugOverlayConfig.COLOR_ALLOCATED_OUTLINE;
+        drawDashedRect(context, allocatedBounds.x(), allocatedBounds.y(), 
+                allocatedBounds.width(), allocatedBounds.height(), allocOutlineColor, 4);
+    }
+    
+    /**
+     * Draws a dashed rectangle outline.
+     */
+    private void drawDashedRect(IScreenContext context, float x, float y, float w, float h, int color, int dashLen) {
+        // Top edge
+        for (float dx = 0; dx < w; dx += dashLen * 2) {
+            float len = Math.min(dashLen, w - dx);
+            context.drawRect(x + dx, y, len, 1, color);
+        }
+        // Bottom edge
+        for (float dx = 0; dx < w; dx += dashLen * 2) {
+            float len = Math.min(dashLen, w - dx);
+            context.drawRect(x + dx, y + h - 1, len, 1, color);
+        }
+        // Left edge
+        for (float dy = 0; dy < h; dy += dashLen * 2) {
+            float len = Math.min(dashLen, h - dy);
+            context.drawRect(x, y + dy, 1, len, color);
+        }
+        // Right edge
+        for (float dy = 0; dy < h; dy += dashLen * 2) {
+            float len = Math.min(dashLen, h - dy);
+            context.drawRect(x + w - 1, y + dy, 1, len, color);
+        }
+    }
+
+    /**
+     * Draws the CSS Box Model (Margin, Padding, Content, Outline) for a node.
+     */
+    private void drawBoxModel(IScreenContext context, ITreeNode node, boolean isHovered) {
+        var bounds = node.getBounds();
+        if (bounds == null || bounds.width() <= 0 || bounds.height() <= 0) {
+            return;
+        }
+
+        var props = node.getLayoutProperties();
+        if (props == null) props = LayoutProperties.create();
+
+        float x = bounds.x();
+        float y = bounds.y();
+        float w = bounds.width();
+        float h = bounds.height();
+
+        int marginColor = isHovered ? DebugOverlayConfig.COLOR_MARGIN : DebugOverlayConfig.COLOR_ANCESTOR_MARGIN;
+        int paddingColor = isHovered ? DebugOverlayConfig.COLOR_PADDING : DebugOverlayConfig.COLOR_ANCESTOR_PADDING;
+        int outlineColor = isHovered ? DebugOverlayConfig.COLOR_BOUNDS_OUTLINE : DebugOverlayConfig.COLOR_ANCESTOR_OUTLINE;
+
+        // Draw Margin (Orange)
+        int mL = props.getMarginLeft();
+        int mT = props.getMarginTop();
+        int mR = props.getMarginRight();
+        int mB = props.getMarginBottom();
+
+        if (mL > 0) context.drawRect(x - mL, y, mL, h, marginColor);
+        if (mT > 0) context.drawRect(x, y - mT, w, mT, marginColor);
+        if (mR > 0) context.drawRect(x + w, y, mR, h, marginColor);
+        if (mB > 0) context.drawRect(x, y + h, w, mB, marginColor);
+
+        // Draw Padding (Green)
+        int pL = props.getPaddingLeft();
+        int pT = props.getPaddingTop();
+        int pR = props.getPaddingRight();
+        int pB = props.getPaddingBottom();
+
+        if (pL > 0) context.drawRect(x, y, pL, h, paddingColor);
+        if (pT > 0) context.drawRect(x + pL, y, w - pL - pR, pT, paddingColor);
+        if (pR > 0) context.drawRect(x + w - pR, y, pR, h, paddingColor);
+        if (pB > 0) context.drawRect(x + pL, y + h - pB, w - pL - pR, pB, paddingColor);
+
+        // Draw Outline
+        context.drawRectOutline(x, y, w, h, outlineColor, 1);
+
+        // If hovered, draw detailed margin/padding labels
+        if (isHovered) {
+             if (mL > 0) drawArrowLabel(context, x - mL/2f, y + h/2f, mL, true, marginColor);
+             if (mR > 0) drawArrowLabel(context, x + w + mR/2f, y + h/2f, mR, true, marginColor);
+             if (mT > 0) drawArrowLabel(context, x + w/2f, y - mT/2f, mT, false, marginColor);
+             if (mB > 0) drawArrowLabel(context, x + w/2f, y + h + mB/2f, mB, false, marginColor);
+
+             if (pL > 0) drawArrowLabel(context, x + pL/2f, y + h/2f, pL, true, paddingColor);
+             if (pR > 0) drawArrowLabel(context, x + w - pR/2f, y + h/2f, pR, true, paddingColor);
+             if (pT > 0) drawArrowLabel(context, x + w/2f, y + pT/2f, pT, false, paddingColor);
+             if (pB > 0) drawArrowLabel(context, x + w/2f, y + h - pB/2f, pB, false, paddingColor);
+        }
+    }
+
+    /**
+     * Visualizes spacing bars for Column/Row parents.
+     * @param isDirectChild if true, the child is the directly hovered element (shows bright labels)
+     */
+    private void drawLayoutDrivers(IScreenContext context, ITreeNode child, ITreeNode parent, boolean isDirectChild) {
+        var parentProps = parent.getLayoutProperties();
+        var parentElement = parent.getElement();
+        if (parentProps == null) return;
+        
+        var parentBounds = parent.getBounds();
+        var childBounds = child.getBounds();
+        if (parentBounds == null || childBounds == null) return;
+
+        // --- Spacing Bars for Column/Row ---
+        if (parentElement instanceof Column || parentElement instanceof Row) {
+            boolean isColumn = parentElement instanceof Column;
+            var siblings = parent.getChildren();
+            int spacingColor = DebugOverlayConfig.COLOR_SPACING;
+            int dimmedSpacingColor = 0x40E91E63; // Dimmed pink for non-adjacent
+            
+            // Find index of target child
+            int childIndex = -1;
+            for (int i = 0; i < siblings.size(); i++) {
+                if (siblings.get(i) == child) {
+                    childIndex = i;
+                    break;
+                }
             }
 
-            float x = bounds.x();
-            float y = bounds.y();
-            float w = bounds.width();
-            float h = bounds.height();
-
-            if (isHoveredNode) {
-                // Full detail for hovered element
-                var props = node.getLayoutProperties();
-                if (props == null) {
-                    props = LayoutProperties.create();
-                }
-
-                int marginL = props.getMarginLeft();
-                int marginT = props.getMarginTop();
-                int marginR = props.getMarginRight();
-                int marginB = props.getMarginBottom();
-
-                int paddingL = props.getPaddingLeft();
-                int paddingT = props.getPaddingTop();
-                int paddingR = props.getPaddingRight();
-                int paddingB = props.getPaddingBottom();
-
-                // Draw margin areas (orange)
-                if (marginL > 0) {
-                    context.drawRect(x - marginL, y, marginL, h, config.getMarginColor());
-                    drawArrowLabel(context, x - marginL / 2f, y + h / 2f, marginL, true, config.getMarginColor());
-                }
-                if (marginR > 0) {
-                    context.drawRect(x + w, y, marginR, h, config.getMarginColor());
-                    drawArrowLabel(context, x + w + marginR / 2f, y + h / 2f, marginR, true, config.getMarginColor());
-                }
-                if (marginT > 0) {
-                    context.drawRect(x, y - marginT, w, marginT, config.getMarginColor());
-                    drawArrowLabel(context, x + w / 2f, y - marginT / 2f, marginT, false, config.getMarginColor());
-                }
-                if (marginB > 0) {
-                    context.drawRect(x, y + h, w, marginB, config.getMarginColor());
-                    drawArrowLabel(context, x + w / 2f, y + h + marginB / 2f, marginB, false, config.getMarginColor());
-                }
-
-                // Draw padding areas (green)
-                if (paddingL > 0) {
-                    context.drawRect(x, y, paddingL, h, config.getPaddingColor());
-                    drawArrowLabel(context, x + paddingL / 2f, y + h / 2f, paddingL, true, config.getPaddingColor());
-                }
-                if (paddingR > 0) {
-                    context.drawRect(x + w - paddingR, y, paddingR, h, config.getPaddingColor());
-                    drawArrowLabel(context, x + w - paddingR / 2f, y + h / 2f, paddingR, true, config.getPaddingColor());
-                }
-                if (paddingT > 0) {
-                    context.drawRect(x + paddingL, y, w - paddingL - paddingR, paddingT, config.getPaddingColor());
-                    drawArrowLabel(context, x + w / 2f, y + paddingT / 2f, paddingT, false, config.getPaddingColor());
-                }
-                if (paddingB > 0) {
-                    context.drawRect(x + paddingL, y + h - paddingB, w - paddingL - paddingR, paddingB, config.getPaddingColor());
-                    drawArrowLabel(context, x + w / 2f, y + h - paddingB / 2f, paddingB, false, config.getPaddingColor());
-                }
-
-                // Draw bounds outline (thicker for hovered)
-                context.drawRectOutline(x, y, w, h, config.getBoundsOutlineColor(), 2);
-
-                // Draw dimension label
-                if (config.shouldShowDimensions()) {
-                    String dimensionText = bounds.width() + " × " + bounds.height();
-                    int textWidth = context.getFont().width(dimensionText);
-                    int textHeight = 9;
-                    int pad = 2;
-
-                    float labelX = x;
-                    float labelY = y - textHeight - pad * 2 - 2;
-                    if (labelY < 0) {
-                        labelY = y + h + 2;
+            // Draw spacing gaps
+            for (int i = 0; i < siblings.size() - 1; i++) {
+                var node1 = siblings.get(i);
+                var node2 = siblings.get(i + 1);
+                var b1 = node1.getBounds();
+                var b2 = node2.getBounds();
+                
+                if (b1 != null && b2 != null) {
+                    // Is this gap adjacent to the target element?
+                    boolean isAdjacentGap = (i == childIndex - 1) || (i == childIndex);
+                    // Use bright color for adjacent, dimmed for others
+                    int color = isAdjacentGap ? spacingColor : dimmedSpacingColor;
+                    
+                    if (isColumn) {
+                        float gapY = b1.y() + b1.height();
+                        float gapH = b2.y() - gapY;
+                        if (gapH > 0 && gapH < 100) {
+                            float gapX = Math.max(b1.x(), b2.x());
+                            float gapW = Math.min(b1.width(), b2.width());
+                            context.drawRect(gapX, gapY, gapW, gapH, color);
+                            
+                            // Draw pixel label on adjacent gaps
+                            if (isAdjacentGap && gapH >= 2) {
+                                drawArrowLabel(context, gapX + gapW/2f, gapY + gapH/2f, (int)gapH, false, color);
+                            }
+                        }
+                    } else {
+                        float gapX = b1.x() + b1.width();
+                        float gapW = b2.x() - gapX;
+                        if (gapW > 0 && gapW < 100) {
+                            float gapY = Math.max(b1.y(), b2.y());
+                            float gapH = Math.min(b1.height(), b2.height());
+                            context.drawRect(gapX, gapY, gapW, gapH, color);
+                            
+                            // Draw pixel label on adjacent gaps
+                            if (isAdjacentGap && gapW >= 2) {
+                                drawArrowLabel(context, gapX + gapW/2f, gapY + gapH/2f, (int)gapW, true, color);
+                            }
+                        }
                     }
-
-                    context.drawRect(labelX, labelY, textWidth + pad * 2, textHeight + pad * 2, 0xDD000000);
-                    context.drawStringWithShadow(dimensionText, labelX + pad, labelY + pad, 0xFFFFFF);
                 }
-            } else {
-                // Just thin outline for ancestors
-                context.drawRectOutline(x, y, w, h, 0x80888888, 1); // Gray outline for parents
             }
+        }
+    }
+    
+    /**
+     * Visualizes alignment springs for non-Column/Row parents (Stack, Box, etc.)
+     */
+    private void drawAlignmentDrivers(IScreenContext context, ITreeNode child, ITreeNode parent) {
+        var parentProps = parent.getLayoutProperties();
+        if (parentProps == null) return;
+        
+        var parentBounds = parent.getBounds();
+        var childBounds = child.getBounds();
+        if (parentBounds == null || childBounds == null) return;
+
+        // Alignment Springs (Yellow)
+        Alignment align = parentProps.getContentAlignment();
+
+        if (align != null) {
+            int springColor = DebugOverlayConfig.COLOR_ALIGNMENT;
+            float px = parentBounds.x() + parentProps.getPaddingLeft();
+            float py = parentBounds.y() + parentProps.getPaddingTop();
+            float pw = parentBounds.width() - parentProps.getPaddingLeft() - parentProps.getPaddingRight();
+            float ph = parentBounds.height() - parentProps.getPaddingTop() - parentProps.getPaddingBottom();
+            
+            float cx = childBounds.x();
+            float cy = childBounds.y();
+            float cw = childBounds.width();
+            float ch = childBounds.height();
+
+            // Horizontal Springs
+            if (align == Alignment.CENTER || align == Alignment.CENTER_LEFT || align == Alignment.CENTER_RIGHT || 
+                align == Alignment.TOP_CENTER || align == Alignment.BOTTOM_CENTER) {
+                
+                // Left Spring
+                if (cx > px) {
+                    float w = cx - px;
+                    context.drawRect(px, cy, w, ch, springColor);
+                    context.drawRect(px, cy + ch/2f, w, 1, 0xFFFFFF00);
+                }
+                
+                // Right Spring
+                if (cx + cw < px + pw) {
+                    float w = (px + pw) - (cx + cw);
+                    context.drawRect(cx + cw, cy, w, ch, springColor);
+                    context.drawRect(cx + cw, cy + ch/2f, w, 1, 0xFFFFFF00);
+                }
+            }
+            
+            // Vertical Springs (for vertical centering)
+            if (align == Alignment.CENTER || align == Alignment.TOP_CENTER || align == Alignment.BOTTOM_CENTER ||
+                align == Alignment.CENTER_LEFT || align == Alignment.CENTER_RIGHT) {
+                
+                // Top Spring
+                if (cy > py) {
+                    float h = cy - py;
+                    context.drawRect(cx, py, cw, h, springColor);
+                    context.drawRect(cx + cw/2f, py, 1, h, 0xFFFFFF00);
+                }
+                
+                // Bottom Spring
+                if (cy + ch < py + ph) {
+                    float h = (py + ph) - (cy + ch);
+                    context.drawRect(cx, cy + ch, cw, h, springColor);
+                    context.drawRect(cx + cw/2f, cy + ch, 1, h, 0xFFFFFF00);
+                }
+            }
+        }
+    }
+
+    /**
+     * Draws the enhanced layout info panel with hierarchy, bounds analysis, and gap explanations.
+     */
+    private void drawDebugInfoPanel(IScreenContext context, ITreeNode node, List<ITreeNode> ancestorChain) {
+        var element = node.getElement();
+        var bounds = node.getBounds();
+        var allocatedBounds = node.getAllocatedBounds();
+        var measuredSize = node.getMeasuredSize();
+        var parent = node.getParent();
+        var props = node.getLayoutProperties();
+        if (props == null) props = LayoutProperties.create();
+
+        var lines = new ArrayList<String>();
+        var colors = new ArrayList<Integer>();
+
+        // Title with element type and size
+        String title = element.getClass().getSimpleName() + " (" + (int)bounds.width() + "×" + (int)bounds.height() + ")";
+        lines.add(title);
+        colors.add(0xFFFFFFFF);
+
+        // Hierarchy breadcrumb (last 4 ancestors max)
+        if (ancestorChain.size() > 1) {
+            var breadcrumb = new StringBuilder();
+            int start = Math.max(0, ancestorChain.size() - 4);
+            for (int i = start; i < ancestorChain.size(); i++) {
+                if (i > start) breadcrumb.append(" > ");
+                breadcrumb.append(ancestorChain.get(i).getElement().getClass().getSimpleName());
+            }
+            lines.add(breadcrumb.toString());
+            colors.add(0xFF888888);
+        }
+
+        lines.add("");
+        colors.add(0xFF888888);
+
+        // Bounds Analysis Section
+        lines.add("BOUNDS ANALYSIS");
+        colors.add(0xFF4FC3F7); // Light blue header
+
+        lines.add("  Position: (" + (int)bounds.x() + ", " + (int)bounds.y() + ")");
+        colors.add(0xFFCCCCCC);
+
+        if (measuredSize != null) {
+            lines.add("  Measured: " + measuredSize.width() + "×" + measuredSize.height());
+            colors.add(0xFFCCCCCC);
+        }
+
+        // Show allocated vs actual bounds if different
+        if (allocatedBounds != null && !allocatedBounds.equals(bounds)) {
+            lines.add("  Allocated: " + (int)allocatedBounds.width() + "×" + (int)allocatedBounds.height());
+            colors.add(0xFFFFFF00); // Yellow - this is the key info!
+            
+            // Calculate and show gaps
+            int gapTop = bounds.y() - allocatedBounds.y();
+            int gapBottom = (allocatedBounds.y() + allocatedBounds.height()) - (bounds.y() + bounds.height());
+            int gapLeft = bounds.x() - allocatedBounds.x();
+            int gapRight = (allocatedBounds.x() + allocatedBounds.width()) - (bounds.x() + bounds.width());
+            
+            if (gapTop > 0 || gapBottom > 0) {
+                lines.add("  Gap V: ↑" + gapTop + "px ↓" + gapBottom + "px");
+                colors.add(0xFFFFFF00);
+            }
+            if (gapLeft > 0 || gapRight > 0) {
+                lines.add("  Gap H: ←" + gapLeft + "px →" + gapRight + "px");
+                colors.add(0xFFFFFF00);
+            }
+        }
+
+        // Parent layout info
+        if (parent != null) {
+            lines.add("");
+            colors.add(0xFF888888);
+            
+            lines.add("PARENT LAYOUT (" + parent.getElement().getClass().getSimpleName() + ")");
+            colors.add(0xFF81C784); // Light green header
+            
+            var pProps = parent.getLayoutProperties();
+            if (pProps != null) {
+                // Show alignment that caused centering
+                Alignment align = pProps.getContentAlignment();
+                if (align == null && parent.getElement() instanceof Column) align = pProps.getHorizontalAlignment();
+                if (align == null && parent.getElement() instanceof Row) align = pProps.getVerticalAlignment();
+                
+                if (align != null) {
+                    lines.add("  align: " + align.name());
+                    colors.add(0xFFFFEB3B); // Yellow
+                }
+                
+                if (pProps.getSpacing() > 0) {
+                    lines.add("  spacing: " + pProps.getSpacing() + "px");
+                    colors.add(0xFFFF69B4); // Pink
+                }
+                
+                int pPad = pProps.getPaddingLeft() + pProps.getPaddingRight() + 
+                           pProps.getPaddingTop() + pProps.getPaddingBottom();
+                if (pPad > 0) {
+                    lines.add("  padding: " + pProps.getPaddingTop() + " " + pProps.getPaddingRight() + 
+                             " " + pProps.getPaddingBottom() + " " + pProps.getPaddingLeft());
+                    colors.add(0xFF4CAF50); // Green
+                }
+            }
+        }
+        
+        // Sibling context - search ancestor chain for Column/Row containers
+        // This is crucial for composed elements like Label->Text where Column is 2 levels up
+        for (int i = 0; i < ancestorChain.size() - 1; i++) {
+            ITreeNode ancestor = ancestorChain.get(i);
+            ITreeNode childInAncestor = ancestorChain.get(i + 1);
+            
+            if (ancestor.getElement() instanceof Column || ancestor.getElement() instanceof Row) {
+                boolean isColumn = ancestor.getElement() instanceof Column;
+                var siblings = ancestor.getChildren();
+                int childIndex = -1;
+                
+                for (int j = 0; j < siblings.size(); j++) {
+                    if (siblings.get(j) == childInAncestor) {
+                        childIndex = j;
+                        break;
+                    }
+                }
+                
+                if (childIndex != -1 && siblings.size() > 1) {
+                    lines.add("");
+                    colors.add(0xFF888888);
+                    
+                    String containerName = ancestor.getElement().getClass().getSimpleName();
+                    var ancestorProps = ancestor.getLayoutProperties();
+                    int spacing = ancestorProps != null ? ancestorProps.getSpacing() : 0;
+                    
+                    lines.add("LAYOUT IN " + containerName + " (spacing=" + spacing + ")");
+                    colors.add(0xFFFF69B4); // Pink header
+                    
+                    // Previous sibling
+                    if (childIndex > 0) {
+                        var prevNode = siblings.get(childIndex - 1);
+                        var prevBounds = prevNode.getBounds();
+                        var prevElement = prevNode.getElement();
+                        var childBounds = childInAncestor.getBounds();
+                        
+                        String prevName = prevElement.getClass().getSimpleName();
+                        if (prevBounds != null) {
+                            prevName += " (" + (int)prevBounds.width() + "×" + (int)prevBounds.height() + ")";
+                        }
+                        lines.add("  prev: " + prevName);
+                        colors.add(0xFFCCCCCC);
+                        
+                        // Calculate gap between prev and child
+                        if (prevBounds != null && childBounds != null) {
+                            int gap = isColumn ? 
+                                childBounds.y() - (prevBounds.y() + prevBounds.height()) :
+                                childBounds.x() - (prevBounds.x() + prevBounds.width());
+                            if (gap > 0) {
+                                lines.add("  ↕ gap above: " + gap + "px");
+                                colors.add(0xFFFF69B4); // Pink
+                            }
+                        }
+                    }
+                    
+                    // Current element indicator
+                    var childBounds = childInAncestor.getBounds();
+                    String childName = childInAncestor.getElement().getClass().getSimpleName();
+                    if (childBounds != null) {
+                        childName += " (" + (int)childBounds.width() + "×" + (int)childBounds.height() + ")";
+                    }
+                    lines.add("  → this: " + childName);
+                    colors.add(0xFFFFFFFF);
+                    
+                    // Next sibling
+                    if (childIndex < siblings.size() - 1) {
+                        var nextNode = siblings.get(childIndex + 1);
+                        var nextBounds = nextNode.getBounds();
+                        var nextElement = nextNode.getElement();
+                        
+                        // Calculate gap between child and next
+                        if (nextBounds != null && childBounds != null) {
+                            int gap = isColumn ?
+                                nextBounds.y() - (childBounds.y() + childBounds.height()) :
+                                nextBounds.x() - (childBounds.x() + childBounds.width());
+                            if (gap > 0) {
+                                lines.add("  ↕ gap below: " + gap + "px");
+                                colors.add(0xFFFF69B4);
+                            }
+                        }
+                        
+                        String nextName = nextElement.getClass().getSimpleName();
+                        if (nextBounds != null) {
+                            nextName += " (" + (int)nextBounds.width() + "×" + (int)nextBounds.height() + ")";
+                        }
+                        lines.add("  next: " + nextName);
+                        colors.add(0xFFCCCCCC);
+                    }
+                    
+                    // Only show one Column/Row context (the innermost one)
+                    break;
+                }
+            }
+        }
+        
+        // Centering context - search ancestor chain for contentAlignment
+        // Iterate in REVERSE so we find the INNERMOST ancestor (closest to hovered element)
+        // This shows WHY text is centered in buttons (Stack with contentAlignment=CENTER)
+        for (int i = ancestorChain.size() - 2; i >= 0; i--) {
+            ITreeNode ancestor = ancestorChain.get(i);
+            ITreeNode childInAncestor = ancestorChain.get(i + 1);
+            
+            var ancestorProps = ancestor.getLayoutProperties();
+            if (ancestorProps != null && ancestorProps.getContentAlignment() != null) {
+                Alignment align = ancestorProps.getContentAlignment();
+                var ancestorBounds = ancestor.getBounds();
+                var childBounds = childInAncestor.getBounds();
+                
+                lines.add("");
+                colors.add(0xFF888888);
+                
+                String ancestorName = ancestor.getElement().getClass().getSimpleName();
+                lines.add("CENTERING (" + ancestorName + ")");
+                colors.add(0xFFFFEB3B); // Yellow header
+                
+                lines.add("  contentAlignment: " + align.name());
+                colors.add(0xFFFFEB3B);
+                
+                if (ancestorBounds != null && childBounds != null) {
+                    // Calculate centering gaps (accounting for padding)
+                    float px = ancestorBounds.x() + ancestorProps.getPaddingLeft();
+                    float py = ancestorBounds.y() + ancestorProps.getPaddingTop();
+                    float pw = ancestorBounds.width() - ancestorProps.getPaddingLeft() - ancestorProps.getPaddingRight();
+                    float ph = ancestorBounds.height() - ancestorProps.getPaddingTop() - ancestorProps.getPaddingBottom();
+                    
+                    int leftGap = (int)(childBounds.x() - px);
+                    int rightGap = (int)((px + pw) - (childBounds.x() + childBounds.width()));
+                    int topGap = (int)(childBounds.y() - py);
+                    int bottomGap = (int)((py + ph) - (childBounds.y() + childBounds.height()));
+                    
+                    if (leftGap > 0 || rightGap > 0) {
+                        lines.add("  H gaps: ←" + leftGap + "px  →" + rightGap + "px");
+                        colors.add(0xFFFFEB3B);
+                    }
+                    if (topGap > 0 || bottomGap > 0) {
+                        lines.add("  V gaps: ↑" + topGap + "px  ↓" + bottomGap + "px");
+                        colors.add(0xFFFFEB3B);
+                    }
+                }
+                
+                // Only show innermost centering ancestor
+                break;
+            }
+        }
+
+        // This element's properties
+        int mTot = props.getMarginLeft() + props.getMarginRight() + props.getMarginTop() + props.getMarginBottom();
+        int pTot = props.getPaddingLeft() + props.getPaddingRight() + props.getPaddingTop() + props.getPaddingBottom();
+        
+        if (mTot > 0 || pTot > 0 || props.isFillMaxWidth() || props.isFillMaxHeight()) {
+            lines.add("");
+            colors.add(0xFF888888);
+            
+            lines.add("THIS ELEMENT");
+            colors.add(0xFFFFAB40); // Orange header
+            
+            if (mTot > 0) {
+                lines.add("  margin: " + props.getMarginTop() + " " + props.getMarginRight() + 
+                         " " + props.getMarginBottom() + " " + props.getMarginLeft());
+                colors.add(0xFFFFA500); // Orange
+            }
+            
+            if (pTot > 0) {
+                lines.add("  padding: " + props.getPaddingTop() + " " + props.getPaddingRight() + 
+                         " " + props.getPaddingBottom() + " " + props.getPaddingLeft());
+                colors.add(0xFF4CAF50); // Green
+            }
+            
+            if (props.isFillMaxWidth() || props.isFillMaxHeight()) {
+                String fill = "";
+                if (props.isFillMaxWidth() && props.isFillMaxHeight()) fill = "fillMax";
+                else if (props.isFillMaxWidth()) fill = "fillMaxWidth";
+                else fill = "fillMaxHeight";
+                lines.add("  " + fill);
+                colors.add(0xFFCE93D8); // Purple
+            }
+        }
+
+        // Calculate panel dimensions
+        int lineHeight = 10;
+        int panelPadding = 6;
+        float panelW = 220;
+        float panelH = lines.size() * lineHeight + panelPadding * 2;
+        
+        // Position panel in top-right, but ensure it's visible
+        float px = context.getWidth() - panelW - 5;
+        float py = 5;
+
+        // Draw panel background
+        context.drawRect(px, py, panelW, panelH, 0xE8000000);
+        context.drawRectOutline(px, py, panelW, panelH, 0xFF333333, 1);
+
+        // Draw lines
+        for (int i = 0; i < lines.size(); i++) {
+            context.drawString(lines.get(i), px + panelPadding, py + panelPadding + i * lineHeight, colors.get(i));
         }
     }
 

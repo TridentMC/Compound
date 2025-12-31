@@ -135,12 +135,13 @@ public class Panel extends BaseElement implements IComposableElement {
 
     @Override
     public void compose(ICompositionScope scope) {
-        scope.e(new WrappingStack(), stack -> {
+        scope.e(new Stack(), stack -> {
             IScreenSprite sprite = this.spriteSupplier.get();
             if (sprite != null) {
-                stack.e(new Sprite(this.spriteSupplier));
+                // Background fills Panel but doesn't affect sizing (due to fillMax)
+                stack.e(new Sprite(this.spriteSupplier), s -> s.layout().fillMax());
             } else {
-                stack.e(new Rect(0xFFC6C6C6));
+                stack.e(new Rect(0xFFC6C6C6), r -> r.layout().fillMax());
             }
 
             scope.slotInto(CONTENT_SLOT, stack);
@@ -181,47 +182,5 @@ public class Panel extends BaseElement implements IComposableElement {
 
     public void setSpriteSupplier(Supplier<IScreenSprite> spriteSupplier) {
         this.spriteSupplier = spriteSupplier;
-    }
-
-    /**
-     * A specialized Stack that ignores the first child (background) for measurement
-     * and forces the first child to match the stack's bounds during placement.
-     */
-    private static class WrappingStack extends Stack {
-        @Override
-        public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
-            if (measuredChildren.isEmpty()) {
-                return new Size(0, 0);
-            }
-
-            // If only background, return its size (likely max)
-            if (measuredChildren.size() == 1) {
-                return measuredChildren.get(0);
-            }
-
-            int maxWidth = 0;
-            int maxHeight = 0;
-
-            // Skip first child (background) for size calculation
-            for (int i = 1; i < measuredChildren.size(); i++) {
-                Size childSize = measuredChildren.get(i);
-                maxWidth = Math.max(maxWidth, childSize.width());
-                maxHeight = Math.max(maxHeight, childSize.height());
-            }
-
-            return new Size(maxWidth, maxHeight);
-        }
-
-        @Override
-        public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
-            List<Bounds> childBounds = super.place(bounds, props, measuredChildren);
-
-            // Force background (index 0) to match stack bounds
-            if (!childBounds.isEmpty()) {
-                childBounds.set(0, new Bounds(bounds.position(), bounds.size()));
-            }
-
-            return childBounds;
-        }
     }
 }
