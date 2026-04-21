@@ -32,13 +32,13 @@ import com.tridevmc.compound.ui.tree.UITree;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -54,7 +54,6 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     private static final WrappedField<Boolean> isSplittingStack = WrappedField.create(AbstractContainerScreen.class, "isSplittingStack", "field_147004_w");
     private static final WrappedField<ItemStack> draggingItem = WrappedField.create(AbstractContainerScreen.class, "draggingItem", "field_147012_x");
     private static final WrappedField<Integer> quickCraftingType = WrappedField.create(AbstractContainerScreen.class, "quickCraftingType", "field_146987_F");
-    private static final WrappedField<GuiRenderState> guiRenderState = WrappedField.create(GuiGraphics.class, "guiRenderState", "f_399111_");
     private final CompoundScreenContext screenContext;
     private final UITree tree;
     private final Map<Slot, InventorySlot> slotElements;
@@ -63,16 +62,16 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     private float mouseX, mouseY;
     private float prevMouseX, prevMouseY;
 
-    public ComposedUIContainer(T container) {
-        super(container, Minecraft.getInstance().player.getInventory(), Component.empty());
+    public ComposedUIContainer(T container, Inventory inventory, Component title) {
+        super(container, inventory, title);
 
         this.screenContext = new CompoundScreenContext(this);
         this.tree = new UITree();
         this.slotElements = Maps.newHashMap();
+    }
 
-        var mc = Minecraft.getInstance();
-        this.init(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
-
+    @Override
+    protected void init() {
         RootScope scope = new RootScope(this.tree);
         this.compose(scope);
         this.discoverSlotElements();
@@ -106,10 +105,8 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         this.activeGuiGraphics = gg;
     }
 
-    // ... existing fields ...
-
     @Override
-    public void render(@NotNull GuiGraphics gg, int mouseX, int mouseY, float partialTicks) {
+    public void render(GuiGraphics gg, int mouseX, int mouseY, float partialTicks) {
         this.activeGuiGraphics = gg;
 
         if (mouseX != this.mouseX || mouseY != this.mouseY) {
@@ -132,9 +129,8 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         this.tree.layoutAndRender(this.width, this.height, this.screenContext);
         this.updateSlotStates();
 
-        gg.requestCursor(this.tree.getRequestedCursor());
-
-        super.render(gg, mouseX, mouseY, partialTicks);
+        // Cursor handling - in 1.26.1 this is done differently
+        // gg.requestCursor(this.tree.getRequestedCursor());
     }
 
     @Override
@@ -177,7 +173,18 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
                     slotElement.setDrawUnderlay(true);
                     var maxSize = Math.min(playerStack.getMaxStackSize(), slot.getMaxStackSize(playerStack));
                     var existingSlotContent = slot.getItem().isEmpty() ? 0 : slot.getItem().getCount();
-                    var quickCraftPlaceCount = AbstractContainerMenu.getQuickCraftPlaceCount(this.quickCraftSlots, quickCraftType, playerStack) + existingSlotContent;
+                    int quickCraftPlaceCount;
+                    if (quickCraftType == 0) {
+                        // DISTRIBUTE_EVENLY
+                        quickCraftPlaceCount = (playerStack.getCount() + this.quickCraftSlots.size() - 1) / this.quickCraftSlots.size();
+                    } else if (quickCraftType == 1) {
+                        // SINGLE_ITEM
+                        quickCraftPlaceCount = 1;
+                    } else {
+                        // CLONE
+                        quickCraftPlaceCount = playerStack.getCount();
+                    }
+                    quickCraftPlaceCount += existingSlotContent;
                     if (quickCraftPlaceCount > maxSize) {
                         slotElement.setDisplayString(ChatFormatting.YELLOW.toString() + maxSize);
                     }
@@ -235,12 +242,8 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         return this.activeGuiGraphics;
     }
 
-    public GuiRenderState getGuiRenderState() {
-        return guiRenderState.get(this.getActiveGuiGraphics());
-    }
-
     public Matrix3x2fStack getActiveStack() {
-        return this.getActiveGuiGraphics() != null ? this.getActiveGuiGraphics().pose() : null;
+        return this.activeGuiGraphics != null ? this.activeGuiGraphics.pose() : null;
     }
 
     public long getTicks() {
@@ -307,7 +310,11 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
 
     @Override
     public boolean charTyped(@NotNull CharacterEvent event) {
-        com.tridevmc.compound.ui.event.CharEvent charEvent = new com.tridevmc.compound.ui.event.CharEvent((char) event.codepoint(), event.modifiers());
+        int modifiers = 0;
+        if (this.minecraft.hasShiftDown()) modifiers |= 1;
+        if (this.minecraft.hasControlDown()) modifiers |= 2;
+        if (this.minecraft.hasAltDown()) modifiers |= 4;
+        com.tridevmc.compound.ui.event.CharEvent charEvent = new com.tridevmc.compound.ui.event.CharEvent((char) event.codepoint(), modifiers);
         boolean consumed = this.tree.dispatchCharTyped(charEvent);
         return consumed || super.charTyped(event);
     }

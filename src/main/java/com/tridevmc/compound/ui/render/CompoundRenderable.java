@@ -16,45 +16,15 @@
 
 package com.tridevmc.compound.ui.render;
 
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.gui.navigation.ScreenRectangle;
-import net.minecraft.client.gui.render.TextureSetup;
-import net.minecraft.client.gui.render.state.GuiElementRenderState;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix3x2f;
-
-import java.util.function.Consumer;
-
 /**
- * Internal record that implements GuiElementRenderState for Compound's rendering pipeline.
+ * Placeholder for the old deferred rendering system.
  * <p>
- * This record captures all necessary state for rendering a GUI element through Vanilla's
- * GuiRenderState system, including the render pipeline, texture setup, transformation matrix,
- * scissor area, and a vertex emission lambda.
+ * In Minecraft 1.26.1, the rendering pipeline has changed significantly.
+ * The old GuiElementRenderState system no longer exists.
  * <p>
- * The vertex emitter lambda allows flexible vertex generation while keeping the record generic
- * enough to handle any primitive type (textured quads, gradients, etc.).
- *
- * @param pipeline     The render pipeline to use (e.g., GUI, GUI_TEXTURED)
- * @param textureSetup The texture configuration for this renderable
- * @param pose         The transformation matrix to apply to vertices
- * @param scissorArea  Optional scissor rectangle to clip rendering
- * @param bounds       The screen-space bounds of this element (for culling and debug)
- * @param emitter      Lambda that emits vertices to the provided VertexConsumer
+ * For now, rendering is done directly through GuiGraphics methods.
+ * This class is kept for potential future reimplementation of deferred rendering.
  */
-public record CompoundRenderable(
-        RenderPipeline pipeline,
-        TextureSetup textureSetup,
-        Matrix3x2f pose,
-        @Nullable ScreenRectangle scissorArea,
-        @Nullable ScreenRectangle bounds,
-        Consumer<VertexConsumer> emitter
-) implements GuiElementRenderState {
-
-    @Override
-    public void buildVertices(@NotNull VertexConsumer consumer) {
-        emitter.accept(consumer);
-    }
+public class CompoundRenderable {
+    // Placeholder - deferred rendering not yet implemented for 1.26.1
 }

@@ -36,11 +36,8 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.sensing.SensorType;
 import net.minecraft.world.entity.ai.village.poi.PoiType;
 import net.minecraft.world.entity.ai.village.poi.PoiTypes;
-import net.minecraft.world.entity.decoration.PaintingVariant;
-import net.minecraft.world.entity.decoration.PaintingVariants;
-import net.minecraft.world.entity.npc.VillagerProfession;
+
 import net.minecraft.world.entity.schedule.Activity;
-import net.minecraft.world.entity.schedule.Schedule;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -83,17 +80,13 @@ public class InternalRegistryEntrySerializer<T> implements IConfigObjectSerializ
             new InternalRegistryEntrySerializer<>(SoundEvent.class, Registries.SOUND_EVENT, SoundEvents.EMPTY),
             new InternalRegistryEntrySerializer<>(Enchantment.class, Registries.ENCHANTMENT, Enchantments.UNBREAKING),
             new InternalRegistryEntrySerializer<>(EntityType.class, Registries.ENTITY_TYPE, EntityType.AREA_EFFECT_CLOUD),
-            new InternalRegistryEntrySerializer<>(PaintingVariant.class, Registries.PAINTING_VARIANT, PaintingVariants.BUST),
             new InternalRegistryEntrySerializer<>(ParticleType.class, Registries.PARTICLE_TYPE, ParticleTypes.BLOCK),
             new InternalRegistryEntrySerializer<>(MenuType.class, Registries.MENU, MenuType.GENERIC_9x2),
             new InternalRegistryEntrySerializer<>(BlockEntityType.class, Registries.BLOCK_ENTITY_TYPE, BlockEntityType.FURNACE),
             new InternalRegistryEntrySerializer<>(RecipeType.class, Registries.RECIPE_TYPE, RecipeType.CRAFTING),
-            new InternalRegistryEntrySerializer<>(RecipeSerializer.class, Registries.RECIPE_SERIALIZER, RecipeSerializer.SHAPED_RECIPE),
-            new InternalRegistryEntrySerializer<>(VillagerProfession.class, Registries.VILLAGER_PROFESSION, VillagerProfession.FARMER),
             new InternalRegistryEntrySerializer<>(PoiType.class, Registries.POINT_OF_INTEREST_TYPE, PoiTypes.FARMER),
             new InternalRegistryEntrySerializer<>(MemoryModuleType.class, Registries.MEMORY_MODULE_TYPE, MemoryModuleType.BREED_TARGET),
             new InternalRegistryEntrySerializer<>(SensorType.class, Registries.SENSOR_TYPE, SensorType.DUMMY),
-            new InternalRegistryEntrySerializer<>(Schedule.class, Registries.SCHEDULE, Schedule.EMPTY),
             new InternalRegistryEntrySerializer<>(Activity.class, Registries.ACTIVITY, Activity.AVOID),
             new InternalRegistryEntrySerializer<>(WorldCarver.class, Registries.CARVER, WorldCarver.CAVE),
             new InternalRegistryEntrySerializer<>(Feature.class, Registries.FEATURE, Feature.NO_OP),

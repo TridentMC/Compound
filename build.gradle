@@ -12,7 +12,7 @@ version = modVersion
 group = modGroup
 ext.versionTag = ''
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 base {
     archivesName = modBaseName
@@ -23,13 +23,6 @@ neoForge {
 
     // Add modding dependencies (Minecraft classes) to the test source set
     addModdingDependenciesTo sourceSets.test
-
-    if (mappingsChannel == "parchment") {
-        parchment {
-            mappingsVersion = project.mappingsVersion
-            minecraftVersion =  project.mappingsMinecraftVersion
-        }
-    }
 }
 
 configurations {

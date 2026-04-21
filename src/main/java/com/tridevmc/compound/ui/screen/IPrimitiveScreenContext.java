@@ -21,7 +21,7 @@ import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.render.state.GuiRenderState;
+
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -51,13 +51,6 @@ public interface IPrimitiveScreenContext {
      * @return the active matrix stack for the current draw.
      */
     Matrix3x2fStack getActiveStack();
-
-    /**
-     * Gets the active GuiRenderState for submitting rendering primitives.
-     *
-     * @return the active GuiRenderState for the current draw.
-     */
-    GuiRenderState getGuiRenderState();
 
     /**
      * Gets the width of the screen.
@@ -543,12 +536,4 @@ public interface IPrimitiveScreenContext {
      */
     EnumUILayer getCurrentLayer();
 
-    /**
-     * Advances to the next rendering stratum (layer).
-     * This ensures composition order is respected when rendering.
-     */
-    default void nextStratum() {
-        this.getGuiRenderState().nextStratum();
     }
-
-}

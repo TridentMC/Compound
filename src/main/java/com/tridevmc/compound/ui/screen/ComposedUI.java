@@ -25,7 +25,6 @@ import com.tridevmc.compound.ui.scope.RootScope;
 import com.tridevmc.compound.ui.tree.UITree;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -35,7 +34,6 @@ import org.joml.Matrix3x2fStack;
 
 public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
-    private static final WrappedField<GuiRenderState> guiRenderState = WrappedField.create(GuiGraphics.class, "guiRenderState", "f_399111_");
     private final CompoundScreenContext screenContext;
     private final UITree tree;
     private GuiGraphics activeGuiGraphics;
@@ -48,14 +46,12 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
         super(Component.literal(""));
         this.screenContext = new CompoundScreenContext(this);
         this.tree = new UITree();
+    }
 
-        Minecraft mc = Minecraft.getInstance();
-        this.init(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
-
+    @Override
+    protected void init() {
         RootScope scope = new RootScope(this.tree);
         this.compose(scope);
-
-        // Initial measurement will happen in first render() call when screen dimensions are available
     }
 
     /**
@@ -85,9 +81,8 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
         this.tree.layoutAndRender(this.width, this.height, this.screenContext);
 
-        graphics.requestCursor(this.tree.getRequestedCursor());
-
-        super.render(graphics, mouseX, mouseY, partialTicks);
+        // Cursor handling - in 1.26.1 this is done differently
+        // graphics.requestCursor(this.tree.getRequestedCursor());
     }
 
     @Override
@@ -130,10 +125,6 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
     public GuiGraphics getActiveGuiGraphics() {
         return this.activeGuiGraphics;
-    }
-
-    public GuiRenderState getGuiRenderState() {
-        return guiRenderState.get(this.activeGuiGraphics);
     }
 
     public CompoundScreenContext getScreenContext() {
@@ -182,7 +173,11 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
     @Override
     public boolean charTyped(@NotNull CharacterEvent event) {
-        CharEvent charEvent = new CharEvent((char) event.codepoint(), event.modifiers());
+        int modifiers = 0;
+        if (this.minecraft.hasShiftDown()) modifiers |= 1;
+        if (this.minecraft.hasControlDown()) modifiers |= 2;
+        if (this.minecraft.hasAltDown()) modifiers |= 4;
+        CharEvent charEvent = new CharEvent((char) event.codepoint(), modifiers);
         boolean consumed = this.tree.dispatchCharTyped(charEvent);
         return consumed || super.charTyped(event);
     }

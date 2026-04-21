@@ -19,7 +19,7 @@ package com.tridevmc.compound.ui.element;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.platform.cursor.CursorType;
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
+
 import com.tridevmc.compound.ui.CompoundCursors;
 import com.tridevmc.compound.ui.animation.AnimatedState;
 import com.tridevmc.compound.ui.layout.*;
@@ -107,7 +107,7 @@ public class TextInput extends BaseElement implements IComposableElement {
 
     // Animation state
     private AnimatedState<Integer> cursorBlink;
-    private long focusedTime = Util.getMillis();
+    private long focusedTime = System.currentTimeMillis();
 
     public TextInput() {
     }
@@ -160,7 +160,7 @@ public class TextInput extends BaseElement implements IComposableElement {
 
         scope.onFocusGained(() -> {
             this.focused.set(true);
-            this.focusedTime = Util.getMillis();
+            this.focusedTime = System.currentTimeMillis();
             if (this.cursorBlink != null) {
                 this.cursorBlink.setImmediate(1);
             }
@@ -512,7 +512,7 @@ public class TextInput extends BaseElement implements IComposableElement {
     private int getCursorPos(int delta) {
         String currentText = this.text.get();
         int cursor = this.cursorPos.get();
-        int newPos = Util.offsetByCodepoints(currentText, cursor, delta);
+        int newPos = Character.offsetByCodePoints(currentText.toCharArray(), 0, currentText.length(), cursor, delta);
         return Mth.clamp(newPos, 0, currentText.length());
     }
 
