@@ -16,6 +16,7 @@
 
 package com.tridevmc.compound.ui.tree;
 
+import com.tridevmc.compound.ui.animation.AnimatedState;
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.event.*;
 import com.tridevmc.compound.ui.layout.Bounds;
@@ -136,6 +137,9 @@ public interface ITreeNode {
 
     List<Function<MouseMoveEvent, Boolean>> getMouseMoveHandlers();
 
+    /** Retains handlers installed by the consumer before element composition. */
+    void preserveHandlers();
+
     void clearHandlers();
 
     // Slot map (for composable elements)
@@ -170,4 +174,11 @@ public interface ITreeNode {
     Bounds getAllocatedBounds();
 
     void setAllocatedBounds(Bounds bounds);
+
+    // Animation lifecycle management
+    // Animations created within this node's composition scope are automatically
+    // registered and disposed when the node is detached.
+    void registerAnimation(AnimatedState<?> animation);
+
+    List<AnimatedState<?>> getRegisteredAnimations();
 }

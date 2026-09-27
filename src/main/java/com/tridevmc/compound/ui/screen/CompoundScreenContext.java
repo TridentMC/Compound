@@ -20,9 +20,12 @@ import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
+import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.ItemStack;
@@ -93,7 +96,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawFormattedCharSequence(FormattedCharSequence processor, float x, float y) {
-        this.ui.getActiveGuiGraphics().drawString(this.getFont(), processor, (int) x, (int) y, 0xFF404040, false);
+        this.ui.getActiveGuiGraphics().text(this.getFont(), processor, (int) x, (int) y, 0xFF404040, false);
     }
 
     @Override
@@ -104,7 +107,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawFormattedCharSequenceWithShadow(FormattedCharSequence processor, float x, float y) {
-        this.ui.getActiveGuiGraphics().drawString(this.getFont(), processor, (int) x, (int) y, 0xFF404040, true);
+        this.ui.getActiveGuiGraphics().text(this.getFont(), processor, (int) x, (int) y, 0xFF404040, true);
     }
 
     @Override
@@ -114,52 +117,47 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawTexturedRect(ResourceLocation texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV) {
+    public void drawTexturedRect(Identifier texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV) {
         var gg = this.ui.getActiveGuiGraphics();
         if (gg == null) return;
-        
-        // In 1.26.1, use GuiGraphics directly for rendering
-        // Note: blit signature may vary, using the most common variant
-        gg.blit(texture, (int) x, (int) y, (int) minU, (int) minV, (int) width, (int) height, 256, 256);
+
+        gg.blit(texture, (int) x, (int) y, (int) (x + width), (int) (y + height), minU, maxU, minV, maxV);
     }
 
     @Override
     public void drawTooltip(List<Component> tooltip, int x, int y, Optional<TooltipComponent> extraComponents, Font font) {
         var gg = this.ui.getActiveGuiGraphics();
-        if (gg != null) {
-            // In 1.26.1, tooltip rendering uses ClientTooltipComponent
-            // For now, we skip tooltip rendering as the API is significantly different
-            // TODO: Implement proper tooltip rendering for 1.26.1
-        }
+        if (gg == null) return;
+
+        List<ClientTooltipComponent> components = net.neoforged.neoforge.client.ClientHooks.gatherTooltipComponents(
+                ItemStack.EMPTY, tooltip, x, gg.guiWidth(), gg.guiHeight(), font);
+        extraComponents.ifPresent(tc -> components.add(components.isEmpty() ? 0 : 1, ClientTooltipComponent.create(tc)));
+        gg.setComponentTooltipForNextFrame(font, tooltip, x, y);
     }
 
     @Override
     public void drawProcessorAsTooltip(List<FormattedCharSequence> processors, int x, int y, Font font) {
         var gg = this.ui.getActiveGuiGraphics();
-        if (gg != null) {
-            // In 1.26.1, tooltip rendering API has changed significantly
-            // For now, we skip tooltip rendering as the API is significantly different
-            // TODO: Implement proper tooltip rendering for 1.26.1
-        }
+        if (gg == null) return;
+
+        gg.setTooltipForNextFrame(font, processors, x, y);
     }
 
     @Override
     public void drawItemStack(ItemStack stack, float x, float y, float width, float height, String altText) {
         var gg = this.ui.getActiveGuiGraphics();
         if (gg == null) return;
-        
+
         var font = IClientItemExtensions.of(stack).getFont(stack, IClientItemExtensions.FontContext.TOOLTIP);
         if (font == null) font = this.getFont();
-        
-        // In 1.26.1, pose() returns Matrix3x2fStack which has different API
-        // Using pushMatrix/popMatrix instead of pushPose/popPose
+
         var pose = gg.pose();
         pose.pushMatrix();
         pose.translate(x, y);
         pose.scale(width / 16F, height / 16F);
 
-        gg.renderItem(stack, 0, 0);
-        gg.renderItemDecorations(font, stack, 0, 0, altText);
+        gg.item(stack, 0, 0);
+        gg.itemDecorations(font, stack, 0, 0, altText);
 
         pose.popMatrix();
     }
@@ -168,8 +166,7 @@ public class CompoundScreenContext implements IScreenContext {
     public void drawGradientRect(float x, float y, float width, float height, int startColour, int endColour) {
         var gg = this.ui.getActiveGuiGraphics();
         if (gg == null) return;
-        
-        // In 1.26.1, use GuiGraphics.fillGradient for gradient rects
+
         gg.fillGradient((int) x, (int) y, (int) (x + width), (int) (y + height), startColour, endColour);
     }
 
@@ -181,7 +178,7 @@ public class CompoundScreenContext implements IScreenContext {
     @Override
     public void sendChatMessage(String message, boolean addToChat) {
         if (addToChat) {
-            this.getMc().gui.getChat().addMessage(Component.translatable(message));
+            this.getMc().gui.getChat().addClientSystemMessage(Component.translatable(message));
         }
     }
 

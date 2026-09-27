@@ -24,6 +24,7 @@ import net.minecraft.network.chat.Component;
 
 import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 
 /**
@@ -56,9 +57,9 @@ public class NumberInput extends BaseElement implements IComposableElement {
     }
 
     public NumberInput(double initialValue) {
-        this.textInput = new TextInput(String.valueOf(initialValue));
-        this.value.set(initialValue);
+        this.textInput = new TextInput();
         this.setupFilter();
+        this.setValue(initialValue);
     }
 
     private void setupFilter() {
@@ -66,11 +67,11 @@ public class NumberInput extends BaseElement implements IComposableElement {
             if (text == null || text.isEmpty()) return true;
             if (text.equals("-") && this.minValue < 0) return true;
             if (this.allowDecimals && text.equals(".")) return true;
-            if (this.allowDecimals && text.startsWith("-") && text.length() > 1 && text.substring(1).equals(".")) return true;
+            if (this.allowDecimals && this.minValue < 0 && text.equals("-.")) return true;
 
             try {
                 double val = Double.parseDouble(text);
-                return val >= this.minValue && val <= this.maxValue;
+                return Double.isFinite(val) && (this.allowDecimals || val == Math.rint(val));
             } catch (NumberFormatException e) {
                 return false;
             }
@@ -78,17 +79,25 @@ public class NumberInput extends BaseElement implements IComposableElement {
 
         this.textInput.setResponder(text -> {
             if (text == null || text.isEmpty() || text.equals("-") || text.equals(".") ||
-(text.startsWith("-") && text.length() > 1 && text.substring(1).equals("."))) {
+                    text.equals("-.")) {
                 return;
             }
 
             try {
                 double val = Double.parseDouble(text);
-                this.value.set(val);
-                if (this.onValueChanged != null) {
-                    this.onValueChanged.accept(val);
+                double clamped = this.clamp(val);
+                if (Double.compare(this.value.get(), clamped) != 0) {
+                    this.value.set(clamped);
+                    if (this.onValueChanged != null) this.onValueChanged.accept(clamped);
                 }
             } catch (NumberFormatException ignored) {
+            }
+        });
+        this.textInput.setOnCommit(text -> {
+            try {
+                this.setValue(Double.parseDouble(text));
+            } catch (NumberFormatException ignored) {
+                this.setValue(this.value.get());
             }
         });
     }
@@ -99,12 +108,17 @@ public class NumberInput extends BaseElement implements IComposableElement {
     }
 
     public void setValue(double value) {
+        if (!Double.isFinite(value)) throw new IllegalArgumentException("Numeric input value must be finite");
+        double clamped = this.clamp(value);
+        this.textInput.setValue(this.allowDecimals ? String.valueOf(clamped) : String.format(Locale.ROOT, "%.0f", clamped));
+    }
+
+    private double clamp(double value) {
         double clamped = Math.clamp(value, this.minValue, this.maxValue);
         if (!this.allowDecimals) {
-            clamped = Math.round(clamped);
+            clamped = Math.clamp(Math.rint(clamped), Math.ceil(this.minValue), Math.floor(this.maxValue));
         }
-        this.value.set(clamped);
-        this.textInput.setValue(this.allowDecimals ? String.valueOf(clamped) : String.valueOf((int) clamped));
+        return clamped;
     }
 
     public double getValue() {
@@ -116,12 +130,19 @@ public class NumberInput extends BaseElement implements IComposableElement {
     }
 
     public void setRange(double min, double max) {
+        if (Double.isNaN(min) || Double.isNaN(max) || min > max || min == Double.POSITIVE_INFINITY || max == Double.NEGATIVE_INFINITY
+                || (!this.allowDecimals && Math.ceil(min) > Math.floor(max))) {
+            throw new IllegalArgumentException("Numeric input range must be ordered and contain a permitted value");
+        }
         this.minValue = min;
         this.maxValue = max;
         this.setValue(this.value.get());
     }
 
     public void setAllowDecimals(boolean allow) {
+        if (!allow && Math.ceil(this.minValue) > Math.floor(this.maxValue)) {
+            throw new IllegalArgumentException("Numeric input range contains no integer");
+        }
         this.allowDecimals = allow;
         this.setValue(this.value.get());
     }

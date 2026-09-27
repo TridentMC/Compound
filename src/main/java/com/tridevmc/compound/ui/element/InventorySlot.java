@@ -25,7 +25,7 @@ import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.sprite.ScreenSpriteWriterNineSlice;
 import net.minecraft.client.Minecraft;
 import net.minecraft.data.AtlasIds;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -44,16 +44,16 @@ public class InventorySlot extends BaseElement implements IComposableElement {
 
     private static final IScreenSprite SLOT_SPRITE = IScreenSprite.of(
             Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.GUI).getSprite(
-                    ResourceLocation.withDefaultNamespace("container/slot")),
+                    Identifier.withDefaultNamespace("container/slot")),
             new ScreenSpriteWriterNineSlice(
                     1, 1, 1, 1)
     );
 
     private static final IScreenSprite SLOT_HIGHLIGHT_BACK_SPRITE = IScreenSprite.of(
-            ResourceLocation.withDefaultNamespace("container/slot_highlight_back")
+            Identifier.withDefaultNamespace("container/slot_highlight_back")
     );
     private static final IScreenSprite SLOT_HIGHLIGHT_FRONT_SPRITE = IScreenSprite.of(
-            ResourceLocation.withDefaultNamespace("container/slot_highlight_front")
+            Identifier.withDefaultNamespace("container/slot_highlight_front")
     );
 
     private final Slot vanillaSlot;
@@ -125,9 +125,7 @@ public class InventorySlot extends BaseElement implements IComposableElement {
                     sprite -> sprite.layout().margin(-3));
         });
 
-        // TODO: Tooltip handling - implement onTooltipRender event or similar mechanism.
-        //       Tooltips require a post-render overlay pass (after all UI elements).
-        //       Current workaround: tooltip logic is handled in ComposedUIContainer's render method.
+        // ComposedUIContainer extracts vanilla item tooltips after the tree and carried items.
     }
 
     public Slot getVanillaSlot() {

@@ -42,6 +42,13 @@ public class Stack extends BaseContainer {
             maxHeight = Math.max(maxHeight, childSize.height());
         }
 
+        // When contentAlignment is set, expand to fill available constraints
+        // so that centering is visible and meaningful
+        if (props.getContentAlignment() != null) {
+            maxWidth = Math.max(maxWidth, constraints.maxWidth());
+            maxHeight = Math.max(maxHeight, constraints.maxHeight());
+        }
+
         return new Size(maxWidth, maxHeight);
     }
 

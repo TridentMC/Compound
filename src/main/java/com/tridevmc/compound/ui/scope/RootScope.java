@@ -16,6 +16,7 @@
 
 package com.tridevmc.compound.ui.scope;
 
+import com.tridevmc.compound.ui.animation.AnimatedState;
 import com.tridevmc.compound.ui.element.IComposableElement;
 import com.tridevmc.compound.ui.element.IContainer;
 import com.tridevmc.compound.ui.element.IPrimitiveElement;
@@ -56,7 +57,7 @@ public class RootScope implements ICompositionScope {
         element.onAttached();
 
         if (configurator != null) {
-            ElementScope<T> scope = new ElementScope<>(element);
+            ElementScope<T> scope = new ElementScope<>(element, node);
             configurator.accept(scope);
             node.setLayoutProperties(scope.getLayoutProperties());
         }
@@ -105,6 +106,7 @@ public class RootScope implements ICompositionScope {
             node.setLayoutProperties(scope.getLayoutProperties());
         }
 
+        node.preserveHandlers();
         node.setCompositionFunction(() -> element.compose(scope));
         element.compose(scope);
     }
@@ -215,6 +217,11 @@ public class RootScope implements ICompositionScope {
     }
 
     @Override
+    public boolean isFocused() {
+        return this.rootNode != null && this.tree.hasFocus(this.rootNode);
+    }
+
+    @Override
     public void slot(SlotKey key, Consumer<ICompositionScope> defaultContent) {
         throw new UnsupportedOperationException("Slots are not supported at the root level");
     }
@@ -232,5 +239,12 @@ public class RootScope implements ICompositionScope {
     @Override
     public UITree getTree() {
         return this.tree;
+    }
+
+    @Override
+    public void registerAnimation(AnimatedState<?> animation) {
+        if (this.rootNode != null) {
+            this.rootNode.registerAnimation(animation);
+        }
     }
 }

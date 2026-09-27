@@ -24,7 +24,7 @@ import com.tridevmc.compound.ui.event.*;
 import com.tridevmc.compound.ui.scope.RootScope;
 import com.tridevmc.compound.ui.tree.UITree;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -36,7 +36,7 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
     private final CompoundScreenContext screenContext;
     private final UITree tree;
-    private GuiGraphics activeGuiGraphics;
+    private GuiGraphicsExtractor activeGuiGraphics;
     private Matrix3x2fStack activeStack;
     private long ticks;
     private double mouseX, mouseY;
@@ -50,8 +50,25 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
     @Override
     protected void init() {
-        RootScope scope = new RootScope(this.tree);
-        this.compose(scope);
+        var viewport = this.tree.getViewportSize();
+        if (this.tree.hasRoot() && viewport.width() == this.width && viewport.height() == this.height) {
+            this.tree.requestRemeasure(this.tree.getRoot());
+            return;
+        }
+        var previousFocus = this.tree.getFocusedNode();
+        this.tree.reset();
+        this.tree.setViewportSize(this.width, this.height);
+        this.compose(new RootScope(this.tree));
+        if (previousFocus != null) {
+            var restored = this.tree.getNodeForElement(previousFocus.getElement());
+            if (restored != null) this.tree.requestFocus(restored);
+        }
+    }
+
+    @Override
+    public void removed() {
+        this.tree.reset();
+        super.removed();
     }
 
     /**
@@ -62,7 +79,7 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
     protected abstract void compose(RootScope scope);
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
         this.activeGuiGraphics = graphics;
         this.activeStack = graphics.pose();
 
@@ -81,8 +98,7 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
         this.tree.layoutAndRender(this.width, this.height, this.screenContext);
 
-        // Cursor handling - in 1.26.1 this is done differently
-        // graphics.requestCursor(this.tree.getRequestedCursor());
+        this.tree.getRequestedCursor().select(this.minecraft.getWindow());
     }
 
     @Override
@@ -123,7 +139,7 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
         return this;
     }
 
-    public GuiGraphics getActiveGuiGraphics() {
+    public GuiGraphicsExtractor getActiveGuiGraphics() {
         return this.activeGuiGraphics;
     }
 

@@ -31,7 +31,7 @@ import com.tridevmc.compound.ui.scope.RootScope;
 import com.tridevmc.compound.ui.tree.UITree;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.CharacterEvent;
@@ -57,7 +57,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     private final CompoundScreenContext screenContext;
     private final UITree tree;
     private final Map<Slot, InventorySlot> slotElements;
-    private GuiGraphics activeGuiGraphics;
+    private GuiGraphicsExtractor activeGuiGraphics;
     private long ticks;
     private float mouseX, mouseY;
     private float prevMouseX, prevMouseY;
@@ -72,9 +72,21 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
 
     @Override
     protected void init() {
-        RootScope scope = new RootScope(this.tree);
-        this.compose(scope);
+        var viewport = this.tree.getViewportSize();
+        if (this.tree.hasRoot() && viewport.width() == this.width && viewport.height() == this.height) {
+            this.tree.requestRemeasure(this.tree.getRoot());
+            return;
+        }
+        var previousFocus = this.tree.getFocusedNode();
+        this.tree.reset();
+        this.tree.setViewportSize(this.width, this.height);
+        this.slotElements.clear();
+        this.compose(new RootScope(this.tree));
         this.discoverSlotElements();
+        if (previousFocus != null) {
+            var restored = this.tree.getNodeForElement(previousFocus.getElement());
+            if (restored != null) this.tree.requestFocus(restored);
+        }
     }
 
     /**
@@ -88,6 +100,12 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         });
     }
 
+    @Override
+    public void removed() {
+        this.tree.reset();
+        super.removed();
+    }
+
     /**
      * Override this method to define the UI composition.
      *
@@ -96,17 +114,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     protected abstract void compose(RootScope scope);
 
     @Override
-    protected void renderBg(GuiGraphics gg, float partialTicks, int mouseX, int mouseY) {
-        this.activeGuiGraphics = gg;
-    }
-
-    @Override
-    protected void renderLabels(GuiGraphics gg, int mouseX, int mouseY) {
-        this.activeGuiGraphics = gg;
-    }
-
-    @Override
-    public void render(GuiGraphics gg, int mouseX, int mouseY, float partialTicks) {
+    public void extractRenderState(GuiGraphicsExtractor gg, int mouseX, int mouseY, float partialTicks) {
         this.activeGuiGraphics = gg;
 
         if (mouseX != this.mouseX || mouseY != this.mouseY) {
@@ -129,8 +137,10 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         this.tree.layoutAndRender(this.width, this.height, this.screenContext);
         this.updateSlotStates();
 
-        // Cursor handling - in 1.26.1 this is done differently
-        // gg.requestCursor(this.tree.getRequestedCursor());
+        this.tree.getRequestedCursor().select(this.minecraft.getWindow());
+        super.extractCarriedItem(gg, mouseX, mouseY);
+        super.extractSnapbackItem(gg);
+        super.extractTooltip(gg, mouseX, mouseY);
     }
 
     @Override
@@ -150,7 +160,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         var quickCraftType = quickCraftingType.get(this);
         var splittingStack = isSplittingStack.get(this);
 
-        Slot newHoveredSlot = null;
+        Slot newHoveredSlot = this.findHoveredSlot((int) this.mouseX, (int) this.mouseY);
 
         for (int i1 = 0; i1 < this.getMenu().slots.size(); ++i1) {
             var slot = this.getMenu().slots.get(i1);
@@ -193,19 +203,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
             }
             slotElement.setDisplayStack(displayStack);
 
-            boolean isHovered = false;
-            if (slot.isActive()) {
-                var bounds = slotElement.getBounds();
-                if (bounds != null) {
-                    double mouseX = this.screenContext.getMouseX();
-                    double mouseY = this.screenContext.getMouseY();
-                    isHovered = mouseX >= bounds.x() && mouseX < bounds.right() &&
-                            mouseY >= bounds.y() && mouseY < bounds.bottom();
-                    if (isHovered) {
-                        newHoveredSlot = slot;
-                    }
-                }
-            }
+            boolean isHovered = slot == newHoveredSlot;
 
             slotElement.setDrawOverlay(isHovered);
             if (!this.isQuickCrafting || !this.quickCraftSlots.contains(slot)) {
@@ -216,18 +214,43 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         this.hoveredSlot = newHoveredSlot;
     }
 
+    private Slot findHoveredSlot(int mouseX, int mouseY) {
+        var node = this.tree.findNodeAt(mouseX, mouseY);
+        while (node != null) {
+            if (node.getElement() instanceof InventorySlot element) {
+                var slot = element.getVanillaSlot();
+                var bounds = element.getBounds();
+                if (slot.isActive() && bounds != null && bounds.contains(mouseX, mouseY)) return slot;
+                // Slot highlight sprites extend beyond their slot; their decorative halo must not steal a neighbour's hit.
+                var parent = node.getParent();
+                if (parent != null) {
+                    for (var sibling : parent.getChildren()) {
+                        if (sibling.getElement() instanceof InventorySlot neighbour) {
+                            var neighbourBounds = neighbour.getBounds();
+                            if (neighbour.getVanillaSlot().isActive() && neighbourBounds != null
+                                    && neighbourBounds.contains(mouseX, mouseY)) return neighbour.getVanillaSlot();
+                        }
+                    }
+                }
+                return null;
+            }
+            node = node.getParent();
+        }
+        return null;
+    }
+
     @Override
     protected boolean isHovering(int x, int y, int width, int height, double mouseX, double mouseY) {
-        // A hack, not a clever one. Just a hack.
-        var matchingSlot = this.slotElements.keySet().stream()
-                .filter((s) -> s.x == x && s.y == y)
-                .findFirst();
-
-        return matchingSlot.map(slot -> {
-            var InventorySlot = this.slotElements.get(slot);
-            var bounds = InventorySlot.getBounds();
-            return bounds != null && bounds.contains((int) mouseX, (int) mouseY);
-        }).orElse(super.isHovering(x, y, width, height, mouseX, mouseY));
+        // Vanilla identifies slots by their menu coordinates; the composed tree owns their visible bounds.
+        for (var entry : this.slotElements.entrySet()) {
+            var slot = entry.getKey();
+            if (slot.x == x && slot.y == y) {
+                var bounds = entry.getValue().getBounds();
+                return bounds != null && bounds.contains((int) mouseX, (int) mouseY)
+                        && this.findHoveredSlot((int) mouseX, (int) mouseY) == slot;
+            }
+        }
+        return false;
     }
 
     public double getMouseX() {
@@ -238,7 +261,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         return this.mouseY;
     }
 
-    public GuiGraphics getActiveGuiGraphics() {
+    public GuiGraphicsExtractor getActiveGuiGraphics() {
         return this.activeGuiGraphics;
     }
 
@@ -321,7 +344,13 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
 
     @Override
     public boolean mouseDragged(@NotNull MouseButtonEvent event, double pX, double pY) {
-        return super.mouseDragged(event, pX, pY);
+        com.tridevmc.compound.ui.event.MouseDragEvent dragEvent = new com.tridevmc.compound.ui.event.MouseDragEvent(
+                event.button(),
+                (int) event.x(), (int) event.y(),
+                pX, pY
+        );
+        boolean consumed = this.tree.dispatchMouseDrag((int) event.x(), (int) event.y(), dragEvent);
+        return consumed || super.mouseDragged(event, pX, pY);
     }
 
     @Override
@@ -339,7 +368,11 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
 
     @Override
     public boolean mouseReleased(@NotNull MouseButtonEvent event) {
-        return super.mouseReleased(event);
+        com.tridevmc.compound.ui.event.MouseReleaseEvent releaseEvent = new com.tridevmc.compound.ui.event.MouseReleaseEvent(
+                (int) event.x(), (int) event.y(), event.button()
+        );
+        boolean consumed = this.tree.dispatchMouseRelease((int) event.x(), (int) event.y(), releaseEvent);
+        return consumed || super.mouseReleased(event);
     }
 
     @Override

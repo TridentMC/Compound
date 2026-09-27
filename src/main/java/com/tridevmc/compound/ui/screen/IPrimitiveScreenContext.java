@@ -24,7 +24,7 @@ import net.minecraft.client.gui.Font;
 
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.ItemStack;
@@ -284,19 +284,28 @@ public interface IPrimitiveScreenContext {
 
     /**
      * Draws a textured rect on the screen matching the provided rect data.
+     * <p>
+     * The UV coordinates should be in normalized (0.0-1.0) space, as produced by
+     * {@link IScreenSprite#getU(float)} and {@link IScreenSprite#getV(float)}.
      *
-     * @param texture the texture to use for drawing.
+     * @param texture the texture location to use for drawing.
      * @param x       the x coordinate to draw the rect at.
      * @param y       the y coordinate to draw the rect at.
+     * @param width   the width of the rect to draw.
+     * @param height  the height of the rect to draw.
+     * @param minU    the minimum U coordinate (normalized).
+     * @param minV    the minimum V coordinate (normalized).
+     * @param maxU    the maximum U coordinate (normalized).
+     * @param maxV    the maximum V coordinate (normalized).
      */
-    void drawTexturedRect(ResourceLocation texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV);
+    void drawTexturedRect(Identifier texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV);
 
     /**
-     * Draws a textured rect on the screen matching the provided rect data using the given sprite, utilizing the writer to draw the sprite.
+     * Draws a sprite to the screen using the sprite's writer to handle stretch/tile/nine-slice scaling.
      *
-     * @param sprite the sprite to draw on the screen, used for gathering uv data and binding the texture.
-     * @param x      the x coordinate to draw the rect at.
-     * @param y      the y coordinate to draw the rect at.
+     * @param sprite the sprite to draw on the screen.
+     * @param x      the x coordinate to draw the sprite at.
+     * @param y      the y coordinate to draw the sprite at.
      * @param width  the width of the rect to draw.
      * @param height the height of the rect to draw.
      */

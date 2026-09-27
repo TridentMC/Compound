@@ -17,19 +17,16 @@
 package com.tridevmc.compound.ui.element;
 
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.platform.cursor.CursorType;
 import com.tridevmc.compound.ui.CompoundCursors;
+import com.tridevmc.compound.ui.cursor.UICursor;
 import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
 import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundEvents;
+import net.minecraft.resources.Identifier;
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -58,11 +55,13 @@ public class Tabs extends BaseElement implements IComposableElement {
     private static final int TAB_SPACING = 2;
 
     private static final IScreenSprite TAB_SPRITE = IScreenSprite.of(
-            ResourceLocation.withDefaultNamespace("widget/button"));
+            Identifier.withDefaultNamespace("widget/tab"));
     private static final IScreenSprite TAB_SELECTED_SPRITE = IScreenSprite.of(
-            ResourceLocation.withDefaultNamespace("widget/button_highlighted"));
-    private static final IScreenSprite TAB_DISABLED_SPRITE = IScreenSprite.of(
-            ResourceLocation.withDefaultNamespace("widget/button_disabled"));
+            Identifier.withDefaultNamespace("widget/tab_selected"));
+    private static final IScreenSprite TAB_HIGHLIGHTED_SPRITE = IScreenSprite.of(
+            Identifier.withDefaultNamespace("widget/tab_highlighted"));
+    private static final IScreenSprite TAB_SELECTED_HIGHLIGHTED_SPRITE = IScreenSprite.of(
+            Identifier.withDefaultNamespace("widget/tab_selected_highlighted"));
 
     private final State<Integer> selectedIndex = new StateImpl<>(0);
     private final State<Boolean> enabled = new StateImpl<>(true);
@@ -88,11 +87,16 @@ public class Tabs extends BaseElement implements IComposableElement {
                     Tab tab = this.tabs.get(i);
 
                     tabRow.e(new Button(), button -> {
-                        button.layout().fixedHeight(TAB_HEIGHT);
+                        button.layout().fixedSize(Minecraft.getInstance().font.width(tab.label) + TAB_PADDING * 2, TAB_HEIGHT);
                         button.getElement().setEnabled(this.enabled.get() && tab.enabled);
+                        button.getElement().setSprites(
+                                () -> this.selectedIndex.get() == tabIndex ? TAB_SELECTED_SPRITE : TAB_SPRITE,
+                                () -> this.selectedIndex.get() == tabIndex ? TAB_SELECTED_HIGHLIGHTED_SPRITE : TAB_HIGHLIGHTED_SPRITE,
+                                () -> this.selectedIndex.get() == tabIndex ? TAB_SELECTED_SPRITE : TAB_SPRITE);
 
                         button.fillSlot(Button.CONTENT_SLOT, content -> {
-                            content.e(new Label(tab.label, 0xFFFFFF, false));
+                            content.e(new Label(tab.label, this.enabled.get() && tab.enabled ? 0xFFFFFF : 0xA0A0A0, true),
+                                    label -> label.layout().margin(0, this.selectedIndex.get() == tabIndex ? 0 : 4, 0, 0));
                         });
 
                         button.getElement().addPressListener((x, y) -> {
@@ -107,11 +111,14 @@ public class Tabs extends BaseElement implements IComposableElement {
             if (this.selectedIndex.get() >= 0 && this.selectedIndex.get() < this.tabs.size()) {
                 Tab selectedTab = this.tabs.get(this.selectedIndex.get());
                 column.e(new Panel(), contentPanel -> {
-                    contentPanel.layout().fillMax();
+                    contentPanel.layout().fillMaxWidth().weight(1);
                     contentPanel.fillSlot(Panel.CONTENT_SLOT, content -> {
                         content.e(new Box(), box -> {
                             box.layout().padding(8).fillMax();
-                            selectedTab.content.accept(box);
+                            box.e(new Column(), tabColumn -> {
+                                tabColumn.layout().fillMax().spacing(4);
+                                selectedTab.content.accept(tabColumn);
+                            });
                         });
                     });
                 });
@@ -127,9 +134,6 @@ public class Tabs extends BaseElement implements IComposableElement {
         if (oldIndex != index) {
             this.selectedIndex.set(index);
 
-            SoundManager soundManager = Minecraft.getInstance().getSoundManager();
-            soundManager.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-
             if (this.onTabChanged != null) {
                 this.onTabChanged.accept(index);
             }
@@ -138,27 +142,39 @@ public class Tabs extends BaseElement implements IComposableElement {
 
     public void addTab(String label, Consumer<ICompositionScope> content) {
         this.tabs.add(new Tab(Component.literal(label), content, true));
+        this.invalidate();
     }
 
     public void addTab(Component label, Consumer<ICompositionScope> content) {
         this.tabs.add(new Tab(label, content, true));
+        this.invalidate();
     }
 
     public void addTab(String label, Consumer<ICompositionScope> content, boolean enabled) {
         this.tabs.add(new Tab(Component.literal(label), content, enabled));
+        this.invalidate();
     }
 
     public void removeTab(int index) {
         if (index >= 0 && index < this.tabs.size()) {
             this.tabs.remove(index);
-            if (this.selectedIndex.get() >= this.tabs.size()) {
-                this.selectedIndex.set(Math.max(0, this.tabs.size() - 1));
-            }
+            int selected = this.selectedIndex.get();
+            if (index < selected) selected--;
+            this.selectedIndex.set(Math.min(selected, this.tabs.size() - 1));
+            this.ensureEnabledSelection();
+            this.invalidate();
         }
     }
 
     public void setSelectedTab(int index) {
-        this.selectTab(index);
+        if (index < 0 || index >= this.tabs.size()) return;
+        if (!this.tabs.get(index).enabled) return;
+        if (this.selectedIndex.get() != index) {
+            this.selectedIndex.set(index);
+            if (this.onTabChanged != null) {
+                this.onTabChanged.accept(index);
+            }
+        }
     }
 
     public int getSelectedTab() {
@@ -168,6 +184,8 @@ public class Tabs extends BaseElement implements IComposableElement {
     public void setTabEnabled(int index, boolean enabled) {
         if (index >= 0 && index < this.tabs.size()) {
             this.tabs.get(index).enabled = enabled;
+            this.ensureEnabledSelection();
+            this.invalidate();
         }
     }
 
@@ -187,6 +205,24 @@ public class Tabs extends BaseElement implements IComposableElement {
         this.enabled.set(enabled);
     }
 
+    private void invalidate() {
+        this.ensureEnabledSelection();
+        var node = this.getNode();
+        if (node != null) node.getTree().requestRecompose(node);
+    }
+
+    private void ensureEnabledSelection() {
+        int selected = this.selectedIndex.get();
+        if (selected >= 0 && selected < this.tabs.size() && this.tabs.get(selected).enabled) return;
+        for (int i = 0; i < this.tabs.size(); i++) {
+            if (this.tabs.get(i).enabled) {
+                this.selectedIndex.set(i);
+                return;
+            }
+        }
+        this.selectedIndex.set(-1);
+    }
+
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (!measuredChildren.isEmpty()) {
@@ -204,7 +240,7 @@ public class Tabs extends BaseElement implements IComposableElement {
     }
 
     @Override
-    public CursorType getCursor(int x, int y) {
+    public UICursor getCursor(int x, int y) {
         return this.enabled.get() ? CompoundCursors.HAND : null;
     }
 

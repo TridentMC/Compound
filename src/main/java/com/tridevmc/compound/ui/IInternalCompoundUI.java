@@ -17,7 +17,7 @@
 package com.tridevmc.compound.ui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import org.joml.Matrix3x2fStack;
 
@@ -26,7 +26,7 @@ import org.joml.Matrix3x2fStack;
  */
 public interface IInternalCompoundUI {
 
-    GuiGraphics getActiveGuiGraphics();
+    GuiGraphicsExtractor getActiveGuiGraphics();
 
     Matrix3x2fStack getActiveStack();
 

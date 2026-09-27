@@ -37,6 +37,14 @@ public interface Easing {
     Easing EASE_IN_OUT_CUBIC = t -> t < 0.5f
             ? 4 * t * t * t
             : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+    Easing EASE_IN_OUT_SINE = t -> (float) -(Math.cos(Math.PI * t) - 1) / 2;
+    Easing EASE_OUT_QUART = t -> {
+        float f = t - 1;
+        return 1 - f * f * f * f;
+    };
+    Easing EASE_IN_OUT_QUART = t -> t < 0.5f
+            ? 8 * t * t * t * t
+            : 1 - (float) Math.pow(-2 * t + 2, 4) / 2;
     /**
      * Step function - stays at start value until animation completes, then instantly jumps to end value.
      * Useful for instant toggles and periodic blinking effects.

@@ -32,6 +32,7 @@ public class Label extends BaseElement implements IComposableElement {
     private Supplier<Component> textSupplier;
     private Supplier<Integer> colorSupplier;
     private Supplier<Boolean> shadowSupplier;
+    private boolean wrap;
 
     public Label(Component text) {
         this(() -> text, () -> 0xFFFFFF, () -> true);
@@ -64,8 +65,13 @@ public class Label extends BaseElement implements IComposableElement {
     }
 
     @Override
+    public Component getNarrationMessage() {
+        return this.textSupplier.get();
+    }
+
+    @Override
     public void compose(ICompositionScope scope) {
-        scope.e(new Text(this.textSupplier, this.colorSupplier, this.shadowSupplier));
+        scope.e(new Text(() -> this.textSupplier.get(), () -> this.colorSupplier.get(), () -> this.shadowSupplier.get()).setWrap(this.wrap));
     }
 
     @Override
@@ -90,6 +96,7 @@ public class Label extends BaseElement implements IComposableElement {
 
     public void setText(Component text) {
         this.textSupplier = () -> text;
+        this.invalidateSize();
     }
 
     public Supplier<Component> getTextSupplier() {
@@ -98,6 +105,7 @@ public class Label extends BaseElement implements IComposableElement {
 
     public void setTextSupplier(Supplier<Component> textSupplier) {
         this.textSupplier = textSupplier;
+        this.invalidateSize();
     }
 
     public int getColor() {
@@ -130,5 +138,17 @@ public class Label extends BaseElement implements IComposableElement {
 
     public void setShadowSupplier(Supplier<Boolean> shadowSupplier) {
         this.shadowSupplier = shadowSupplier;
+    }
+
+    private void invalidateSize() {
+        var node = this.getNode();
+        if (node != null) node.getTree().requestRemeasure(node);
+    }
+
+    public Label setWrap(boolean wrap) {
+        this.wrap = wrap;
+        var node = this.getNode();
+        if (node != null) node.getTree().requestRecompose(node);
+        return this;
     }
 }

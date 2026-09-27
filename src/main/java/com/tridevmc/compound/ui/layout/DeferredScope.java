@@ -17,9 +17,12 @@
 package com.tridevmc.compound.ui.layout;
 
 import com.tridevmc.compound.ui.state.State;
+import com.tridevmc.compound.ui.state.StateObserver;
 import com.tridevmc.compound.ui.tree.ITreeNode;
 import com.tridevmc.compound.ui.tree.TreeNode;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -47,6 +50,7 @@ public class DeferredScope {
     private final LayoutProperties properties;
     private final ITreeNode boundNode;
     private final Consumer<DeferredScope> callback;
+    private final Set<State<?>> boundStates = new HashSet<>();
 
     DeferredScope(LayoutProperties properties, ITreeNode node, Consumer<DeferredScope> callback) {
         this.properties = properties;
@@ -61,12 +65,15 @@ public class DeferredScope {
      * @param state the state to bind
      */
     public void bind(State<?> state) {
-        if (boundNode instanceof TreeNode node) {
-            // Bind for layout-only updates (triggers remeasure, not recompose)
-            node.bindLayoutState(state);
-
-            // Add observer to re-run the callback when state changes
-            state.addObserver(ignored -> callback.accept(this));
+        if (this.boundNode instanceof TreeNode node && this.boundStates.add(state)) {
+            StateObserver observer = ignored -> {
+                if (node.getTree() != null) {
+                    this.callback.accept(this);
+                    node.getTree().requestRemeasure(node);
+                }
+            };
+            state.addObserver(observer);
+            node.onDispose(() -> state.removeObserver(observer));
         }
     }
 

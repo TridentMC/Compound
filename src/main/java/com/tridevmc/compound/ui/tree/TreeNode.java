@@ -16,6 +16,7 @@
 
 package com.tridevmc.compound.ui.tree;
 
+import com.tridevmc.compound.ui.animation.AnimatedState;
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.event.*;
 import com.tridevmc.compound.ui.layout.Bounds;
@@ -53,6 +54,8 @@ public class TreeNode implements ITreeNode {
     private final List<Function<MouseDragEvent, Boolean>> mouseDragHandlers = new ArrayList<>();
     private final List<Function<MouseMoveEvent, Boolean>> mouseMoveHandlers = new ArrayList<>();
     private UITree tree;
+    private final List<Runnable> handlerResets = new ArrayList<>();
+    private final List<Runnable> disposalActions = new ArrayList<>();
     // Two dedicated observers for different state types
     private final StateObserver compositionObserver = state -> {
         if (this.tree != null) {
@@ -70,10 +73,12 @@ public class TreeNode implements ITreeNode {
     private Size measuredSize;
     private Bounds bounds;
     private LayoutProperties layoutProperties = LayoutProperties.create();
+    private final List<AnimatedState<?>> registeredAnimations = new ArrayList<>();
 
     public TreeNode(IElement element, UITree tree) {
         this.element = element;
         this.tree = tree;
+        this.preserveHandlers();
     }
 
     @Override
@@ -210,7 +215,29 @@ public class TreeNode implements ITreeNode {
     }
 
     @Override
+    public void registerAnimation(AnimatedState<?> animation) {
+        if (animation != null && !this.registeredAnimations.contains(animation)) {
+            this.registeredAnimations.add(animation);
+        }
+    }
+
+    @Override
+    public List<AnimatedState<?>> getRegisteredAnimations() {
+        return new ArrayList<>(this.registeredAnimations);
+    }
+
+    /** Registers cleanup for resources owned by this node. */
+    public void onDispose(Runnable cleanup) {
+        this.disposalActions.add(cleanup);
+    }
+
+    @Override
     public void dispose() {
+        this.tree = null;
+        for (var cleanup : this.disposalActions) {
+            cleanup.run();
+        }
+        this.disposalActions.clear();
         // Remove all state observers
         for (State<?> state : this.compositionStates) {
             state.removeObserver(this.compositionObserver);
@@ -221,6 +248,12 @@ public class TreeNode implements ITreeNode {
         this.compositionStates.clear();
         this.layoutStates.clear();
         this.boundStates.clear();
+
+        // Dispose all registered animations
+        for (AnimatedState<?> animation : this.registeredAnimations) {
+            animation.dispose();
+        }
+        this.registeredAnimations.clear();
     }
 
     @Override
@@ -359,19 +392,32 @@ public class TreeNode implements ITreeNode {
     }
 
     @Override
+    public void preserveHandlers() {
+        this.handlerResets.clear();
+        this.preserve(this.clickHandlers);
+        this.preserve(this.mouseEnterHandlers);
+        this.preserve(this.mouseExitHandlers);
+        this.preserve(this.focusGainedHandlers);
+        this.preserve(this.focusLostHandlers);
+        this.preserve(this.scrollHandlers);
+        this.preserve(this.keyPressHandlers);
+        this.preserve(this.keyReleaseHandlers);
+        this.preserve(this.charTypedHandlers);
+        this.preserve(this.mouseReleaseHandlers);
+        this.preserve(this.mouseDragHandlers);
+        this.preserve(this.mouseMoveHandlers);
+    }
+
+    private <T> void preserve(List<T> handlers) {
+        var count = handlers.size();
+        this.handlerResets.add(() -> handlers.subList(count, handlers.size()).clear());
+    }
+
+    @Override
     public void clearHandlers() {
-        this.clickHandlers.clear();
-        this.mouseEnterHandlers.clear();
-        this.mouseExitHandlers.clear();
-        this.focusGainedHandlers.clear();
-        this.focusLostHandlers.clear();
-        this.scrollHandlers.clear();
-        this.keyPressHandlers.clear();
-        this.keyReleaseHandlers.clear();
-        this.charTypedHandlers.clear();
-        this.mouseReleaseHandlers.clear();
-        this.mouseDragHandlers.clear();
-        this.mouseMoveHandlers.clear();
+        for (var reset : this.handlerResets) {
+            reset.run();
+        }
     }
 
     @Override

@@ -17,16 +17,20 @@
 package com.tridevmc.compound.ui.element;
 
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.platform.cursor.CursorType;
 import com.tridevmc.compound.ui.CompoundCursors;
+import com.tridevmc.compound.ui.cursor.UICursor;
+import com.tridevmc.compound.ui.animation.AnimatedState;
+import com.tridevmc.compound.ui.animation.Easing;
 import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
+import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
 import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 
 import javax.annotation.Nonnull;
@@ -36,6 +40,11 @@ import java.util.function.Consumer;
 /**
  * An on/off toggle switch component with a sliding thumb animation.
  * Alternative to checkbox for boolean options.
+ *
+ * <p>By default, renders using Minecraft's built-in slider widget textures
+ * ({@code widget/slider} and {@code widget/slider_handle}) for a native look.
+ * Falls back to colored rectangles if texture rendering is disabled via
+ * {@link #setUseTextures(boolean)}.</p>
  *
  * <p><strong>Usage:</strong></p>
  * <pre>
@@ -49,10 +58,60 @@ import java.util.function.Consumer;
  */
 public class ToggleSwitch extends BaseElement implements IComposableElement {
 
-    private static final int DEFAULT_WIDTH = 32;
-    private static final int DEFAULT_HEIGHT = 16;
-    private static final int THUMB_SIZE = 14;
-    private static final int PADDING = 1;
+    private static final int DEFAULT_WIDTH = 50;
+    private static final int DEFAULT_HEIGHT = 20;
+    private static final int HANDLE_WIDTH = 8;
+
+    private static final IScreenSprite TRACK_SPRITE = IScreenSprite.of(
+            Identifier.withDefaultNamespace("widget/slider"));
+    private static final IScreenSprite TRACK_HIGHLIGHTED_SPRITE = IScreenSprite.of(
+            Identifier.withDefaultNamespace("widget/slider_highlighted"));
+    private static final IScreenSprite HANDLE_SPRITE = IScreenSprite.of(
+            Identifier.withDefaultNamespace("widget/slider_handle"));
+    private static final IScreenSprite HANDLE_HIGHLIGHTED_SPRITE = IScreenSprite.of(
+            Identifier.withDefaultNamespace("widget/slider_handle_highlighted"));
+
+    /**
+     * Composed toggle handle element. Measures as the full track size but places a
+     * child sprite or rect at the position derived from the animated X supplier.
+     */
+    private class ToggleThumb extends BaseElement implements IComposableElement {
+        private final java.util.function.Supplier<IScreenSprite> spriteSupplier;
+        private final java.util.function.Supplier<Integer> positionSupplier;
+        private final java.util.function.Supplier<Integer> colorSupplier;
+
+        ToggleThumb(java.util.function.Supplier<IScreenSprite> spriteSupplier,
+                    java.util.function.Supplier<Integer> positionSupplier,
+                    java.util.function.Supplier<Integer> colorSupplier) {
+            this.spriteSupplier = spriteSupplier;
+            this.positionSupplier = positionSupplier;
+            this.colorSupplier = colorSupplier;
+        }
+
+        @Override
+        public void compose(ICompositionScope scope) {
+            var sprite = this.spriteSupplier.get();
+            if (sprite != null) {
+                scope.e(new Sprite(sprite), s -> s.layout().fixedSize(HANDLE_WIDTH, DEFAULT_HEIGHT));
+            } else {
+                scope.e(new Rect(this.colorSupplier), r -> r.layout().fixedSize(HANDLE_WIDTH, DEFAULT_HEIGHT));
+            }
+        }
+
+        @Override
+        public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
+            return new Size(constraints.maxWidth(), DEFAULT_HEIGHT);
+        }
+
+        @Override
+        public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+            int handleX = this.positionSupplier.get();
+            return List.of(new Bounds(
+                    new Position(bounds.x() + handleX, bounds.y()),
+                    new Size(HANDLE_WIDTH, bounds.height())
+            ));
+        }
+    }
 
     private final State<Boolean> on = new StateImpl<>(false);
     private final State<Boolean> enabled = new StateImpl<>(true);
@@ -63,8 +122,11 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
     private int offColor = 0xFF757575;
     private int thumbColor = 0xFFFFFFFF;
     private int disabledColor = 0xFF404040;
+    private int hoverColor = 0xFF90CAF9;
     private Component onLabel;
     private Component offLabel;
+    private boolean useTextures = true;
+    private AnimatedState<Integer> thumbAnimation;
 
     public ToggleSwitch() {
     }
@@ -74,16 +136,34 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
     }
 
     @Override
+    public void onDetached() {
+        this.thumbAnimation = null;
+        this.hovered.set(false);
+    }
+
+    @Override
+    public Component getNarrationMessage() {
+        return Component.translatable(this.on.get() ? "options.on" : "options.off");
+    }
+
+    @Override
     public void compose(ICompositionScope scope) {
+        if (this.thumbAnimation == null) {
+            int initialX = this.on.get() ? DEFAULT_WIDTH - HANDLE_WIDTH : 0;
+            this.thumbAnimation = scope.animateInt(initialX, 150, Easing.EASE_OUT);
+        }
+
         scope.bind(this.enabled);
         scope.bind(this.hovered);
         scope.bind(this.on);
+        scope.bindLayout(this.thumbAnimation);
 
         scope.onMouseEnter(() -> this.hovered.set(true));
         scope.onMouseExit(() -> this.hovered.set(false));
 
         scope.onClick(event -> {
-            if (!this.enabled.get()) return false;
+            if (!this.enabled.get() || event.button() != 0) return false;
+            scope.requestFocus();
             this.toggle();
             return true;
         });
@@ -91,7 +171,7 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
         scope.onKeyPress(event -> {
             if (!this.enabled.get()) return false;
             if (event.keyCode() == org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE ||
-event.keyCode() == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER) {
+                    event.keyCode() == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER) {
                 this.toggle();
                 return true;
             }
@@ -101,21 +181,43 @@ event.keyCode() == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER) {
         scope.e(new Stack(), stack -> {
             stack.layout().fixedSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
 
-            int trackColor;
-            if (!this.enabled.get()) {
-                trackColor = this.disabledColor;
-            } else if (this.on.get()) {
-                trackColor = this.onColor;
+            if (this.useTextures) {
+                IScreenSprite trackSprite = !this.enabled.get()
+                        ? TRACK_SPRITE
+                        : this.hovered.get()
+                        ? TRACK_HIGHLIGHTED_SPRITE
+                        : TRACK_SPRITE;
+                stack.e(new Sprite(trackSprite), bg -> bg.layout().fillMax());
+
+                stack.e(new ToggleThumb(
+                        () -> !this.enabled.get()
+                                ? HANDLE_SPRITE
+                                : this.hovered.get()
+                                ? HANDLE_HIGHLIGHTED_SPRITE
+                                : HANDLE_SPRITE,
+                        () -> this.thumbAnimation.get(),
+                        () -> this.thumbColor
+                ), handle -> handle.layout().fillMax());
             } else {
-                trackColor = this.offColor;
+                int trackColor;
+                if (!this.enabled.get()) {
+                    trackColor = this.disabledColor;
+                } else if (this.hovered.get()) {
+                    trackColor = this.hoverColor;
+                } else if (this.on.get()) {
+                    trackColor = this.onColor;
+                } else {
+                    trackColor = this.offColor;
+                }
+
+                stack.e(new Rect(() -> trackColor), bg -> bg.layout().fillMax());
+
+                stack.e(new ToggleThumb(
+                        () -> HANDLE_SPRITE,
+                        () -> this.thumbAnimation.get(),
+                        () -> this.thumbColor
+                ), handle -> handle.layout().fillMax());
             }
-
-            stack.e(new Rect(trackColor), bg -> bg.layout().fillMax());
-
-            int thumbX = this.on.get() ? DEFAULT_WIDTH - THUMB_SIZE - PADDING : PADDING;
-            stack.e(new Rect(() -> this.thumbColor), thumb ->
-                    thumb.layout().fixedSize(THUMB_SIZE, THUMB_SIZE)
-                            .margin(thumbX, PADDING, 0, 0));
 
             if (this.onLabel != null && this.on.get()) {
                 stack.e(new Label(this.onLabel, 0xFFFFFFFF, false),
@@ -127,9 +229,17 @@ event.keyCode() == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER) {
         });
     }
 
+    @Override
+    public boolean isFocusable() { return this.enabled.get(); }
+
     private void toggle() {
         boolean newValue = !this.on.get();
         this.on.set(newValue);
+
+        if (this.thumbAnimation != null) {
+            int targetX = newValue ? DEFAULT_WIDTH - HANDLE_WIDTH : 0;
+            this.thumbAnimation.set(targetX);
+        }
 
         SoundManager soundManager = Minecraft.getInstance().getSoundManager();
         soundManager.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
@@ -143,6 +253,10 @@ event.keyCode() == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER) {
 
     public void setOn(boolean on) {
         this.on.set(on);
+        if (this.thumbAnimation != null) {
+            int targetX = on ? DEFAULT_WIDTH - HANDLE_WIDTH : 0;
+            this.thumbAnimation.set(targetX);
+        }
     }
 
     public State<Boolean> getOnState() {
@@ -186,6 +300,26 @@ event.keyCode() == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER) {
         this.offLabel = label;
     }
 
+    /**
+     * Enables or disables texture-based rendering.
+     * When enabled (default), uses Minecraft's built-in slider widget sprites.
+     * When disabled, falls back to colored rectangles using the configured colors.
+     *
+     * @param useTextures true to use Minecraft textures, false for colored rects
+     */
+    public void setUseTextures(boolean useTextures) {
+        this.useTextures = useTextures;
+    }
+
+    /**
+     * Returns whether texture-based rendering is enabled.
+     *
+     * @return true if using Minecraft textures
+     */
+    public boolean isUsingTextures() {
+        return this.useTextures;
+    }
+
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (!measuredChildren.isEmpty()) {
@@ -203,7 +337,7 @@ event.keyCode() == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER) {
     }
 
     @Override
-    public CursorType getCursor(int x, int y) {
+    public UICursor getCursor(int x, int y) {
         return this.enabled.get() ? CompoundCursors.HAND : null;
     }
 }

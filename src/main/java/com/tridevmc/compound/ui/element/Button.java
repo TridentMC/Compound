@@ -17,8 +17,8 @@
 package com.tridevmc.compound.ui.element;
 
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.platform.cursor.CursorType;
 import com.tridevmc.compound.ui.CompoundCursors;
+import com.tridevmc.compound.ui.cursor.UICursor;
 import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.slot.SlotKey;
@@ -28,11 +28,12 @@ import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 
 import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * A composable button container that can have children.
@@ -52,9 +53,9 @@ public class Button extends BaseElement implements IComposableElement {
 
     public static final SlotKey CONTENT_SLOT = new SlotKey("content");
 
-    private static final IScreenSprite DEFAULT_ENABLED_SPRITE = IScreenSprite.of(ResourceLocation.withDefaultNamespace("widget/button"));
-    private static final IScreenSprite DEFAULT_DISABLED_SPRITE = IScreenSprite.of(ResourceLocation.withDefaultNamespace("widget/button_disabled"));
-    private static final IScreenSprite DEFAULT_HIGHLIGHTED_SPRITE = IScreenSprite.of(ResourceLocation.withDefaultNamespace("widget/button_highlighted"));
+    private static final IScreenSprite DEFAULT_ENABLED_SPRITE = IScreenSprite.of(Identifier.withDefaultNamespace("widget/button"));
+    private static final IScreenSprite DEFAULT_DISABLED_SPRITE = IScreenSprite.of(Identifier.withDefaultNamespace("widget/button_disabled"));
+    private static final IScreenSprite DEFAULT_HIGHLIGHTED_SPRITE = IScreenSprite.of(Identifier.withDefaultNamespace("widget/button_highlighted"));
 
     /**
      * Vanilla-style Y offset for button text. Vanilla adds +1 to text Y position
@@ -62,9 +63,13 @@ public class Button extends BaseElement implements IComposableElement {
      */
     public static int VANILLA_TEXT_Y_OFFSET = 1;
 
+    private Supplier<IScreenSprite> normalSprite = () -> DEFAULT_ENABLED_SPRITE;
+    private Supplier<IScreenSprite> highlightedSprite = () -> DEFAULT_HIGHLIGHTED_SPRITE;
+    private Supplier<IScreenSprite> disabledSprite = () -> DEFAULT_DISABLED_SPRITE;
     private final State<Boolean> enabled;
     private final State<Boolean> visible;
     private final State<Boolean> hovered;
+    private final State<Boolean> focused;
     private final List<IButtonPressListener> pressListeners;
     private final List<IButtonHoverListener> hoverListeners;
 
@@ -80,14 +85,14 @@ public class Button extends BaseElement implements IComposableElement {
         this.enabled = new StateImpl<>(enabled);
         this.visible = new StateImpl<>(visible);
         this.hovered = new StateImpl<>(false);
+        this.focused = new StateImpl<>(false);
         this.pressListeners = Lists.newArrayList();
         this.hoverListeners = Lists.newArrayList();
     }
 
     @Override
     public void compose(ICompositionScope scope) {
-        scope.bind(this.enabled);
-        scope.bind(this.hovered);
+        scope.bind(this.visible);
 
         scope.onMouseEnter(() -> {
             this.hovered.set(true);
@@ -113,11 +118,15 @@ public class Button extends BaseElement implements IComposableElement {
             }
         });
 
+        scope.onFocusGained(() -> this.focused.set(true));
+        scope.onFocusLost(() -> this.focused.set(false));
+
         scope.onClick(event -> {
-            if (!this.canPress()) {
+            if (event.button() != 0 || !this.canPress()) {
                 return false;
             }
 
+            scope.requestFocus();
             var bounds = this.getBounds();
             int x = event.x();
             int y = event.y();
@@ -135,24 +144,22 @@ public class Button extends BaseElement implements IComposableElement {
             }
         });
 
+        scope.onKeyPress(event -> {
+            if (!this.canPress() || !scope.isFocused()) return false;
+            if (event.keyCode() != 32 && event.keyCode() != 257 && event.keyCode() != 335) return false;
+            var bounds = this.getBounds();
+            Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            this.pressListeners.forEach(listener -> listener.onButtonPress(bounds.x(), bounds.y()));
+            return true;
+        });
+        if (!this.visible.get()) return;
         scope.e(new Stack(), stack -> {
             stack.layout().contentAlignment(Alignment.CENTER);
 
-            IScreenSprite backgroundSprite;
-            if (!this.enabled.get()) {
-                backgroundSprite = DEFAULT_DISABLED_SPRITE;
-            } else if (this.hovered.get()) {
-                backgroundSprite = DEFAULT_HIGHLIGHTED_SPRITE;
-            } else {
-                backgroundSprite = DEFAULT_ENABLED_SPRITE;
-            }
+            stack.e(new Sprite(() -> !this.enabled.get() ? this.disabledSprite.get()
+                    : this.hovered.get() || this.focused.get() ? this.highlightedSprite.get()
+                    : this.normalSprite.get()), sprite -> sprite.layout().fillMax());
 
-            // Background sprite fills the button but doesn't affect sizing (due to fillMax)
-            stack.e(new Sprite(backgroundSprite), sprite -> {
-                sprite.layout().fillMax();
-            });
-
-            // Wrap content in Box with 1px top margin to match vanilla button text offset
             stack.e(new Box(), contentWrapper -> {
                 contentWrapper.layout().margin(0, VANILLA_TEXT_Y_OFFSET, 0, 0);
                 scope.slotInto(CONTENT_SLOT, contentWrapper);
@@ -177,8 +184,24 @@ public class Button extends BaseElement implements IComposableElement {
         return List.of(bounds);
     }
 
+    @Override
+    public boolean isFocusable() {
+        return this.canPress();
+    }
+
     private boolean canPress() {
         return this.visible.get() && this.enabled.get();
+    }
+
+    public void setSprites(Supplier<IScreenSprite> normal, Supplier<IScreenSprite> highlighted,
+                           Supplier<IScreenSprite> disabled) {
+        this.normalSprite = normal;
+        this.highlightedSprite = highlighted;
+        this.disabledSprite = disabled;
+    }
+
+    public void setSprites(IScreenSprite normal, IScreenSprite highlighted, IScreenSprite disabled) {
+        this.setSprites(() -> normal, () -> highlighted, () -> disabled);
     }
 
     public void addPressListener(IButtonPressListener listener) {
@@ -222,7 +245,11 @@ public class Button extends BaseElement implements IComposableElement {
     }
 
     @Override
-    public CursorType getCursor(int x, int y) {
+    public UICursor getCursor(int x, int y) {
         return this.canPress() ? CompoundCursors.HAND : null;
+    }
+
+    public State<Boolean> getFocusedState() {
+        return this.focused;
     }
 }

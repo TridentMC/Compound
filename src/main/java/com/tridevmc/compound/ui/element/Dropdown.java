@@ -17,8 +17,8 @@
 package com.tridevmc.compound.ui.element;
 
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.platform.cursor.CursorType;
 import com.tridevmc.compound.ui.CompoundCursors;
+import com.tridevmc.compound.ui.cursor.UICursor;
 import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
@@ -28,7 +28,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 
 import javax.annotation.Nonnull;
@@ -57,11 +57,11 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
     private static final int MAX_VISIBLE_ITEMS = 8;
 
     private static final IScreenSprite BUTTON_SPRITE = IScreenSprite.of(
-            ResourceLocation.withDefaultNamespace("widget/button"));
+            Identifier.withDefaultNamespace("widget/button"));
     private static final IScreenSprite BUTTON_HIGHLIGHTED_SPRITE = IScreenSprite.of(
-            ResourceLocation.withDefaultNamespace("widget/button_highlighted"));
+            Identifier.withDefaultNamespace("widget/button_highlighted"));
     private static final IScreenSprite BUTTON_DISABLED_SPRITE = IScreenSprite.of(
-            ResourceLocation.withDefaultNamespace("widget/button_disabled"));
+            Identifier.withDefaultNamespace("widget/button_disabled"));
 
     private final State<Boolean> enabled = new StateImpl<>(true);
     private final State<Boolean> hovered = new StateImpl<>(false);
@@ -76,6 +76,8 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
     private Consumer<Void> onClose;
     private int maxVisibleItems = MAX_VISIBLE_ITEMS;
     private Component placeholder;
+    private ScrollArea popupScroll;
+    private Bounds popupBounds = new Bounds(0, 0, 0, 0);
 
     public Dropdown(List<T> options) {
         this.options = Lists.newArrayList(options);
@@ -91,189 +93,129 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
 
     @Override
     public void compose(ICompositionScope scope) {
-        scope.bind(this.enabled);
-        scope.bind(this.hovered);
         scope.bind(this.open);
-        scope.bind(this.selectedIndex);
-        scope.bind(this.hoverIndex);
-
         scope.onMouseEnter(() -> this.hovered.set(true));
         scope.onMouseExit(() -> this.hovered.set(false));
-
         scope.onClick(event -> {
-            if (!this.enabled.get()) return false;
+            if (!this.enabled.get() || event.button() != 0) return false;
+            scope.requestFocus();
             this.toggleOpen();
             return true;
         });
-
-        if (this.open.get()) {
-            scope.onClick(event -> {
-                Bounds bounds = this.getBounds();
-                if (bounds == null) return false;
-
-                int dropdownTop = bounds.y() + bounds.height();
-                int dropdownHeight = Math.min(this.options.size(), this.maxVisibleItems) * OPTION_HEIGHT;
-
-                int relativeY = event.y() - dropdownTop;
-                if (relativeY >= 0 && relativeY < dropdownHeight &&
-event.x() >= bounds.x() && event.x() < bounds.x() + bounds.width()) {
-                    int index = relativeY / OPTION_HEIGHT;
-                    if (index >= 0 && index < this.options.size()) {
-                        this.select(index);
-                        return true;
-                    }
-                }
-
-                this.setOpen(false);
-                return false;
-            });
-
-            scope.onMouseMove(event -> {
-                Bounds bounds = this.getBounds();
-                if (bounds == null) return false;
-
-                int dropdownTop = bounds.y() + bounds.height();
-                int dropdownHeight = Math.min(this.options.size(), this.maxVisibleItems) * OPTION_HEIGHT;
-
-                int relativeY = event.y() - dropdownTop;
-                if (relativeY >= 0 && relativeY < dropdownHeight &&
-event.x() >= bounds.x() && event.x() < bounds.x() + bounds.width()) {
-                    int index = relativeY / OPTION_HEIGHT;
-                    this.hoverIndex.set(index);
-                } else {
-                    this.hoverIndex.set(-1);
-                }
-                return false;
-            });
-        }
-
         scope.onKeyPress(event -> {
             if (!this.enabled.get()) return false;
-
-            if (this.open.get()) {
-                return switch (event.keyCode()) {
-                    case org.lwjgl.glfw.GLFW.GLFW_KEY_UP -> {
-                        int newIndex = this.hoverIndex.get() - 1;
-                        if (newIndex < 0) newIndex = this.options.size() - 1;
-                        this.hoverIndex.set(newIndex);
-                        yield true;
-                    }
-                    case org.lwjgl.glfw.GLFW.GLFW_KEY_DOWN -> {
-                        int newIndex = this.hoverIndex.get() + 1;
-                        if (newIndex >= this.options.size()) newIndex = 0;
-                        this.hoverIndex.set(newIndex);
-                        yield true;
-                    }
-                    case org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER -> {
-                        int index = this.hoverIndex.get();
-                        if (index >= 0 && index < this.options.size()) {
-                            this.select(index);
-                        }
-                        yield true;
-                    }
-                    case org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE -> {
-                        int index = this.hoverIndex.get();
-                        if (index >= 0 && index < this.options.size()) {
-                            this.select(index);
-                        }
-                        yield true;
-                    }
-                    case org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE -> {
-                        this.setOpen(false);
-                        yield true;
-                    }
-                    default -> false;
-                };
-            } else {
-                if (event.keyCode() == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER ||
-                        event.keyCode() == org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE) {
-                    this.setOpen(true);
-                    return true;
+            return switch (event.keyCode()) {
+                case 256 -> { this.setOpen(false); yield true; }
+                case 257, 335, 32 -> {
+                    if (this.open.get()) this.select(this.hoverIndex.get());
+                    else this.setOpen(true);
+                    yield true;
                 }
-            }
-            return false;
+                case 264, 265 -> {
+                    if (this.options.isEmpty()) yield false;
+                    if (!this.open.get()) this.setOpen(true);
+                    int step = event.keyCode() == 264 ? 1 : -1;
+                    int index = Math.floorMod(this.hoverIndex.get() + step, this.options.size());
+                    this.hoverIndex.set(index);
+                    if (this.popupScroll != null) {
+                        int top = this.popupScroll.getScrollYState().get();
+                        int row = index * OPTION_HEIGHT;
+                        int height = Math.max(OPTION_HEIGHT, this.popupBounds.height());
+                        this.popupScroll.scrollTo(0, row < top ? row : Math.max(top, row + OPTION_HEIGHT - height));
+                    }
+                    yield true;
+                }
+                default -> false;
+            };
         });
-
         scope.e(new Stack(), stack -> {
-            stack.layout().fillMax();
-
-            IScreenSprite bgSprite;
-            if (!this.enabled.get()) {
-                bgSprite = BUTTON_DISABLED_SPRITE;
-            } else if (this.hovered.get() || this.open.get()) {
-                bgSprite = BUTTON_HIGHLIGHTED_SPRITE;
-            } else {
-                bgSprite = BUTTON_SPRITE;
-            }
-
-            stack.e(new Sprite(bgSprite), s -> s.layout().fillMax());
-
-            stack.e(new Label(
-                    () -> {
-                        int index = this.selectedIndex.get();
-                        if (index >= 0 && index < this.options.size()) {
-                            return Component.literal(this.displayTextProvider.apply(this.options.get(index)));
-                        }
-                        return this.placeholder != null ? this.placeholder : Component.literal("Select...");
-                    },
-                    () -> this.enabled.get() ? 0xFFFFFF : 0x808080,
-                    () -> false
-            ), label -> label.layout().contentAlignment(Alignment.CENTER_LEFT).padding(4, 0));
+            stack.layout().fillMax().contentAlignment(Alignment.CENTER_LEFT);
+            stack.e(new Sprite(() -> !this.enabled.get() ? BUTTON_DISABLED_SPRITE
+                    : this.hovered.get() || scope.isFocused() || this.open.get()
+                    ? BUTTON_HIGHLIGHTED_SPRITE : BUTTON_SPRITE), sprite -> sprite.layout().fillMax());
+            stack.e(new Label(() -> {
+                int index = this.selectedIndex.get();
+                return index >= 0 && index < this.options.size()
+                        ? Component.literal(this.displayTextProvider.apply(this.options.get(index)))
+                        : this.placeholder != null ? this.placeholder : Component.literal("Select...");
+            }, () -> this.enabled.get() ? 0xFFFFFF : 0x808080, () -> true),
+                    label -> label.layout().margin(5, 1, 5, 0));
         });
+        if (!this.open.get()) return;
+        var tree = scope.getTree();
+        tree.setInputRoot(this.getNode());
+        this.popupScroll = new ScrollArea().scrollSpeed(OPTION_HEIGHT);
+        scope.e(new Popup(), popup -> {
+            var viewport = tree.getViewportSize();
+            popup.layout().fixedSize(viewport.width(), viewport.height()).layer(100);
+            popup.onClick(event -> { this.setOpen(false); return true; });
+            popup.e(new Surface(0xFF202020, 0xFFA0A0A0, 1), surface -> {
+                var bounds = this.calculatePopupBounds();
+                surface.layout().fixedSize(bounds.width(), bounds.height());
+                surface.fillSlot(Surface.CONTENT_SLOT, content -> {
+                    content.e(this.popupScroll, scroll -> {
+                        scroll.layout().fillMax().margin(1);
+                        scroll.fillSlot(ScrollArea.CONTENT_SLOT, items -> {
+                            items.e(new Column(), column -> {
+                                column.layout().fillMaxWidth();
+                                for (int i = 0; i < this.options.size(); i++) {
+                                    final int index = i;
+                                    column.e(new ListItem(Component.literal(this.displayTextProvider.apply(this.options.get(i))),
+                                            () -> this.selectedIndex.get() == index, () -> this.hoverIndex.get() == index,
+                                            () -> 0xFF606060, () -> 0xFF404040, () -> 0xFFFFFFFF, () -> 0xFFFFFFFF), row -> {
+                                        row.layout().fillMaxWidth().fixedHeight(OPTION_HEIGHT);
+                                        row.getElement().setClickHandler(() -> this.select(index));
+                                        row.getElement().setHoverHandlers(() -> this.hoverIndex.set(index), () -> {});
+                                    });
+                                }
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    }
 
-        if (this.open.get()) {
-            this.renderDropdownList(scope);
+    private Bounds calculatePopupBounds() {
+        var anchor = this.getBounds();
+        var viewport = this.getNode().getTree().getViewportSize();
+        int below = Math.max(0, viewport.height() - anchor.bottom() - 2);
+        int above = Math.max(0, anchor.y() - 2);
+        int wanted = Math.min(this.options.size(), this.maxVisibleItems) * OPTION_HEIGHT + 2;
+        boolean upwards = below < wanted && above > below;
+        int height = Math.min(wanted, upwards ? above : below);
+        int width = Math.min(anchor.width(), viewport.width());
+        this.popupBounds = new Bounds(Math.clamp(anchor.x(), 0, Math.max(0, viewport.width() - width)),
+                upwards ? anchor.y() - height : anchor.bottom(), width, height);
+        return this.popupBounds;
+    }
+
+    private class Popup extends BaseContainer {
+        @Override
+        public Size measure(Constraints constraints, LayoutProperties props, List<Size> children) {
+            return getNode().getTree().getViewportSize();
+        }
+
+        @Override
+        public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> children) {
+            return List.of(Dropdown.this.calculatePopupBounds());
         }
     }
 
-    private void renderDropdownList(ICompositionScope scope) {
-        Bounds bounds = this.getBounds();
-        if (bounds == null) return;
-
-        int visibleCount = Math.min(this.options.size(), this.maxVisibleItems);
-        int dropdownHeight = visibleCount * OPTION_HEIGHT;
-
-        scope.e(new Stack(), dropdownStack -> {
-            dropdownStack.layout()
-                    .fixedSize(bounds.width(), dropdownHeight)
-                    .margin(0, bounds.height(), 0, 0);
-
-            dropdownStack.e(new Rect(0xFF000000), bg -> bg.layout().fillMax());
-            dropdownStack.e(new Rect(0xFF404040), border -> border.layout().fillMax());
-
-            for (int i = 0; i < visibleCount; i++) {
-                final int index = i;
-                T option = this.options.get(i);
-                boolean isHovered = this.hoverIndex.get() == index;
-                boolean isSelected = this.selectedIndex.get() == index;
-
-                dropdownStack.e(new Stack(), optionStack -> {
-                    optionStack.layout()
-                            .fixedHeight(OPTION_HEIGHT)
-                            .margin(0, index * OPTION_HEIGHT, 0, 0);
-
-                    if (isHovered) {
-                        optionStack.e(new Rect(0xFF3366CC), r -> r.layout().fillMax());
-                    } else if (isSelected) {
-                        optionStack.e(new Rect(0xFF224488), r -> r.layout().fillMax());
-                    }
-
-                    optionStack.e(new Label(
-                            Component.literal(this.displayTextProvider.apply(option)),
-                            () -> isHovered || isSelected ? 0xFFFFFFFF : 0xFFFFFF,
-                            () -> false
-                    ), label -> label.layout().contentAlignment(Alignment.CENTER_LEFT).padding(4, 0));
-                });
-            }
-        });
+    @Override
+    public boolean isFocusable() {
+        return this.enabled.get();
     }
+
 
     private void toggleOpen() {
         this.setOpen(!this.open.get());
     }
 
     private void setOpen(boolean open) {
+        if (open && (!this.enabled.get() || this.options.isEmpty())) return;
         boolean wasOpen = this.open.get();
+        if (!open && this.getNode() != null) this.getNode().getTree().clearInputRoot(this.getNode());
         this.open.set(open);
 
         if (open && !wasOpen) {
@@ -291,7 +233,6 @@ event.x() >= bounds.x() && event.x() < bounds.x() + bounds.width()) {
     private void select(int index) {
         if (index < 0 || index >= this.options.size()) return;
 
-        T oldValue = this.selectedIndex.get() >= 0 ? this.options.get(this.selectedIndex.get()) : null;
         T newValue = this.options.get(index);
 
         this.selectedIndex.set(index);
@@ -322,6 +263,7 @@ event.x() >= bounds.x() && event.x() < bounds.x() + bounds.width()) {
 
     public void setDisplayTextProvider(Function<T, String> provider) {
         this.displayTextProvider = provider;
+        if (this.getNode() != null) this.getNode().getTree().requestRecompose(this.getNode());
     }
 
     public void setOnSelectionChanged(Consumer<T> listener) {
@@ -337,7 +279,8 @@ event.x() >= bounds.x() && event.x() < bounds.x() + bounds.width()) {
     }
 
     public void setMaxVisibleItems(int max) {
-        this.maxVisibleItems = max;
+        this.maxVisibleItems = Math.max(1, max);
+        if (this.getNode() != null) this.getNode().getTree().requestRecompose(this.getNode());
     }
 
     public void setPlaceholder(Component placeholder) {
@@ -354,26 +297,23 @@ event.x() >= bounds.x() && event.x() < bounds.x() + bounds.width()) {
 
     public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
+        if (!enabled) this.setOpen(false);
     }
 
     @Override
-    public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
-        if (!measuredChildren.isEmpty()) {
-            return measuredChildren.get(0);
-        }
+    public Size measure(Constraints constraints, LayoutProperties props, List<Size> children) {
         return new Size(constraints.maxWidth(), DEFAULT_HEIGHT);
     }
 
     @Override
-    public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
-        if (measuredChildren.isEmpty()) {
-            return List.of();
-        }
-        return List.of(bounds);
+    public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> children) {
+        if (children.size() < 2) return List.of(bounds);
+        var viewport = this.getNode().getTree().getViewportSize();
+        return List.of(bounds, new Bounds(0, 0, viewport.width(), viewport.height()));
     }
 
     @Override
-    public CursorType getCursor(int x, int y) {
+    public UICursor getCursor(int x, int y) {
         return this.enabled.get() ? CompoundCursors.HAND : null;
     }
 }

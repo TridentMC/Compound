@@ -40,6 +40,7 @@ public class ScreenSpriteWriterTile implements IScreenSpriteWriter {
                 var tileHeight = Math.min(height - (v * spriteHeight), spriteHeight);
                 screen.drawRectUsingSprite(sprite,
                         tileX, tileY,
+                        tileWidth, tileHeight,
                         0, 0,
                         tileWidth, tileHeight
                 );

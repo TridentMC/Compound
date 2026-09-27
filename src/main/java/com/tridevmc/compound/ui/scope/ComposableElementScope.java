@@ -16,6 +16,7 @@
 
 package com.tridevmc.compound.ui.scope;
 
+import com.tridevmc.compound.ui.animation.AnimatedState;
 import com.tridevmc.compound.ui.element.IComposableElement;
 import com.tridevmc.compound.ui.element.IContainer;
 import com.tridevmc.compound.ui.element.IPrimitiveElement;
@@ -41,7 +42,7 @@ public class ComposableElementScope<T extends IComposableElement> extends Elemen
     private final SlotMap slotMap;
 
     public ComposableElementScope(UITree tree, ITreeNode parentNode, T element, SlotMap slotMap) {
-        super(element);
+        super(element, parentNode);
         this.tree = tree;
         this.parentNode = parentNode;
         this.slotMap = slotMap;
@@ -52,7 +53,7 @@ public class ComposableElementScope<T extends IComposableElement> extends Elemen
         this.slotMap.put(key, new SlotContent(content));
         // Only re-compose if the element has already been composed (has children)
         if (!this.parentNode.getChildren().isEmpty()) {
-            this.tree.recomposeNode(this.parentNode);
+            this.tree.requestRecompose(this.parentNode);
         }
     }
 
@@ -81,7 +82,7 @@ public class ComposableElementScope<T extends IComposableElement> extends Elemen
         element.onAttached();
 
         if (configurator != null) {
-            ElementScope<E> scope = new ElementScope<>(element);
+            ElementScope<E> scope = new ElementScope<>(element, node);
             configurator.accept(scope);
             node.setLayoutProperties(scope.getLayoutProperties());
         }
@@ -116,6 +117,7 @@ public class ComposableElementScope<T extends IComposableElement> extends Elemen
             node.setLayoutProperties(scope.getLayoutProperties());
         }
 
+        node.preserveHandlers();
         node.setCompositionFunction(() -> element.compose(scope));
         element.compose(scope);
     }
@@ -198,6 +200,11 @@ public class ComposableElementScope<T extends IComposableElement> extends Elemen
     }
 
     @Override
+    public boolean isFocused() {
+        return this.tree.hasFocus(this.parentNode);
+    }
+
+    @Override
     public SlotMap getSlotMap() {
         return this.slotMap;
     }
@@ -205,5 +212,12 @@ public class ComposableElementScope<T extends IComposableElement> extends Elemen
     @Override
     public UITree getTree() {
         return this.tree;
+    }
+
+    @Override
+    public void registerAnimation(AnimatedState<?> animation) {
+        if (this.parentNode != null) {
+            this.parentNode.registerAnimation(animation);
+        }
     }
 }

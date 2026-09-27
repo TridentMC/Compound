@@ -33,9 +33,9 @@ import java.util.function.Function;
  * Uses Minecraft's tick system (20 TPS) with partial tick interpolation for smooth rendering.
  */
 public class AnimatedState<T> implements State<T> {
-    private final long durationTicks;  // Animation duration in ticks
+    private long durationTicks;  // Animation duration in ticks
     private final Interpolator<T> interpolator;
-    private final Easing easing;
+    private Easing easing;
     private final AnimationScheduler scheduler;
     private final List<StateObserver> observers = new ArrayList<>();
     private T lastTickValue;      // Value at start of current tick (for partial tick interpolation)
@@ -220,6 +220,14 @@ public class AnimatedState<T> implements State<T> {
 
     public boolean isAnimating() {
         return this.isAnimating;
+    }
+
+    public void setTiming(long durationMillis, Easing easing) {
+        if (durationMillis <= 0) throw new IllegalArgumentException("Animation duration must be positive");
+        this.easing = Objects.requireNonNull(easing, "easing");
+        this.durationTicks = Math.max(1, durationMillis / 50);
+        this.animationStartValue = this.currentTickValue;
+        this.lastUpdateTick = -1;
     }
 
     /**

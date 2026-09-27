@@ -18,16 +18,24 @@ package com.tridevmc.compound.ui.scope;
 
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.tree.ITreeNode;
 
 /**
  * Scope for configuring a basic element (no children, no composition).
  */
 public class ElementScope<T extends IElement> implements IElementScope<T> {
     protected final T element;
+    private final ITreeNode node;
     private final LayoutProperties layoutProperties = LayoutProperties.create();
 
     public ElementScope(T element) {
+        this(element, null);
+    }
+
+    public ElementScope(T element, ITreeNode node) {
         this.element = element;
+        this.node = node;
+        this.layoutProperties.setBoundNode(node);
     }
 
     @Override

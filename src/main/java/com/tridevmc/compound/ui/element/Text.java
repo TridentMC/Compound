@@ -26,21 +26,21 @@ import net.minecraft.network.chat.Component;
 
 import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * A primitive element for rendering text with support for highlighting.
+ * A primitive element for rendering text.
  */
 public class Text extends BasePrimitiveElement {
 
     private Supplier<Component> textSupplier;
     private Supplier<Integer> colorSupplier;
     private Supplier<Boolean> shadowSupplier;
-
-    // Highlighting state
-    private Supplier<Integer> highlightStartSupplier;
-    private Supplier<Integer> highlightEndSupplier;
-    private Supplier<Integer> highlightColorSupplier;
+    private boolean wrap;
+    private Component wrappedText;
+    private int wrappedWidth = -1;
+    private List<Component> wrappedLines = List.of();
 
     public Text(Component text) {
         this(() -> text, () -> 0xE0E0E0, () -> true);
@@ -54,9 +54,6 @@ public class Text extends BasePrimitiveElement {
         this.textSupplier = textSupplier;
         this.colorSupplier = colorSupplier;
         this.shadowSupplier = shadowSupplier;
-        this.highlightStartSupplier = () -> -1;
-        this.highlightEndSupplier = () -> -1;
-        this.highlightColorSupplier = () -> 0x800000FF;
     }
 
     // Builder-style configuration methods
@@ -70,38 +67,48 @@ public class Text extends BasePrimitiveElement {
         return this;
     }
 
-    /**
-     * Sets the highlight range and color.
-     *
-     * @param start inclusive start index
-     * @param end exclusive end index
-     * @param color ARGB color of the highlight
-     * @return this element
-     */
-    public Text setHighlight(int start, int end, int color) {
-        this.highlightStartSupplier = () -> start;
-        this.highlightEndSupplier = () -> end;
-        this.highlightColorSupplier = () -> color;
+    public Text setWrap(boolean wrap) {
+        this.wrap = wrap;
         return this;
     }
 
-    public Text setHighlight(Supplier<Integer> start, Supplier<Integer> end, Supplier<Integer> color) {
-        this.highlightStartSupplier = start;
-        this.highlightEndSupplier = end;
-        this.highlightColorSupplier = color;
-        return this;
+    private List<Component> wrappedLines(Component text, int width) {
+        int available = Math.max(1, width);
+        if (!text.equals(this.wrappedText) || available != this.wrappedWidth) {
+            this.wrappedText = text.copy();
+            this.wrappedWidth = available;
+            this.wrappedLines = Minecraft.getInstance().font.getSplitter()
+                    .splitLines(text, available, text.getStyle()).stream().map(line -> {
+                        var component = Component.empty();
+                        line.visit((style, part) -> {
+                            component.append(Component.literal(part).setStyle(style));
+                            return Optional.empty();
+                        }, text.getStyle());
+                        return (Component) component;
+                    }).toList();
+        }
+        return this.wrappedLines;
+    }
+
+    @Override
+    public Component getNarrationMessage() {
+        return this.textSupplier.get();
     }
 
     @Override
     public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
         var font = Minecraft.getInstance().font;
         var text = this.textSupplier.get();
-        boolean shadow = this.shadowSupplier.get();
         int width;
         int height;
 
         width = font.width(text);
         height = font.lineHeight;
+        if (this.wrap) {
+            var lines = this.wrappedLines(text, constraints.maxWidth());
+            width = lines.stream().mapToInt(font::width).max().orElse(0);
+            height = Math.max(1, lines.size()) * font.lineHeight;
+        }
 
         width = Math.min(width, constraints.maxWidth());
         height = Math.min(height, constraints.maxHeight());
@@ -113,43 +120,29 @@ public class Text extends BasePrimitiveElement {
     protected void drawElement(IScreenContext context, @Nonnull Bounds bounds) {
         var font = Minecraft.getInstance().font;
         var text = this.textSupplier.get();
-        String stringText = text.getString();
-
-        int start = this.highlightStartSupplier.get();
-        int end = this.highlightEndSupplier.get();
-        int highlightColor = this.highlightColorSupplier.get();
-
-        // Draw highlight if valid range
-        if (start != end && start >= 0 && end >= 0) {
-            int min = Math.min(start, end);
-            int max = Math.min(stringText.length(), Math.max(start, end));
-            
-            if (min < max) {
-                String beforeHighlight = stringText.substring(0, min);
-                String highlightedText = stringText.substring(min, max);
-                
-                int xOffset = font.width(beforeHighlight);
-                int highlightWidth = font.width(highlightedText);
-                
-                context.drawRect(
-                    bounds.x() + xOffset,
-                    bounds.y(), 
-                    highlightWidth,
-                    font.lineHeight,
-                    highlightColor
-                );
+        if (this.wrap) {
+            var lines = this.wrappedLines(text, bounds.width());
+            int y = bounds.y();
+            for (var line : lines) {
+                if (y + font.lineHeight > bounds.bottom()) break;
+                var colored = line.copy().withStyle(style -> style.withColor(this.colorSupplier.get()));
+                if (this.shadowSupplier.get()) context.drawTextWithShadow(colored, bounds.x(), y);
+                else context.drawText(colored, bounds.x(), y);
+                y += font.lineHeight;
             }
+            return;
         }
-
-        // Draw text at bounds position
+        // Draw text vertically centered within bounds
         int color = this.colorSupplier.get();
         boolean shadow = this.shadowSupplier.get();
         Component coloredText = text.copy().withStyle(style -> style.withColor(color));
 
+        int textY = bounds.y() + (bounds.height() - font.lineHeight) / 2;
+
         if (shadow) {
-            context.drawTextWithShadow(coloredText, bounds.x(), bounds.y());
+            context.drawTextWithShadow(coloredText, bounds.x(), textY);
         } else {
-            context.drawText(coloredText, bounds.x(), bounds.y());
+            context.drawText(coloredText, bounds.x(), textY);
         }
     }
 }

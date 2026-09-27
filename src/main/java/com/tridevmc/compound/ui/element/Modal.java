@@ -18,13 +18,10 @@ package com.tridevmc.compound.ui.element;
 
 import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
+import com.tridevmc.compound.ui.slot.SlotKey;
 import com.tridevmc.compound.ui.state.State;
 import com.tridevmc.compound.ui.state.StateImpl;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -47,11 +44,10 @@ import java.util.function.Consumer;
  */
 public class Modal extends BaseElement implements IComposableElement {
 
+    public static final SlotKey CONTENT_SLOT = new SlotKey("content");
+
     private static final int DEFAULT_WIDTH = 300;
     private static final int DEFAULT_HEIGHT = 150;
-    private static final int BACKGROUND_COLOR = 0xF0000000;
-    private static final int PANEL_COLOR = 0xFF303030;
-    private static final int BORDER_COLOR = 0xFF505050;
 
     private final State<Boolean> visible = new StateImpl<>(true);
     private Component title;
@@ -63,11 +59,14 @@ public class Modal extends BaseElement implements IComposableElement {
 
     public Modal(Component title) {
         this.title = title;
+        this.invalidate();
     }
 
     public Modal(Component title, Component message) {
         this.title = title;
+        this.invalidate();
         this.message = message;
+        this.invalidate();
     }
 
     @Override
@@ -75,60 +74,56 @@ public class Modal extends BaseElement implements IComposableElement {
         scope.bind(this.visible);
 
         if (!this.visible.get()) return;
-
-        scope.e(new Stack(), overlayStack -> {
-            overlayStack.layout().fillMax();
-
-            overlayStack.e(new Rect(BACKGROUND_COLOR), bg -> bg.layout().fillMax());
-
-            overlayStack.e(new Stack(), modalStack -> {
-                modalStack.layout().fixedSize(this.width, this.height).contentAlignment(Alignment.CENTER);
-
-                modalStack.e(new Rect(PANEL_COLOR), panel -> panel.layout().fillMax());
-                modalStack.e(new Rect(BORDER_COLOR), border -> border.layout().margin(-1).fillMax());
-
-                modalStack.e(new Box(), contentBox -> {
-                    contentBox.layout().padding(16).fillMax();
-
-                    contentBox.e(new Column(), column -> {
+        var tree = scope.getTree();
+        this.getNode().getLayoutProperties().layer(200).fillMax();
+        tree.setInputRoot(this.getNode());
+        scope.onClick(event -> true);
+        scope.onScroll(event -> true);
+        scope.onKeyPress(event -> {
+            if (event.keyCode() == 256) this.close();
+            return true;
+        });
+        scope.onCharTyped(event -> true);
+        scope.e(new Stack(), overlay -> {
+            overlay.layout().fillMax().contentAlignment(Alignment.CENTER);
+            overlay.e(new Rect(0x90000000), background -> background.layout().fillMax());
+            overlay.e(new Panel(), panel -> {
+                var viewport = tree.getViewportSize();
+                int panelWidth = Math.min(this.width, Math.max(80, viewport.width() - 16));
+                int panelHeight = Math.min(this.height, Math.max(60, viewport.height() - 16));
+                panel.layout().fixedSize(panelWidth, panelHeight);
+                panel.fillSlot(Panel.CONTENT_SLOT, content -> content.e(new Box(), padding -> {
+                    padding.layout().fillMax().padding(12);
+                    padding.e(new Column(), column -> {
                         column.layout().fillMax().spacing(8);
-
-                        if (this.title != null) {
-                            column.e(new Label(this.title, 0xFFFFFFFF, false),
-                                    title -> title.layout().contentAlignment(Alignment.CENTER));
-                        }
-
-                        if (this.message != null) {
-                            column.e(new Label(this.message, 0xFFCCCCCC, false),
-                                    msg -> msg.layout().contentAlignment(Alignment.CENTER).fillMax());
-                        }
-
-                        if (!this.buttons.isEmpty()) {
-                            column.e(new Row(), buttonRow -> {
-                                buttonRow.layout().spacing(8).contentAlignment(Alignment.CENTER);
-
-                                for (ModalButton button : this.buttons) {
-                                    buttonRow.e(new Button(), btn -> {
-                                        btn.layout().fixedHeight(20);
-                                        btn.fillSlot(Button.CONTENT_SLOT, btnContent -> {
-                                            btnContent.e(new Label(button.label, 0xFFFFFF, false));
-                                        });
-                                        btn.getElement().addPressListener((x, y) -> button.action.run());
-                                    });
-                                }
-                            });
-                        }
+                        if (this.title != null) column.e(new Label(this.title, 0xFF404040, false));
+                        scope.slotInto(CONTENT_SLOT, body -> {
+                            if (this.message != null) body.e(new Label(this.message, 0xFF404040, false).setWrap(true));
+                        }, column);
+                        column.e(new Spacer(), spacer -> spacer.layout().weight(1));
+                        column.e(new Row(), row -> {
+                            row.layout().fillMaxWidth().fixedHeight(20).spacing(6);
+                            for (var button : this.buttons) {
+                                row.e(new Button(), action -> {
+                                    action.layout().weight(1).fixedHeight(20);
+                                    action.fillSlot(Button.CONTENT_SLOT, label -> label.e(new Label(button.label)));
+                                    action.getElement().addPressListener((x, y) -> button.action.run());
+                                });
+                            }
+                        });
                     });
-                });
+                }));
             });
         });
     }
+
 
     public void show() {
         this.visible.set(true);
     }
 
     public void close() {
+        if (this.getNode() != null) this.getNode().getTree().clearInputRoot(this.getNode());
         this.visible.set(false);
         if (this.onClose != null) {
             this.onClose.accept(null);
@@ -141,22 +136,26 @@ public class Modal extends BaseElement implements IComposableElement {
 
     public void setTitle(Component title) {
         this.title = title;
+        this.invalidate();
     }
 
     public void setMessage(Component message) {
         this.message = message;
+        this.invalidate();
     }
 
     public void addButton(String label, Runnable action) {
-        this.buttons.add(new ModalButton(Component.literal(label), action));
+        this.addButton(Component.literal(label), action);
     }
 
     public void addButton(Component label, Runnable action) {
         this.buttons.add(new ModalButton(label, action));
+        this.invalidate();
     }
 
     public void clearButtons() {
         this.buttons.clear();
+        this.invalidate();
     }
 
     public void setOnClose(Consumer<Void> onClose) {
@@ -166,6 +165,7 @@ public class Modal extends BaseElement implements IComposableElement {
     public void setSize(int width, int height) {
         this.width = width;
         this.height = height;
+        this.invalidate();
     }
 
     @Override
@@ -184,13 +184,10 @@ public class Modal extends BaseElement implements IComposableElement {
         return List.of(bounds);
     }
 
-    private static class ModalButton {
-        Component label;
-        Runnable action;
-
-        ModalButton(Component label, Runnable action) {
-            this.label = label;
-            this.action = action;
-        }
+    private void invalidate() {
+        var node = this.getNode();
+        if (node != null) node.getTree().requestRecompose(node);
     }
+
+    private record ModalButton(Component label, Runnable action) {}
 }

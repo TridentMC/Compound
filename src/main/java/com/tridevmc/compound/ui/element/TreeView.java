@@ -17,35 +17,25 @@
 package com.tridevmc.compound.ui.element;
 
 import com.google.common.collect.Lists;
-import com.tridevmc.compound.ui.layout.*;
+import com.tridevmc.compound.ui.layout.Alignment;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.scope.IContainerScope;
 import com.tridevmc.compound.ui.state.State;
 import com.tridevmc.compound.ui.state.StateImpl;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import org.lwjgl.glfw.GLFW;
 
 import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-/**
- * A hierarchical tree view component for displaying nested data structures.
- *
- * <p><strong>Usage:</strong></p>
- * <pre>
- * scope.e(new TreeView<>(), tree -> {
- *     var root = tree.getElement().getRoot();
- *     root.addChild("Folder 1", child1 -> {
- *         child1.addChild("File 1.1");
- *         child1.addChild("File 1.2");
- *     });
- *     root.addChild("Folder 2", child2 -> {
- *         child2.addChild("File 2.1");
- *     });
- * });
- * </pre>
- */
 public class TreeView<T> extends BaseElement implements IComposableElement {
 
     private static final int DEFAULT_ITEM_HEIGHT = 16;
@@ -53,69 +43,151 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
 
     private final State<Boolean> enabled = new StateImpl<>(true);
     private final TreeNode<T> root;
+    private final ScrollArea scrollArea = new ScrollArea();
     private Function<T, String> displayTextProvider = Object::toString;
     private Consumer<TreeNode<T>> onSelectionChanged;
     private int itemHeight = DEFAULT_ITEM_HEIGHT;
 
     public TreeView() {
-        this.root = new TreeNode<>(null, null);
+        this.root = new TreeNode<>(null, null, this::invalidate);
     }
 
     @Override
     public void compose(ICompositionScope scope) {
         scope.bind(this.enabled);
 
-        scope.e(new ScrollArea(), scrollArea -> {
-            scrollArea.layout().fillMax();
-
-            scrollArea.fillSlot(ScrollArea.CONTENT_SLOT, content -> {
-                content.e(new Column(), column -> {
+        scope.onKeyPress(event -> this.navigate(event.keyCode()));
+        scope.e(new Surface(0xFF181818), background -> {
+            background.layout().fillMax();
+            background.fillSlot(Surface.CONTENT_SLOT, body -> body.e(this.scrollArea, scroll -> {
+                scroll.layout().fillMax();
+                scroll.fillSlot(ScrollArea.CONTENT_SLOT, content -> content.e(new Column(), column -> {
                     column.layout().fillMaxWidth();
-                    this.renderNode(column, this.root, 0);
-                });
-            });
+                    this.renderNode(column, this.root, -1, scope);
+                }));
+            }));
         });
     }
 
-    private void renderNode(IContainerScope<Column> columnScope, TreeNode<T> node, int depth) {
+    private boolean navigate(int key) {
+        if (!this.enabled.get()) return false;
+        var nodes = this.visibleNodes();
+        if (nodes.isEmpty()) return false;
+        int selected = -1;
+        for (int i = 0; i < nodes.size(); i++) {
+            if (nodes.get(i).isSelected()) selected = i;
+        }
+        int target = switch (key) {
+            case GLFW.GLFW_KEY_UP -> Math.max(0, selected - 1);
+            case GLFW.GLFW_KEY_DOWN -> Math.min(nodes.size() - 1, selected + 1);
+            case GLFW.GLFW_KEY_HOME -> 0;
+            case GLFW.GLFW_KEY_END -> nodes.size() - 1;
+            default -> -1;
+        };
+        if (target >= 0) {
+            this.selectNode(nodes.get(target));
+            this.revealRow(target);
+            Minecraft.getInstance().getNarrator().saySystemNow(this.getNarrationMessage());
+            return true;
+        }
+        if (key != GLFW.GLFW_KEY_LEFT && key != GLFW.GLFW_KEY_RIGHT) return false;
+        TreeNode<T> node = nodes.get(Math.max(0, selected));
+        this.selectNode(node);
+        if (key == GLFW.GLFW_KEY_LEFT) {
+            if (node.isExpanded() && !node.children.isEmpty()) node.setExpanded(false);
+            else if (node.parent != this.root) this.selectNode(node.parent);
+        } else if (!node.children.isEmpty()) {
+            if (!node.isExpanded()) node.setExpanded(true);
+            else this.selectNode(node.children.getFirst());
+        }
+        nodes = this.visibleNodes();
+        for (int i = 0; i < nodes.size(); i++) {
+            if (nodes.get(i).isSelected()) this.revealRow(i);
+        }
+        Minecraft.getInstance().getNarrator().saySystemNow(this.getNarrationMessage());
+        return true;
+    }
+
+    private List<TreeNode<T>> visibleNodes() {
+        List<TreeNode<T>> nodes = Lists.newArrayList();
+        this.appendVisible(this.root, nodes);
+        return nodes;
+    }
+
+    private void appendVisible(TreeNode<T> node, List<TreeNode<T>> nodes) {
+        if (node != this.root) nodes.add(node);
+        if (node.isExpanded()) {
+            for (var child : node.children) this.appendVisible(child, nodes);
+        }
+    }
+
+    private void revealRow(int index) {
+        int top = index * this.itemHeight;
+        int scroll = this.scrollArea.getScrollYState().get();
+        int height = this.scrollArea.getBounds().height();
+        if (height <= 0) return;
+        if (top < scroll) scroll = top;
+        else if (top + this.itemHeight > scroll + height) scroll = top + this.itemHeight - height;
+        this.scrollArea.scrollTo(0, Math.clamp(scroll, 0, this.scrollArea.getMaxScrollY()));
+    }
+
+    @Override
+    public boolean isFocusable() {
+        return this.enabled.get();
+    }
+
+    @Override
+    public Component getNarrationMessage() {
+        for (var node : this.visibleNodes()) {
+            if (node.isSelected()) {
+                String state = node.children.isEmpty() ? "" : node.isExpanded() ? ", expanded" : ", collapsed";
+                return Component.literal(this.displayTextProvider.apply(node.value) + state);
+            }
+        }
+        return Component.literal("Tree");
+    }
+
+    private void renderNode(IContainerScope<Column> columnScope, TreeNode<T> node, int depth,
+                            ICompositionScope scope) {
         if (node != this.root) {
             final TreeNode<T> currentNode = node;
-            boolean isSelected = node.isSelected();
-            boolean isHovered = node.isHovered();
 
             columnScope.e(new Stack(), itemStack -> {
                 itemStack.layout().fixedHeight(this.itemHeight).fillMaxWidth();
 
-                if (isSelected) {
-                    itemStack.e(new Rect(0xFF3366CC), bg -> bg.layout().fillMax());
-                } else if (isHovered) {
-                    itemStack.e(new Rect(0xFF224488), bg -> bg.layout().fillMax());
-                }
+                itemStack.e(new Surface(
+                        () -> currentNode.isHovered() ? 0xFF303030 : 0x00000000,
+                        () -> currentNode.isSelected() ? 0xFFFFFFFF : 0x00000000, 1),
+                        bg -> bg.layout().fillMax());
 
-                itemStack.e(new Label(
-                        Component.literal(this.getNodeText(currentNode)),
-                        () -> isSelected || isHovered ? 0xFFFFFFFF : 0xFFFFFF,
-                        () -> false
-                ), label -> label.layout()
-                        .contentAlignment(Alignment.CENTER_LEFT)
-                        .padding(4 + depth * INDENT_SIZE, 0));
-            });
+                itemStack.e(new Box(), labelBox -> {
+                    labelBox.layout().fillMax().contentAlignment(Alignment.CENTER_LEFT)
+                            .padding(4 + depth * INDENT_SIZE, 0);
+                    labelBox.e(new Label(Component.literal(this.getNodeText(currentNode)),
+                            () -> this.enabled.get() ? 0xFFFFFF : 0xA0A0A0));
+                });
 
-            columnScope.onClick(event -> {
-                if (!this.enabled.get()) return false;
-                this.selectNode(currentNode);
-                return true;
-            });
+                // Hover handlers on the item scope, not the column scope
+                itemStack.onMouseEnter(() -> currentNode.setHovered(true));
+                itemStack.onMouseExit(() -> currentNode.setHovered(false));
 
-            columnScope.onMouseMove(event -> {
-                currentNode.setHovered(true);
-                return false;
+                // Click handler on the item scope
+                itemStack.onClick(event -> {
+                    if (!this.enabled.get() || event.button() != 0) return false;
+                    scope.requestFocus();
+                    if (!currentNode.children.isEmpty()) {
+                        currentNode.setExpanded(!currentNode.isExpanded());
+                    }
+                    this.selectNode(currentNode);
+                    Minecraft.getInstance().getNarrator().saySystemNow(this.getNarrationMessage());
+                    return true;
+                });
             });
         }
 
         if (node.isExpanded()) {
             for (TreeNode<T> child : node.getChildren()) {
-                this.renderNode(columnScope, child, depth + 1);
+                this.renderNode(columnScope, child, depth + 1, scope);
             }
         }
     }
@@ -130,10 +202,7 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
     }
 
     private void selectNode(TreeNode<T> node) {
-        if (!node.getChildren().isEmpty()) {
-            node.setExpanded(!node.isExpanded());
-        }
-
+        if (node.isSelected()) return;
         this.deselectAll(this.root);
         node.setSelected(true);
 
@@ -155,6 +224,7 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
 
     public void setDisplayTextProvider(Function<T, String> provider) {
         this.displayTextProvider = provider;
+        this.invalidate();
     }
 
     public void setOnSelectionChanged(Consumer<TreeNode<T>> listener) {
@@ -162,7 +232,9 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
     }
 
     public void setItemHeight(int height) {
+        if (height <= 0) throw new IllegalArgumentException("Tree row height must be positive");
         this.itemHeight = height;
+        this.invalidate();
     }
 
     public boolean isEnabled() {
@@ -171,6 +243,11 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
 
     public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
+    }
+
+    private void invalidate() {
+        var node = this.getNode();
+        if (node != null) node.getTree().requestRecompose(node);
     }
 
     @Override
@@ -189,25 +266,25 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
         return List.of(bounds);
     }
 
-    /**
-     * A node in the tree structure.
-     */
     public static class TreeNode<T> {
         private final T value;
         private final TreeNode<T> parent;
         private final List<TreeNode<T>> children = Lists.newArrayList();
+        private final Runnable invalidate;
         private boolean expanded = true;
         private boolean selected = false;
         private boolean hovered = false;
 
-        TreeNode(T value, TreeNode<T> parent) {
+        TreeNode(T value, TreeNode<T> parent, Runnable invalidate) {
             this.value = value;
             this.parent = parent;
+            this.invalidate = invalidate;
         }
 
         public TreeNode<T> addChild(T value) {
-            TreeNode<T> child = new TreeNode<>(value, this);
+            TreeNode<T> child = new TreeNode<>(value, this, this.invalidate);
             this.children.add(child);
+            this.invalidate.run();
             return child;
         }
 
@@ -218,7 +295,7 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
         }
 
         public void removeChild(TreeNode<T> child) {
-            this.children.remove(child);
+            if (this.children.remove(child)) this.invalidate.run();
         }
 
         public T getValue() {
@@ -230,7 +307,7 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
         }
 
         public List<TreeNode<T>> getChildren() {
-            return this.children;
+            return Collections.unmodifiableList(this.children);
         }
 
         public boolean isExpanded() {
@@ -238,7 +315,9 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
         }
 
         public void setExpanded(boolean expanded) {
+            if (this.expanded == expanded) return;
             this.expanded = expanded;
+            this.invalidate.run();
         }
 
         public boolean isSelected() {

@@ -135,6 +135,30 @@ public interface ICompositionScope {
     void onScroll(Function<MouseScrollEvent, Boolean> handler);
 
     /**
+     * Register a scroll handler on the current node that only consumes the event
+     * when this element currently has keyboard focus. This is the correct default
+     * for text inputs and other focusable widgets embedded inside scrollable containers.
+     *
+     * @param handler the scroll handler that returns true if handled
+     */
+    default void onScrollWhenFocused(Function<MouseScrollEvent, Boolean> handler) {
+        this.onScroll(event -> {
+            if (!this.isFocused()) {
+                return false;
+            }
+            return handler.apply(event);
+        });
+    }
+
+    /**
+     * Returns true if the current composition node has keyboard focus.
+     * For the root scope this always returns false.
+     *
+     * @return whether the current element is focused
+     */
+    boolean isFocused();
+
+    /**
      * Register a key press handler on the current node.
      *
      * @param handler the key press handler that returns true if handled
@@ -268,6 +292,20 @@ public interface ICompositionScope {
     UITree getTree();
 
     /**
+     * Register an animation for automatic lifecycle management.
+     * Animations registered here are automatically disposed when the composition
+     * node is detached. Elements should not manually dispose animations.
+     * <p>
+     * The default implementation does nothing. Scopes that have access to a tree
+     * node should override this to register animations with the node for automatic cleanup.
+     *
+     * @param animation the animation to register
+     */
+    default void registerAnimation(AnimatedState<?> animation) {
+        // Default: no-op. Override in scopes that have tree/node access.
+    }
+
+    /**
      * Create an animated float state.
      *
      * @param initialValue the initial value
@@ -287,7 +325,9 @@ public interface ICompositionScope {
      * @return the animated state
      */
     default AnimatedState<Float> animateFloat(float initialValue, long durationMs, Easing easing) {
-        return new AnimatedState<>(initialValue, durationMs, Interpolators.FLOAT, easing, getTree().getAnimationScheduler());
+        var state = new AnimatedState<>(initialValue, durationMs, Interpolators.FLOAT, easing, getTree().getAnimationScheduler());
+        this.registerAnimation(state);
+        return state;
     }
 
     /**
@@ -310,7 +350,9 @@ public interface ICompositionScope {
      * @return the animated state
      */
     default AnimatedState<Integer> animateInt(int initialValue, long durationMs, Easing easing) {
-        return new AnimatedState<>(initialValue, durationMs, Interpolators.INT, easing, getTree().getAnimationScheduler());
+        var state = new AnimatedState<>(initialValue, durationMs, Interpolators.INT, easing, getTree().getAnimationScheduler());
+        this.registerAnimation(state);
+        return state;
     }
 
     /**
@@ -333,7 +375,9 @@ public interface ICompositionScope {
      * @return the animated state
      */
     default AnimatedState<Integer> animateColor(int initialValue, long durationMs, Easing easing) {
-        return new AnimatedState<>(initialValue, durationMs, Interpolators.COLOR, easing, getTree().getAnimationScheduler());
+        var state = new AnimatedState<>(initialValue, durationMs, Interpolators.COLOR, easing, getTree().getAnimationScheduler());
+        this.registerAnimation(state);
+        return state;
     }
 
     /**
@@ -347,8 +391,10 @@ public interface ICompositionScope {
      * @return the looping animated state
      */
     default AnimatedState<Float> animateFloatLooping(float startValue, float endValue, long intervalMs, Easing easing) {
-        return new AnimatedState<Float>(startValue, intervalMs, Interpolators.FLOAT, easing,
+        var state = new AnimatedState<Float>(startValue, intervalMs, Interpolators.FLOAT, easing,
                 getTree().getAnimationScheduler(), true, startValue, endValue);
+        this.registerAnimation(state);
+        return state;
     }
 
     /**
@@ -374,8 +420,10 @@ public interface ICompositionScope {
      * @return the looping animated state
      */
     default AnimatedState<Integer> animateIntLooping(int startValue, int endValue, long intervalMs, Easing easing) {
-        return new AnimatedState<Integer>(startValue, intervalMs, Interpolators.INT, easing,
+        var state = new AnimatedState<Integer>(startValue, intervalMs, Interpolators.INT, easing,
                 getTree().getAnimationScheduler(), true, startValue, endValue);
+        this.registerAnimation(state);
+        return state;
     }
 
     /**
@@ -401,8 +449,10 @@ public interface ICompositionScope {
      * @return the looping animated state
      */
     default AnimatedState<Integer> animateColorLooping(int startColor, int endColor, long intervalMs, Easing easing) {
-        return new AnimatedState<Integer>(startColor, intervalMs, Interpolators.COLOR, easing,
+        var state = new AnimatedState<Integer>(startColor, intervalMs, Interpolators.COLOR, easing,
                 getTree().getAnimationScheduler(), true, startColor, endColor);
+        this.registerAnimation(state);
+        return state;
     }
 
     /**

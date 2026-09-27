@@ -40,18 +40,31 @@ public class Rect extends BasePrimitiveElement {
 
     @Override
     public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
-        // If fillMax is set, the rect should NOT affect parent sizing
-        // This allows rects to fill available space in Stack without dominating measurement
-        if (ownProperties.isFillMaxWidth() && ownProperties.isFillMaxHeight()) {
-            return new Size(0, 0);
+        Integer fixedW = ownProperties.getFixedWidth();
+        Integer fixedH = ownProperties.getFixedHeight();
+        boolean fillMaxW = ownProperties.isFillMaxWidth();
+        boolean fillMaxH = ownProperties.isFillMaxHeight();
+
+        int w;
+        int h;
+
+        if (fixedW != null) {
+            w = fixedW;
+        } else if (fillMaxW) {
+            w = 0;
+        } else {
+            w = constraints.maxWidth();
         }
-        if (ownProperties.isFillMaxWidth()) {
-            return new Size(0, constraints.maxHeight());
+
+        if (fixedH != null) {
+            h = fixedH;
+        } else if (fillMaxH) {
+            h = 0;
+        } else {
+            h = constraints.maxHeight();
         }
-        if (ownProperties.isFillMaxHeight()) {
-            return new Size(constraints.maxWidth(), 0);
-        }
-        return new Size(constraints.maxWidth(), constraints.maxHeight());
+
+        return new Size(w, h);
     }
 
     @Override

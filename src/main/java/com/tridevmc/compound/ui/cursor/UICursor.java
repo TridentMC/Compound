@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.tridevmc.compound.ui;
-
-import com.tridevmc.compound.ui.cursor.UICursor;
+package com.tridevmc.compound.ui.cursor;
 
 /**
- * Holds standard cursor types for use in the UI.
+ * Platform-agnostic cursor types used by Compound UI elements.
+ * The UI tree converts these to the appropriate platform cursor at render time.
  */
-public class CompoundCursors {
-    public static final UICursor HAND = UICursor.HAND;
-    public static final UICursor IBEAM = UICursor.IBEAM;
-    public static final UICursor CROSSHAIR = UICursor.CROSSHAIR;
-    public static final UICursor HRESIZE = UICursor.HRESIZE;
-    public static final UICursor VRESIZE = UICursor.VRESIZE;
+public enum UICursor {
+    DEFAULT,
+    HAND,
+    IBEAM,
+    CROSSHAIR,
+    HRESIZE,
+    VRESIZE
 }

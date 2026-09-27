@@ -16,6 +16,8 @@
 
 package com.tridevmc.compound.ui.layout;
 
+import com.tridevmc.compound.ui.tree.ITreeNode;
+
 import java.util.function.Consumer;
 
 /**
@@ -64,11 +66,21 @@ public class LayoutProperties {
     private Alignment horizontalAlignment;
     private Alignment verticalAlignment;
     private int spacing;
-    private Integer gridColumns;
-    private Integer gridRows;
+    private int gridColumns;
+    private int gridRows;
     private boolean clip;
+    private int layer;
+    private ITreeNode boundNode;
 
     protected LayoutProperties() {
+    }
+
+    public void setBoundNode(ITreeNode node) {
+        this.boundNode = node;
+    }
+
+    public ITreeNode getBoundNode() {
+        return this.boundNode;
     }
 
     public static LayoutProperties create() {
@@ -98,9 +110,7 @@ public class LayoutProperties {
      * @return this for continued chaining
      */
     public LayoutProperties deferred(Consumer<DeferredScope> configurator) {
-        // Note: Node binding will be set up when this is called from an element context
-        // For now, create scope without node (node will be injected by element)
-        DeferredScope scope = new DeferredScope(this, null, configurator);
+        DeferredScope scope = new DeferredScope(this, this.boundNode, configurator);
         configurator.accept(scope);
         return this;
     }
@@ -194,13 +204,15 @@ public class LayoutProperties {
     }
 
     /**
-     * Sets the weight for weighted layouts (e.g., flex layouts).
-     * Reserved for future use.
+     * Divides remaining space proportionally between weighted Row or Column children.
      *
      * @param weight the weight value
      * @return this for chaining
      */
     public LayoutProperties weight(float weight) {
+        if (!Float.isFinite(weight) || weight <= 0) {
+            throw new IllegalArgumentException("Layout weight must be finite and positive");
+        }
         this.weight = weight;
         return this;
     }
@@ -517,5 +529,23 @@ public class LayoutProperties {
 
     public boolean isClip() {
         return this.clip;
+    }
+
+    /**
+     * Sets the render/hit-test layer for this element.
+     * Elements with a layer greater than 0 are rendered after the entire normal
+     * tree and are hit-tested before normal elements, allowing popups and dropdowns
+     * to appear above siblings.
+     *
+     * @param layer the layer index (0 = default, higher values render on top)
+     * @return this for chaining
+     */
+    public LayoutProperties layer(int layer) {
+        this.layer = layer;
+        return this;
+    }
+
+    public int getLayer() {
+        return this.layer;
     }
 }

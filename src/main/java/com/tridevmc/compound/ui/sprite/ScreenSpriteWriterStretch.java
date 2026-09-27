@@ -31,8 +31,8 @@ public class ScreenSpriteWriterStretch implements IScreenSpriteWriter {
                 sprite,
                 x, y,
                 width, height,
-                sprite.getMinU(), sprite.getMinV(),
-                sprite.getMaxU(), sprite.getMaxV()
+                0, 0,
+                sprite.getWidthInPixels(), sprite.getHeightInPixels()
         );
     }
 }

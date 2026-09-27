@@ -16,7 +16,8 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.mojang.blaze3d.platform.cursor.CursorType;
+import com.tridevmc.compound.ui.cursor.UICursor;
+import net.minecraft.network.chat.Component;
 
 /**
  * The core interface for all UI elements in the compose system.
@@ -30,6 +31,21 @@ import com.mojang.blaze3d.platform.cursor.CursorType;
  * </ul>
  */
 public interface IElement extends IGenericElement {
+    /** Text announced when this element receives focus; empty uses composed child labels. */
+    default Component getNarrationMessage() {
+        return Component.empty();
+    }
+
+    /** Whether this element participates in rendering and input. */
+    default boolean isVisible() {
+        return true;
+    }
+
+    /** Whether this element can receive keyboard focus in its current state. */
+    default boolean isFocusable() {
+        return false;
+    }
+
     // Core element contract is defined in IGenericElement
     // This interface serves as the common type for all UI elements
 
@@ -40,7 +56,7 @@ public interface IElement extends IGenericElement {
      * @param y the y coordinate relative to the element
      * @return the cursor to display, or null to use the default
      */
-    default CursorType getCursor(int x, int y) {
+    default UICursor getCursor(int x, int y) {
         return null;
     }
 }

@@ -17,8 +17,8 @@
 package com.tridevmc.compound.ui.element;
 
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.platform.cursor.CursorType;
 import com.tridevmc.compound.ui.CompoundCursors;
+import com.tridevmc.compound.ui.cursor.UICursor;
 import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
@@ -28,7 +28,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 
 import javax.annotation.Nonnull;
@@ -51,13 +51,15 @@ import java.util.function.Consumer;
  */
 public class Checkbox extends BaseElement implements IComposableElement {
 
-    private static final int BOX_SIZE = 16;
+    private static final int BOX_SIZE = 17;
     private static final IScreenSprite DEFAULT_BOX_SPRITE = IScreenSprite.of(
-            ResourceLocation.withDefaultNamespace("widget/checkbox"));
+            Identifier.withDefaultNamespace("widget/checkbox"));
     private static final IScreenSprite DEFAULT_CHECKED_SPRITE = IScreenSprite.of(
-            ResourceLocation.withDefaultNamespace("widget/checkbox_checked"));
+            Identifier.withDefaultNamespace("widget/checkbox_selected"));
     private static final IScreenSprite DEFAULT_HIGHLIGHTED_SPRITE = IScreenSprite.of(
-            ResourceLocation.withDefaultNamespace("widget/checkbox_highlighted"));
+            Identifier.withDefaultNamespace("widget/checkbox_highlighted"));
+    private static final IScreenSprite DEFAULT_CHECKED_HIGHLIGHTED_SPRITE = IScreenSprite.of(
+            Identifier.withDefaultNamespace("widget/checkbox_selected_highlighted"));
 
     private final State<Boolean> checked = new StateImpl<>(false);
     private final State<Boolean> enabled = new StateImpl<>(true);
@@ -82,15 +84,13 @@ public class Checkbox extends BaseElement implements IComposableElement {
 
     @Override
     public void compose(ICompositionScope scope) {
-        scope.bind(this.enabled);
-        scope.bind(this.hovered);
-        scope.bind(this.checked);
 
         scope.onMouseEnter(() -> this.hovered.set(true));
         scope.onMouseExit(() -> this.hovered.set(false));
 
         scope.onClick(event -> {
-            if (!this.enabled.get()) return false;
+            if (!this.enabled.get() || event.button() != 0) return false;
+            scope.requestFocus();
             this.toggle();
             return true;
         });
@@ -105,7 +105,7 @@ public class Checkbox extends BaseElement implements IComposableElement {
         });
 
         scope.e(new Row(), row -> {
-            row.layout().spacing(this.spacing).verticalAlignment(Alignment.CENTER);
+            row.layout().fixedHeight(BOX_SIZE).spacing(this.spacing).verticalAlignment(Alignment.CENTER);
 
             if (this.label != null && !this.labelRight) {
                 row.e(new Label(this.label, () -> this.enabled.get() ? this.labelColor : 0x808080, () -> false));
@@ -114,20 +114,12 @@ public class Checkbox extends BaseElement implements IComposableElement {
             row.e(new Stack(), boxStack -> {
                 boxStack.layout().fixedSize(BOX_SIZE, BOX_SIZE);
 
-                IScreenSprite boxSprite;
-                if (!this.enabled.get()) {
-                    boxSprite = DEFAULT_BOX_SPRITE;
-                } else if (this.hovered.get()) {
-                    boxSprite = DEFAULT_HIGHLIGHTED_SPRITE;
-                } else {
-                    boxSprite = DEFAULT_BOX_SPRITE;
-                }
-
-                boxStack.e(new Sprite(boxSprite), s -> s.layout().fillMax());
-
-                if (this.checked.get()) {
-                    boxStack.e(new Sprite(DEFAULT_CHECKED_SPRITE), s -> s.layout().fillMax());
-                }
+                boxStack.e(new Sprite(() -> {
+                    boolean highlighted = this.hovered.get() || scope.isFocused();
+                    return this.checked.get()
+                            ? highlighted ? DEFAULT_CHECKED_HIGHLIGHTED_SPRITE : DEFAULT_CHECKED_SPRITE
+                            : highlighted ? DEFAULT_HIGHLIGHTED_SPRITE : DEFAULT_BOX_SPRITE;
+                }), sprite -> sprite.layout().fillMax());
             });
 
             if (this.label != null && this.labelRight) {
@@ -149,8 +141,11 @@ public class Checkbox extends BaseElement implements IComposableElement {
         if (measuredChildren.isEmpty()) {
             return List.of();
         }
-        return List.of(bounds);
+        return List.of(new Bounds(bounds.x(), bounds.y(), bounds.width(), BOX_SIZE));
     }
+
+    @Override
+    public boolean isFocusable() { return this.enabled.get(); }
 
     private void toggle() {
         boolean newValue = !this.checked.get();
@@ -224,7 +219,7 @@ public class Checkbox extends BaseElement implements IComposableElement {
     }
 
     @Override
-    public CursorType getCursor(int x, int y) {
+    public UICursor getCursor(int x, int y) {
         return this.enabled.get() ? CompoundCursors.HAND : null;
     }
 }

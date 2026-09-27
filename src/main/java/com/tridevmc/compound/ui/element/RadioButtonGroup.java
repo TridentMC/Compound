@@ -17,16 +17,18 @@
 package com.tridevmc.compound.ui.element;
 
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.platform.cursor.CursorType;
 import com.tridevmc.compound.ui.CompoundCursors;
+import com.tridevmc.compound.ui.cursor.UICursor;
 import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
+import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
 import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 
 import javax.annotation.Nonnull;
@@ -51,22 +53,38 @@ import java.util.function.Consumer;
  */
 public class RadioButtonGroup extends BaseElement implements IComposableElement {
 
-    private static final int RADIO_SIZE = 12;
     private static final int SPACING = 4;
+    private static final int BOX_SIZE = 17;
+    private static final IScreenSprite BOX = IScreenSprite.of(Identifier.withDefaultNamespace("widget/checkbox"));
+    private static final IScreenSprite SELECTED = IScreenSprite.of(Identifier.withDefaultNamespace("widget/checkbox_selected"));
+    private static final IScreenSprite HIGHLIGHTED = IScreenSprite.of(Identifier.withDefaultNamespace("widget/checkbox_highlighted"));
+    private static final IScreenSprite SELECTED_HIGHLIGHTED = IScreenSprite.of(Identifier.withDefaultNamespace("widget/checkbox_selected_highlighted"));
 
     private final State<Integer> selectedIndex = new StateImpl<>(-1);
     private final State<Boolean> enabled = new StateImpl<>(true);
     private final List<RadioOption> options = Lists.newArrayList();
+    private final List<State<Boolean>> optionHoverStates = Lists.newArrayList();
     private Consumer<Integer> onSelectionChanged;
-    private int optionSpacing = 8;
+    private int optionSpacing = 4;
+    private int labelColor = 0xFFFFFF;
 
     public RadioButtonGroup() {
     }
 
     @Override
     public void compose(ICompositionScope scope) {
-        scope.bind(this.enabled);
-        scope.bind(this.selectedIndex);
+
+        // Ensure hover states exist for all options
+        while (this.optionHoverStates.size() < this.options.size()) {
+            this.optionHoverStates.add(new StateImpl<>(false));
+        }
+        scope.onKeyPress(event -> {
+            if (!this.enabled.get() || this.options.isEmpty()) return false;
+            int step = switch (event.keyCode()) { case 262, 264 -> 1; case 263, 265 -> -1; default -> 0; };
+            if (step == 0) return false;
+            this.select(Math.floorMod(this.selectedIndex.get() + step, this.options.size()));
+            return true;
+        });
 
         scope.e(new Column(), column -> {
             column.layout().spacing(this.optionSpacing);
@@ -74,26 +92,33 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
             for (int i = 0; i < this.options.size(); i++) {
                 final int index = i;
                 RadioOption option = this.options.get(i);
+                State<Boolean> hoverState = this.optionHoverStates.get(index);
 
                 column.e(new Row(), row -> {
-                    row.layout().spacing(SPACING).verticalAlignment(Alignment.CENTER);
+                    row.layout().fixedHeight(BOX_SIZE).spacing(SPACING).verticalAlignment(Alignment.CENTER);
 
-                    row.e(new Stack(), radioStack -> {
-                        radioStack.layout().fixedSize(RADIO_SIZE, RADIO_SIZE);
+                    // Hover handlers on the row itself
+                    row.onMouseEnter(() -> hoverState.set(true));
+                    row.onMouseExit(() -> hoverState.set(false));
 
-                        int outerColor = this.enabled.get() ? 0xFFFFFFFF : 0xFF808080;
-                        radioStack.e(new Rect(outerColor), outer -> outer.layout().fillMax());
+                    row.e(new Sprite(() -> {
+                        boolean selected = this.selectedIndex.get() == index;
+                        boolean highlighted = this.enabled.get()
+                                && (hoverState.get() || scope.isFocused() && selected);
+                        return selected ? highlighted ? SELECTED_HIGHLIGHTED : SELECTED
+                                : highlighted ? HIGHLIGHTED : BOX;
+                    }), sprite -> sprite.layout().fixedSize(BOX_SIZE, BOX_SIZE));
 
-                        if (this.selectedIndex.get() == index) {
-                            int innerColor = this.enabled.get() ? 0xFF3366CC : 0xFF404040;
-                            radioStack.e(new Rect(innerColor), inner -> inner.layout().margin(3).fillMax());
-                        }
-                    });
+                    // Label with hover color change
+                    row.e(new Label(option.label, () -> {
+                        if (!this.enabled.get()) return 0x808080;
+                        return this.labelColor;
+                    }, () -> false));
 
-                    row.e(new Label(option.label, () -> this.enabled.get() ? 0xFFFFFF : 0x808080, () -> false));
-
-                    scope.onClick(event -> {
-                        if (!this.enabled.get()) return false;
+                    // Click handler on row scope, not parent scope
+                    row.onClick(event -> {
+                        if (!this.enabled.get() || event.button() != 0) return false;
+                        scope.requestFocus();
                         this.select(index);
                         return true;
                     });
@@ -101,6 +126,9 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
             }
         });
     }
+
+    @Override
+    public boolean isFocusable() { return this.enabled.get(); }
 
     private void select(int index) {
         if (index < 0 || index >= this.options.size()) return;
@@ -118,27 +146,38 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
         }
     }
 
+    public void setSelectedIndex(int index) {
+        if (index < 0 || index >= this.options.size()) return;
+        if (this.selectedIndex.get() != index) {
+            this.selectedIndex.set(index);
+            if (this.onSelectionChanged != null) {
+                this.onSelectionChanged.accept(index);
+            }
+        }
+    }
+
     public void addOption(String label) {
         this.options.add(new RadioOption(Component.literal(label)));
+        this.optionHoverStates.add(new StateImpl<>(false));
+        if (this.getNode() != null) this.getNode().getTree().requestRecompose(this.getNode());
     }
 
     public void addOption(Component label) {
         this.options.add(new RadioOption(label));
+        this.optionHoverStates.add(new StateImpl<>(false));
+        if (this.getNode() != null) this.getNode().getTree().requestRecompose(this.getNode());
     }
 
     public void removeOption(int index) {
         if (index >= 0 && index < this.options.size()) {
             this.options.remove(index);
+            this.optionHoverStates.remove(index);
             if (this.selectedIndex.get() == index) {
                 this.selectedIndex.set(-1);
             } else if (this.selectedIndex.get() > index) {
                 this.selectedIndex.set(this.selectedIndex.get() - 1);
             }
         }
-    }
-
-    public void setSelectedIndex(int index) {
-        this.select(index);
     }
 
     public int getSelectedIndex() {
@@ -151,6 +190,11 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
 
     public void setOptionSpacing(int spacing) {
         this.optionSpacing = spacing;
+        if (this.getNode() != null) this.getNode().getTree().requestRecompose(this.getNode());
+    }
+
+    public void setLabelColor(int color) {
+        this.labelColor = color;
     }
 
     public int getOptionCount() {
@@ -182,7 +226,7 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
     }
 
     @Override
-    public CursorType getCursor(int x, int y) {
+    public UICursor getCursor(int x, int y) {
         return this.enabled.get() ? CompoundCursors.HAND : null;
     }
 

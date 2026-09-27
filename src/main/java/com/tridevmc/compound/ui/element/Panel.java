@@ -25,7 +25,7 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 import com.tridevmc.compound.ui.slot.SlotKey;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.sprite.IScreenSpriteWriter;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -65,7 +65,7 @@ public class Panel extends BaseElement implements IComposableElement {
     private static IScreenSprite getDefaultSprite() {
         if (DEFAULT_SPRITE == null) {
             var baseSprite = IScreenSprite.ofAssetLocation(
-                    ResourceLocation.withDefaultNamespace("textures/gui/container/inventory.png"),
+                    Identifier.withDefaultNamespace("textures/gui/container/inventory.png"),
                     TEXTURE_SIZE, TEXTURE_SIZE
             );
             // Custom writer that matches old Panel behavior: 4px corners/edges, 1px gray fill
@@ -91,11 +91,15 @@ public class Panel extends BaseElement implements IComposableElement {
 
     private static IScreenSprite wrapWithWriter(IScreenSprite base, IScreenSpriteWriter writer) {
         return new IScreenSprite() {
+            public Identifier getSpriteIdentifier() {
+                return null;
+            }
+
             public IScreenSpriteWriter getWriter() {
                 return writer;
             }
 
-            public ResourceLocation getTextureLocation() {
+            public Identifier getTextureLocation() {
                 return base.getTextureLocation();
             }
 

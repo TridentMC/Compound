@@ -16,8 +16,8 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.mojang.blaze3d.platform.cursor.CursorType;
 import com.tridevmc.compound.ui.CompoundCursors;
+import com.tridevmc.compound.ui.cursor.UICursor;
 import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
@@ -27,7 +27,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 
@@ -53,19 +53,56 @@ import java.util.function.Function;
  */
 public class Slider extends BaseElement implements IComposableElement {
 
-    private static final int DEFAULT_TRACK_HEIGHT = 4;
-    private static final int DEFAULT_THUMB_SIZE = 12;
     private static final int DEFAULT_MIN_WIDTH = 100;
     private static final int DEFAULT_HEIGHT = 20;
 
+    private static final int HANDLE_WIDTH = 8;
+    private static final int TEXT_MARGIN = 2;
+
     private static final IScreenSprite TRACK_SPRITE = IScreenSprite.of(
-            ResourceLocation.withDefaultNamespace("widget/slider"));
+            Identifier.withDefaultNamespace("widget/slider"));
     private static final IScreenSprite TRACK_HIGHLIGHTED_SPRITE = IScreenSprite.of(
-            ResourceLocation.withDefaultNamespace("widget/slider_highlighted"));
-    private static final IScreenSprite THUMB_SPRITE = IScreenSprite.of(
-            ResourceLocation.withDefaultNamespace("widget/slider_thumb"));
-    private static final IScreenSprite THUMB_HIGHLIGHTED_SPRITE = IScreenSprite.of(
-            ResourceLocation.withDefaultNamespace("widget/slider_thumb_highlighted"));
+            Identifier.withDefaultNamespace("widget/slider_highlighted"));
+    private static final IScreenSprite HANDLE_SPRITE = IScreenSprite.of(
+            Identifier.withDefaultNamespace("widget/slider_handle"));
+    private static final IScreenSprite HANDLE_HIGHLIGHTED_SPRITE = IScreenSprite.of(
+            Identifier.withDefaultNamespace("widget/slider_handle_highlighted"));
+
+    /**
+     * Composed slider handle element. Measures as the full track size but places a
+     * child sprite at the position derived from the normalized value supplier.
+     */
+    private class SliderThumb extends BaseElement implements IComposableElement {
+        private final java.util.function.Supplier<IScreenSprite> spriteSupplier;
+        private final java.util.function.Supplier<Double> normalizedSupplier;
+
+        SliderThumb(java.util.function.Supplier<IScreenSprite> spriteSupplier,
+                    java.util.function.Supplier<Double> normalizedSupplier) {
+            this.spriteSupplier = spriteSupplier;
+            this.normalizedSupplier = normalizedSupplier;
+        }
+
+        @Override
+        public void compose(ICompositionScope scope) {
+            scope.e(new Sprite(this.spriteSupplier), sprite -> sprite.layout().fixedSize(HANDLE_WIDTH, DEFAULT_HEIGHT));
+        }
+
+        @Override
+        public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
+            return new Size(constraints.maxWidth(), DEFAULT_HEIGHT);
+        }
+
+        @Override
+        public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+            double normalized = this.normalizedSupplier.get();
+            int trackWidth = bounds.width();
+            int handleX = (int) (normalized * (trackWidth - HANDLE_WIDTH));
+            return List.of(new Bounds(
+                    new Position(bounds.x() + handleX, bounds.y()),
+                    new Size(HANDLE_WIDTH, bounds.height())
+            ));
+        }
+    }
 
     private final State<Double> value = new StateImpl<>(0.0);
     private final State<Boolean> enabled = new StateImpl<>(true);
@@ -80,14 +117,16 @@ public class Slider extends BaseElement implements IComposableElement {
     private Consumer<Double> onValueChanged;
     private Consumer<Double> onDragStart;
     private Consumer<Double> onDragEnd;
-    private int trackColor = 0xFF808080;
-    private int fillColor = 0xFF3366CC;
-    private int thumbColor = 0xFFFFFFFF;
 
     public Slider(double minValue, double maxValue, double step) {
+        if (!Double.isFinite(minValue) || !Double.isFinite(maxValue) || minValue > maxValue) {
+            throw new IllegalArgumentException("Slider range must be finite and ordered");
+        }
+        if (!Double.isFinite(step) || step < 0) throw new IllegalArgumentException("Slider step must be nonnegative");
         this.minValue = minValue;
         this.maxValue = maxValue;
         this.step = step;
+        this.value.set(minValue);
     }
 
     public Slider() {
@@ -96,24 +135,14 @@ public class Slider extends BaseElement implements IComposableElement {
 
     @Override
     public void compose(ICompositionScope scope) {
-        scope.bind(this.enabled);
-        scope.bind(this.hovered);
-        scope.bind(this.dragging);
         scope.bindLayout(this.value);
 
         scope.onMouseEnter(() -> this.hovered.set(true));
-        scope.onMouseExit(() -> {
-            this.hovered.set(false);
-            if (this.dragging.get()) {
-                this.dragging.set(false);
-                if (this.onDragEnd != null) {
-                    this.onDragEnd.accept(this.value.get());
-                }
-            }
-        });
+        scope.onMouseExit(() -> this.hovered.set(false));
 
         scope.onClick(event -> {
-            if (!this.enabled.get()) return false;
+            if (!this.enabled.get() || event.button() != 0) return false;
+            scope.requestFocus();
             this.dragging.set(true);
             this.updateValueFromPosition(event.x());
             if (this.onDragStart != null) {
@@ -131,6 +160,7 @@ public class Slider extends BaseElement implements IComposableElement {
         scope.onMouseRelease(event -> {
             if (this.dragging.get()) {
                 this.dragging.set(false);
+                this.playClickSound();
                 if (this.onDragEnd != null) {
                     this.onDragEnd.accept(this.value.get());
                 }
@@ -143,19 +173,23 @@ public class Slider extends BaseElement implements IComposableElement {
             double stepSize = this.step > 0 ? this.step : (this.maxValue - this.minValue) / 20.0;
             return switch (event.keyCode()) {
                 case org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT, org.lwjgl.glfw.GLFW.GLFW_KEY_DOWN -> {
-                    this.setValue(this.value.get() - stepSize);
+                    this.setValueInternal(this.value.get() - stepSize);
+                    this.playClickSound();
                     yield true;
                 }
                 case org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT, org.lwjgl.glfw.GLFW.GLFW_KEY_UP -> {
-                    this.setValue(this.value.get() + stepSize);
+                    this.setValueInternal(this.value.get() + stepSize);
+                    this.playClickSound();
                     yield true;
                 }
                 case org.lwjgl.glfw.GLFW.GLFW_KEY_HOME -> {
-                    this.setValue(this.minValue);
+                    this.setValueInternal(this.minValue);
+                    this.playClickSound();
                     yield true;
                 }
                 case org.lwjgl.glfw.GLFW.GLFW_KEY_END -> {
-                    this.setValue(this.maxValue);
+                    this.setValueInternal(this.maxValue);
+                    this.playClickSound();
                     yield true;
                 }
                 default -> false;
@@ -165,74 +199,58 @@ public class Slider extends BaseElement implements IComposableElement {
         scope.e(new Stack(), stack -> {
             stack.layout().fillMax();
 
+            stack.e(new Sprite(() -> !this.enabled.get()
+                    ? TRACK_SPRITE
+                    : (this.hovered.get() || this.dragging.get()) ? TRACK_HIGHLIGHTED_SPRITE
+                    : TRACK_SPRITE), bg -> bg.layout().fillMax());
+
+            stack.e(new SliderThumb(
+                    () -> !this.enabled.get() || (!this.hovered.get() && !this.dragging.get())
+                            ? HANDLE_SPRITE
+                            : HANDLE_HIGHLIGHTED_SPRITE,
+                    () -> this.getNormalizedValue()
+            ), handle -> handle.layout().fillMax());
+
             if (this.showValue) {
-                stack.e(new Row(), row -> {
-                    row.layout().fillMax().spacing(4).verticalAlignment(Alignment.CENTER);
-
-                    row.e(new Stack(), trackStack -> {
-                        trackStack.layout().fillMax();
-
-                        trackStack.e(new Rect(() -> this.enabled.get() ? this.trackColor : 0xFF404040),
-                                r -> r.layout().fillMax());
-
-                        double currentValue = this.value.get();
-                        double range = this.maxValue - this.minValue;
-                        double normalized = range > 0 ? (currentValue - this.minValue) / range : 0;
-
-                        trackStack.e(new Rect(() -> this.enabled.get() ? this.fillColor : 0xFF202020),
-                                r -> {
-                                    var bounds = this.getBounds();
-                                    int fillWidth = bounds != null ? (int) (bounds.width() * normalized) : 0;
-                                    r.layout().fixedWidth(fillWidth).fillMaxHeight();
-                                });
-                    });
-
-                    row.e(new Label(
+                stack.e(new Box(), labelBox -> {
+                    // ActiveTextCollector centres the text and adds one pixel to its baseline.
+                    labelBox.layout().fillMax().padding(TEXT_MARGIN, 2, TEXT_MARGIN, 0).contentAlignment(Alignment.CENTER);
+                    labelBox.e(new Label(
                             () -> Component.literal(this.formatter.apply(this.value.get())),
                             () -> this.enabled.get() ? 0xFFFFFF : 0x808080,
-                            () -> false
-                    ));
-                });
-            } else {
-                stack.e(new Stack(), trackStack -> {
-                    trackStack.layout().fillMax();
-
-                    trackStack.e(new Rect(() -> this.enabled.get() ? this.trackColor : 0xFF404040),
-                            r -> r.layout().fillMax());
-
-                    double currentValue = this.value.get();
-                    double range = this.maxValue - this.minValue;
-                    double normalized = range > 0 ? (currentValue - this.minValue) / range : 0;
-
-                    trackStack.e(new Rect(() -> this.enabled.get() ? this.fillColor : 0xFF202020),
-                            r -> {
-                                var bounds = this.getBounds();
-                                int fillWidth = bounds != null ? (int) (bounds.width() * normalized) : 0;
-                                r.layout().fixedWidth(fillWidth).fillMaxHeight();
-                            });
+                            () -> true));
                 });
             }
         });
+    }
+
+    private double getNormalizedValue() {
+        double range = this.maxValue - this.minValue;
+        return range > 0 ? (this.value.get() - this.minValue) / range : 0;
     }
 
     private void updateValueFromPosition(int mouseX) {
         Bounds bounds = this.getBounds();
         if (bounds == null) return;
 
-        int trackX = bounds.x();
-        int trackWidth = bounds.width();
-
-        double normalized = (double) (mouseX - trackX) / trackWidth;
+        int usableWidth = bounds.width() - HANDLE_WIDTH;
+        if (usableWidth <= 0) return;
+        double normalized = (mouseX - (bounds.x() + HANDLE_WIDTH / 2.0)) / usableWidth;
         normalized = Mth.clamp(normalized, 0.0, 1.0);
 
         double newValue = this.minValue + normalized * (this.maxValue - this.minValue);
-        this.setValue(newValue);
+        this.setValueInternal(newValue);
     }
 
     public void setValue(double value) {
+        this.setValueInternal(value);
+    }
+
+    private void setValueInternal(double value) {
+        if (!Double.isFinite(value)) throw new IllegalArgumentException("Slider value must be finite");
         double clamped = Mth.clamp(value, this.minValue, this.maxValue);
         if (this.step > 0) {
-            clamped = Math.round(clamped / this.step) * this.step;
+            clamped = this.minValue + Math.round((clamped - this.minValue) / this.step) * this.step;
             clamped = Mth.clamp(clamped, this.minValue, this.maxValue);
         }
 
@@ -240,13 +258,15 @@ public class Slider extends BaseElement implements IComposableElement {
         if (oldValue != clamped) {
             this.value.set(clamped);
 
-            SoundManager soundManager = Minecraft.getInstance().getSoundManager();
-            soundManager.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-
             if (this.onValueChanged != null) {
                 this.onValueChanged.accept(clamped);
             }
         }
+    }
+
+    private void playClickSound() {
+        SoundManager soundManager = Minecraft.getInstance().getSoundManager();
+        soundManager.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
     }
 
     public double getValue() {
@@ -266,12 +286,18 @@ public class Slider extends BaseElement implements IComposableElement {
     }
 
     public void setRange(double min, double max) {
+        if (!Double.isFinite(min) || !Double.isFinite(max) || min > max) {
+            throw new IllegalArgumentException("Slider range must be finite and ordered");
+        }
         this.minValue = min;
         this.maxValue = max;
         this.setValue(this.value.get());
+        var node = this.getNode();
+        if (node != null) node.getTree().requestRemeasure(node);
     }
 
     public void setStep(double step) {
+        if (!Double.isFinite(step) || step < 0) throw new IllegalArgumentException("Slider step must be nonnegative");
         this.step = step;
         this.setValue(this.value.get());
     }
@@ -282,6 +308,8 @@ public class Slider extends BaseElement implements IComposableElement {
 
     public void setShowValue(boolean show) {
         this.showValue = show;
+        var node = this.getNode();
+        if (node != null) node.getTree().requestRecompose(node);
     }
 
     public void setFormatter(Function<Double, String> formatter) {
@@ -309,6 +337,11 @@ public class Slider extends BaseElement implements IComposableElement {
     }
 
     @Override
+    public boolean isFocusable() {
+        return this.enabled.get();
+    }
+
+    @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (!measuredChildren.isEmpty()) {
             return measuredChildren.get(0);
@@ -328,7 +361,7 @@ public class Slider extends BaseElement implements IComposableElement {
     }
 
     @Override
-    public CursorType getCursor(int x, int y) {
+    public UICursor getCursor(int x, int y) {
         return this.enabled.get() ? CompoundCursors.HAND : null;
     }
 }
