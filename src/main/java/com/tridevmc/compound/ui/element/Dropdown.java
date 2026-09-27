@@ -16,10 +16,16 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import com.google.common.collect.Lists;
 import com.tridevmc.compound.ui.CompoundCursors;
 import com.tridevmc.compound.ui.cursor.UICursor;
-import com.tridevmc.compound.ui.layout.*;
+import com.tridevmc.compound.ui.layout.Alignment;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
@@ -31,25 +37,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 
+
+
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-/**
- * A dropdown menu component for selecting a single option from a list of choices.
- * Essential for configuration UIs and forms.
- *
- * <p><strong>Usage:</strong></p>
- * <pre>
- * var options = List.of("Peaceful", "Easy", "Normal", "Hard");
- * scope.e(new Dropdown<>(options, "Normal"), dropdown -> {
- *     dropdown.getElement().setOnSelectionChanged((old, newVal) -> {
- *         setDifficulty(newVal);
- *     });
- * });
- * </pre>
- */
 public class Dropdown<T> extends BaseElement implements IComposableElement {
 
     private static final int DEFAULT_HEIGHT = 20;
@@ -97,7 +91,7 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
         scope.onMouseEnter(() -> this.hovered.set(true));
         scope.onMouseExit(() -> this.hovered.set(false));
         scope.onClick(event -> {
-            if (!this.enabled.get() || event.button() != 0) return false;
+            if (!this.enabled.get() || event.button() != InputConstants.MOUSE_BUTTON_LEFT) return false;
             scope.requestFocus();
             this.toggleOpen();
             return true;
@@ -105,16 +99,20 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
         scope.onKeyPress(event -> {
             if (!this.enabled.get()) return false;
             return switch (event.keyCode()) {
-                case 256 -> { this.setOpen(false); yield true; }
-                case 257, 335, 32 -> {
+                case InputConstants.KEY_ESCAPE -> {
+                    if (!this.open.get()) yield false;
+                    this.setOpen(false);
+                    yield true;
+                }
+                case InputConstants.KEY_RETURN, InputConstants.KEY_NUMPADENTER, InputConstants.KEY_SPACE -> {
                     if (this.open.get()) this.select(this.hoverIndex.get());
                     else this.setOpen(true);
                     yield true;
                 }
-                case 264, 265 -> {
+                case InputConstants.KEY_DOWN, InputConstants.KEY_UP -> {
                     if (this.options.isEmpty()) yield false;
                     if (!this.open.get()) this.setOpen(true);
-                    int step = event.keyCode() == 264 ? 1 : -1;
+                    int step = event.keyCode() == InputConstants.KEY_DOWN ? 1 : -1;
                     int index = Math.floorMod(this.hoverIndex.get() + step, this.options.size());
                     this.hoverIndex.set(index);
                     if (this.popupScroll != null) {
@@ -145,6 +143,8 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
         var tree = scope.getTree();
         tree.setInputRoot(this.getNode());
         this.popupScroll = new ScrollArea().scrollSpeed(OPTION_HEIGHT);
+        int visibleHeight = Math.max(0, this.calculatePopupBounds().height() - 2);
+        this.popupScroll.scrollTo(0, Math.max(0, (this.hoverIndex.get() + 1) * OPTION_HEIGHT - visibleHeight));
         scope.e(new Popup(), popup -> {
             var viewport = tree.getViewportSize();
             popup.layout().fixedSize(viewport.width(), viewport.height()).layer(100);
@@ -160,9 +160,9 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
                                 column.layout().fillMaxWidth();
                                 for (int i = 0; i < this.options.size(); i++) {
                                     final int index = i;
-                                    column.e(new ListItem(Component.literal(this.displayTextProvider.apply(this.options.get(i))),
-                                            () -> this.selectedIndex.get() == index, () -> this.hoverIndex.get() == index,
-                                            () -> 0xFF606060, () -> 0xFF404040, () -> 0xFFFFFFFF, () -> 0xFFFFFFFF), row -> {
+                                    column.e(ListItem.builder(Component.literal(this.displayTextProvider.apply(this.options.get(i))))
+                                            .selected(() -> this.selectedIndex.get() == index)
+                                            .hovered(() -> this.hoverIndex.get() == index).build(), row -> {
                                         row.layout().fillMaxWidth().fixedHeight(OPTION_HEIGHT);
                                         row.getElement().setClickHandler(() -> this.select(index));
                                         row.getElement().setHoverHandlers(() -> this.hoverIndex.set(index), () -> {});
@@ -263,7 +263,7 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
 
     public void setDisplayTextProvider(Function<T, String> provider) {
         this.displayTextProvider = provider;
-        if (this.getNode() != null) this.getNode().getTree().requestRecompose(this.getNode());
+        this.invalidateComposition();
     }
 
     public void setOnSelectionChanged(Consumer<T> listener) {
@@ -280,7 +280,7 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
 
     public void setMaxVisibleItems(int max) {
         this.maxVisibleItems = Math.max(1, max);
-        if (this.getNode() != null) this.getNode().getTree().requestRecompose(this.getNode());
+        this.invalidateComposition();
     }
 
     public void setPlaceholder(Component placeholder) {

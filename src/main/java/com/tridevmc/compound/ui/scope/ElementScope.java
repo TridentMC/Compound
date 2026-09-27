@@ -26,7 +26,7 @@ import com.tridevmc.compound.ui.tree.ITreeNode;
 public class ElementScope<T extends IElement> implements IElementScope<T> {
     protected final T element;
     private final ITreeNode node;
-    private final LayoutProperties layoutProperties = LayoutProperties.create();
+    private LayoutProperties layoutProperties = LayoutProperties.create();
 
     public ElementScope(T element) {
         this(element, null);
@@ -38,9 +38,19 @@ public class ElementScope<T extends IElement> implements IElementScope<T> {
         this.layoutProperties.setBoundNode(node);
     }
 
+    void resetLayoutProperties() {
+        this.layoutProperties = LayoutProperties.create();
+        this.layoutProperties.setBoundNode(this.node);
+    }
+
     @Override
     public T getElement() {
         return this.element;
+    }
+
+    @Override
+    public LayoutProperties layout() {
+        return this.layoutProperties;
     }
 
     public LayoutProperties getLayoutProperties() {

@@ -33,23 +33,23 @@ import java.util.function.Function;
  * Uses Minecraft's tick system (20 TPS) with partial tick interpolation for smooth rendering.
  */
 public class AnimatedState<T> implements State<T> {
-    private long durationTicks;  // Animation duration in ticks
+    private long durationTicks;
     private final Interpolator<T> interpolator;
     private Easing easing;
     private final AnimationScheduler scheduler;
     private final List<StateObserver> observers = new ArrayList<>();
-    private T lastTickValue;      // Value at start of current tick (for partial tick interpolation)
-    private T currentTickValue;   // Target value for current tick
-    private T targetValue;        // Final target value
-    private T animationStartValue; // Value when animation started
-    private long startTick;       // Tick when animation started
-    private long lastUpdateTick = -1;  // Last tick we updated on
+    private T lastTickValue;
+    private T currentTickValue;
+    private T targetValue;
+    private T animationStartValue;
+    private long startTick;
+    private long lastUpdateTick = -1;
     private boolean isAnimating = false;
-    private boolean looping = false;  // Whether to loop when animation completes
-    private T loopStartValue;     // Value to return to when looping
-    private T loopEndValue;       // Value to animate to when looping
-    private final T originalLoopStart;  // Original loop start (for reset)
-    private final T originalLoopEnd;    // Original loop end (for reset)
+    private boolean looping = false;
+    private T loopStartValue;
+    private T loopEndValue;
+    private final T originalLoopStart;
+    private final T originalLoopEnd;
 
     public AnimatedState(T initialValue, long durationMillis,
                          Interpolator<T> interpolator, Easing easing,
@@ -79,8 +79,6 @@ public class AnimatedState<T> implements State<T> {
         this.loopEndValue = loopEndValue;
         this.originalLoopStart = loopStartValue;
         this.originalLoopEnd = loopEndValue;
-
-        // Start looping animation immediately if requested
         if (looping) {
             this.isAnimating = true;
             this.scheduler.registerAnimation(this);
@@ -103,18 +101,17 @@ public class AnimatedState<T> implements State<T> {
         if (!this.isAnimating || Objects.equals(this.lastTickValue, this.currentTickValue)) {
             return this.currentTickValue;
         }
-        // Interpolate between last tick and current tick values using partial ticks
         return this.interpolator.interpolate(this.lastTickValue, this.currentTickValue, partialTicks);
     }
 
     @Override
     public void set(T value) {
         if (Objects.equals(this.targetValue, value)) {
-            return;  // Already animating to this value
+            return;
         }
-
-        // Start new animation (will begin on next tick update)
         this.animationStartValue = this.currentTickValue;
+        this.lastTickValue = this.currentTickValue;
+        this.lastUpdateTick = -1;
         this.targetValue = value;
         this.isAnimating = true;
 
@@ -133,16 +130,15 @@ public class AnimatedState<T> implements State<T> {
     public void setImmediate(T value) {
         this.lastTickValue = value;
         this.currentTickValue = value;
+        this.lastUpdateTick = -1;
 
         if (this.looping) {
-            // Reset loop to original state and restart from the given value
             this.loopStartValue = this.originalLoopStart;
             this.loopEndValue = this.originalLoopEnd;
             this.animationStartValue = value;
-            this.targetValue = this.originalLoopEnd;  // Always animate toward the end value first
-            this.lastUpdateTick = -1;  // Reset timing so next update starts fresh
+            this.targetValue = this.originalLoopEnd;
+            this.lastUpdateTick = -1;
         } else {
-            // Stop animation (existing behavior for non-looping)
             this.targetValue = value;
             this.animationStartValue = value;
             this.isAnimating = false;
@@ -161,19 +157,13 @@ public class AnimatedState<T> implements State<T> {
         if (!this.isAnimating) {
             return;
         }
-
-        // Start animation if this is the first tick
         if (this.lastUpdateTick == -1) {
             this.startTick = currentTick;
             this.lastUpdateTick = currentTick;
         }
-
-        // Only update once per tick (like LayoutMarquee pattern)
         if (currentTick == this.lastUpdateTick) {
             return;
         }
-
-        // Store last tick's value for partial tick interpolation
         this.lastTickValue = this.currentTickValue;
         this.lastUpdateTick = currentTick;
 
@@ -182,18 +172,14 @@ public class AnimatedState<T> implements State<T> {
 
         T newValue;
         if (progress >= 1.0f) {
-            // Animation complete
             newValue = this.targetValue;
 
             if (this.looping) {
-                // Restart animation with swapped start/end values
                 this.animationStartValue = this.loopEndValue;
                 this.targetValue = this.loopStartValue;
-                // Swap for next iteration
                 T temp = this.loopStartValue;
                 this.loopStartValue = this.loopEndValue;
                 this.loopEndValue = temp;
-                // Reset timing
                 this.startTick = currentTick;
                 this.lastUpdateTick = currentTick;
             } else {
@@ -202,16 +188,11 @@ public class AnimatedState<T> implements State<T> {
                 this.lastUpdateTick = -1;
             }
         } else {
-            // Interpolate from animation start to target
             float easedProgress = this.easing.apply(progress);
             newValue = this.interpolator.interpolate(this.animationStartValue, this.targetValue, easedProgress);
         }
-
-        // Update current tick value
         if (!Objects.equals(this.currentTickValue, newValue)) {
             this.currentTickValue = newValue;
-
-            // Only notify if there are observers (i.e., someone called bindLayout())
             if (!this.observers.isEmpty()) {
                 this.notifyObservers();
             }

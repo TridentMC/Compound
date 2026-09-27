@@ -36,8 +36,10 @@ public final class LayoutMath {
     public static Bounds calculateContentArea(Bounds bounds, LayoutProperties props) {
         int contentX = bounds.x() + props.getPaddingLeft();
         int contentY = bounds.y() + props.getPaddingTop();
-        int contentWidth = bounds.width() - props.getPaddingLeft() - props.getPaddingRight();
-        int contentHeight = bounds.height() - props.getPaddingTop() - props.getPaddingBottom();
+        int contentWidth = Constraints.subtractInset(bounds.width(),
+                (long) props.getPaddingLeft() + props.getPaddingRight());
+        int contentHeight = Constraints.subtractInset(bounds.height(),
+                (long) props.getPaddingTop() + props.getPaddingBottom());
 
         return new Bounds(new Position(contentX, contentY), new Size(contentWidth, contentHeight));
     }
@@ -50,15 +52,9 @@ public final class LayoutMath {
      * @return the content constraints (reduced for padding)
      */
     public static Constraints calculateContentConstraints(Constraints constraints, LayoutProperties props) {
-        int horizontalPadding = props.getPaddingLeft() + props.getPaddingRight();
-        int verticalPadding = props.getPaddingTop() + props.getPaddingBottom();
-
-        return new Constraints(
-                Math.max(0, constraints.minWidth() - horizontalPadding),
-                Math.max(0, constraints.maxWidth() - horizontalPadding),
-                Math.max(0, constraints.minHeight() - verticalPadding),
-                Math.max(0, constraints.maxHeight() - verticalPadding)
-        );
+        return constraints.inset(
+                (long) props.getPaddingLeft() + props.getPaddingRight(),
+                (long) props.getPaddingTop() + props.getPaddingBottom());
     }
 
     /**

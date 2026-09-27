@@ -16,6 +16,8 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import com.tridevmc.compound.ui.CompoundCursors;
 import com.tridevmc.compound.ui.cursor.UICursor;
 import com.tridevmc.compound.ui.layout.*;
@@ -141,7 +143,7 @@ public class Slider extends BaseElement implements IComposableElement {
         scope.onMouseExit(() -> this.hovered.set(false));
 
         scope.onClick(event -> {
-            if (!this.enabled.get() || event.button() != 0) return false;
+            if (!this.enabled.get() || event.button() != InputConstants.MOUSE_BUTTON_LEFT) return false;
             scope.requestFocus();
             this.dragging.set(true);
             this.updateValueFromPosition(event.x());
@@ -172,22 +174,22 @@ public class Slider extends BaseElement implements IComposableElement {
             if (!this.enabled.get()) return false;
             double stepSize = this.step > 0 ? this.step : (this.maxValue - this.minValue) / 20.0;
             return switch (event.keyCode()) {
-                case org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT, org.lwjgl.glfw.GLFW.GLFW_KEY_DOWN -> {
+                case InputConstants.KEY_LEFT, InputConstants.KEY_DOWN -> {
                     this.setValueInternal(this.value.get() - stepSize);
                     this.playClickSound();
                     yield true;
                 }
-                case org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT, org.lwjgl.glfw.GLFW.GLFW_KEY_UP -> {
+                case InputConstants.KEY_RIGHT, InputConstants.KEY_UP -> {
                     this.setValueInternal(this.value.get() + stepSize);
                     this.playClickSound();
                     yield true;
                 }
-                case org.lwjgl.glfw.GLFW.GLFW_KEY_HOME -> {
+                case InputConstants.KEY_HOME -> {
                     this.setValueInternal(this.minValue);
                     this.playClickSound();
                     yield true;
                 }
-                case org.lwjgl.glfw.GLFW.GLFW_KEY_END -> {
+                case InputConstants.KEY_END -> {
                     this.setValueInternal(this.maxValue);
                     this.playClickSound();
                     yield true;
@@ -292,8 +294,7 @@ public class Slider extends BaseElement implements IComposableElement {
         this.minValue = min;
         this.maxValue = max;
         this.setValue(this.value.get());
-        var node = this.getNode();
-        if (node != null) node.getTree().requestRemeasure(node);
+        this.invalidateLayout();
     }
 
     public void setStep(double step) {
@@ -308,8 +309,7 @@ public class Slider extends BaseElement implements IComposableElement {
 
     public void setShowValue(boolean show) {
         this.showValue = show;
-        var node = this.getNode();
-        if (node != null) node.getTree().requestRecompose(node);
+        this.invalidateComposition();
     }
 
     public void setFormatter(Function<Double, String> formatter) {

@@ -18,7 +18,13 @@ package com.tridevmc.compound.ui.tree;
 
 import com.tridevmc.compound.ui.animation.AnimatedState;
 import com.tridevmc.compound.ui.element.IElement;
-import com.tridevmc.compound.ui.event.*;
+import com.tridevmc.compound.ui.event.CharEvent;
+import com.tridevmc.compound.ui.event.KeyInputEvent;
+import com.tridevmc.compound.ui.event.MouseClickEvent;
+import com.tridevmc.compound.ui.event.MouseDragEvent;
+import com.tridevmc.compound.ui.event.MouseMoveEvent;
+import com.tridevmc.compound.ui.event.MouseReleaseEvent;
+import com.tridevmc.compound.ui.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
@@ -84,6 +90,9 @@ public interface ITreeNode {
     Runnable getCompositionFunction();
 
     void setCompositionFunction(Runnable compositionFn);
+
+    /** Runs composition with automatic cleanup of resources from its previous execution. */
+    void runComposition();
 
     boolean hasCompositionFunction();
 
@@ -179,6 +188,9 @@ public interface ITreeNode {
     // Animations created within this node's composition scope are automatically
     // registered and disposed when the node is detached.
     void registerAnimation(AnimatedState<?> animation);
+
+    /** Keeps a cached animation alive until this node is detached. */
+    void retainAnimation(AnimatedState<?> animation);
 
     List<AnimatedState<?>> getRegisteredAnimations();
 }

@@ -16,6 +16,8 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import com.google.common.collect.Lists;
 import com.tridevmc.compound.ui.layout.Alignment;
 import com.tridevmc.compound.ui.layout.Bounds;
@@ -28,7 +30,7 @@ import com.tridevmc.compound.ui.state.State;
 import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
+
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -49,7 +51,7 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
     private int itemHeight = DEFAULT_ITEM_HEIGHT;
 
     public TreeView() {
-        this.root = new TreeNode<>(null, null, this::invalidate);
+        this.root = new TreeNode<>(null, null, this::invalidateComposition);
     }
 
     @Override
@@ -78,10 +80,10 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
             if (nodes.get(i).isSelected()) selected = i;
         }
         int target = switch (key) {
-            case GLFW.GLFW_KEY_UP -> Math.max(0, selected - 1);
-            case GLFW.GLFW_KEY_DOWN -> Math.min(nodes.size() - 1, selected + 1);
-            case GLFW.GLFW_KEY_HOME -> 0;
-            case GLFW.GLFW_KEY_END -> nodes.size() - 1;
+            case InputConstants.KEY_UP -> Math.max(0, selected - 1);
+            case InputConstants.KEY_DOWN -> Math.min(nodes.size() - 1, selected + 1);
+            case InputConstants.KEY_HOME -> 0;
+            case InputConstants.KEY_END -> nodes.size() - 1;
             default -> -1;
         };
         if (target >= 0) {
@@ -90,10 +92,10 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
             Minecraft.getInstance().getNarrator().saySystemNow(this.getNarrationMessage());
             return true;
         }
-        if (key != GLFW.GLFW_KEY_LEFT && key != GLFW.GLFW_KEY_RIGHT) return false;
+        if (key != InputConstants.KEY_LEFT && key != InputConstants.KEY_RIGHT) return false;
         TreeNode<T> node = nodes.get(Math.max(0, selected));
         this.selectNode(node);
-        if (key == GLFW.GLFW_KEY_LEFT) {
+        if (key == InputConstants.KEY_LEFT) {
             if (node.isExpanded() && !node.children.isEmpty()) node.setExpanded(false);
             else if (node.parent != this.root) this.selectNode(node.parent);
         } else if (!node.children.isEmpty()) {
@@ -167,13 +169,11 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
                             () -> this.enabled.get() ? 0xFFFFFF : 0xA0A0A0));
                 });
 
-                // Hover handlers on the item scope, not the column scope
                 itemStack.onMouseEnter(() -> currentNode.setHovered(true));
                 itemStack.onMouseExit(() -> currentNode.setHovered(false));
 
-                // Click handler on the item scope
                 itemStack.onClick(event -> {
-                    if (!this.enabled.get() || event.button() != 0) return false;
+                    if (!this.enabled.get() || event.button() != InputConstants.MOUSE_BUTTON_LEFT) return false;
                     scope.requestFocus();
                     if (!currentNode.children.isEmpty()) {
                         currentNode.setExpanded(!currentNode.isExpanded());
@@ -224,7 +224,7 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
 
     public void setDisplayTextProvider(Function<T, String> provider) {
         this.displayTextProvider = provider;
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public void setOnSelectionChanged(Consumer<TreeNode<T>> listener) {
@@ -234,7 +234,7 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
     public void setItemHeight(int height) {
         if (height <= 0) throw new IllegalArgumentException("Tree row height must be positive");
         this.itemHeight = height;
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public boolean isEnabled() {
@@ -243,11 +243,6 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
 
     public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
-    }
-
-    private void invalidate() {
-        var node = this.getNode();
-        if (node != null) node.getTree().requestRecompose(node);
     }
 
     @Override

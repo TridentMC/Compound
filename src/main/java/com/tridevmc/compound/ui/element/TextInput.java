@@ -16,27 +16,32 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.google.common.collect.Lists;
+import com.mojang.blaze3d.platform.InputConstants;
+
 import com.tridevmc.compound.ui.CompoundCursors;
 import com.tridevmc.compound.ui.cursor.UICursor;
-import net.minecraft.ChatFormatting;
 import com.tridevmc.compound.ui.animation.Easing;
-import com.tridevmc.compound.ui.layout.*;
+import com.tridevmc.compound.ui.event.CharEvent;
+import com.tridevmc.compound.ui.event.KeyInputEvent;
+import com.tridevmc.compound.ui.layout.Alignment;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
 import com.tridevmc.compound.ui.state.StateImpl;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Util;
-import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.util.StringUtil;
-import org.lwjgl.glfw.GLFW;
+
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -46,51 +51,29 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-/**
- * A single-line text input field with full feature parity to Minecraft's EditBox.
- * <p>
- * This is a composable element that uses existing primitives (Text, Sprite, etc.)
- * with dynamic suppliers to render text, cursor, and selection.
- * </p>
- *
- * <p><strong>Usage:</strong></p>
- * <pre>
- * scope.e(new TextInput(), input -> {
- *     input.layout().fixedSize(200, 20);
- *     input.setMaxLength(50);
- *     input.setHint(Component.literal("Enter text..."));
- *     input.setResponder(text -> System.out.println("Text: " + text));
- *     input.setSuggestion("Type here...");
- * });
- * </pre>
- */
 public class TextInput extends BaseElement implements IComposableElement {
 
-    // Sprites for bordered mode
     private static final IScreenSprite SPRITE_NORMAL = IScreenSprite.of(
             Identifier.withDefaultNamespace("widget/text_field"));
     private static final IScreenSprite SPRITE_FOCUSED = IScreenSprite.of(
             Identifier.withDefaultNamespace("widget/text_field_highlighted"));
 
-    // Constants from vanilla EditBox
     private static final int CURSOR_INSERT_WIDTH = 1;
     public static final int DEFAULT_TEXT_COLOR = -2039584;  // 0xE0E0E0
     public static final int DEFAULT_TEXT_COLOR_UNEDITABLE = -9408400;
     public static final Style DEFAULT_HINT_STYLE = Style.EMPTY.withColor(ChatFormatting.DARK_GRAY);
 
-    // State
     private final State<String> text = new StateImpl<>("");
     private final State<Integer> cursorPos = new StateImpl<>(0);
     private final State<Integer> highlightPos = new StateImpl<>(0);
     private final State<Integer> displayPos = new StateImpl<>(0);
     private final State<Boolean> focused = new StateImpl<>(false);
 
-    // Configuration
     private int maxLength = 32;
     private boolean bordered = true;
     private boolean editable = true;
-    private boolean canLoseFocus = true;
     private boolean centered = false;
+    private Text renderedText;
     private boolean textShadow = false;  // Default to false to match vanilla EditBox behavior
     private int textColor = DEFAULT_TEXT_COLOR;
     private int textColorUneditable = DEFAULT_TEXT_COLOR_UNEDITABLE;
@@ -103,7 +86,6 @@ public class TextInput extends BaseElement implements IComposableElement {
     private String suggestion;
     private final List<TextFormatter> formatters = new ArrayList<>();
 
-    // Animation state
     private final CursorBlink cursorBlink = new CursorBlink();
     private Consumer<String> onCommit = text -> { };
 
@@ -118,7 +100,6 @@ public class TextInput extends BaseElement implements IComposableElement {
 
     @Override
     public void compose(ICompositionScope scope) {
-        // Bind all state to trigger recomposition on changes
         scope.bind(this.text);
         scope.bind(this.cursorPos);
         scope.bind(this.highlightPos);
@@ -127,16 +108,14 @@ public class TextInput extends BaseElement implements IComposableElement {
 
         this.cursorBlink.compose(scope);
 
-        // Register event handlers
         this.registerEventHandlers(scope);
 
-        // Compose the UI
         this.composeUI(scope);
     }
 
     private void registerEventHandlers(ICompositionScope scope) {
         scope.onClick(event -> {
-            if (event.button() != 0) return false;
+            if (event.button() != InputConstants.MOUSE_BUTTON_LEFT) return false;
             scope.requestFocus();
             int clickPos = this.findClickPosition(event.x());
             this.moveCursorTo(clickPos, event.shiftDown());
@@ -159,10 +138,8 @@ public class TextInput extends BaseElement implements IComposableElement {
         });
 
         scope.onFocusLost(() -> {
-            if (this.canLoseFocus) {
-                this.focused.set(false);
-                this.onCommit.accept(this.text.get());
-            }
+            this.focused.set(false);
+            this.onCommit.accept(this.text.get());
         });
     }
 
@@ -175,6 +152,7 @@ public class TextInput extends BaseElement implements IComposableElement {
     public void onDetached() {
         this.cursorBlink.detach();
         this.focused.set(false);
+        this.renderedText = null;
     }
 
     @Override
@@ -191,13 +169,11 @@ public class TextInput extends BaseElement implements IComposableElement {
         scope.e(new Stack(), stack -> {
             stack.layout().fillMax();
 
-            // Background sprite (if bordered)
             if (this.bordered) {
                 IScreenSprite bgSprite = this.focused.get() ? SPRITE_FOCUSED : SPRITE_NORMAL;
                 stack.e(new Sprite(bgSprite), bg -> bg.layout().fillMax());
             }
 
-            // Content area - use a Box for padding
             stack.e(new Box(), box -> {
                 if (this.bordered) {
                     // A 9px line centred below a 1px top inset matches EditBox's (height - 8) / 2.
@@ -206,7 +182,6 @@ public class TextInput extends BaseElement implements IComposableElement {
                     box.layout().fillMax().clip();
                 }
 
-                // Use Stack for centering if needed
                 box.e(new Stack(), contentStack -> {
                     var alignment = this.bordered
                             ? (this.centered ? Alignment.CENTER : Alignment.CENTER_LEFT)
@@ -220,11 +195,12 @@ public class TextInput extends BaseElement implements IComposableElement {
                         textGroup.layout().fixedHeight(Minecraft.getInstance().font.lineHeight);
 
                         this.composeSelection(textGroup);
-                        textGroup.e(new Text(
+                        this.renderedText = new Text(
                                 () -> this.getRenderedText(),
                                 () -> this.editable ? this.textColor : this.textColorUneditable,
                                 () -> this.textShadow
-                            ),
+                            );
+                        textGroup.e(this.renderedText,
                             textElem -> {
                                 if (!this.centered) {
                                     // Left-aligned text fills the available width so selection
@@ -240,29 +216,26 @@ public class TextInput extends BaseElement implements IComposableElement {
                                     .margin(this.getCursorXOffset(), 0, 0, 0));
                         }
                     });
+                    if (this.suggestion != null && this.cursorPos.get() == this.text.get().length()
+                            && this.text.get().length() < this.maxLength) {
+                        contentStack.e(new Suggestion(), suggestion -> suggestion.layout().fillMaxWidth());
+                    }
                 });
             });
         });
     }
 
-    /**
-     * Gets the rendered text as a Component.
-     * The cursor is rendered as a separate element, not appended to the text.
-     */
     private Component getRenderedText() {
         String currentText = this.text.get();
         boolean isFocused = this.focused.get();
         int display = this.displayPos.get();
 
-        // Show hint if empty and not focused
         if (currentText.isEmpty() && !isFocused && this.hint != null) {
             return this.hint;
         }
 
-        // Get visible portion of text
         String visibleText = currentText.substring(Math.min(display, currentText.length()));
 
-        // Apply text formatters
         FormattedCharSequence formatted = this.applyFormat(visibleText, display);
         if (formatted != null) {
             var component = Component.empty();
@@ -276,10 +249,25 @@ public class TextInput extends BaseElement implements IComposableElement {
         return Component.literal(visibleText);
     }
 
-    /**
-     * Calculates the X offset for the cursor bar within the text content.
-     * Returns the pixel position of the cursor relative to the text start.
-     */
+    private class Suggestion extends BaseElement implements IComposableElement {
+        @Override
+        public void compose(ICompositionScope scope) {
+            scope.e(new Text(() -> Component.literal(TextInput.this.suggestion == null ? "" : TextInput.this.suggestion),
+                    () -> 0xFF808080, () -> TextInput.this.textShadow));
+        }
+
+        @Override
+        public Size measure(Constraints constraints, LayoutProperties props, List<Size> children) {
+            return new Size(constraints.maxWidth(), Minecraft.getInstance().font.lineHeight);
+        }
+
+        @Override
+        public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> children) {
+            int x = TextInput.this.renderedText.getBounds().x() + TextInput.this.getCursorXOffset();
+            return List.of(new Bounds(x, bounds.y(), Math.max(0, bounds.right() - x), bounds.height()));
+        }
+    }
+
     private int getCursorXOffset() {
         var font = Minecraft.getInstance().font;
         String currentText = this.text.get();
@@ -299,7 +287,7 @@ public class TextInput extends BaseElement implements IComposableElement {
 
     public TextInput setCursorAnimation(long intervalMillis, Easing easing) {
         this.cursorBlink.configure(intervalMillis, easing);
-        if (this.getNode() != null) this.getNode().getTree().requestRecompose(this.getNode());
+        this.invalidateComposition();
         return this;
     }
 
@@ -315,9 +303,6 @@ public class TextInput extends BaseElement implements IComposableElement {
                 .fixedSize(width, font.lineHeight).margin(x, 0, 0, 0));
     }
 
-    /**
-     * Gets the selection start position relative to visible text.
-     */
     private int getSelectionStart() {
         String currentText = this.text.get();
         int cursor = this.cursorPos.get();
@@ -330,9 +315,6 @@ public class TextInput extends BaseElement implements IComposableElement {
         return Math.max(0, selStart);
     }
 
-    /**
-     * Gets the selection end position relative to visible text.
-     */
     private int getSelectionEnd() {
         String currentText = this.text.get();
         int cursor = this.cursorPos.get();
@@ -356,31 +338,47 @@ public class TextInput extends BaseElement implements IComposableElement {
         return null;
     }
 
-    // =====================
-    // Event Handlers
-    // =====================
-
-    private boolean handleKeyPress(com.tridevmc.compound.ui.event.KeyInputEvent event) {
+    private boolean handleKeyPress(KeyInputEvent event) {
         if (!this.focused.get() || !this.editable) return false;
 
         int keyCode = event.keyCode();
         boolean shift = event.shiftDown();
         boolean ctrl = event.ctrlDown();
 
+        if (event.isShortcut(InputConstants.KEYCODE_A)) {
+            this.moveCursorTo(this.text.get().length(), false);
+            this.highlightPos.set(0);
+            return true;
+        }
+        if (event.isShortcut(InputConstants.KEYCODE_C)) {
+            this.copyToClipboard();
+            return true;
+        }
+        if (event.isShortcut(InputConstants.KEYCODE_V)) {
+            this.pasteFromClipboard();
+            return true;
+        }
+        if (event.isShortcut(InputConstants.KEYCODE_X)) {
+            this.copyToClipboard();
+            this.insertText("");
+            return true;
+        }
+
+
         return switch (keyCode) {
-            case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> {
+            case InputConstants.KEY_RETURN, InputConstants.KEY_NUMPADENTER -> {
                 this.onCommit.accept(this.text.get());
                 yield true;
             }
-            case GLFW.GLFW_KEY_BACKSPACE -> {
+            case InputConstants.KEY_BACKSPACE -> {
                 this.deleteText(-1, ctrl);
                 yield true;
             }
-            case GLFW.GLFW_KEY_DELETE -> {
+            case InputConstants.KEY_DELETE -> {
                 this.deleteText(1, ctrl);
                 yield true;
             }
-            case GLFW.GLFW_KEY_LEFT -> {
+            case InputConstants.KEY_LEFT -> {
                 if (ctrl) {
                     this.moveCursorTo(this.getWordPosition(-1), shift);
                 } else {
@@ -388,7 +386,7 @@ public class TextInput extends BaseElement implements IComposableElement {
                 }
                 yield true;
             }
-            case GLFW.GLFW_KEY_RIGHT -> {
+            case InputConstants.KEY_RIGHT -> {
                 if (ctrl) {
                     this.moveCursorTo(this.getWordPosition(1), shift);
                 } else {
@@ -396,57 +394,24 @@ public class TextInput extends BaseElement implements IComposableElement {
                 }
                 yield true;
             }
-            case GLFW.GLFW_KEY_HOME -> {
+            case InputConstants.KEY_HOME -> {
                 this.moveCursorTo(0, shift);
                 yield true;
             }
-            case GLFW.GLFW_KEY_END -> {
+            case InputConstants.KEY_END -> {
                 this.moveCursorTo(this.text.get().length(), shift);
                 yield true;
-            }
-            case GLFW.GLFW_KEY_A -> {
-                if (ctrl) {
-                    this.moveCursorTo(this.text.get().length(), false);
-                    this.highlightPos.set(0);
-                    yield true;
-                }
-                yield false;
-            }
-            case GLFW.GLFW_KEY_C -> {
-                if (ctrl) {
-                    this.copyToClipboard();
-                    yield true;
-                }
-                yield false;
-            }
-            case GLFW.GLFW_KEY_V -> {
-                if (ctrl) {
-                    this.pasteFromClipboard();
-                    yield true;
-                }
-                yield false;
-            }
-            case GLFW.GLFW_KEY_X -> {
-                if (ctrl) {
-                    this.copyToClipboard();
-                    this.insertText("");
-                    yield true;
-                }
-                yield false;
             }
             default -> false;
         };
     }
 
-    private boolean handleCharTyped(com.tridevmc.compound.ui.event.CharEvent event) {
+    private boolean handleCharTyped(CharEvent event) {
         if (!this.focused.get() || !this.editable) return false;
-        this.insertText(String.valueOf(event.character()));
+        if (!TextEditing.isPrintable(event.codePoint())) return false;
+        this.insertText(new String(Character.toChars(event.codePoint())));
         return true;
     }
-
-    // =====================
-    // Text Manipulation
-    // =====================
 
     public String getValue() {
         return this.text.get();
@@ -454,9 +419,7 @@ public class TextInput extends BaseElement implements IComposableElement {
 
     public void setValue(String newText) {
         if (this.filter.test(newText)) {
-            String filtered = newText.length() > this.maxLength
-                    ? newText.substring(0, this.maxLength)
-                    : newText;
+            String filtered = TextEditing.truncate(newText, this.maxLength);
             this.text.set(filtered);
             this.moveCursorTo(filtered.length(), false);
             this.onValueChanged();
@@ -474,9 +437,7 @@ public class TextInput extends BaseElement implements IComposableElement {
         int availableSpace = this.maxLength - currentText.length() + (end - start);
         if (availableSpace <= 0) return;
 
-        String toInsert = textToInsert.length() > availableSpace
-                ? textToInsert.substring(0, availableSpace)
-                : textToInsert;
+        String toInsert = TextEditing.truncate(StringUtil.filterText(textToInsert), availableSpace);
 
         String newText = currentText.substring(0, start) + toInsert + currentText.substring(end);
 
@@ -498,7 +459,6 @@ public class TextInput extends BaseElement implements IComposableElement {
         int cursor = this.cursorPos.get();
         int highlight = this.highlightPos.get();
 
-        // If there's a selection, delete it
         if (cursor != highlight) {
             this.insertText("");
             return;
@@ -534,28 +494,13 @@ public class TextInput extends BaseElement implements IComposableElement {
         return currentText.substring(start, end);
     }
 
-    /**
-     * Gets the currently selected text (alias for getHighlighted()).
-     *
-     * @return the selected text, or empty string if no selection
-     */
     public String getSelectedText() {
         return this.getHighlighted();
     }
-
-    /**
-     * Gets the suggestion text shown when the input is not at max length and not focused.
-     *
-     * @return the suggestion text, or null if not set
-     */
     @Nullable
     public String getSuggestion() {
         return this.suggestion;
     }
-
-    // =====================
-    // Cursor Navigation
-    // =====================
 
     public void moveCursor(int delta, boolean select) {
         int newPos = this.getCursorPos(delta);
@@ -626,9 +571,15 @@ public class TextInput extends BaseElement implements IComposableElement {
         }
 
         display = Math.min(display, currentText.length());
+        if (font.width(currentText) <= innerWidth) {
+            this.displayPos.set(0);
+            return;
+        }
+        this.displayPos.set(display);
 
-        if (cursor < display) {
-            this.displayPos.set(cursor);
+        if (cursor <= display) {
+            String beforeCursor = currentText.substring(0, cursor);
+            this.displayPos.set(cursor - font.plainSubstrByWidth(beforeCursor, innerWidth, true).length());
             return;
         }
 
@@ -653,7 +604,8 @@ public class TextInput extends BaseElement implements IComposableElement {
         Bounds bounds = this.getBounds();
         if (bounds == null || font == null) return 0;
 
-        int textStartX = bounds.x() + (this.bordered ? 4 : 0);
+        int textStartX = this.renderedText != null
+                ? this.renderedText.getBounds().x() : bounds.x() + (this.bordered ? 4 : 0);
         int relativeX = clickX - textStartX;
 
         if (relativeX < 0) return this.displayPos.get();
@@ -662,7 +614,7 @@ public class TextInput extends BaseElement implements IComposableElement {
         int display = this.displayPos.get();
         String visibleText = currentText.substring(Math.min(display, currentText.length()));
 
-        for (int i = 0; i <= visibleText.length(); i++) {
+        for (int i = 0; i < visibleText.length(); i = Util.offsetByCodepoints(visibleText, i, 1)) {
             String sub = visibleText.substring(0, i);
             if (font.width(sub) >= relativeX) {
                 return display + i;
@@ -677,10 +629,6 @@ public class TextInput extends BaseElement implements IComposableElement {
         if (bounds == null) return 100;
         return bounds.width() - (this.bordered ? 8 : 0);
     }
-
-    // =====================
-    // Clipboard Operations
-    // =====================
 
     private void copyToClipboard() {
         String selected = this.getHighlighted();
@@ -702,16 +650,14 @@ public class TextInput extends BaseElement implements IComposableElement {
         }
     }
 
-    // =====================
-    // Configuration
-    // =====================
 
     public TextInput setMaxLength(int maxLength) {
         if (maxLength < 0) throw new IllegalArgumentException("Maximum text length must be nonnegative");
         this.maxLength = maxLength;
+        this.invalidateComposition();
         String current = this.text.get();
         if (current.length() > maxLength) {
-            this.text.set(current.substring(0, maxLength));
+            this.text.set(TextEditing.truncate(current, maxLength));
             this.moveCursorTo(this.text.get().length(), false);
             this.onValueChanged();
         }
@@ -720,30 +666,25 @@ public class TextInput extends BaseElement implements IComposableElement {
 
     public TextInput setBordered(boolean bordered) {
         this.bordered = bordered;
-        this.invalidate();
+        this.invalidateComposition();
         return this;
     }
 
     public TextInput setEditable(boolean editable) {
         this.editable = editable;
-        this.invalidate();
+        this.invalidateComposition();
         return this;
     }
 
     public TextInput setCentered(boolean centered) {
         this.centered = centered;
-        this.invalidate();
+        this.invalidateComposition();
         return this;
     }
 
     public TextInput setTextShadow(boolean textShadow) {
         this.textShadow = textShadow;
         return this;
-    }
-
-    private void invalidate() {
-        var node = this.getNode();
-        if (node != null) node.getTree().requestRecompose(node);
     }
 
     public TextInput setTextColor(int color) {
@@ -773,13 +714,10 @@ public class TextInput extends BaseElement implements IComposableElement {
 
     public TextInput setSuggestion(@Nullable String suggestion) {
         this.suggestion = suggestion;
+        this.invalidateComposition();
         return this;
     }
 
-    public TextInput setCanLoseFocus(boolean canLoseFocus) {
-        this.canLoseFocus = canLoseFocus;
-        return this;
-    }
 
     public TextInput addFormatter(TextFormatter formatter) {
         this.formatters.add(formatter);
@@ -790,10 +728,6 @@ public class TextInput extends BaseElement implements IComposableElement {
         this.formatters.clear();
         return this;
     }
-
-    // =====================
-    // Getters
-    // =====================
 
     public State<String> getTextState() {
         return this.text;
@@ -827,13 +761,6 @@ public class TextInput extends BaseElement implements IComposableElement {
         return this.focused.get();
     }
 
-    public boolean canLoseFocus() {
-        return this.canLoseFocus;
-    }
-
-    // =====================
-    // Layout
-    // =====================
 
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
@@ -858,10 +785,6 @@ public class TextInput extends BaseElement implements IComposableElement {
     public UICursor getCursor(int x, int y) {
         return this.editable ? CompoundCursors.IBEAM : null;
     }
-
-    // =====================
-    // TextFormatter Interface
-    // =====================
 
     @FunctionalInterface
     public interface TextFormatter {

@@ -73,9 +73,6 @@ public class Tabs extends BaseElement implements IComposableElement {
 
     @Override
     public void compose(ICompositionScope scope) {
-        scope.bind(this.enabled);
-        scope.bind(this.selectedIndex);
-
         scope.e(new Column(), column -> {
             column.layout().fillMax().spacing(0);
 
@@ -86,43 +83,22 @@ public class Tabs extends BaseElement implements IComposableElement {
                     final int tabIndex = i;
                     Tab tab = this.tabs.get(i);
 
-                    tabRow.e(new Button(), button -> {
+                    tabRow.e(tab.header, button -> {
                         button.layout().fixedSize(Minecraft.getInstance().font.width(tab.label) + TAB_PADDING * 2, TAB_HEIGHT);
                         button.getElement().setEnabled(this.enabled.get() && tab.enabled);
-                        button.getElement().setSprites(
-                                () -> this.selectedIndex.get() == tabIndex ? TAB_SELECTED_SPRITE : TAB_SPRITE,
-                                () -> this.selectedIndex.get() == tabIndex ? TAB_SELECTED_HIGHLIGHTED_SPRITE : TAB_HIGHLIGHTED_SPRITE,
-                                () -> this.selectedIndex.get() == tabIndex ? TAB_SELECTED_SPRITE : TAB_SPRITE);
-
                         button.fillSlot(Button.CONTENT_SLOT, content -> {
-                            content.e(new Label(tab.label, this.enabled.get() && tab.enabled ? 0xFFFFFF : 0xA0A0A0, true),
-                                    label -> label.layout().margin(0, this.selectedIndex.get() == tabIndex ? 0 : 4, 0, 0));
-                        });
-
-                        button.getElement().addPressListener((x, y) -> {
-                            if (tab.enabled) {
-                                this.selectTab(tabIndex);
-                            }
+                            content.e(new Label(tab.label,
+                                    () -> this.enabled.get() && tab.enabled ? 0xFFFFFF : 0xA0A0A0,
+                                    () -> true), label -> label.layout().deferred(layout -> {
+                                layout.bind(this.selectedIndex);
+                                layout.layout().margin(0, this.selectedIndex.get() == tabIndex ? 0 : 4, 0, 0);
+                            }));
                         });
                     });
                 }
             });
 
-            if (this.selectedIndex.get() >= 0 && this.selectedIndex.get() < this.tabs.size()) {
-                Tab selectedTab = this.tabs.get(this.selectedIndex.get());
-                column.e(new Panel(), contentPanel -> {
-                    contentPanel.layout().fillMaxWidth().weight(1);
-                    contentPanel.fillSlot(Panel.CONTENT_SLOT, content -> {
-                        content.e(new Box(), box -> {
-                            box.layout().padding(8).fillMax();
-                            box.e(new Column(), tabColumn -> {
-                                tabColumn.layout().fillMax().spacing(4);
-                                selectedTab.content.accept(tabColumn);
-                            });
-                        });
-                    });
-                });
-            }
+            column.e(new TabContent(), content -> content.layout().fillMaxWidth().weight(1));
         });
     }
 
@@ -183,9 +159,10 @@ public class Tabs extends BaseElement implements IComposableElement {
 
     public void setTabEnabled(int index, boolean enabled) {
         if (index >= 0 && index < this.tabs.size()) {
-            this.tabs.get(index).enabled = enabled;
+            var tab = this.tabs.get(index);
+            tab.enabled = enabled;
+            tab.header.setEnabled(this.enabled.get() && enabled);
             this.ensureEnabledSelection();
-            this.invalidate();
         }
     }
 
@@ -203,12 +180,14 @@ public class Tabs extends BaseElement implements IComposableElement {
 
     public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
+        for (var tab : this.tabs) {
+            tab.header.setEnabled(enabled && tab.enabled);
+        }
     }
 
     private void invalidate() {
         this.ensureEnabledSelection();
-        var node = this.getNode();
-        if (node != null) node.getTree().requestRecompose(node);
+        this.invalidateComposition();
     }
 
     private void ensureEnabledSelection() {
@@ -244,15 +223,58 @@ public class Tabs extends BaseElement implements IComposableElement {
         return this.enabled.get() ? CompoundCursors.HAND : null;
     }
 
-    private static class Tab {
-        Component label;
-        Consumer<ICompositionScope> content;
-        boolean enabled;
+    private final class TabContent extends BaseElement implements IComposableElement {
+        @Override
+        public void compose(ICompositionScope scope) {
+            scope.bindComposition(Tabs.this.selectedIndex);
+            int selected = Tabs.this.selectedIndex.get();
+            if (selected < 0 || selected >= Tabs.this.tabs.size()) return;
+            var tab = Tabs.this.tabs.get(selected);
+            scope.e(new Panel(), contentPanel -> {
+                contentPanel.layout().fillMax();
+                contentPanel.fillSlot(Panel.CONTENT_SLOT, content -> {
+                    content.e(new Box(), box -> {
+                        box.layout().padding(8).fillMax();
+                        box.e(new Column(), tabColumn -> {
+                            tabColumn.layout().fillMax().spacing(4);
+                            tab.content.accept(tabColumn);
+                        });
+                    });
+                });
+            });
+        }
 
-        Tab(Component label, Consumer<ICompositionScope> content, boolean enabled) {
+        @Override
+        public Size measure(Constraints constraints, LayoutProperties props, List<Size> children) {
+            return children.isEmpty() ? Size.ZERO : children.getFirst();
+        }
+
+        @Override
+        public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> children) {
+            return children.isEmpty() ? List.of() : List.of(bounds);
+        }
+    }
+
+    private final class Tab {
+        private final Component label;
+        private final Consumer<ICompositionScope> content;
+        private final Button header = new Button();
+        private boolean enabled;
+
+        private Tab(Component label, Consumer<ICompositionScope> content, boolean enabled) {
             this.label = label;
             this.content = content;
             this.enabled = enabled;
+            this.header.setSprites(
+                    () -> this.isSelected() ? TAB_SELECTED_SPRITE : TAB_SPRITE,
+                    () -> this.isSelected() ? TAB_SELECTED_HIGHLIGHTED_SPRITE : TAB_HIGHLIGHTED_SPRITE,
+                    () -> this.isSelected() ? TAB_SELECTED_SPRITE : TAB_SPRITE);
+            this.header.addPressListener((x, y) -> Tabs.this.selectTab(Tabs.this.tabs.indexOf(this)));
+        }
+
+        private boolean isSelected() {
+            int selected = Tabs.this.selectedIndex.get();
+            return selected >= 0 && selected < Tabs.this.tabs.size() && Tabs.this.tabs.get(selected) == this;
         }
     }
 }

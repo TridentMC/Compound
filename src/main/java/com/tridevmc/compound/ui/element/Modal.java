@@ -16,12 +16,16 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.slot.SlotKey;
 import com.tridevmc.compound.ui.state.State;
 import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.network.chat.Component;
+
+
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -59,14 +63,14 @@ public class Modal extends BaseElement implements IComposableElement {
 
     public Modal(Component title) {
         this.title = title;
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public Modal(Component title, Component message) {
         this.title = title;
-        this.invalidate();
+        this.invalidateComposition();
         this.message = message;
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     @Override
@@ -80,7 +84,7 @@ public class Modal extends BaseElement implements IComposableElement {
         scope.onClick(event -> true);
         scope.onScroll(event -> true);
         scope.onKeyPress(event -> {
-            if (event.keyCode() == 256) this.close();
+            if (event.keyCode() == InputConstants.KEY_ESCAPE) this.close();
             return true;
         });
         scope.onCharTyped(event -> true);
@@ -97,10 +101,15 @@ public class Modal extends BaseElement implements IComposableElement {
                     padding.e(new Column(), column -> {
                         column.layout().fillMax().spacing(8);
                         if (this.title != null) column.e(new Label(this.title, 0xFF404040, false));
-                        scope.slotInto(CONTENT_SLOT, body -> {
-                            if (this.message != null) body.e(new Label(this.message, 0xFF404040, false).setWrap(true));
-                        }, column);
-                        column.e(new Spacer(), spacer -> spacer.layout().weight(1));
+                        column.e(new ScrollArea(), scroll -> {
+                            scroll.layout().fillMaxWidth().weight(1);
+                            scroll.fillSlot(ScrollArea.CONTENT_SLOT, body -> body.e(new Column(), bodyColumn -> {
+                                bodyColumn.layout().fillMaxWidth().spacing(8);
+                                scope.slotInto(CONTENT_SLOT, fallback -> {
+                                    if (this.message != null) fallback.e(new Label(this.message, 0xFF404040, false).setWrap(true));
+                                }, bodyColumn);
+                            }));
+                        });
                         column.e(new Row(), row -> {
                             row.layout().fillMaxWidth().fixedHeight(20).spacing(6);
                             for (var button : this.buttons) {
@@ -136,12 +145,12 @@ public class Modal extends BaseElement implements IComposableElement {
 
     public void setTitle(Component title) {
         this.title = title;
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public void setMessage(Component message) {
         this.message = message;
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public void addButton(String label, Runnable action) {
@@ -150,12 +159,12 @@ public class Modal extends BaseElement implements IComposableElement {
 
     public void addButton(Component label, Runnable action) {
         this.buttons.add(new ModalButton(label, action));
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public void clearButtons() {
         this.buttons.clear();
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public void setOnClose(Consumer<Void> onClose) {
@@ -165,7 +174,7 @@ public class Modal extends BaseElement implements IComposableElement {
     public void setSize(int width, int height) {
         this.width = width;
         this.height = height;
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     @Override
@@ -182,11 +191,6 @@ public class Modal extends BaseElement implements IComposableElement {
             return List.of();
         }
         return List.of(bounds);
-    }
-
-    private void invalidate() {
-        var node = this.getNode();
-        if (node != null) node.getTree().requestRecompose(node);
     }
 
     private record ModalButton(Component label, Runnable action) {}

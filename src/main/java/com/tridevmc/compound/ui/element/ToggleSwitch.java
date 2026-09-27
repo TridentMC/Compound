@@ -16,12 +16,19 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import com.google.common.collect.Lists;
 import com.tridevmc.compound.ui.CompoundCursors;
 import com.tridevmc.compound.ui.cursor.UICursor;
 import com.tridevmc.compound.ui.animation.AnimatedState;
 import com.tridevmc.compound.ui.animation.Easing;
-import com.tridevmc.compound.ui.layout.*;
+import com.tridevmc.compound.ui.layout.Alignment;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Position;
+import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
@@ -33,29 +40,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 
+
+
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-/**
- * An on/off toggle switch component with a sliding thumb animation.
- * Alternative to checkbox for boolean options.
- *
- * <p>By default, renders using Minecraft's built-in slider widget textures
- * ({@code widget/slider} and {@code widget/slider_handle}) for a native look.
- * Falls back to colored rectangles if texture rendering is disabled via
- * {@link #setUseTextures(boolean)}.</p>
- *
- * <p><strong>Usage:</strong></p>
- * <pre>
- * scope.e(new ToggleSwitch(), toggle -> {
- *     toggle.getElement().setOn(true);
- *     toggle.getElement().setOnChanged(on -> {
- *         config.setFeatureEnabled(on);
- *     });
- * });
- * </pre>
- */
 public class ToggleSwitch extends BaseElement implements IComposableElement {
 
     private static final int DEFAULT_WIDTH = 50;
@@ -70,19 +61,14 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
             Identifier.withDefaultNamespace("widget/slider_handle"));
     private static final IScreenSprite HANDLE_HIGHLIGHTED_SPRITE = IScreenSprite.of(
             Identifier.withDefaultNamespace("widget/slider_handle_highlighted"));
-
-    /**
-     * Composed toggle handle element. Measures as the full track size but places a
-     * child sprite or rect at the position derived from the animated X supplier.
-     */
     private class ToggleThumb extends BaseElement implements IComposableElement {
-        private final java.util.function.Supplier<IScreenSprite> spriteSupplier;
-        private final java.util.function.Supplier<Integer> positionSupplier;
-        private final java.util.function.Supplier<Integer> colorSupplier;
+        private final Supplier<IScreenSprite> spriteSupplier;
+        private final Supplier<Integer> positionSupplier;
+        private final Supplier<Integer> colorSupplier;
 
-        ToggleThumb(java.util.function.Supplier<IScreenSprite> spriteSupplier,
-                    java.util.function.Supplier<Integer> positionSupplier,
-                    java.util.function.Supplier<Integer> colorSupplier) {
+        ToggleThumb(Supplier<IScreenSprite> spriteSupplier,
+                    Supplier<Integer> positionSupplier,
+                    Supplier<Integer> colorSupplier) {
             this.spriteSupplier = spriteSupplier;
             this.positionSupplier = positionSupplier;
             this.colorSupplier = colorSupplier;
@@ -152,6 +138,7 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
             int initialX = this.on.get() ? DEFAULT_WIDTH - HANDLE_WIDTH : 0;
             this.thumbAnimation = scope.animateInt(initialX, 150, Easing.EASE_OUT);
         }
+        scope.retainAnimation(this.thumbAnimation);
 
         scope.bind(this.enabled);
         scope.bind(this.hovered);
@@ -162,7 +149,7 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
         scope.onMouseExit(() -> this.hovered.set(false));
 
         scope.onClick(event -> {
-            if (!this.enabled.get() || event.button() != 0) return false;
+            if (!this.enabled.get() || event.button() != InputConstants.MOUSE_BUTTON_LEFT) return false;
             scope.requestFocus();
             this.toggle();
             return true;
@@ -170,8 +157,8 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
 
         scope.onKeyPress(event -> {
             if (!this.enabled.get()) return false;
-            if (event.keyCode() == org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE ||
-                    event.keyCode() == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER) {
+            if (event.keyCode() == InputConstants.KEY_SPACE ||
+                    event.keyCode() == InputConstants.KEY_RETURN) {
                 this.toggle();
                 return true;
             }
@@ -213,7 +200,7 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
                 stack.e(new Rect(() -> trackColor), bg -> bg.layout().fillMax());
 
                 stack.e(new ToggleThumb(
-                        () -> HANDLE_SPRITE,
+                        () -> null,
                         () -> this.thumbAnimation.get(),
                         () -> this.thumbColor
                 ), handle -> handle.layout().fillMax());
@@ -282,10 +269,12 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
 
     public void setOnColor(int color) {
         this.onColor = color;
+        this.invalidateComposition();
     }
 
     public void setOffColor(int color) {
         this.offColor = color;
+        this.invalidateComposition();
     }
 
     public void setThumbColor(int color) {
@@ -294,28 +283,19 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
 
     public void setOnLabel(Component label) {
         this.onLabel = label;
+        this.invalidateComposition();
     }
 
     public void setOffLabel(Component label) {
         this.offLabel = label;
+        this.invalidateComposition();
     }
 
-    /**
-     * Enables or disables texture-based rendering.
-     * When enabled (default), uses Minecraft's built-in slider widget sprites.
-     * When disabled, falls back to colored rectangles using the configured colors.
-     *
-     * @param useTextures true to use Minecraft textures, false for colored rects
-     */
     public void setUseTextures(boolean useTextures) {
         this.useTextures = useTextures;
+        this.invalidateComposition();
     }
 
-    /**
-     * Returns whether texture-based rendering is enabled.
-     *
-     * @return true if using Minecraft textures
-     */
     public boolean isUsingTextures() {
         return this.useTextures;
     }

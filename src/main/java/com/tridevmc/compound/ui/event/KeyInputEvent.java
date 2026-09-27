@@ -17,8 +17,24 @@
 package com.tridevmc.compound.ui.event;
 
 /**
- * Event for keyboard input.
+ * Keyboard input with a physical key for navigation and a layout-dependent logical key for shortcuts.
+ * ctrlDown represents the platform editing modifier: Control on Windows/Linux, Command on macOS.
  */
-public record KeyInputEvent(int keyCode, char character, boolean shiftDown, boolean ctrlDown, boolean altDown) {
+public record KeyInputEvent(int keyCode, int logicalKeyCode, boolean shiftDown, boolean ctrlDown, boolean altDown) {
 
+    /** Creates an event from the legacy character-based signature. */
+    public KeyInputEvent(int keyCode, char character, boolean shiftDown, boolean ctrlDown, boolean altDown) {
+        this(keyCode, (int) character, shiftDown, ctrlDown, altDown);
+    }
+
+    /** Legacy character view; use logicalKeyCode for keyboard shortcuts and CharEvent for text. */
+    @Deprecated
+    public char character() {
+        return Character.isBmpCodePoint(this.logicalKeyCode) ? (char) this.logicalKeyCode : '\0';
+    }
+
+    /** Matches an editing shortcut with the platform modifier and no Shift or Alt modifiers. */
+    public boolean isShortcut(int logicalKeyCode) {
+        return this.ctrlDown && !this.shiftDown && !this.altDown && this.logicalKeyCode == logicalKeyCode;
+    }
 }

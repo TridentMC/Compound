@@ -16,6 +16,8 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import com.tridevmc.compound.ui.layout.Alignment;
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.Constraints;
@@ -27,11 +29,9 @@ import net.minecraft.network.chat.Component;
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
-/**
- * A single selectable row inside a list, composed from higher-level elements.
- */
 public class ListItem extends BaseElement implements IComposableElement {
 
     private final Component label;
@@ -45,37 +45,72 @@ public class ListItem extends BaseElement implements IComposableElement {
     private Runnable hoverEnterHandler = () -> {};
     private Runnable hoverExitHandler = () -> {};
 
-    /**
-     * Creates a list item with dynamic selection/hover colors.
-     *
-     * @param label                   the item label
-     * @param selected                supplier for whether this item is selected
-     * @param hovered                 supplier for whether this item is hovered
-     * @param selectedBackgroundColor background color when selected
-     * @param hoveredBackgroundColor  background color when hovered
-     * @param selectedTextColor       text color when selected/hovered
-     * @param defaultTextColor        text color when neither selected nor hovered
-     */
-    public ListItem(Component label,
-                    Supplier<Boolean> selected,
-                    Supplier<Boolean> hovered,
-                    Supplier<Integer> selectedBackgroundColor,
-                    Supplier<Integer> hoveredBackgroundColor,
-                    Supplier<Integer> selectedTextColor,
-                    Supplier<Integer> defaultTextColor) {
-        this.label = label;
-        this.selected = selected;
-        this.hovered = hovered;
-        this.selectedBackgroundColor = selectedBackgroundColor;
-        this.hoveredBackgroundColor = hoveredBackgroundColor;
-        this.selectedTextColor = selectedTextColor;
-        this.defaultTextColor = defaultTextColor;
+    private ListItem(Builder builder) {
+        this.label = builder.label;
+        this.selected = builder.selected;
+        this.hovered = builder.hovered;
+        this.selectedBackgroundColor = builder.selectedBackgroundColor;
+        this.hoveredBackgroundColor = builder.hoveredBackgroundColor;
+        this.selectedTextColor = builder.selectedTextColor;
+        this.defaultTextColor = builder.defaultTextColor;
+    }
+
+    public static Builder builder(Component label) {
+        return new Builder(label);
+    }
+
+    public static final class Builder {
+        private final Component label;
+        private Supplier<Boolean> selected = () -> false;
+        private Supplier<Boolean> hovered = () -> false;
+        private Supplier<Integer> selectedBackgroundColor = () -> 0xFF606060;
+        private Supplier<Integer> hoveredBackgroundColor = () -> 0xFF404040;
+        private Supplier<Integer> selectedTextColor = () -> 0xFFFFFFFF;
+        private Supplier<Integer> defaultTextColor = () -> 0xFFFFFFFF;
+
+        private Builder(Component label) {
+            this.label = Objects.requireNonNull(label);
+        }
+
+        public Builder selected(Supplier<Boolean> selected) {
+            this.selected = Objects.requireNonNull(selected);
+            return this;
+        }
+
+        public Builder hovered(Supplier<Boolean> hovered) {
+            this.hovered = Objects.requireNonNull(hovered);
+            return this;
+        }
+
+        public Builder selectedBackgroundColor(Supplier<Integer> color) {
+            this.selectedBackgroundColor = Objects.requireNonNull(color);
+            return this;
+        }
+
+        public Builder hoveredBackgroundColor(Supplier<Integer> color) {
+            this.hoveredBackgroundColor = Objects.requireNonNull(color);
+            return this;
+        }
+
+        public Builder selectedTextColor(Supplier<Integer> color) {
+            this.selectedTextColor = Objects.requireNonNull(color);
+            return this;
+        }
+
+        public Builder defaultTextColor(Supplier<Integer> color) {
+            this.defaultTextColor = Objects.requireNonNull(color);
+            return this;
+        }
+
+        public ListItem build() {
+            return new ListItem(this);
+        }
     }
 
     @Override
     public void compose(ICompositionScope scope) {
         scope.onClick(event -> {
-            if (event.button() != 0) return false;
+            if (event.button() != InputConstants.MOUSE_BUTTON_LEFT) return false;
             this.clickHandlers.forEach(Runnable::run);
             return true;
         });

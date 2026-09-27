@@ -16,47 +16,32 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import com.tridevmc.compound.ui.CompoundCursors;
 import com.tridevmc.compound.ui.cursor.UICursor;
-import com.tridevmc.compound.ui.layout.*;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Position;
+import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.slot.SlotKey;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
 import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.resources.Identifier;
-import net.minecraft.util.Mth;
 
 import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.Objects;
 
-/**
- * A scrollable container that clips its content to a viewport with a visible scrollbar.
- * Uses Minecraft's built-in scrollbar sprites ({@code widget/scroller} and
- * {@code widget/scroller_background}) for a native look.
- *
- * <p><strong>Usage:</strong></p>
- * <pre>
- * scope.e(new ScrollArea(), scroll -> {
- *     scroll.layout().fixedSize(200, 300);
- *     scroll.e(new Column(), col -> {
- *         for (int i = 0; i &lt; 100; i++) {
- *             col.e(new Label(Component.literal("Item " + i)));
- *         }
- *     });
- * });
- * </pre>
- */
 public class ScrollArea extends BaseElement implements IComposableElement {
 
     public static final SlotKey CONTENT_SLOT = new SlotKey("content");
 
-    private static final int SCROLLBAR_WIDTH = 6;
-    private static final int SCROLLBAR_MIN_HEIGHT = 32;
     private static final int SCROLLBAR_PADDING = 4;
 
-    private static final IScreenSprite SCROLLER_SPRITE = IScreenSprite.of(
-            Identifier.withDefaultNamespace("widget/scroller"));
     private static final IScreenSprite SCROLLER_BG_SPRITE = IScreenSprite.of(
             Identifier.withDefaultNamespace("widget/scroller_background"));
 
@@ -64,6 +49,7 @@ public class ScrollArea extends BaseElement implements IComposableElement {
     private final State<Integer> scrollY = new StateImpl<>(0);
     private final State<Boolean> scrollbarHovered = new StateImpl<>(false);
     private Direction direction = Direction.VERTICAL;
+    private ScrollbarStyle scrollbarStyle = ScrollbarStyle.LIST;
     private int scrollSpeed = 20;
     private boolean showScrollbar = true;
 
@@ -77,11 +63,15 @@ public class ScrollArea extends BaseElement implements IComposableElement {
     }
 
     public ScrollArea(Direction direction) {
-        this.direction = direction;
+        this.direction = Objects.requireNonNull(direction);
     }
 
     public ScrollArea direction(Direction direction) {
-        this.direction = direction;
+        if (this.direction != Objects.requireNonNull(direction)) {
+            this.direction = direction;
+            this.scrollTo(0, 0);
+            this.invalidate();
+        }
         return this;
     }
 
@@ -91,8 +81,28 @@ public class ScrollArea extends BaseElement implements IComposableElement {
     }
 
     public ScrollArea showScrollbar(boolean show) {
-        this.showScrollbar = show;
+        if (this.showScrollbar != show) {
+            this.showScrollbar = show;
+            this.invalidate();
+        }
         return this;
+    }
+
+    public ScrollArea scrollbarStyle(ScrollbarStyle style) {
+        if (this.scrollbarStyle != Objects.requireNonNull(style)) {
+            this.scrollbarStyle = style;
+            this.invalidate();
+        }
+        return this;
+    }
+
+    public ScrollbarStyle getScrollbarStyle() {
+        return this.scrollbarStyle;
+    }
+
+    private void invalidate() {
+        this.scrollbarHovered.set(false);
+        this.invalidateComposition();
     }
 
     public void scrollTo(int x, int y) {
@@ -128,75 +138,50 @@ public class ScrollArea extends BaseElement implements IComposableElement {
 
         scope.bindLayout(this.scrollX);
         scope.bindLayout(this.scrollY);
-        // scrollbarHovered is only used for cursor feedback; do not recompose on hover.
-
-        // Use a Stack as the content container so it can report the child's full
-        // size to the ScrollArea while reserving space for the scrollbar and a small
-        // gap between content and the track.
         scope.e(new Stack(), contentStack -> {
             if (this.direction == Direction.VERTICAL) {
-                contentStack.layout().maxHeight(Integer.MAX_VALUE);
+                contentStack.layout().unboundedHeight();
                 if (this.showScrollbar) {
-                    contentStack.layout().margin(0, 0, SCROLLBAR_WIDTH + SCROLLBAR_PADDING, 0);
+                    contentStack.layout().margin(0, 0, this.scrollbarStyle.thickness(this.direction) + SCROLLBAR_PADDING, 0);
                 }
             } else {
-                contentStack.layout().maxWidth(Integer.MAX_VALUE);
+                contentStack.layout().unboundedWidth();
                 if (this.showScrollbar) {
-                    contentStack.layout().margin(0, 0, 0, SCROLLBAR_WIDTH + SCROLLBAR_PADDING);
+                    contentStack.layout().margin(0, 0, 0, this.scrollbarStyle.thickness(this.direction) + SCROLLBAR_PADDING);
                 }
             }
             scope.slotInto(CONTENT_SLOT, contentStack);
         });
 
         if (this.showScrollbar) {
-            scope.e(new ScrollbarElement(), sb -> sb.layout().fillMax());
+            scope.e(new ScrollbarElement(), sb -> {
+                if (this.direction == Direction.VERTICAL) {
+                    sb.layout().fixedWidth(this.scrollbarStyle.thickness(this.direction)).fillMaxHeight();
+                } else {
+                    sb.layout().fixedHeight(this.scrollbarStyle.thickness(this.direction)).fillMaxWidth();
+                }
+            });
         }
 
         scope.onScroll(event -> {
-            var bounds = this.getBounds();
-            if (bounds == null) return false;
-
-            if (this.direction == Direction.VERTICAL) {
-                int maxScroll = this.getMaxScrollY();
-                if (maxScroll > 0) {
-                    int delta = (int) Math.round(event.scrollDelta() * this.scrollSpeed);
-                    int newY = Math.clamp(this.scrollY.get() - delta, 0, maxScroll);
-                    this.scrollY.set(newY);
-                    return true;
-                }
-            } else {
-                int maxScroll = this.getMaxScrollX();
-                if (maxScroll > 0) {
-                    int delta = (int) Math.round(event.scrollDelta() * this.scrollSpeed);
-                    int newX = Math.clamp(this.scrollX.get() - delta, 0, maxScroll);
-                    this.scrollX.set(newX);
-                    return true;
-                }
-            }
-
-            return false;
+            int maximum = this.direction == Direction.VERTICAL ? this.getMaxScrollY() : this.getMaxScrollX();
+            if (maximum <= 0) return false;
+            var scroll = this.direction == Direction.VERTICAL ? this.scrollY : this.scrollX;
+            double wheel = this.direction == Direction.HORIZONTAL && event.scrollX() != 0
+                    ? event.scrollX() : event.scrollY();
+            int delta = (int) Math.round(wheel * this.scrollSpeed);
+            int next = Math.clamp(scroll.get() - delta, 0, maximum);
+            if (next == scroll.get()) return false;
+            scroll.set(next);
+            return true;
         });
     }
 
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
-
-
-        // Only the content child (first child) determines scrollable content size.
-        if (!measuredChildren.isEmpty()) {
-            Size contentSize = measuredChildren.get(0);
-            if (this.direction == Direction.VERTICAL) {
-                this.contentHeight = contentSize.height();
-                this.contentWidth = contentSize.width();
-            } else {
-                this.contentWidth = contentSize.width();
-                this.contentHeight = contentSize.height();
-            }
-        } else {
-            this.contentHeight = 0;
-            this.contentWidth = 0;
-        }
-
+        var content = measuredChildren.isEmpty() ? new Size(0, 0) : measuredChildren.getFirst();
+        this.contentHeight = content.height();
+        this.contentWidth = content.width();
         return new Size(constraints.maxWidth(), constraints.maxHeight());
     }
 
@@ -230,16 +215,18 @@ public class ScrollArea extends BaseElement implements IComposableElement {
 
         Bounds scrollbarBounds;
         if (this.direction == Direction.VERTICAL) {
-            int scrollbarX = bounds.x() + bounds.width() - SCROLLBAR_WIDTH;
+            int width = Math.min(this.scrollbarStyle.thickness(this.direction), bounds.width());
+            int scrollbarX = bounds.x() + bounds.width() - width;
             scrollbarBounds = new Bounds(
                     new Position(scrollbarX, bounds.y()),
-                    new Size(SCROLLBAR_WIDTH, bounds.height())
+                    new Size(width, bounds.height())
             );
         } else {
-            int scrollbarY = bounds.y() + bounds.height() - SCROLLBAR_WIDTH;
+            int height = Math.min(this.scrollbarStyle.thickness(this.direction), bounds.height());
+            int scrollbarY = bounds.y() + bounds.height() - height;
             scrollbarBounds = new Bounds(
                     new Position(bounds.x(), scrollbarY),
-                    new Size(bounds.width(), SCROLLBAR_WIDTH)
+                    new Size(bounds.width(), height)
             );
         }
 
@@ -249,25 +236,25 @@ public class ScrollArea extends BaseElement implements IComposableElement {
     private int getScrollerY() {
         int maxScroll = this.getMaxScrollY();
         if (maxScroll <= 0) return 0;
-        return (int) ((float) this.scrollY.get() / maxScroll * (this.viewportHeight - getScrollerHeight()));
+        return (int) ((float) this.scrollY.get() / maxScroll * (this.trackLength(this.viewportHeight) - getScrollerHeight()));
     }
 
     private int getScrollerHeight() {
-        if (this.contentHeight <= 0) return SCROLLBAR_MIN_HEIGHT;
-        int height = (int) ((float) this.viewportHeight / this.contentHeight * this.viewportHeight);
-        return Math.clamp(height, Math.min(SCROLLBAR_MIN_HEIGHT, this.viewportHeight), this.viewportHeight);
+        return this.scrollbarStyle.thumbLength(this.trackLength(this.viewportHeight), this.contentHeight, Direction.VERTICAL);
     }
 
     private int getScrollerWidth() {
-        if (this.contentWidth <= 0) return SCROLLBAR_MIN_HEIGHT;
-        int width = (int) ((float) this.viewportWidth / this.contentWidth * this.viewportWidth);
-        return Math.clamp(width, Math.min(SCROLLBAR_MIN_HEIGHT, this.viewportWidth), this.viewportWidth);
+        return this.scrollbarStyle.thumbLength(this.trackLength(this.viewportWidth), this.contentWidth, Direction.HORIZONTAL);
     }
 
     private int getScrollerX() {
         int maxScroll = this.getMaxScrollX();
         if (maxScroll <= 0) return 0;
-        return (int) ((float) this.scrollX.get() / maxScroll * (this.viewportWidth - getScrollerWidth()));
+        return (int) ((float) this.scrollX.get() / maxScroll * (this.trackLength(this.viewportWidth) - getScrollerWidth()));
+    }
+
+    private int trackLength(int length) {
+        return Math.max(0, length - this.scrollbarStyle.inset * 2);
     }
 
     public enum Direction {
@@ -275,10 +262,62 @@ public class ScrollArea extends BaseElement implements IComposableElement {
         HORIZONTAL
     }
 
-    /**
-     * Internal element that renders the scrollbar using vanilla Minecraft sprites.
-     * Positioned as the second child of ScrollArea, receiving only the scrollbar track bounds.
-     */
+    public enum ScrollbarStyle {
+        LIST(6, 32, true, "widget/scroller", "widget/scroller") {
+            @Override
+            void composeTrack(ICompositionScope scope) {
+                scope.e(new Sprite(SCROLLER_BG_SPRITE));
+            }
+        },
+        GRIPPY(12, 15, false, "container/creative_inventory/scroller",
+                "container/creative_inventory/scroller_disabled") {
+            @Override
+            void composeTrack(ICompositionScope scope) {
+                scope.e(new Surface(0xFFFFFFFF), outer -> outer.fillSlot(Surface.CONTENT_SLOT,
+                        content -> content.e(new Surface(0xFF373737), dark -> {
+                            dark.layout().fillMax().margin(0, 0, 1, 1);
+                            dark.fillSlot(Surface.CONTENT_SLOT, interior -> interior.e(
+                                    new Surface(0xFF8B8B8B), fill -> fill.layout().fillMax().margin(1, 1, 0, 0)));
+                        })));
+            }
+        };
+
+        private final int width;
+        private final int minimumLength;
+        private final int inset;
+        private final boolean proportional;
+        private final IScreenSprite thumb;
+        private final IScreenSprite disabledThumb;
+
+        ScrollbarStyle(int width, int minimumLength, boolean proportional, String thumb, String disabledThumb) {
+            this.inset = proportional ? 0 : 1;
+            this.width = width + this.inset * 2;
+            this.minimumLength = minimumLength;
+            this.proportional = proportional;
+            this.thumb = IScreenSprite.of(Identifier.withDefaultNamespace(thumb));
+            this.disabledThumb = IScreenSprite.of(Identifier.withDefaultNamespace(disabledThumb));
+        }
+
+        private int thickness(Direction direction) {
+            return !this.proportional && direction == Direction.HORIZONTAL
+                    ? this.minimumLength + this.inset * 2 : this.width;
+        }
+
+        private int thumbLength(int viewport, int content, Direction direction) {
+            if (!this.proportional) {
+                int length = direction == Direction.VERTICAL ? this.minimumLength : this.width - this.inset * 2;
+                return Math.min(length, viewport);
+            }
+            int maximum = Math.max(1, viewport - Math.min(8, viewport / 2));
+            maximum = Math.min(viewport, maximum);
+            int minimum = Math.min(this.minimumLength, maximum);
+            int length = content <= 0 ? viewport : (int) ((long) viewport * viewport / content);
+            return Math.clamp(length, minimum, maximum);
+        }
+
+        abstract void composeTrack(ICompositionScope scope);
+    }
+
     private class ScrollbarElement extends BaseElement implements IComposableElement {
 
         @Override
@@ -287,29 +326,33 @@ public class ScrollArea extends BaseElement implements IComposableElement {
             scope.onMouseExit(() -> ScrollArea.this.scrollbarHovered.set(false));
 
             scope.onClick(event -> {
-                if (event.button() != 0) return false;
-                if (ScrollArea.this.direction == Direction.VERTICAL) {
-                    return this.setScrollFromY(event.y());
-                } else {
-                    return this.setScrollFromX(event.x());
-                }
+                return event.button() == InputConstants.MOUSE_BUTTON_LEFT && this.setScrollFromPointer(event.x(), event.y());
             });
 
             scope.onMouseDrag(event -> {
-                if (ScrollArea.this.direction == Direction.VERTICAL) {
-                    return this.setScrollFromY(event.y());
-                } else {
-                    return this.setScrollFromX(event.x());
-                }
+                return event.button() == InputConstants.MOUSE_BUTTON_LEFT && this.setScrollFromPointer(event.x(), event.y());
             });
 
-            scope.e(new Sprite(SCROLLER_BG_SPRITE));
-            scope.e(new Sprite(SCROLLER_SPRITE));
+            ScrollArea.this.scrollbarStyle.composeTrack(scope);
+            scope.e(new Sprite(() -> {
+                var style = ScrollArea.this.scrollbarStyle;
+                return this.canScroll() ? style.thumb : style.proportional ? null : style.disabledThumb;
+            }));
+        }
+
+        private boolean canScroll() {
+            return (ScrollArea.this.direction == Direction.VERTICAL
+                    ? ScrollArea.this.getMaxScrollY() : ScrollArea.this.getMaxScrollX()) > 0;
+        }
+
+        @Override
+        public boolean isVisible() {
+            return this.canScroll() || !ScrollArea.this.scrollbarStyle.proportional;
         }
 
         @Override
         public UICursor getCursor(int x, int y) {
-            if (ScrollArea.this.scrollbarHovered.get()) {
+            if (this.canScroll() && ScrollArea.this.scrollbarHovered.get()) {
                 return ScrollArea.this.direction == Direction.VERTICAL
                         ? CompoundCursors.VRESIZE
                         : CompoundCursors.HRESIZE;
@@ -317,33 +360,20 @@ public class ScrollArea extends BaseElement implements IComposableElement {
             return null;
         }
 
-        private boolean setScrollFromY(int y) {
-            Bounds bounds = ScrollArea.this.getBounds();
-            if (bounds == null) return false;
-
-            int maxScroll = ScrollArea.this.getMaxScrollY();
+        private boolean setScrollFromPointer(int x, int y) {
+            var owner = ScrollArea.this;
+            var bounds = owner.getBounds();
+            boolean vertical = owner.direction == Direction.VERTICAL;
+            int maxScroll = vertical ? owner.getMaxScrollY() : owner.getMaxScrollX();
             if (maxScroll <= 0) return false;
-
-            int trackHeight = bounds.height();
-            int scrollerH = ScrollArea.this.getScrollerHeight();
-            float ratio = (float) (y - bounds.y() - scrollerH / 2) / (trackHeight - scrollerH);
-            int newY = Math.clamp((int) (ratio * maxScroll), 0, maxScroll);
-            ScrollArea.this.scrollY.set(newY);
-            return true;
-        }
-
-        private boolean setScrollFromX(int x) {
-            Bounds bounds = ScrollArea.this.getBounds();
-            if (bounds == null) return false;
-
-            int maxScroll = ScrollArea.this.getMaxScrollX();
-            if (maxScroll <= 0) return false;
-
-            int trackWidth = bounds.width();
-            int scrollerW = ScrollArea.this.getScrollerWidth();
-            float ratio = (float) (x - bounds.x() - scrollerW / 2) / (trackWidth - scrollerW);
-            int newX = Math.clamp((int) (ratio * maxScroll), 0, maxScroll);
-            ScrollArea.this.scrollX.set(newX);
+            int length = owner.trackLength(vertical ? bounds.height() : bounds.width());
+            int thumbLength = vertical ? owner.getScrollerHeight() : owner.getScrollerWidth();
+            int travel = length - thumbLength;
+            if (travel <= 0) return false;
+            int offset = vertical ? y - bounds.y() : x - bounds.x();
+            float ratio = (offset - owner.scrollbarStyle.inset - thumbLength / 2F) / travel;
+            var scroll = vertical ? owner.scrollY : owner.scrollX;
+            scroll.set(Math.clamp((int) (ratio * maxScroll), 0, maxScroll));
             return true;
         }
 
@@ -355,9 +385,12 @@ public class ScrollArea extends BaseElement implements IComposableElement {
         @Override
         public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
             var owner = ScrollArea.this;
+            int inset = owner.scrollbarStyle.inset;
             var thumb = owner.direction == Direction.VERTICAL
-                    ? new Bounds(bounds.x(), bounds.y() + owner.getScrollerY(), bounds.width(), owner.getScrollerHeight())
-                    : new Bounds(bounds.x() + owner.getScrollerX(), bounds.y(), owner.getScrollerWidth(), bounds.height());
+                    ? new Bounds(bounds.x() + inset, bounds.y() + inset + owner.getScrollerY(),
+                            Math.max(0, bounds.width() - inset * 2), owner.getScrollerHeight())
+                    : new Bounds(bounds.x() + inset + owner.getScrollerX(), bounds.y() + inset,
+                            owner.getScrollerWidth(), Math.max(0, bounds.height() - inset * 2));
             return List.of(bounds, thumb);
         }
     }

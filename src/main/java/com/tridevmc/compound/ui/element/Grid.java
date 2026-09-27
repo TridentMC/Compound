@@ -16,17 +16,17 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.tridevmc.compound.ui.layout.*;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutMath;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Position;
+import com.tridevmc.compound.ui.layout.Size;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A container that lays out children in a grid with a fixed number of columns.
- * Rows are determined automatically based on the number of children.
- * Respects padding from LayoutProperties.
- */
 public class Grid extends BaseContainer {
 
     private int columns;
@@ -144,6 +144,7 @@ public class Grid extends BaseContainer {
 
     public void setColumns(int columns) {
         this.columns = columns;
+        this.invalidateLayout();
     }
 
     public int getHorizontalSpacing() {
@@ -152,6 +153,7 @@ public class Grid extends BaseContainer {
 
     public void setHorizontalSpacing(int horizontalSpacing) {
         this.horizontalSpacing = horizontalSpacing;
+        this.invalidateLayout();
     }
 
     public int getVerticalSpacing() {
@@ -160,5 +162,6 @@ public class Grid extends BaseContainer {
 
     public void setVerticalSpacing(int verticalSpacing) {
         this.verticalSpacing = verticalSpacing;
+        this.invalidateLayout();
     }
 }

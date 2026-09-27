@@ -20,10 +20,10 @@ import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.RenderPipelines;
+import com.tridevmc.compound.ui.sprite.IScreenSprite;
+import com.mojang.blaze3d.Blaze3D;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
-import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
@@ -117,6 +117,19 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
+    public void drawSprite(IScreenSprite sprite, float x, float y, float width, float height) {
+        if (!sprite.usesNativeScaling()) {
+            IScreenContext.super.drawSprite(sprite, x, y, width, height);
+            return;
+        }
+        var graphics = this.ui.getActiveGuiGraphics();
+        if (graphics != null) {
+            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite.getSpriteIdentifier(),
+                    (int) x, (int) y, (int) width, (int) height);
+        }
+    }
+
+    @Override
     public void drawTexturedRect(Identifier texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV) {
         var gg = this.ui.getActiveGuiGraphics();
         if (gg == null) return;
@@ -125,14 +138,19 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
+    public void drawTooltip(ItemStack stack, int x, int y) {
+        var graphics = this.ui.getActiveGuiGraphics();
+        if (graphics != null) {
+            graphics.setTooltipForNextFrame(this.getFont(), stack, x, y);
+        }
+    }
+
+    @Override
     public void drawTooltip(List<Component> tooltip, int x, int y, Optional<TooltipComponent> extraComponents, Font font) {
         var gg = this.ui.getActiveGuiGraphics();
         if (gg == null) return;
 
-        List<ClientTooltipComponent> components = net.neoforged.neoforge.client.ClientHooks.gatherTooltipComponents(
-                ItemStack.EMPTY, tooltip, x, gg.guiWidth(), gg.guiHeight(), font);
-        extraComponents.ifPresent(tc -> components.add(components.isEmpty() ? 0 : 1, ClientTooltipComponent.create(tc)));
-        gg.setComponentTooltipForNextFrame(font, tooltip, x, y);
+        gg.setTooltipForNextFrame(font, tooltip, extraComponents, x, y);
     }
 
     @Override
@@ -148,7 +166,7 @@ public class CompoundScreenContext implements IScreenContext {
         var gg = this.ui.getActiveGuiGraphics();
         if (gg == null) return;
 
-        var font = IClientItemExtensions.of(stack).getFont(stack, IClientItemExtensions.FontContext.TOOLTIP);
+        var font = IClientItemExtensions.of(stack).getFont(stack, IClientItemExtensions.FontContext.ITEM_COUNT);
         if (font == null) font = this.getFont();
 
         var pose = gg.pose();
@@ -178,17 +196,13 @@ public class CompoundScreenContext implements IScreenContext {
     @Override
     public void sendChatMessage(String message, boolean addToChat) {
         if (addToChat) {
-            this.getMc().gui.getChat().addClientSystemMessage(Component.translatable(message));
+            this.getMc().gui.hud.getChat().addClientSystemMessage(Component.translatable(message));
         }
     }
 
     @Override
     public void openWebLink(URI url) {
-        try {
-            java.awt.Desktop.getDesktop().browse(url);
-        } catch (Exception e) {
-            // Ignore browse errors
-        }
+        Blaze3D.openUri(url);
     }
 
     @Override

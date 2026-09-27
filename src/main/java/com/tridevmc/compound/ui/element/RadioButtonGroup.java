@@ -16,10 +16,16 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import com.google.common.collect.Lists;
 import com.tridevmc.compound.ui.CompoundCursors;
 import com.tridevmc.compound.ui.cursor.UICursor;
-import com.tridevmc.compound.ui.layout.*;
+import com.tridevmc.compound.ui.layout.Alignment;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
@@ -31,26 +37,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 
+
+
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Consumer;
 
-/**
- * A group of radio buttons for single selection from mutually exclusive options.
- *
- * <p><strong>Usage:</strong></p>
- * <pre>
- * scope.e(new RadioButtonGroup(), group -> {
- *     group.getElement().addOption("Option 1");
- *     group.getElement().addOption("Option 2");
- *     group.getElement().addOption("Option 3");
- *     group.getElement().setSelectedIndex(0);
- *     group.getElement().setOnSelectionChanged(index -> {
- *         System.out.println("Selected: " + index);
- *     });
- * });
- * </pre>
- */
 public class RadioButtonGroup extends BaseElement implements IComposableElement {
 
     private static final int SPACING = 4;
@@ -74,13 +66,16 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
     @Override
     public void compose(ICompositionScope scope) {
 
-        // Ensure hover states exist for all options
         while (this.optionHoverStates.size() < this.options.size()) {
             this.optionHoverStates.add(new StateImpl<>(false));
         }
         scope.onKeyPress(event -> {
             if (!this.enabled.get() || this.options.isEmpty()) return false;
-            int step = switch (event.keyCode()) { case 262, 264 -> 1; case 263, 265 -> -1; default -> 0; };
+            int step = switch (event.keyCode()) {
+                case InputConstants.KEY_RIGHT, InputConstants.KEY_DOWN -> 1;
+                case InputConstants.KEY_LEFT, InputConstants.KEY_UP -> -1;
+                default -> 0;
+            };
             if (step == 0) return false;
             this.select(Math.floorMod(this.selectedIndex.get() + step, this.options.size()));
             return true;
@@ -97,7 +92,6 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
                 column.e(new Row(), row -> {
                     row.layout().fixedHeight(BOX_SIZE).spacing(SPACING).verticalAlignment(Alignment.CENTER);
 
-                    // Hover handlers on the row itself
                     row.onMouseEnter(() -> hoverState.set(true));
                     row.onMouseExit(() -> hoverState.set(false));
 
@@ -109,15 +103,13 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
                                 : highlighted ? HIGHLIGHTED : BOX;
                     }), sprite -> sprite.layout().fixedSize(BOX_SIZE, BOX_SIZE));
 
-                    // Label with hover color change
                     row.e(new Label(option.label, () -> {
                         if (!this.enabled.get()) return 0x808080;
                         return this.labelColor;
                     }, () -> false));
 
-                    // Click handler on row scope, not parent scope
                     row.onClick(event -> {
-                        if (!this.enabled.get() || event.button() != 0) return false;
+                        if (!this.enabled.get() || event.button() != InputConstants.MOUSE_BUTTON_LEFT) return false;
                         scope.requestFocus();
                         this.select(index);
                         return true;
@@ -159,13 +151,13 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
     public void addOption(String label) {
         this.options.add(new RadioOption(Component.literal(label)));
         this.optionHoverStates.add(new StateImpl<>(false));
-        if (this.getNode() != null) this.getNode().getTree().requestRecompose(this.getNode());
+        this.invalidateComposition();
     }
 
     public void addOption(Component label) {
         this.options.add(new RadioOption(label));
         this.optionHoverStates.add(new StateImpl<>(false));
-        if (this.getNode() != null) this.getNode().getTree().requestRecompose(this.getNode());
+        this.invalidateComposition();
     }
 
     public void removeOption(int index) {
@@ -177,6 +169,7 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
             } else if (this.selectedIndex.get() > index) {
                 this.selectedIndex.set(this.selectedIndex.get() - 1);
             }
+            this.invalidateComposition();
         }
     }
 
@@ -190,7 +183,7 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
 
     public void setOptionSpacing(int spacing) {
         this.optionSpacing = spacing;
-        if (this.getNode() != null) this.getNode().getTree().requestRecompose(this.getNode());
+        this.invalidateComposition();
     }
 
     public void setLabelColor(int color) {

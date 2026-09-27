@@ -36,9 +36,11 @@ public class CycleButton<T> extends Button {
     @Override
     public void compose(ICompositionScope scope) {
         scope.bindLayout(this.selectedIndex);
-        scope.getSlotMap().put(CONTENT_SLOT, new SlotContent(content -> content.e(new Label(
-                () -> this.title.copy().append(": ").append(this.formatter.apply(this.getValue())),
-                () -> this.isEnabled() ? 0xFFFFFF : 0xA0A0A0))));
+        if (!scope.getSlotMap().has(CONTENT_SLOT)) {
+            scope.getSlotMap().put(CONTENT_SLOT, new SlotContent(content -> content.e(new Label(
+                    () -> this.title.copy().append(": ").append(this.formatter.apply(this.getValue())),
+                    () -> this.isEnabled() ? 0xFFFFFF : 0xA0A0A0))));
+        }
         super.compose(scope);
     }
 

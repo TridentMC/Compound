@@ -87,7 +87,7 @@ public class Surface extends BaseElement implements IComposableElement {
             stack.layout().fillMax();
 
             if (this.borderWidth > 0) {
-                stack.e(new Rect(this.borderColor), border -> border.layout().fillMax());
+                stack.e(new Border(), border -> border.layout().fillMax());
                 stack.e(new Rect(this.backgroundColor), bg -> bg.layout().fillMax().margin(this.borderWidth));
             } else {
                 stack.e(new Rect(this.backgroundColor), bg -> bg.layout().fillMax());
@@ -111,5 +111,38 @@ public class Surface extends BaseElement implements IComposableElement {
             return List.of();
         }
         return List.of(bounds);
+    }
+
+    private class Border extends BaseElement implements IComposableElement {
+        @Override
+        public void compose(ICompositionScope scope) {
+            for (int edge = 0; edge < 4; edge++) {
+                scope.e(new Rect(Surface.this.borderColor));
+            }
+        }
+
+        @Override
+        public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
+            return new Size(constraints.maxWidth(), constraints.maxHeight());
+        }
+
+        @Override
+        public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
+            int x = bounds.x();
+            int y = bounds.y();
+            int width = bounds.width();
+            int height = bounds.height();
+            int top = Math.min(Surface.this.borderWidth, height);
+            int bottom = Math.min(Surface.this.borderWidth, height - top);
+            int left = Math.min(Surface.this.borderWidth, width);
+            int right = Math.min(Surface.this.borderWidth, width - left);
+            int middle = height - top - bottom;
+            return List.of(
+                    new Bounds(x, y, width, top),
+                    new Bounds(x, y + height - bottom, width, bottom),
+                    new Bounds(x, y + top, left, middle),
+                    new Bounds(x + width - right, y + top, right, middle)
+            );
+        }
     }
 }

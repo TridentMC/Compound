@@ -16,21 +16,29 @@
 
 package com.tridevmc.compound.ui.screen;
 
-import com.tridevmc.compound.core.reflect.WrappedField;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
 import com.tridevmc.compound.ui.debug.DebugOverlayConfig;
-import com.tridevmc.compound.ui.event.*;
+import com.tridevmc.compound.ui.event.CharEvent;
+import com.tridevmc.compound.ui.event.KeyInputEvent;
+import com.tridevmc.compound.ui.event.MouseClickEvent;
+import com.tridevmc.compound.ui.event.MouseDragEvent;
+import com.tridevmc.compound.ui.event.MouseMoveEvent;
+import com.tridevmc.compound.ui.event.MouseReleaseEvent;
+import com.tridevmc.compound.ui.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.scope.RootScope;
+import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.tree.UITree;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix3x2fStack;
+import com.mojang.blaze3d.platform.InputConstants;
 
 public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
@@ -76,7 +84,7 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
      *
      * @param scope the root composition scope
      */
-    protected abstract void compose(RootScope scope);
+    protected abstract void compose(ICompositionScope scope);
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
@@ -98,7 +106,7 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
         this.tree.layoutAndRender(this.width, this.height, this.screenContext);
 
-        this.tree.getRequestedCursor().select(this.minecraft.getWindow());
+        this.tree.getRequestedCursor().select();
     }
 
     @Override
@@ -143,7 +151,7 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
         return this.activeGuiGraphics;
     }
 
-    public CompoundScreenContext getScreenContext() {
+    public IScreenContext getScreenContext() {
         return this.screenContext;
     }
 
@@ -153,35 +161,33 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
     }
 
     @Override
-    public boolean keyPressed(@NotNull net.minecraft.client.input.KeyEvent event) {
+    public boolean keyPressed(@NotNull KeyEvent event) {
         // F3+B toggles debug overlay (matches Minecraft's hitbox debug pattern)
-        // Use GLFW directly for key state checking
-        long windowHandle = this.minecraft.getWindow().handle();
-        boolean f3Down = org.lwjgl.glfw.GLFW.glfwGetKey(windowHandle, org.lwjgl.glfw.GLFW.GLFW_KEY_F3) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
-        if (event.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_B && f3Down) {
+        boolean f3Down = InputConstants.isKeyDown(InputConstants.KEY_F3);
+        if (event.key() == InputConstants.KEY_B && f3Down) {
             DebugOverlayConfig.get().toggle();
             return true;
         }
 
         KeyInputEvent keyEvent = new KeyInputEvent(
                 event.key(),
-                '\0',
-                (event.modifiers() & 1) != 0,
-                (event.modifiers() & 2) != 0,
-                (event.modifiers() & 4) != 0
+                event.shortcutKey(),
+                event.hasShiftDown(),
+                event.hasControlDownWithQuirk(),
+                event.hasAltDown()
         );
         boolean consumed = this.tree.dispatchKeyPress(keyEvent);
         return consumed || super.keyPressed(event);
     }
 
     @Override
-    public boolean keyReleased(@NotNull net.minecraft.client.input.KeyEvent event) {
+    public boolean keyReleased(@NotNull KeyEvent event) {
         KeyInputEvent keyEvent = new KeyInputEvent(
                 event.key(),
-                '\0',
-                (event.modifiers() & 1) != 0,
-                (event.modifiers() & 2) != 0,
-                (event.modifiers() & 4) != 0
+                event.shortcutKey(),
+                event.hasShiftDown(),
+                event.hasControlDownWithQuirk(),
+                event.hasAltDown()
         );
         boolean consumed = this.tree.dispatchKeyRelease(keyEvent);
         return consumed || super.keyReleased(event);
@@ -190,10 +196,10 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
     @Override
     public boolean charTyped(@NotNull CharacterEvent event) {
         int modifiers = 0;
-        if (this.minecraft.hasShiftDown()) modifiers |= 1;
-        if (this.minecraft.hasControlDown()) modifiers |= 2;
-        if (this.minecraft.hasAltDown()) modifiers |= 4;
-        CharEvent charEvent = new CharEvent((char) event.codepoint(), modifiers);
+        if (this.minecraft.hasShiftDown()) modifiers |= InputConstants.MOD_SHIFT;
+        if (this.minecraft.hasControlDown()) modifiers |= InputConstants.MOD_CONTROL;
+        if (this.minecraft.hasAltDown()) modifiers |= InputConstants.MOD_ALT;
+        CharEvent charEvent = new CharEvent(event.codepoint(), modifiers);
         boolean consumed = this.tree.dispatchCharTyped(charEvent);
         return consumed || super.charTyped(event);
     }
@@ -233,7 +239,7 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
     @Override
     public boolean mouseScrolled(double x, double y, double scrollX, double scrollY) {
-        MouseScrollEvent scrollEvent = new MouseScrollEvent((int) x, (int) y, scrollY);
+        MouseScrollEvent scrollEvent = new MouseScrollEvent((int) x, (int) y, scrollX, scrollY);
         boolean handled = this.tree.dispatchScroll((int) x, (int) y, scrollEvent);
         return handled || super.mouseScrolled(x, y, scrollX, scrollY);
     }

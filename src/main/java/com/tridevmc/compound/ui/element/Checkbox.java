@@ -16,10 +16,16 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import com.google.common.collect.Lists;
 import com.tridevmc.compound.ui.CompoundCursors;
 import com.tridevmc.compound.ui.cursor.UICursor;
-import com.tridevmc.compound.ui.layout.*;
+import com.tridevmc.compound.ui.layout.Alignment;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
@@ -31,24 +37,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 
+
+
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Consumer;
 
-/**
- * A boolean toggle component with a box and optional label.
- * Used for enabling/disabling options and multi-select scenarios.
- *
- * <p><strong>Usage:</strong></p>
- * <pre>
- * scope.e(new Checkbox(Component.literal("Enable Sounds")), checkbox -> {
- *     checkbox.getElement().setChecked(true);
- *     checkbox.getElement().setOnCheckedChanged(checked -> {
- *         config.setSoundsEnabled(checked);
- *     });
- * });
- * </pre>
- */
 public class Checkbox extends BaseElement implements IComposableElement {
 
     private static final int BOX_SIZE = 17;
@@ -89,7 +83,7 @@ public class Checkbox extends BaseElement implements IComposableElement {
         scope.onMouseExit(() -> this.hovered.set(false));
 
         scope.onClick(event -> {
-            if (!this.enabled.get() || event.button() != 0) return false;
+            if (!this.enabled.get() || event.button() != InputConstants.MOUSE_BUTTON_LEFT) return false;
             scope.requestFocus();
             this.toggle();
             return true;
@@ -97,7 +91,7 @@ public class Checkbox extends BaseElement implements IComposableElement {
 
         scope.onKeyPress(event -> {
             if (!this.enabled.get()) return false;
-            if (event.keyCode() == org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE) {
+            if (event.keyCode() == InputConstants.KEY_SPACE) {
                 this.toggle();
                 return true;
             }
@@ -183,6 +177,7 @@ public class Checkbox extends BaseElement implements IComposableElement {
 
     public void setLabel(Component label) {
         this.label = label;
+        this.invalidateComposition();
     }
 
     public int getLabelColor() {
@@ -199,6 +194,7 @@ public class Checkbox extends BaseElement implements IComposableElement {
 
     public void setSpacing(int spacing) {
         this.spacing = spacing;
+        this.invalidateComposition();
     }
 
     public boolean isLabelRight() {
@@ -207,6 +203,7 @@ public class Checkbox extends BaseElement implements IComposableElement {
 
     public void setLabelRight(boolean right) {
         this.labelRight = right;
+        this.invalidateComposition();
     }
 
     public void setOnCheckedChanged(Consumer<Boolean> listener) {

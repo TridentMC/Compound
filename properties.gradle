@@ -5,13 +5,13 @@ ext {
     modBaseName = "compound"
 
     // Forge Stuff
-    neoForgeVersion = "21.10.51-beta"
+    neoForgeVersion = "26.3.0.23-beta"
 
     // Mapping Stuff
-    mappingsChannel = "parchment"
-    mappingsMinecraftVersion = "1.21.10"
-    mappingsVersion = "2025.10.12"
+    mappingsChannel = "official"
+    mappingsMinecraftVersion = "26.3"
+    mappingsVersion = "1"
 
     // Game Stuff
-    minecraftVersion = "1.21.10"
+    minecraftVersion = "26.3"
 }

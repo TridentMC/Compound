@@ -32,21 +32,18 @@ public class Accordion extends BaseElement implements IComposableElement {
 
     @Override
     public void compose(ICompositionScope scope) {
-        scope.bindComposition(this.expanded);
+        scope.bindLayout(this.expanded);
         scope.e(new Column(), column -> {
-            column.layout().fillMaxWidth().spacing(4);
+            column.layout().fillMaxWidth();
             column.e(new Button(), button -> {
                 button.layout().fillMaxWidth().fixedHeight(20);
                 button.fillSlot(Button.CONTENT_SLOT, content -> content.e(new Label(
-                        Component.literal(this.expanded.get() ? "- " : "+ ").append(this.title))));
+                        () -> Component.literal(this.expanded.get() ? "- " : "+ ").append(this.title),
+                        () -> 0xFFFFFF)));
                 button.getElement().addPressListener((x, y) -> this.setExpanded(!this.isExpanded()));
             });
-            if (this.expanded.get()) {
-                column.e(new Column(), content -> {
-                    content.layout().fillMaxWidth().spacing(4);
-                    scope.slotInto(CONTENT_SLOT, content);
-                });
-            }
+            column.e(new ExpandedContent(content -> scope.slotInto(CONTENT_SLOT, content)),
+                    content -> content.layout().fillMaxWidth());
         });
     }
 
@@ -73,5 +70,34 @@ public class Accordion extends BaseElement implements IComposableElement {
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> children) {
         return children.isEmpty() ? List.of() : List.of(bounds);
+    }
+
+    // Only the body is rebuilt when toggled, preserving the header's keyboard focus.
+    private class ExpandedContent extends BaseElement implements IComposableElement {
+        private final Consumer<ICompositionScope> content;
+
+        private ExpandedContent(Consumer<ICompositionScope> content) {
+            this.content = content;
+        }
+
+        @Override
+        public void compose(ICompositionScope scope) {
+            scope.bindComposition(Accordion.this.expanded);
+            if (!Accordion.this.isExpanded()) return;
+            scope.e(new Column(), column -> {
+                column.layout().fillMaxWidth().spacing(4).margin(0, 4, 0, 0);
+                this.content.accept(column);
+            });
+        }
+
+        @Override
+        public Size measure(Constraints constraints, LayoutProperties props, List<Size> children) {
+            return children.isEmpty() ? new Size(0, 0) : children.getFirst();
+        }
+
+        @Override
+        public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> children) {
+            return children.isEmpty() ? List.of() : List.of(bounds);
+        }
     }
 }

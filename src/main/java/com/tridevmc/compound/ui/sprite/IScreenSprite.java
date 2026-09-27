@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  * Defines a screen sprite, used for interpolating texture file coordinates to their UV equivalents.
  * <p>
  * Atlas sprites (created via {@link #of(Identifier)}) store their original sprite identifier
- * and are rendered using {@code blitSprite()}, which automatically handles stretch/tile/nine-slice
+ * and are rendered using {@code blitSprite()}, which resolves current atlas data and stretch/tile/nine-slice
  * scaling based on sprite metadata.
  * <p>
  * Raw texture sprites (created via {@link #ofAssetLocation}) do not have a sprite identifier
@@ -47,7 +47,7 @@ public interface IScreenSprite {
     }
 
     /**
-     * Creates a new screen sprite from the given sprite, writer, and original sprite identifier.
+     * Creates a sprite with an explicit writer and optional identifier. The writer controls drawing.
      *
      * @param sprite           the sprite to create a screen sprite from.
      * @param writer           the writer to use for the screen sprite.
@@ -55,12 +55,22 @@ public interface IScreenSprite {
      * @return a new screen sprite.
      */
     static IScreenSprite of(TextureAtlasSprite sprite, IScreenSpriteWriter writer, @Nullable Identifier spriteIdentifier) {
+        return of(sprite, writer, spriteIdentifier, false);
+    }
+
+    private static IScreenSprite of(TextureAtlasSprite sprite, IScreenSpriteWriter writer,
+                                   @Nullable Identifier spriteIdentifier, boolean nativeScaling) {
         var location = sprite.atlasLocation();
         var minU = sprite.getU0();
         var minV = sprite.getV0();
         var maxU = sprite.getU1();
         var maxV = sprite.getV1();
         return new IScreenSprite() {
+            @Override
+            public boolean usesNativeScaling() {
+                return nativeScaling;
+            }
+
             @Override
             public @Nullable Identifier getSpriteIdentifier() {
                 return spriteIdentifier;
@@ -131,7 +141,7 @@ public interface IScreenSprite {
     static IScreenSprite of(Identifier location) {
         var sprite = Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.GUI).getSprite(location);
         var writer = IScreenSpriteWriter.forTextureAtlasSprite(sprite);
-        return of(sprite, writer, location);
+        return of(sprite, writer, location, true);
     }
 
     /**
@@ -203,6 +213,11 @@ public interface IScreenSprite {
      * @return the sprite identifier, or null if this is a raw texture sprite.
      */
     @Nullable Identifier getSpriteIdentifier();
+
+    /** Whether drawing resolves the current atlas sprite and its scaling metadata. */
+    default boolean usesNativeScaling() {
+        return false;
+    }
 
     IScreenSpriteWriter getWriter();
 

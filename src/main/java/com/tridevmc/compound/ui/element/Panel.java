@@ -31,10 +31,6 @@ import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Supplier;
 
-/**
- * A composable box element that renders a nineslice background with content on top.
- * By default uses the inventory container sprite.
- */
 public class Panel extends BaseElement implements IComposableElement {
 
     public static final SlotKey CONTENT_SLOT = new SlotKey("content");
@@ -178,6 +174,7 @@ public class Panel extends BaseElement implements IComposableElement {
 
     public void setSprite(IScreenSprite sprite) {
         this.spriteSupplier = () -> sprite;
+        this.invalidateComposition();
     }
 
     public Supplier<IScreenSprite> getSpriteSupplier() {
@@ -186,5 +183,6 @@ public class Panel extends BaseElement implements IComposableElement {
 
     public void setSpriteSupplier(Supplier<IScreenSprite> spriteSupplier) {
         this.spriteSupplier = spriteSupplier;
+        this.invalidateComposition();
     }
 }

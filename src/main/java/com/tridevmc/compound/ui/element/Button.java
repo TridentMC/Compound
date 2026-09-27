@@ -16,6 +16,8 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import com.google.common.collect.Lists;
 import com.tridevmc.compound.ui.CompoundCursors;
 import com.tridevmc.compound.ui.cursor.UICursor;
@@ -122,7 +124,7 @@ public class Button extends BaseElement implements IComposableElement {
         scope.onFocusLost(() -> this.focused.set(false));
 
         scope.onClick(event -> {
-            if (event.button() != 0 || !this.canPress()) {
+            if (event.button() != InputConstants.MOUSE_BUTTON_LEFT || !this.canPress()) {
                 return false;
             }
 
@@ -146,7 +148,8 @@ public class Button extends BaseElement implements IComposableElement {
 
         scope.onKeyPress(event -> {
             if (!this.canPress() || !scope.isFocused()) return false;
-            if (event.keyCode() != 32 && event.keyCode() != 257 && event.keyCode() != 335) return false;
+            if (event.keyCode() != InputConstants.KEY_SPACE && event.keyCode() != InputConstants.KEY_RETURN
+                    && event.keyCode() != InputConstants.KEY_NUMPADENTER) return false;
             var bounds = this.getBounds();
             Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
             this.pressListeners.forEach(listener -> listener.onButtonPress(bounds.x(), bounds.y()));

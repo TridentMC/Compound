@@ -47,17 +47,28 @@ public abstract class BaseElement implements IElementInternal {
         this.node = node;
     }
 
+    /** Schedules recomposition when this element is attached to a live tree. */
+    protected final void invalidateComposition() {
+        if (this.node != null && this.node.getTree() != null) {
+            this.node.getTree().requestRecompose(this.node);
+        }
+    }
+
+    /** Schedules measurement and placement without rebuilding this element's children. */
+    protected final void invalidateLayout() {
+        if (this.node != null && this.node.getTree() != null) {
+            this.node.getTree().requestRemeasure(this.node);
+        }
+    }
+
     @Override
     public void onAttached() {
-        // Default: no-op, subclasses can override
     }
 
     @Override
     public void onDetached() {
-        // Default: no-op, subclasses can override
     }
 
-    // Subclasses must implement layout
     @Override
     public abstract Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren);
 

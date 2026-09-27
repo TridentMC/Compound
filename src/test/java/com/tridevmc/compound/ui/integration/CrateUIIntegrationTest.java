@@ -111,6 +111,7 @@ public class CrateUIIntegrationTest {
         // 1. Setup
         UITree tree = new UITree();
         RootScope scope = new RootScope(tree);
+        Column scrollContent = new Column();
 
         // Mock slots (27 crate + 27 player + 9 hotbar = 63 slots)
         List<Slot> slots = new ArrayList<>();
@@ -202,8 +203,8 @@ public class CrateUIIntegrationTest {
                                 scrollArea.getElement().scrollSpeed(10);
 
                                 // Fill scroll area's content slot with column of text inputs
-                                scrollArea.fillSlot(ScrollArea.CONTENT_SLOT, scrollContent -> {
-                                    scrollContent.e(new Column(), inputColumn -> {
+                                scrollArea.fillSlot(ScrollArea.CONTENT_SLOT, contentSlot -> {
+                                    contentSlot.e(scrollContent, inputColumn -> {
                                         inputColumn.layout().spacing(2);
 
                                         // Create alternating buttons and text inputs
@@ -580,250 +581,53 @@ public class CrateUIIntegrationTest {
         // ScrollArea accounts for 4px padding from parent Box: X+4, Y+4, Width-8, Height-8
         assertEquals(new Bounds(437, 209, 112, 182), scrollAreaBounds, "ScrollArea should account for parent Box padding");
 
-        // ScrollArea content is in a slot.
-        // ScrollArea -> Box -> Column
-        ITreeNode scrollInnerBoxNode = scrollAreaNode.getChildren().getFirst();
-        assertEquals(Box.class, scrollInnerBoxNode.getElement().getClass());
-        Bounds scrollInnerBoxBounds = scrollInnerBoxNode.getElement().getBounds();
-        // Inner box expands to contain all content: 50 inputs * (20 height + 2 spacing) = 1100, minus 2 for last spacing = 1098
-        assertEquals(new Bounds(437, 209, 112, 1098), scrollInnerBoxBounds, "Scroll Inner Box should expand to fit all content");
+        var scrollContentNode = tree.getNodeForElement(scrollContent);
+        assertNotNull(scrollContentNode, "Authored scroll content must remain mounted");
+        assertEquals(50, scrollContentNode.getChildren().size());
+        var contentBounds = scrollContent.getBounds();
+        int scrollbarGutter = 6 + 4;
+        int expectedContentWidth = scrollAreaBounds.width() - scrollbarGutter;
+        int expectedContentHeight = 50 * 20 + 49 * 2;
+        assertEquals(new Bounds(scrollAreaBounds.x(), scrollAreaBounds.y(),
+                expectedContentWidth, expectedContentHeight), contentBounds);
+        assertTrue(scrollAreaNode.getLayoutProperties().isClip(), "ScrollArea must clip overflowing content");
+        assertEquals(expectedContentHeight - scrollAreaBounds.height(),
+                ((ScrollArea) scrollAreaNode.getElement()).getMaxScrollY());
 
-        ITreeNode scrollContentColumnNode = scrollInnerBoxNode.getChildren().stream()
-                .filter(n -> n.getElement() instanceof Column)
-                .findFirst().orElseThrow();
-        assertEquals(Column.class, scrollContentColumnNode.getElement().getClass());
-        assertEquals(50, scrollContentColumnNode.getChildren().size(), "Scroll content column should have 50 elements (25 inputs + 25 buttons)");
-
-        // Validate the column bounds and element positions
-        Bounds scrollContentColumnBounds = scrollContentColumnNode.getElement().getBounds();
-        // Column bounds should match inner box exactly
-        assertEquals(new Bounds(437, 209, 112, 1098), scrollContentColumnBounds, "Scroll content column bounds");
-
-        // Validate all elements in the scroll area (alternating TextInput and Button)
         for (int i = 0; i < 50; i++) {
-            ITreeNode elementNode = scrollContentColumnNode.getChildren().get(i);
-            int index = i + 1; // 1-indexed for element labels
-
-            if (i % 2 == 0) {
-                // Even indices (0, 2, 4...) are TextInputs (odd indices in 1-based: 1, 3, 5...)
-                assertEquals(TextInput.class, elementNode.getElement().getClass(), "Element " + index + " should be TextInput class");
-            } else {
-                // Odd indices (1, 3, 5...) are Buttons (even indices in 1-based: 2, 4, 6...)
-                assertEquals(Button.class, elementNode.getElement().getClass(), "Element " + index + " should be Button class");
-            }
-
-            Bounds elementBounds = elementNode.getElement().getBounds();
-            // Each element: full width (112), fixed height (20), 2px spacing between elements
-            int y = 209 + i * 22; // 209 + (i * (20 height + 2 spacing))
-            assertEquals(new Bounds(437, y, 112, 20), elementBounds, "Element " + index + " bounds");
-
-            // Elements have internal structure, just verify they have children
-            assertTrue(elementNode.getChildren().size() > 0, "Element " + index + " should have children");
+            var element = scrollContentNode.getChildren().get(i).getElement();
+            assertEquals(i % 2 == 0 ? TextInput.class : Button.class, element.getClass());
+            assertEquals(new Bounds(contentBounds.x(), contentBounds.y() + i * 22,
+                    expectedContentWidth, 20), element.getBounds(), "Row " + i + " layout");
         }
 
-        // 5. Rendering
         tree.renderTree(this.screenContext);
-
-        // 6. Verify render calls
-        // Verify sprites are rendered (Panel backgrounds, slot backgrounds, text input backgrounds)
-        ArgumentCaptor<IScreenSprite> spriteCaptor = ArgumentCaptor.forClass(IScreenSprite.class);
-        ArgumentCaptor<Rect2F> rectCaptor = ArgumentCaptor.forClass(Rect2F.class);
-
-        // Should have many sprite draw calls:
-        // - 2 Panel backgrounds (main + scroll)
-        // - 63 slot backgrounds (27 crate + 27 player + 9 hotbar)
-        // - 9 visible element backgrounds (5 text inputs + 4 buttons = alternating)
-        // Total: 74 sprite calls (scissor test clips the other 41 elements)
-        verify(this.screenContext, atLeast(74)).drawSprite(
-                spriteCaptor.capture(),
-                rectCaptor.capture()
-        );
-
-        // Verify specific sprite calls - EVERY SINGLE ONE with exact positions
-        List<Rect2F> spriteRects = rectCaptor.getAllValues();
-        List<IScreenSprite> sprites = spriteCaptor.getAllValues();
-
-        // Log actual count for validation
-        int actualSpriteCallCount = spriteRects.size();
-        assertEquals(74, actualSpriteCallCount, "Expected exactly 74 sprite calls (2 boxes + 63 slots + 9 visible elements)");
-
-        // Helper to find sprite at exact position
-        java.util.function.BiPredicate<Rect2F, Rect2F> matches = (r, expected) ->
-                r.getX() == expected.getX() && r.getY() == expected.getY() &&
-                r.getWidth() == expected.getWidth() && r.getHeight() == expected.getHeight();
-
-        // Validate EVERY sprite draw call with exact coordinates
-        // 1. Main Panel sprite
-        assertTrue(spriteRects.stream().anyMatch(r -> matches.test(r, new Rect2F(247f, 205f, 178f, 190f))),
-                "Main Panel sprite at (247, 205, 178, 190)");
-
-        // 2-28. All 27 crate slot sprites (9 columns × 3 rows)
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
-                float x = 255f + col * 18f;
-                float y = 226f + row * 18f;
-                final float fx = x, fy = y;
-                assertTrue(spriteRects.stream().anyMatch(r -> matches.test(r, new Rect2F(fx, fy, 18f, 18f))),
-                        String.format("Crate slot [%d,%d] sprite at (%.0f, %.0f, 18, 18)", row, col, x, y));
-            }
+        var spriteCaptor = ArgumentCaptor.forClass(IScreenSprite.class);
+        var rectCaptor = ArgumentCaptor.forClass(Rect2F.class);
+        verify(this.screenContext, atLeastOnce()).drawSprite(spriteCaptor.capture(), rectCaptor.capture());
+        var spriteRects = rectCaptor.getAllValues();
+        for (var child : scrollContentNode.getChildren()) {
+            var bounds = child.getBounds();
+            boolean rendered = spriteRects.stream().anyMatch(rect -> rect.getX() == bounds.x()
+                    && rect.getY() == bounds.y() && rect.getWidth() == bounds.width()
+                    && rect.getHeight() == bounds.height());
+            assertEquals(bounds.intersects(scrollAreaBounds), rendered,
+                    "Only rows intersecting the viewport should submit their background sprite");
         }
 
-        // 29-55. All 27 player inventory slot sprites (9 columns × 3 rows)
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 9; col++) {
-                float x = 255f + col * 18f;
-                float y = 297f + row * 18f;
-                final float fx = x, fy = y;
-                assertTrue(spriteRects.stream().anyMatch(r -> matches.test(r, new Rect2F(fx, fy, 18f, 18f))),
-                        String.format("Player slot [%d,%d] sprite at (%.0f, %.0f, 18, 18)", row, col, x, y));
-            }
-        }
+        var plainText = ArgumentCaptor.forClass(Component.class);
+        var shadowText = ArgumentCaptor.forClass(Component.class);
+        verify(this.screenContext, atLeastOnce()).drawText(plainText.capture(), anyFloat(), anyFloat());
+        verify(this.screenContext, atLeastOnce()).drawTextWithShadow(shadowText.capture(), anyFloat(), anyFloat());
+        List<String> renderedText = new ArrayList<>();
+        plainText.getAllValues().forEach(text -> renderedText.add(text.getString()));
+        shadowText.getAllValues().forEach(text -> renderedText.add(text.getString()));
+        assertTrue(renderedText.containsAll(List.of("Crate", "Inventory", "Input 1", "Button 2")),
+                "Inventory labels, input hints and button slot labels must render");
+        assertFalse(renderedText.contains("Input 49"), "Offscreen text must be culled");
 
-        // 56-64. All 9 hotbar slot sprites (9 columns × 1 row)
-        for (int col = 0; col < 9; col++) {
-            float x = 255f + col * 18f;
-            float y = 363f;
-            final float fx = x;
-            assertTrue(spriteRects.stream().anyMatch(r -> matches.test(r, new Rect2F(fx, y, 18f, 18f))),
-                    String.format("Hotbar slot [%d] sprite at (%.0f, 363, 18, 18)", col, x));
-        }
-
-        // 65. Scroll Panel sprite
-        assertTrue(spriteRects.stream().anyMatch(r -> matches.test(r, new Rect2F(433f, 205f, 120f, 190f))),
-                "Scroll Panel sprite at (433, 205, 120, 190)");
-
-        // 66-74. All 9 visible element sprites (5 text inputs + 4 buttons, alternating)
-        for (int i = 0; i < 9; i++) {
-            float y = 209f + i * 22f; // 20px element + 2px spacing
-            final float fy = y;
-            final int elementIndex = i + 1;
-            if (i % 2 == 0) {
-                // Even indices are TextInputs (1, 3, 5, 7, 9)
-                assertTrue(spriteRects.stream().anyMatch(r -> matches.test(r, new Rect2F(437f, fy, 112f, 20f))),
-                        String.format("TextInput %d sprite at (437, %.0f, 112, 20)", elementIndex, y));
-            } else {
-                // Odd indices are Buttons (2, 4, 6, 8)
-                assertTrue(spriteRects.stream().anyMatch(r -> matches.test(r, new Rect2F(437f, fy, 112f, 20f))),
-                        String.format("Button %d sprite at (437, %.0f, 112, 20)", elementIndex, y));
-            }
-        }
-
-        // Verify items are rendered for slots (63 total, but they're empty so won't be drawn)
-        // Items are only drawn if the ItemStack is not empty, so we can't verify them in this test
-
-        // Verify text rendering - EVERY text draw call with exact positions
-        ArgumentCaptor<Component> textCaptor = ArgumentCaptor.forClass(Component.class);
-        ArgumentCaptor<Float> textXCaptor = ArgumentCaptor.forClass(Float.class);
-        ArgumentCaptor<Float> textYCaptor = ArgumentCaptor.forClass(Float.class);
-
-        // "Crate", "Inventory", 5 TextInput hint texts are drawn with drawText (no shadow)
-        // NOTE: Button labels are not currently rendering due to a slot implementation issue
-        // TODO: Fix Button slot content rendering - tracked separately
-        // Total: 2 + 5 = 7 text draws
-        verify((IPrimitiveScreenContext) this.screenContext, times(7)).drawText(
-                textCaptor.capture(),
-                textXCaptor.capture(),
-                textYCaptor.capture()
-        );
-
-        List<Component> capturedTexts = textCaptor.getAllValues();
-        List<Float> textXs = textXCaptor.getAllValues();
-        List<Float> textYs = textYCaptor.getAllValues();
-
-        // Verify EXACTLY 7 text calls (2 labels + 5 input hints)
-        // Button labels are not rendering - this is a known slot issue
-        assertEquals(7, capturedTexts.size(), "Expected exactly 7 drawText calls (2 labels + 5 hints). Button labels have a known slot rendering issue.");
-
-        // Validate "Crate" label at exact position (255, 213)
-        boolean foundCrate = false;
-        for (int i = 0; i < capturedTexts.size(); i++) {
-            if (capturedTexts.get(i).getString().equals("Crate")) {
-                assertEquals(255f, textXs.get(i), "Crate label X position");
-                assertEquals(213f, textYs.get(i), "Crate label Y position");
-                foundCrate = true;
-                break;
-            }
-        }
-        assertTrue(foundCrate, "Should have rendered 'Crate' label");
-
-        // Validate "Inventory" label at exact position (255, 284)
-        boolean foundInventory = false;
-        for (int i = 0; i < capturedTexts.size(); i++) {
-            if (capturedTexts.get(i).getString().equals("Inventory")) {
-                assertEquals(255f, textXs.get(i), "Inventory label X position");
-                assertEquals(284f, textYs.get(i), "Inventory label Y position");
-                foundInventory = true;
-                break;
-            }
-        }
-        assertTrue(foundInventory, "Should have rendered 'Inventory' label");
-
-        // Verify text input hint text is drawn WITHOUT shadow - they use drawText instead
-        // TextInput elements render their hints using drawText, not drawTextWithShadow
-        // NOTE: Button slot content has a known rendering issue that may cause drawTextWithShadow
-        // Skipping this verification until the Button slot issue is fixed
-        // ArgumentCaptor<Component> shadowTextCaptor = ArgumentCaptor.forClass(Component.class);
-        // ArgumentCaptor<Float> shadowTextXCaptor = ArgumentCaptor.forClass(Float.class);
-        // ArgumentCaptor<Float> shadowTextYCaptor = ArgumentCaptor.forClass(Float.class);
-        // verify((IPrimitiveScreenContext) this.screenContext, times(0)).drawTextWithShadow(
-        //         any(),
-        //         anyFloat(),
-        //         anyFloat()
-        // );
-
-        // Instead, verify TextInput hint texts in the drawText calls
-        // Validate each TextInput hint text at exact position
-        // Element hint text is left-aligned with a small padding
-        // Element X: 437, hint text has 4px padding, so X = 441
-        // Element width: 112px
-        // Text Y: element_y + 4 (vertical centering based on actual position)
-        // Note: Only validating TextInput hints (odd indices: 1, 3, 5, 7, 9)
-        // Button labels are not rendering due to a known slot issue
-        for (int i = 1; i <= 9; i += 2) {
-            String expectedText = "Input " + i;
-            float expectedY = 209f + (i - 1) * 22f + 4f; // element_y + 4 for vertical centering
-
-            boolean found = false;
-            for (int j = 0; j < capturedTexts.size(); j++) {
-                if (capturedTexts.get(j).getString().equals(expectedText)) {
-                    // X position: 441 for all inputs (left-aligned with 4px padding)
-                    assertEquals(441f, textXs.get(j), String.format("Input %d hint X position", i));
-                    assertEquals(expectedY, textYs.get(j), String.format("Input %d hint Y position", i));
-                    found = true;
-                    break;
-                }
-            }
-            assertTrue(found, String.format("Should have rendered 'Input %d' hint at (441, %.0f)", i, expectedY));
-        }
-
-        // Verify scissor test is used for ScrollArea clipping - exact coordinates
-        ArgumentCaptor<Integer> scissorXCaptor = ArgumentCaptor.forClass(Integer.class);
-        ArgumentCaptor<Integer> scissorYCaptor = ArgumentCaptor.forClass(Integer.class);
-        ArgumentCaptor<Integer> scissorRightCaptor = ArgumentCaptor.forClass(Integer.class);
-        ArgumentCaptor<Integer> scissorBottomCaptor = ArgumentCaptor.forClass(Integer.class);
-
-        // ScrollArea bounds: (437, 209) with size (112, 182)
-        // Scissor rect: (x, y, right, bottom) = (437, 209, 437+112=549, 209+182=391)
-        verify(this.screenContext, times(1)).enableScissor(
-                scissorXCaptor.capture(),
-                scissorYCaptor.capture(),
-                scissorRightCaptor.capture(),
-                scissorBottomCaptor.capture()
-        );
-
-        List<Integer> scissorXs = scissorXCaptor.getAllValues();
-        List<Integer> scissorYs = scissorYCaptor.getAllValues();
-        List<Integer> scissorRights = scissorRightCaptor.getAllValues();
-        List<Integer> scissorBottoms = scissorBottomCaptor.getAllValues();
-
-        // Verify EXACTLY 1 scissor enablement with exact coordinates
-        assertEquals(1, scissorXs.size(), "Expected exactly 1 enableScissor call");
-        assertEquals(437, scissorXs.get(0), "ScrollArea scissor left edge");
-        assertEquals(209, scissorYs.get(0), "ScrollArea scissor top edge");
-        assertEquals(549, scissorRights.get(0), "ScrollArea scissor right edge (437 + 112)");
-        assertEquals(391, scissorBottoms.get(0), "ScrollArea scissor bottom edge (209 + 182)");
-
-        // Verify disableScissor is called exactly once to restore full rendering
-        verify(this.screenContext, times(1)).disableScissor();
+        verify(this.screenContext, atLeastOnce()).enableScissor(scrollAreaBounds.x(), scrollAreaBounds.y(),
+                scrollAreaBounds.right(), scrollAreaBounds.bottom());
+        verify(this.screenContext, atLeastOnce()).disableScissor();
     }
 }

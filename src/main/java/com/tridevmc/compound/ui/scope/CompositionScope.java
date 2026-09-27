@@ -16,34 +16,32 @@
 
 package com.tridevmc.compound.ui.scope;
 
+import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.tree.ITreeNode;
 import com.tridevmc.compound.ui.tree.UITree;
 
-public class RootScope implements NodeCompositionScope {
+abstract class CompositionScope<T extends IElement> extends ElementScope<T> implements NodeCompositionScope {
     private final UITree tree;
-    private ITreeNode rootNode;
+    private final ITreeNode node;
 
-    public RootScope(UITree tree) {
+    CompositionScope(UITree tree, ITreeNode node, T element) {
+        super(element, node);
         this.tree = tree;
+        this.node = node;
     }
 
     @Override
-    public ITreeNode scopeNode() {
-        return this.rootNode;
+    public final ITreeNode scopeNode() {
+        return this.node;
     }
 
     @Override
-    public UITree getTree() {
+    public final UITree getTree() {
         return this.tree;
     }
 
     @Override
-    public void attach(ITreeNode node) {
-        if (this.rootNode == null) {
-            this.tree.setRoot(node);
-            this.rootNode = node;
-        } else {
-            this.tree.attachNode(this.rootNode, node);
-        }
+    public final void attach(ITreeNode child) {
+        this.tree.attachNode(this.node, child);
     }
 }

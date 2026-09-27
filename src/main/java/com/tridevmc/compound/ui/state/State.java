@@ -19,8 +19,7 @@ package com.tridevmc.compound.ui.state;
 import java.util.function.Function;
 
 /**
- * Observable state container that triggers re-composition.
- * Full implementation will be added in Phase 4.
+ * Observable value used by composition, layout, and draw bindings.
  */
 public interface State<T> {
 

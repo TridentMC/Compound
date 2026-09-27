@@ -20,8 +20,8 @@ import com.google.common.collect.Maps;
 import com.tridevmc.compound.core.reflect.WrappedField;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Tuple;
+import net.minecraft.resources.Identifier;
+import org.apache.commons.lang3.tuple.Pair;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -61,7 +61,7 @@ public class ConfigField<T> {
     private final EnumFieldType type;
     private final Object defaultValue;
     private final Object minValue, maxValue;
-    private final ResourceLocation registryName;
+    private final Identifier registryName;
     private final String name;
     private final String comment;
     private final String langKey;
@@ -103,36 +103,36 @@ public class ConfigField<T> {
         this.fieldType = (Class<T>) fieldType;
         this.serializer = config.getSerializerFor(this);
         this.defaultValue = this.genDefaultValue();
-        Tuple<Object, Object> rangeData = this.generateRangeData();
-        this.minValue = rangeData.getA();
-        this.maxValue = rangeData.getB();
+        Pair<Object, Object> rangeData = this.generateRangeData();
+        this.minValue = rangeData.getLeft();
+        this.maxValue = rangeData.getRight();
         this.registryName = this.generateRegistryName();
     }
 
-    private Tuple<Object, Object> generateRangeData() {
+    private Pair<Object, Object> generateRangeData() {
         if (this.field.isAnnotationPresent(RangedInt.class)) {
             var annotation = this.field.getAnnotation(RangedInt.class);
-            return new Tuple<>(annotation.min(), annotation.max());
+            return Pair.of(annotation.min(), annotation.max());
         } else if (this.field.isAnnotationPresent(RangedDouble.class)) {
             var annotation = this.field.getAnnotation(RangedDouble.class);
-            return new Tuple<>(annotation.min(), annotation.max());
+            return Pair.of(annotation.min(), annotation.max());
         } else if (this.fieldType.isAnnotationPresent(RangedLong.class)) {
             var annotation = this.field.getAnnotation(RangedLong.class);
-            return new Tuple<>(annotation.min(), annotation.max());
+            return Pair.of(annotation.min(), annotation.max());
         } else {
             return switch (this.type) {
-                case INTEGER -> new Tuple<>(Integer.MIN_VALUE, Integer.MAX_VALUE);
-                case DOUBLE -> new Tuple<>(Double.MIN_VALUE, Double.MAX_VALUE);
-                default -> new Tuple<>(Long.MIN_VALUE, Long.MAX_VALUE);
+                case INTEGER -> Pair.of(Integer.MIN_VALUE, Integer.MAX_VALUE);
+                case DOUBLE -> Pair.of(Double.MIN_VALUE, Double.MAX_VALUE);
+                default -> Pair.of(Long.MIN_VALUE, Long.MAX_VALUE);
             };
         }
     }
 
     @Nullable
-    private ResourceLocation generateRegistryName() {
+    private Identifier generateRegistryName() {
         if (this.field.isAnnotationPresent(RegisteredValue.class)) {
             var annotation = this.field.getAnnotation(RegisteredValue.class);
-            return ResourceLocation.parse(annotation.value());
+            return Identifier.parse(annotation.value());
         }
         return null;
     }
@@ -145,7 +145,7 @@ public class ConfigField<T> {
         return this.registry;
     }
 
-    protected ResourceLocation getRegistryName() {
+    protected Identifier getRegistryName() {
         return this.registryName;
     }
 

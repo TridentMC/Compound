@@ -19,6 +19,6 @@ package com.tridevmc.compound.ui.event;
 /**
  * Event for character input (text typing).
  */
-public record CharEvent(char character, int modifiers) {
+public record CharEvent(int codePoint, int modifiers) {
 
 }

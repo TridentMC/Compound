@@ -54,6 +54,8 @@ public class LayoutProperties {
     private Integer minHeight;
     private Integer maxWidth;
     private Integer maxHeight;
+    private boolean widthUnbounded;
+    private boolean heightUnbounded;
     private int paddingLeft;
     private int paddingTop;
     private int paddingRight;
@@ -254,6 +256,7 @@ public class LayoutProperties {
      */
     public LayoutProperties maxWidth(int maxWidth) {
         this.maxWidth = maxWidth;
+        this.widthUnbounded = false;
         return this;
     }
 
@@ -266,7 +269,42 @@ public class LayoutProperties {
      */
     public LayoutProperties maxHeight(int maxHeight) {
         this.maxHeight = maxHeight;
+        this.heightUnbounded = false;
         return this;
+    }
+
+    /** Allows content to measure beyond the parent's width, for horizontal scrolling. */
+    public LayoutProperties unboundedWidth() {
+        this.maxWidth = null;
+        this.widthUnbounded = true;
+        return this;
+    }
+
+    /** Allows content to measure beyond the parent's height, for vertical scrolling. */
+    public LayoutProperties unboundedHeight() {
+        this.maxHeight = null;
+        this.heightUnbounded = true;
+        return this;
+    }
+
+    public LayoutProperties clearMaxWidth() {
+        this.maxWidth = null;
+        this.widthUnbounded = false;
+        return this;
+    }
+
+    public LayoutProperties clearMaxHeight() {
+        this.maxHeight = null;
+        this.heightUnbounded = false;
+        return this;
+    }
+
+    public boolean isWidthUnbounded() {
+        return this.widthUnbounded;
+    }
+
+    public boolean isHeightUnbounded() {
+        return this.heightUnbounded;
     }
 
     public Integer getMinWidth() {

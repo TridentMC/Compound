@@ -16,6 +16,8 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import com.google.common.collect.Lists;
 import com.tridevmc.compound.ui.CompoundCursors;
 import com.tridevmc.compound.ui.cursor.UICursor;
@@ -28,7 +30,7 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
-import org.lwjgl.glfw.GLFW;
+
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -71,19 +73,16 @@ public class ListView<T> extends BaseElement implements IComposableElement {
 
     @Override
     public void compose(ICompositionScope scope) {
-        // NOTE: We do NOT bind selectedIndex/hoverIndex here.
-        // Selection and hover visuals are rendered dynamically via color suppliers
-        // that are evaluated every frame. This avoids expensive full recomposition
-        // of all list items on every click or mouse movement.
+        // Color suppliers update selection and hover without rebuilding every row.
 
         scope.onKeyPress(event -> {
             if (!this.enabled.get() || this.items.isEmpty()) return false;
             int current = this.selectedIndex.get();
             int index = switch (event.keyCode()) {
-                case GLFW.GLFW_KEY_UP -> current < 0 ? 0 : Math.max(0, current - 1);
-                case GLFW.GLFW_KEY_DOWN -> Math.min(this.items.size() - 1, current + 1);
-                case GLFW.GLFW_KEY_HOME -> 0;
-                case GLFW.GLFW_KEY_END -> this.items.size() - 1;
+                case InputConstants.KEY_UP -> current < 0 ? 0 : Math.max(0, current - 1);
+                case InputConstants.KEY_DOWN -> Math.min(this.items.size() - 1, current + 1);
+                case InputConstants.KEY_HOME -> 0;
+                case InputConstants.KEY_END -> this.items.size() - 1;
                 default -> -1;
             };
             if (index < 0) return false;
@@ -112,7 +111,7 @@ public class ListView<T> extends BaseElement implements IComposableElement {
                                 column.e(new Stack(), row -> {
                                     row.layout().fixedHeight(this.itemHeight).fillMaxWidth();
                                     row.onClick(event -> {
-                                        if (!this.enabled.get() || event.button() != 0) return false;
+                                        if (!this.enabled.get() || event.button() != InputConstants.MOUSE_BUTTON_LEFT) return false;
                                         scope.requestFocus();
                                         this.select(index);
                                         return true;
@@ -194,12 +193,12 @@ public class ListView<T> extends BaseElement implements IComposableElement {
         this.selectedIndex.set(-1);
         this.hoverIndex.set(-1);
         this.scrollArea.scrollTo(0, 0);
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public void addItem(T item) {
         this.items.add(item);
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public void removeItem(int index) {
@@ -211,7 +210,7 @@ public class ListView<T> extends BaseElement implements IComposableElement {
                 this.selectedIndex.set(this.selectedIndex.get() - 1);
             }
             this.hoverIndex.set(-1);
-            this.invalidate();
+            this.invalidateComposition();
         }
     }
 
@@ -236,12 +235,12 @@ public class ListView<T> extends BaseElement implements IComposableElement {
 
     public void setDisplayTextProvider(Function<T, String> provider) {
         this.displayTextProvider = provider;
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public void setRowContent(BiConsumer<T, ICompositionScope> rowContent) {
         this.rowContent = rowContent;
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public void setOnSelectionChanged(Consumer<T> listener) {
@@ -251,13 +250,13 @@ public class ListView<T> extends BaseElement implements IComposableElement {
     public void setItemHeight(int height) {
         if (height <= 0) throw new IllegalArgumentException("List row height must be positive");
         this.itemHeight = height;
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public void setMaxVisibleItems(int max) {
         if (max <= 0) throw new IllegalArgumentException("Visible list row count must be positive");
         this.maxVisibleItems = max;
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public int getItemCount() {
@@ -270,11 +269,6 @@ public class ListView<T> extends BaseElement implements IComposableElement {
 
     public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
-    }
-
-    private void invalidate() {
-        var node = this.getNode();
-        if (node != null) node.getTree().requestRecompose(node);
     }
 
     @Override

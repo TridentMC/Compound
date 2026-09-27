@@ -96,7 +96,7 @@ public class Label extends BaseElement implements IComposableElement {
 
     public void setText(Component text) {
         this.textSupplier = () -> text;
-        this.invalidateSize();
+        this.invalidateLayout();
     }
 
     public Supplier<Component> getTextSupplier() {
@@ -105,7 +105,7 @@ public class Label extends BaseElement implements IComposableElement {
 
     public void setTextSupplier(Supplier<Component> textSupplier) {
         this.textSupplier = textSupplier;
-        this.invalidateSize();
+        this.invalidateLayout();
     }
 
     public int getColor() {
@@ -140,15 +140,9 @@ public class Label extends BaseElement implements IComposableElement {
         this.shadowSupplier = shadowSupplier;
     }
 
-    private void invalidateSize() {
-        var node = this.getNode();
-        if (node != null) node.getTree().requestRemeasure(node);
-    }
-
     public Label setWrap(boolean wrap) {
         this.wrap = wrap;
-        var node = this.getNode();
-        if (node != null) node.getTree().requestRecompose(node);
+        this.invalidateComposition();
         return this;
     }
 }

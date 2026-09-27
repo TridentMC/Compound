@@ -18,49 +18,33 @@ package com.tridevmc.compound.ui.element;
 
 import com.tridevmc.compound.ui.animation.AnimatedState;
 import com.tridevmc.compound.ui.animation.Easing;
-import com.tridevmc.compound.ui.layout.*;
+import com.tridevmc.compound.ui.layout.Alignment;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
-import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
 import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
-/**
- * A visual indicator showing the completion progress of a task or operation.
- * Supports determinate and indeterminate modes.
- *
- * <p><strong>Usage:</strong></p>
- * <pre>
- * scope.e(new ProgressBar(), bar -> {
- *     bar.getElement().setProgress(0.75);
- *     bar.getElement().setShowPercentage(true);
- *     bar.getElement().setOnCompleted(() -> System.out.println("Complete!"));
- * });
- * </pre>
- */
 public class ProgressBar extends BaseElement implements IComposableElement {
 
     private static final int DEFAULT_MIN_WIDTH = 100;
     private static final int DEFAULT_HEIGHT = 12;
-    private static final IScreenSprite BACKGROUND = IScreenSprite.of(
-            Identifier.withDefaultNamespace("boss_bar/green_background"));
-    private static final IScreenSprite FILL = IScreenSprite.of(
-            Identifier.withDefaultNamespace("boss_bar/green_progress"));
 
     private final State<Double> progress = new StateImpl<>(0.0);
     private final State<Boolean> indeterminate = new StateImpl<>(false);
 
-    private int backgroundColor = 0xFF404040;
-    private int fillColor = 0xFF3366CC;
+    private int backgroundColor = 0x00000000;
+    private int fillColor = 0xFFFFFFFF;
     private int textColor = 0xFFFFFFFF;
-    private boolean customBackground;
-    private boolean customFill;
     private boolean showPercentage = false;
     private boolean showFraction = false;
     private Function<Double, String> labelFormatter;
@@ -79,20 +63,15 @@ public class ProgressBar extends BaseElement implements IComposableElement {
         scope.e(new Stack(), stack -> {
             stack.layout().fillMax();
 
-            if (this.customBackground) {
-                stack.e(new Rect(() -> this.backgroundColor), bg -> bg.layout().fillMax());
-            } else {
-                stack.e(new Box(), background -> {
-                    background.layout().fillMax().contentAlignment(Alignment.CENTER);
-                    background.e(new Sprite(BACKGROUND), sprite -> sprite.layout().fillMaxWidth().fixedHeight(5));
-                });
-            }
-
-            stack.e(new ProgressFill(
-                    () -> this.fillColor,
-                    () -> this.maxProgress > 0 ? this.progress.get() / this.maxProgress : 0.0,
-                    this.customFill, this.indeterminate.get()
-            ), fillRect -> fillRect.layout().fillMaxHeight().clip());
+            stack.e(new Surface(() -> this.backgroundColor, () -> this.fillColor, 1), frame -> {
+                frame.layout().fillMax();
+                frame.fillSlot(Surface.CONTENT_SLOT, content -> content.e(new Stack(), interior -> {
+                    interior.layout().fillMax().margin(2).clip();
+                    interior.e(new ProgressFill(
+                            () -> this.fillColor, this::getNormalizedProgress, this.indeterminate.get()
+                    ), fill -> fill.layout().fillMaxHeight().clip());
+                }));
+            });
 
             if (this.showPercentage || this.showFraction || this.label != null || this.labelFormatter != null) {
                 stack.e(new Box(), labelBox -> {
@@ -137,6 +116,7 @@ public class ProgressBar extends BaseElement implements IComposableElement {
     public void setProgress(double current, double max) {
         this.maxProgress = max;
         this.setProgress(current);
+        this.invalidateLayout();
     }
 
     public double getProgress() {
@@ -157,22 +137,22 @@ public class ProgressBar extends BaseElement implements IComposableElement {
 
     public void setShowPercentage(boolean show) {
         this.showPercentage = show;
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public void setShowFraction(boolean show) {
         this.showFraction = show;
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public void setLabel(Component label) {
         this.label = label;
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public void setLabelFormatter(Function<Double, String> formatter) {
         this.labelFormatter = formatter;
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public void setOnCompleted(Consumer<Void> onCompleted) {
@@ -181,18 +161,10 @@ public class ProgressBar extends BaseElement implements IComposableElement {
 
     public void setBackgroundColor(int color) {
         this.backgroundColor = color;
-        if (!this.customBackground) {
-            this.customBackground = true;
-            this.invalidate();
-        }
     }
 
     public void setFillColor(int color) {
         this.fillColor = color;
-        if (!this.customFill) {
-            this.customFill = true;
-            this.invalidate();
-        }
     }
 
     public void setTextColor(int color) {
@@ -201,10 +173,6 @@ public class ProgressBar extends BaseElement implements IComposableElement {
 
     public State<Double> getProgressState() {
         return this.progress;
-    }
-
-    private void invalidate() {
-        if (this.getNode() != null) this.getNode().getTree().requestRecompose(this.getNode());
     }
 
     @Override
@@ -226,23 +194,17 @@ public class ProgressBar extends BaseElement implements IComposableElement {
         return List.of(bounds);
     }
 
-    /**
-     * Composed fill element that measures its width dynamically based on a normalized progress value.
-     * This allows the fill width to update during remeasure without requiring recomposition.
-     */
     private static class ProgressFill extends BaseElement implements IComposableElement {
-        private final java.util.function.Supplier<Integer> colorSupplier;
-        private final java.util.function.Supplier<Double> normalizedSupplier;
-        private final boolean customColor;
+        private final Supplier<Integer> colorSupplier;
+        private final Supplier<Double> normalizedSupplier;
         private final boolean indeterminate;
         private AnimatedState<Float> sweep;
 
-        ProgressFill(java.util.function.Supplier<Integer> colorSupplier,
-                     java.util.function.Supplier<Double> normalizedSupplier, boolean customColor,
+        ProgressFill(Supplier<Integer> colorSupplier,
+                     Supplier<Double> normalizedSupplier,
                      boolean indeterminate) {
             this.colorSupplier = colorSupplier;
             this.normalizedSupplier = normalizedSupplier;
-            this.customColor = customColor;
             this.indeterminate = indeterminate;
         }
 
@@ -252,13 +214,10 @@ public class ProgressBar extends BaseElement implements IComposableElement {
                 if (this.sweep == null) {
                     this.sweep = scope.animateFloatLooping(-0.25F, 1F, 1200, Easing.LINEAR);
                 }
+                scope.retainAnimation(this.sweep);
                 scope.bindLayout(this.sweep);
             }
-            if (this.customColor) {
-                scope.e(new Rect(this.colorSupplier), rect -> rect.layout().fillMax());
-            } else {
-                scope.e(new Sprite(FILL), sprite -> sprite.layout().fillMax());
-            }
+            scope.e(new Rect(this.colorSupplier), rect -> rect.layout().fillMax());
         }
 
         @Override
@@ -275,13 +234,11 @@ public class ProgressBar extends BaseElement implements IComposableElement {
 
         @Override
         public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
-            int height = this.customColor ? bounds.height() : Math.min(5, bounds.height());
-            int y = bounds.y() + (bounds.height() - height) / 2;
             if (this.indeterminate && this.sweep != null) {
                 return List.of(new Bounds(bounds.x() + Math.round(bounds.width() * this.sweep.get()),
-                        y, Math.max(1, bounds.width() / 4), height));
+                        bounds.y(), Math.max(1, bounds.width() / 4), bounds.height()));
             }
-            return List.of(new Bounds(bounds.x(), y, bounds.width(), height));
+            return List.of(bounds);
         }
     }
 }

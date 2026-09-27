@@ -22,7 +22,13 @@ import com.tridevmc.compound.ui.animation.Interpolators;
 import com.tridevmc.compound.ui.element.IComposableElement;
 import com.tridevmc.compound.ui.element.IContainer;
 import com.tridevmc.compound.ui.element.IPrimitiveElement;
-import com.tridevmc.compound.ui.event.*;
+import com.tridevmc.compound.ui.event.CharEvent;
+import com.tridevmc.compound.ui.event.KeyInputEvent;
+import com.tridevmc.compound.ui.event.MouseClickEvent;
+import com.tridevmc.compound.ui.event.MouseDragEvent;
+import com.tridevmc.compound.ui.event.MouseMoveEvent;
+import com.tridevmc.compound.ui.event.MouseReleaseEvent;
+import com.tridevmc.compound.ui.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.slot.SlotKey;
 import com.tridevmc.compound.ui.slot.SlotMap;
 import com.tridevmc.compound.ui.state.State;
@@ -278,31 +284,33 @@ public interface ICompositionScope {
     }
 
     /**
-     * Get the slot map for this composition scope.
+     * Gets this scope's customization slots for composite authors.
+     * Use slot and slotInto to render content within its owning scope.
      *
-     * @return the slot map
+     * @return the slots belonging to this scope
+     * @throws UnsupportedOperationException if this is a root or container scope
      */
     SlotMap getSlotMap();
 
     /**
-     * Get the UITree for accessing the animation scheduler.
+     * Provides advanced access to viewport, focus, overlays, hit testing, and animation scheduling.
+     * Change structure through composition and tree lifecycle methods; queue invalidation instead
+     * of rebuilding nodes during input dispatch.
      *
-     * @return the UITree
+     * @return the tree owning this scope
      */
     UITree getTree();
 
     /**
-     * Register an animation for automatic lifecycle management.
-     * Animations registered here are automatically disposed when the composition
-     * node is detached. Elements should not manually dispose animations.
-     * <p>
-     * The default implementation does nothing. Scopes that have access to a tree
-     * node should override this to register animations with the node for automatic cleanup.
-     *
-     * @param animation the animation to register
+     * Registers an animation with the current composition. It is disposed before
+     * recomposition unless retained, and always disposed when the node detaches.
      */
     default void registerAnimation(AnimatedState<?> animation) {
-        // Default: no-op. Override in scopes that have tree/node access.
+    }
+
+    /** Keeps an animation cached in an element field alive across recompositions. */
+    default void retainAnimation(AnimatedState<?> animation) {
+        this.registerAnimation(animation);
     }
 
     /**

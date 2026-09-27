@@ -20,7 +20,11 @@ package com.tridevmc.compound.ui.event;
  * Event for mouse wheel scrolling.
  * Event handlers should return true if they handled the event, false otherwise.
  */
-public record MouseScrollEvent(int x, int y, double scrollDelta) {
-    // Clean immutable event - no consumption state needed
-    // Handlers return boolean to control event bubbling
+public record MouseScrollEvent(int x, int y, double scrollX, double scrollY) {
+    /**
+     * Creates a vertical wheel event, preserving the original constructor.
+     */
+    public MouseScrollEvent(int x, int y, double scrollY) {
+        this(x, y, 0, scrollY);
+    }
 }

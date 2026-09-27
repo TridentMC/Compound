@@ -16,19 +16,10 @@
 
 package com.tridevmc.compound.ui.slot;
 
-import java.util.Objects;
-
 /**
  * Identifier for a customization slot in a composable element.
  */
 public record SlotKey(String name) {
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof SlotKey(String name1))) return false;
-        return Objects.equals(this.name, name1);
-    }
 
     @Override
     public String toString() {

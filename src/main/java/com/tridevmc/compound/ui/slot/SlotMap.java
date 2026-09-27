@@ -16,14 +16,15 @@
 
 package com.tridevmc.compound.ui.slot;
 
-import java.util.HashMap;
+import com.google.common.collect.Maps;
+import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 
 /**
  * Storage for slot content (internal to framework).
  */
 public class SlotMap {
-    private final Map<SlotKey, SlotContent> slots = new HashMap<>();
+    private final Map<SlotKey, SlotContent> slots = Maps.newHashMap();
 
     /**
      * Store content for a slot.
@@ -41,7 +42,7 @@ public class SlotMap {
      * @param key the slot key
      * @return the slot content, or null if not present
      */
-    public SlotContent get(SlotKey key) {
+    public @Nullable SlotContent get(SlotKey key) {
         return this.slots.get(key);
     }
 

@@ -31,6 +31,7 @@ final class CursorBlink {
         if (this.opacity == null) {
             this.opacity = scope.animateFloatLooping(1F, 0F, this.intervalMillis, this.easing);
         }
+        scope.retainAnimation(this.opacity);
     }
 
     void configure(long intervalMillis, Easing easing) {

@@ -16,28 +16,15 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.tridevmc.compound.ui.layout.*;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 
 import javax.annotation.Nonnull;
 import java.util.List;
 
-/**
- * A visual separator line for dividing sections of UI content.
- * Can be horizontal or vertical.
- *
- * <p><strong>Usage:</strong></p>
- * <pre>
- * // Horizontal divider
- * scope.e(new Divider(), div -> div.layout().fillMaxWidth().fixedHeight(1));
- *
- * // Vertical divider
- * scope.e(new Divider(), div -> div.layout().fixedWidth(1).fillMaxHeight());
- *
- * // Colored divider
- * scope.e(new Divider(0xFFFF0000), div -> div.layout().fillMaxWidth().fixedHeight(2));
- * </pre>
- */
 public class Divider extends BaseElement implements IComposableElement {
 
     private static final int DEFAULT_COLOR = 0xFF808080;
@@ -56,12 +43,12 @@ public class Divider extends BaseElement implements IComposableElement {
 
     public Divider(int color, int thickness) {
         this.color = color;
-        this.thickness = thickness;
+        this.thickness = Math.max(0, thickness);
     }
 
     @Override
     public void compose(ICompositionScope scope) {
-        scope.e(new Rect(this.color), rect -> rect.layout().fillMax());
+        scope.e(new Rect(() -> this.color), rect -> rect.layout().fillMax());
     }
 
     public void setColor(int color) {
@@ -69,15 +56,13 @@ public class Divider extends BaseElement implements IComposableElement {
     }
 
     public void setThickness(int thickness) {
-        this.thickness = thickness;
+        this.thickness = Math.max(0, thickness);
+        this.invalidateLayout();
     }
 
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
-        if (!measuredChildren.isEmpty()) {
-            return measuredChildren.get(0);
-        }
-        return new Size(0, 0);
+        return new Size(constraints.maxWidth(), Math.min(this.thickness, constraints.maxHeight()));
     }
 
     @Override

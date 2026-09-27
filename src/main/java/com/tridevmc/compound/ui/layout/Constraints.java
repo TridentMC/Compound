@@ -111,14 +111,24 @@ public record Constraints(int minWidth, int maxWidth, int minHeight, int maxHeig
         return new Constraints(width, width, height, height);
     }
 
-    // Shrink available space (for padding, etc.)
-    public Constraints deflate(int horizontal, int vertical) {
+    /** Removes total axis insets while preserving unbounded maximum constraints. */
+    public Constraints inset(long horizontal, long vertical) {
         return new Constraints(
-                Math.max(0, this.minWidth - horizontal * 2),
-                Math.max(0, this.maxWidth - horizontal * 2),
-                Math.max(0, this.minHeight - vertical * 2),
-                Math.max(0, this.maxHeight - vertical * 2)
+                subtractInset(this.minWidth, horizontal),
+                this.hasBoundedWidth() ? subtractInset(this.maxWidth, horizontal) : Integer.MAX_VALUE,
+                subtractInset(this.minHeight, vertical),
+                this.hasBoundedHeight() ? subtractInset(this.maxHeight, vertical) : Integer.MAX_VALUE
         );
     }
 
+    /** Subtracts an inset without overflowing or producing a negative size. */
+    public static int subtractInset(int size, long inset) {
+        if (inset >= size) return 0;
+        if (inset <= (long) size - Integer.MAX_VALUE) return Integer.MAX_VALUE;
+        return (int) (size - inset);
+    }
+
+    public Constraints deflate(int horizontal, int vertical) {
+        return this.inset((long) horizontal * 2, (long) vertical * 2);
+    }
 }

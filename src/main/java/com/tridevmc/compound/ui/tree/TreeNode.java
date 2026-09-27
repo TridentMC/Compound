@@ -18,7 +18,13 @@ package com.tridevmc.compound.ui.tree;
 
 import com.tridevmc.compound.ui.animation.AnimatedState;
 import com.tridevmc.compound.ui.element.IElement;
-import com.tridevmc.compound.ui.event.*;
+import com.tridevmc.compound.ui.event.CharEvent;
+import com.tridevmc.compound.ui.event.KeyInputEvent;
+import com.tridevmc.compound.ui.event.MouseClickEvent;
+import com.tridevmc.compound.ui.event.MouseDragEvent;
+import com.tridevmc.compound.ui.event.MouseMoveEvent;
+import com.tridevmc.compound.ui.event.MouseReleaseEvent;
+import com.tridevmc.compound.ui.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
@@ -41,21 +47,31 @@ public class TreeNode implements ITreeNode {
     private final List<State<?>> boundStates = new ArrayList<>();
     private final Set<State<?>> compositionStates = new HashSet<>();
     private final Set<State<?>> layoutStates = new HashSet<>();
-    private final List<Function<MouseClickEvent, Boolean>> clickHandlers = new ArrayList<>();
-    private final List<Runnable> mouseEnterHandlers = new ArrayList<>();
-    private final List<Runnable> mouseExitHandlers = new ArrayList<>();
-    private final List<Runnable> focusGainedHandlers = new ArrayList<>();
-    private final List<Runnable> focusLostHandlers = new ArrayList<>();
-    private final List<Function<MouseScrollEvent, Boolean>> scrollHandlers = new ArrayList<>();
-    private final List<Function<KeyInputEvent, Boolean>> keyPressHandlers = new ArrayList<>();
-    private final List<Function<KeyInputEvent, Boolean>> keyReleaseHandlers = new ArrayList<>();
-    private final List<Function<CharEvent, Boolean>> charTypedHandlers = new ArrayList<>();
-    private final List<Function<MouseReleaseEvent, Boolean>> mouseReleaseHandlers = new ArrayList<>();
-    private final List<Function<MouseDragEvent, Boolean>> mouseDragHandlers = new ArrayList<>();
-    private final List<Function<MouseMoveEvent, Boolean>> mouseMoveHandlers = new ArrayList<>();
+    private final Handlers<Function<MouseClickEvent, Boolean>> clickHandlers = new Handlers<>();
+    private final Handlers<Runnable> mouseEnterHandlers = new Handlers<>();
+    private final Handlers<Runnable> mouseExitHandlers = new Handlers<>();
+    private final Handlers<Runnable> focusGainedHandlers = new Handlers<>();
+    private final Handlers<Runnable> focusLostHandlers = new Handlers<>();
+    private final Handlers<Function<MouseScrollEvent, Boolean>> scrollHandlers = new Handlers<>();
+    private final Handlers<Function<KeyInputEvent, Boolean>> keyPressHandlers = new Handlers<>();
+    private final Handlers<Function<KeyInputEvent, Boolean>> keyReleaseHandlers = new Handlers<>();
+    private final Handlers<Function<CharEvent, Boolean>> charTypedHandlers = new Handlers<>();
+    private final Handlers<Function<MouseReleaseEvent, Boolean>> mouseReleaseHandlers = new Handlers<>();
+    private final Handlers<Function<MouseDragEvent, Boolean>> mouseDragHandlers = new Handlers<>();
+    private final Handlers<Function<MouseMoveEvent, Boolean>> mouseMoveHandlers = new Handlers<>();
     private UITree tree;
-    private final List<Runnable> handlerResets = new ArrayList<>();
+    private final List<Handlers<?>> handlerGroups = List.of(
+            this.clickHandlers, this.mouseEnterHandlers, this.mouseExitHandlers,
+            this.focusGainedHandlers, this.focusLostHandlers, this.scrollHandlers,
+            this.keyPressHandlers, this.keyReleaseHandlers, this.charTypedHandlers,
+            this.mouseReleaseHandlers, this.mouseDragHandlers, this.mouseMoveHandlers);
     private final List<Runnable> disposalActions = new ArrayList<>();
+    private final List<Runnable> compositionDisposalActions = new ArrayList<>();
+    private final Set<AnimatedState<?>> compositionAnimations = new HashSet<>();
+    private boolean composing;
+    private boolean hasComposed;
+    private final Set<State<?>> transientCompositionStates = new HashSet<>();
+    private final Set<State<?>> transientLayoutStates = new HashSet<>();
     // Two dedicated observers for different state types
     private final StateObserver compositionObserver = state -> {
         if (this.tree != null) {
@@ -180,6 +196,7 @@ public class TreeNode implements ITreeNode {
     public void bindCompositionState(State<?> state) {
         if (this.compositionStates.add(state)) {  // Set.add returns true if added
             state.addObserver(this.compositionObserver);
+            if (this.composing) this.transientCompositionStates.add(state);
         }
     }
 
@@ -187,6 +204,7 @@ public class TreeNode implements ITreeNode {
     public void bindLayoutState(State<?> state) {
         if (this.layoutStates.add(state)) {
             state.addObserver(this.layoutObserver);
+            if (this.composing) this.transientLayoutStates.add(state);
         }
     }
 
@@ -218,7 +236,14 @@ public class TreeNode implements ITreeNode {
     public void registerAnimation(AnimatedState<?> animation) {
         if (animation != null && !this.registeredAnimations.contains(animation)) {
             this.registeredAnimations.add(animation);
+            if (this.composing) this.compositionAnimations.add(animation);
         }
+    }
+
+    @Override
+    public void retainAnimation(AnimatedState<?> animation) {
+        this.registerAnimation(animation);
+        this.compositionAnimations.remove(animation);
     }
 
     @Override
@@ -228,12 +253,13 @@ public class TreeNode implements ITreeNode {
 
     /** Registers cleanup for resources owned by this node. */
     public void onDispose(Runnable cleanup) {
-        this.disposalActions.add(cleanup);
+        (this.composing ? this.compositionDisposalActions : this.disposalActions).add(cleanup);
     }
 
     @Override
     public void dispose() {
         this.tree = null;
+        this.clearCompositionResources();
         for (var cleanup : this.disposalActions) {
             cleanup.run();
         }
@@ -267,156 +293,194 @@ public class TreeNode implements ITreeNode {
     }
 
     @Override
+    public void runComposition() {
+        this.clearCompositionResources();
+        this.composing = true;
+        try {
+            if (this.compositionFunction != null) this.compositionFunction.run();
+        } finally {
+            this.composing = false;
+            this.hasComposed = true;
+        }
+    }
+
+    private void clearCompositionResources() {
+        for (var state : this.transientCompositionStates) this.unbindCompositionState(state);
+        this.transientCompositionStates.clear();
+        for (var state : this.transientLayoutStates) this.unbindLayoutState(state);
+        this.transientLayoutStates.clear();
+        for (var cleanup : this.compositionDisposalActions) cleanup.run();
+        this.compositionDisposalActions.clear();
+        for (var animation : this.compositionAnimations) {
+            animation.dispose();
+            this.registeredAnimations.remove(animation);
+        }
+        this.compositionAnimations.clear();
+    }
+
+    @Override
     public boolean hasCompositionFunction() {
         return this.compositionFunction != null;
     }
 
     @Override
     public void addClickHandler(Function<MouseClickEvent, Boolean> handler) {
-        this.clickHandlers.add(handler);
+        this.clickHandlers.add(handler, this.composing, this.hasComposed);
     }
 
     @Override
     public void addMouseEnterHandler(Runnable handler) {
-        this.mouseEnterHandlers.add(handler);
+        this.mouseEnterHandlers.add(handler, this.composing, this.hasComposed);
     }
 
     @Override
     public void addMouseExitHandler(Runnable handler) {
-        this.mouseExitHandlers.add(handler);
+        this.mouseExitHandlers.add(handler, this.composing, this.hasComposed);
     }
 
     @Override
     public void addFocusGainedHandler(Runnable handler) {
-        this.focusGainedHandlers.add(handler);
+        this.focusGainedHandlers.add(handler, this.composing, this.hasComposed);
     }
 
     @Override
     public void addFocusLostHandler(Runnable handler) {
-        this.focusLostHandlers.add(handler);
+        this.focusLostHandlers.add(handler, this.composing, this.hasComposed);
     }
 
     @Override
     public void addScrollHandler(Function<MouseScrollEvent, Boolean> handler) {
-        this.scrollHandlers.add(handler);
+        this.scrollHandlers.add(handler, this.composing, this.hasComposed);
     }
 
     @Override
     public void addKeyPressHandler(Function<KeyInputEvent, Boolean> handler) {
-        this.keyPressHandlers.add(handler);
+        this.keyPressHandlers.add(handler, this.composing, this.hasComposed);
     }
 
     @Override
     public void addKeyReleaseHandler(Function<KeyInputEvent, Boolean> handler) {
-        this.keyReleaseHandlers.add(handler);
+        this.keyReleaseHandlers.add(handler, this.composing, this.hasComposed);
     }
 
     @Override
     public void addCharTypedHandler(Function<CharEvent, Boolean> handler) {
-        this.charTypedHandlers.add(handler);
+        this.charTypedHandlers.add(handler, this.composing, this.hasComposed);
     }
 
     @Override
     public void addMouseReleaseHandler(Function<MouseReleaseEvent, Boolean> handler) {
-        this.mouseReleaseHandlers.add(handler);
+        this.mouseReleaseHandlers.add(handler, this.composing, this.hasComposed);
     }
 
     @Override
     public void addMouseDragHandler(Function<MouseDragEvent, Boolean> handler) {
-        this.mouseDragHandlers.add(handler);
+        this.mouseDragHandlers.add(handler, this.composing, this.hasComposed);
     }
 
     @Override
     public void addMouseMoveHandler(Function<MouseMoveEvent, Boolean> handler) {
-        this.mouseMoveHandlers.add(handler);
+        this.mouseMoveHandlers.add(handler, this.composing, this.hasComposed);
     }
 
     @Override
     public List<Function<MouseClickEvent, Boolean>> getClickHandlers() {
-        return new ArrayList<>(this.clickHandlers);
+        return this.clickHandlers.snapshot();
     }
 
     @Override
     public List<Runnable> getMouseEnterHandlers() {
-        return new ArrayList<>(this.mouseEnterHandlers);
+        return this.mouseEnterHandlers.snapshot();
     }
 
     @Override
     public List<Runnable> getMouseExitHandlers() {
-        return new ArrayList<>(this.mouseExitHandlers);
+        return this.mouseExitHandlers.snapshot();
     }
 
     @Override
     public List<Runnable> getFocusGainedHandlers() {
-        return new ArrayList<>(this.focusGainedHandlers);
+        return this.focusGainedHandlers.snapshot();
     }
 
     @Override
     public List<Runnable> getFocusLostHandlers() {
-        return new ArrayList<>(this.focusLostHandlers);
+        return this.focusLostHandlers.snapshot();
     }
 
     @Override
     public List<Function<MouseScrollEvent, Boolean>> getScrollHandlers() {
-        return new ArrayList<>(this.scrollHandlers);
+        return this.scrollHandlers.snapshot();
     }
 
     @Override
     public List<Function<KeyInputEvent, Boolean>> getKeyPressHandlers() {
-        return new ArrayList<>(this.keyPressHandlers);
+        return this.keyPressHandlers.snapshot();
     }
 
     @Override
     public List<Function<KeyInputEvent, Boolean>> getKeyReleaseHandlers() {
-        return new ArrayList<>(this.keyReleaseHandlers);
+        return this.keyReleaseHandlers.snapshot();
     }
 
     @Override
     public List<Function<CharEvent, Boolean>> getCharTypedHandlers() {
-        return new ArrayList<>(this.charTypedHandlers);
+        return this.charTypedHandlers.snapshot();
     }
 
     @Override
     public List<Function<MouseReleaseEvent, Boolean>> getMouseReleaseHandlers() {
-        return new ArrayList<>(this.mouseReleaseHandlers);
+        return this.mouseReleaseHandlers.snapshot();
     }
 
     @Override
     public List<Function<MouseDragEvent, Boolean>> getMouseDragHandlers() {
-        return new ArrayList<>(this.mouseDragHandlers);
+        return this.mouseDragHandlers.snapshot();
     }
 
     @Override
     public List<Function<MouseMoveEvent, Boolean>> getMouseMoveHandlers() {
-        return new ArrayList<>(this.mouseMoveHandlers);
+        return this.mouseMoveHandlers.snapshot();
     }
 
     @Override
     public void preserveHandlers() {
-        this.handlerResets.clear();
-        this.preserve(this.clickHandlers);
-        this.preserve(this.mouseEnterHandlers);
-        this.preserve(this.mouseExitHandlers);
-        this.preserve(this.focusGainedHandlers);
-        this.preserve(this.focusLostHandlers);
-        this.preserve(this.scrollHandlers);
-        this.preserve(this.keyPressHandlers);
-        this.preserve(this.keyReleaseHandlers);
-        this.preserve(this.charTypedHandlers);
-        this.preserve(this.mouseReleaseHandlers);
-        this.preserve(this.mouseDragHandlers);
-        this.preserve(this.mouseMoveHandlers);
-    }
-
-    private <T> void preserve(List<T> handlers) {
-        var count = handlers.size();
-        this.handlerResets.add(() -> handlers.subList(count, handlers.size()).clear());
+        this.handlerGroups.forEach(Handlers::preserve);
     }
 
     @Override
     public void clearHandlers() {
-        for (var reset : this.handlerResets) {
-            reset.run();
+        this.handlerGroups.forEach(Handlers::clearComposition);
+    }
+
+    private static final class Handlers<T> {
+        private final List<T> current = new ArrayList<>();
+        private final List<T> beforeComposition = new ArrayList<>();
+        private final List<T> afterComposition = new ArrayList<>();
+
+        void add(T handler, boolean composing, boolean hasComposed) {
+            if (composing) {
+                this.current.add(this.current.size() - this.afterComposition.size(), handler);
+            } else {
+                this.current.add(handler);
+                (hasComposed ? this.afterComposition : this.beforeComposition).add(handler);
+            }
+        }
+
+        List<T> snapshot() {
+            return new ArrayList<>(this.current);
+        }
+
+        void preserve() {
+            this.beforeComposition.clear();
+            this.beforeComposition.addAll(this.current);
+            this.afterComposition.clear();
+        }
+
+        void clearComposition() {
+            this.current.clear();
+            this.current.addAll(this.beforeComposition);
+            this.current.addAll(this.afterComposition);
         }
     }
 

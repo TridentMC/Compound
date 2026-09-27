@@ -16,6 +16,8 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import com.google.common.collect.Lists;
 import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
@@ -23,6 +25,8 @@ import com.tridevmc.compound.ui.state.State;
 import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+
+
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -61,7 +65,7 @@ public class ContextMenu extends BaseElement implements IComposableElement {
         tree.setInputRoot(this.getNode());
         scope.onClick(event -> { this.hide(); return true; });
         scope.onKeyPress(event -> {
-            if (event.keyCode() == 256) this.hide();
+            if (event.keyCode() == InputConstants.KEY_ESCAPE) this.hide();
             return true;
         });
         var viewport = tree.getViewportSize();
@@ -104,7 +108,7 @@ public class ContextMenu extends BaseElement implements IComposableElement {
         this.x = x;
         this.y = y;
         this.visible.set(true);
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public void hide() {
@@ -122,17 +126,17 @@ public class ContextMenu extends BaseElement implements IComposableElement {
 
     public void addItem(Component label, Runnable action) {
         this.items.add(new MenuItem(label, action, true));
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public void addSeparator() {
         this.items.add(new MenuItem(Component.literal(""), () -> {}, false));
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     public void clearItems() {
         this.items.clear();
-        this.invalidate();
+        this.invalidateComposition();
     }
 
     @Override
@@ -147,11 +151,6 @@ public class ContextMenu extends BaseElement implements IComposableElement {
         var size = children.get(0);
         return List.of(new Bounds(Math.clamp(this.x, 0, Math.max(0, viewport.width() - size.width())),
                 Math.clamp(this.y, 0, Math.max(0, viewport.height() - size.height())), size.width(), size.height()));
-    }
-
-    private void invalidate() {
-        var node = this.getNode();
-        if (node != null) node.getTree().requestRecompose(node);
     }
 
     private record MenuItem(Component label, Runnable action, boolean enabled) {

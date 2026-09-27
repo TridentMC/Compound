@@ -25,29 +25,15 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 import javax.annotation.Nonnull;
 import java.util.List;
 
-/**
- * A primitive element that takes up space but doesn't render anything.
- * Useful for creating gaps and flexible spacing in layouts.
- */
 public class Spacer extends BaseElement implements IPrimitiveElement {
 
     private int width;
     private int height;
     private boolean flexible;
-
-    /**
-     * Creates a flexible spacer that expands to fill available space.
-     */
     public Spacer() {
         this(0, 0, true);
     }
 
-    /**
-     * Creates a fixed-size spacer.
-     *
-     * @param width  the width of the spacer
-     * @param height the height of the spacer
-     */
     public Spacer(int width, int height) {
         this(width, height, false);
     }
@@ -85,6 +71,7 @@ public class Spacer extends BaseElement implements IPrimitiveElement {
 
     public void setWidth(int width) {
         this.width = width;
+        this.invalidateLayout();
     }
 
     public int getHeight() {
@@ -93,6 +80,7 @@ public class Spacer extends BaseElement implements IPrimitiveElement {
 
     public void setHeight(int height) {
         this.height = height;
+        this.invalidateLayout();
     }
 
     public boolean isFlexible() {
@@ -101,5 +89,6 @@ public class Spacer extends BaseElement implements IPrimitiveElement {
 
     public void setFlexible(boolean flexible) {
         this.flexible = flexible;
+        this.invalidateLayout();
     }
 }
