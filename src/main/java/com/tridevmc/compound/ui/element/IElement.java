@@ -31,30 +31,39 @@ import net.minecraft.network.chat.Component;
  * </ul>
  */
 public interface IElement extends IGenericElement {
-    /** Text announced when this element receives focus; empty uses composed child labels. */
+    /**
+     * Gets the text announced when this element receives focus.
+     *
+     * @return the announcement, or an empty component to use composed child labels
+     */
     default Component getNarrationMessage() {
         return Component.empty();
     }
 
-    /** Whether this element participates in rendering and input. */
+    /**
+     * Controls rendering and input for this element and its descendants; layout is unchanged.
+     *
+     * @return true when the element is visible
+     */
     default boolean isVisible() {
         return true;
     }
 
-    /** Whether this element can receive keyboard focus in its current state. */
+    /**
+     * Declares whether the element can receive keyboard focus in its current state.
+     *
+     * @return true when focus traversal may select this element
+     */
     default boolean isFocusable() {
         return false;
     }
-
-    // Core element contract is defined in IGenericElement
-    // This interface serves as the common type for all UI elements
 
     /**
      * Gets the cursor to display when the mouse is at the given coordinates relative to the element.
      *
      * @param x the x coordinate relative to the element
      * @param y the y coordinate relative to the element
-     * @return the cursor to display, or null to use the default
+     * @return the cursor to display, or null to inherit an ancestor's cursor or the default
      */
     default UICursor getCursor(int x, int y) {
         return null;

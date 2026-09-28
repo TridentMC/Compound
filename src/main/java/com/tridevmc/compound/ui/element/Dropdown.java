@@ -29,7 +29,6 @@ import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
-import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
@@ -44,6 +43,14 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+/**
+ * A single-selection dropdown with a viewport-bounded, scrollable popup.
+ * Options are copied at construction; the same instance retains its selection.
+ * Arrow keys navigate the open popup, Enter or Space confirms, and Escape dismisses it.
+ * Programmatic selection does not invoke the selection callback.
+ *
+ * @param <T> the option value type.
+ */
 public class Dropdown<T> extends BaseElement implements IComposableElement {
 
     private static final int DEFAULT_HEIGHT = 20;
@@ -57,11 +64,11 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
     private static final IScreenSprite BUTTON_DISABLED_SPRITE = IScreenSprite.of(
             Identifier.withDefaultNamespace("widget/button_disabled"));
 
-    private final State<Boolean> enabled = new StateImpl<>(true);
-    private final State<Boolean> hovered = new StateImpl<>(false);
-    private final State<Boolean> open = new StateImpl<>(false);
-    private final State<Integer> selectedIndex = new StateImpl<>(-1);
-    private final State<Integer> hoverIndex = new StateImpl<>(-1);
+    private final State<Boolean> enabled = State.of(true);
+    private final State<Boolean> hovered = State.of(false);
+    private final State<Boolean> open = State.of(false);
+    private final State<Integer> selectedIndex = State.of(-1);
+    private final State<Integer> hoverIndex = State.of(-1);
 
     private final List<T> options;
     private Function<T, String> displayTextProvider = Object::toString;
@@ -73,10 +80,21 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
     private ScrollArea popupScroll;
     private Bounds popupBounds = new Bounds(0, 0, 0, 0);
 
+    /**
+     * Creates an enabled dropdown with no selection.
+     *
+     * @param options the options, copied in display order.
+     */
     public Dropdown(List<T> options) {
         this.options = Lists.newArrayList(options);
     }
 
+    /**
+     * Creates a dropdown selecting the first option equal to the supplied value.
+     *
+     * @param options the options, copied in display order.
+     * @param selected the initial option; an absent value leaves the selection empty.
+     */
     public Dropdown(List<T> options, T selected) {
         this(options);
         int index = this.options.indexOf(selected);
@@ -85,6 +103,7 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public void compose(ICompositionScope scope) {
         scope.bind(this.open);
@@ -202,6 +221,7 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isFocusable() {
         return this.enabled.get();
@@ -246,6 +266,11 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
         }
     }
 
+    /**
+     * Returns the selected option.
+     *
+     * @return the selected value, or null when no option is selected.
+     */
     public T getSelected() {
         int index = this.selectedIndex.get();
         if (index >= 0 && index < this.options.size()) {
@@ -254,6 +279,11 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
         return null;
     }
 
+    /**
+     * Selects the first equal option silently; an absent value leaves the selection unchanged.
+     *
+     * @param value the option to select.
+     */
     public void setSelected(T value) {
         int index = this.options.indexOf(value);
         if (index >= 0) {
@@ -261,50 +291,97 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
         }
     }
 
+    /**
+     * Sets the function used to turn values into display labels.
+     *
+     * @param provider the value-to-text function.
+     */
     public void setDisplayTextProvider(Function<T, String> provider) {
         this.displayTextProvider = provider;
         this.invalidateComposition();
     }
 
+    /**
+     * Replaces the callback invoked when a user confirms a popup option, even if unchanged.
+     *
+     * @param listener the callback, or null to remove it.
+     */
     public void setOnSelectionChanged(Consumer<T> listener) {
         this.onSelectionChanged = listener;
     }
 
+    /**
+     * Replaces the callback for a transition to the open state.
+     *
+     * @param listener the callback, invoked with null, or null to remove it.
+     */
     public void setOnOpen(Consumer<Void> listener) {
         this.onOpen = listener;
     }
 
+    /**
+     * Replaces the callback for a transition to the closed state.
+     *
+     * @param listener the callback, invoked with null, or null to remove it.
+     */
     public void setOnClose(Consumer<Void> listener) {
         this.onClose = listener;
     }
 
+    /**
+     * Sets the preferred visible option count; viewport space can reduce it further.
+     *
+     * @param max the count, clamped to at least one.
+     */
     public void setMaxVisibleItems(int max) {
         this.maxVisibleItems = Math.max(1, max);
         this.invalidateComposition();
     }
 
+    /**
+     * Sets the label displayed when nothing is selected.
+     *
+     * @param placeholder the label, or null to use the default Select... text.
+     */
     public void setPlaceholder(Component placeholder) {
         this.placeholder = placeholder;
     }
 
+    /**
+     * Returns whether the options popup is open.
+     *
+     * @return true when open.
+     */
     public boolean isOpen() {
         return this.open.get();
     }
 
+    /**
+     * Returns whether user interaction is enabled.
+     *
+     * @return true when enabled.
+     */
     public boolean isEnabled() {
         return this.enabled.get();
     }
 
+    /**
+     * Changes whether user interaction is enabled. Disabling also closes an open popup.
+     *
+     * @param enabled whether to accept user interaction.
+     */
     public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
         if (!enabled) this.setOpen(false);
     }
 
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> children) {
         return new Size(constraints.maxWidth(), DEFAULT_HEIGHT);
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> children) {
         if (children.size() < 2) return List.of(bounds);
@@ -312,6 +389,7 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
         return List.of(bounds, new Bounds(0, 0, viewport.width(), viewport.height()));
     }
 
+    /** {@inheritDoc} */
     @Override
     public UICursor getCursor(int x, int y) {
         return this.enabled.get() ? CompoundCursors.HAND : null;

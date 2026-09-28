@@ -29,15 +29,19 @@ import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.slot.SlotKey;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
-import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.resources.Identifier;
 
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * A clipped, single-axis viewport for {@link #CONTENT_SLOT}. Content is measured without a
+ * bound on the scrolling axis. Displayed scrollbars reserve a gutter outside the content viewport.
+ */
 public class ScrollArea extends BaseElement implements IComposableElement {
 
+    /** The slot containing this element's consumer-provided content. */
     public static final SlotKey CONTENT_SLOT = new SlotKey("content");
 
     private static final int SCROLLBAR_PADDING = 4;
@@ -45,9 +49,9 @@ public class ScrollArea extends BaseElement implements IComposableElement {
     private static final IScreenSprite SCROLLER_BG_SPRITE = IScreenSprite.of(
             Identifier.withDefaultNamespace("widget/scroller_background"));
 
-    private final State<Integer> scrollX = new StateImpl<>(0);
-    private final State<Integer> scrollY = new StateImpl<>(0);
-    private final State<Boolean> scrollbarHovered = new StateImpl<>(false);
+    private final State<Integer> scrollX = State.of(0);
+    private final State<Integer> scrollY = State.of(0);
+    private final State<Boolean> scrollbarHovered = State.of(false);
     private Direction direction = Direction.VERTICAL;
     private ScrollbarStyle scrollbarStyle = ScrollbarStyle.LIST;
     private int scrollSpeed = 20;
@@ -58,14 +62,28 @@ public class ScrollArea extends BaseElement implements IComposableElement {
     private int contentWidth;
     private int viewportWidth;
 
+    /**
+     * Creates a scroll viewport; the no-argument form scrolls vertically.
+     */
     public ScrollArea() {
         this(Direction.VERTICAL);
     }
 
+    /**
+     * Creates a scroll viewport; the no-argument form scrolls vertically.
+     *
+     * @param direction the non-null scrolling axis
+     */
     public ScrollArea(Direction direction) {
         this.direction = Objects.requireNonNull(direction);
     }
 
+    /**
+     * Changes the scrolling axis, resets both offsets to zero, and recomposes the viewport.
+     *
+     * @param direction the non-null scrolling axis
+     * @return this element
+     */
     public ScrollArea direction(Direction direction) {
         if (this.direction != Objects.requireNonNull(direction)) {
             this.direction = direction;
@@ -75,11 +93,23 @@ public class ScrollArea extends BaseElement implements IComposableElement {
         return this;
     }
 
+    /**
+     * Sets the pixel multiplier for wheel scrolling.
+     *
+     * @param speed the pixel multiplier per wheel step
+     * @return this element
+     */
     public ScrollArea scrollSpeed(int speed) {
         this.scrollSpeed = speed;
         return this;
     }
 
+    /**
+     * Controls scrollbar visibility and its reserved gutter; wheel scrolling remains available.
+     *
+     * @param show whether to display it
+     * @return this element
+     */
     public ScrollArea showScrollbar(boolean show) {
         if (this.showScrollbar != show) {
             this.showScrollbar = show;
@@ -88,6 +118,12 @@ public class ScrollArea extends BaseElement implements IComposableElement {
         return this;
     }
 
+    /**
+     * Changes the scrollbar appearance and gutter geometry.
+     *
+     * @param style the non-null scrollbar style
+     * @return this element
+     */
     public ScrollArea scrollbarStyle(ScrollbarStyle style) {
         if (this.scrollbarStyle != Objects.requireNonNull(style)) {
             this.scrollbarStyle = style;
@@ -96,6 +132,11 @@ public class ScrollArea extends BaseElement implements IComposableElement {
         return this;
     }
 
+    /**
+     * Returns the active scrollbar style.
+     *
+     * @return the active style
+     */
     public ScrollbarStyle getScrollbarStyle() {
         return this.scrollbarStyle;
     }
@@ -105,27 +146,56 @@ public class ScrollArea extends BaseElement implements IComposableElement {
         this.invalidateComposition();
     }
 
+    /**
+     * Requests pixel offsets, clamped to the content range during the next layout pass.
+     *
+     * @param x the requested horizontal pixel offset
+     * @param y the requested vertical pixel offset
+     */
     public void scrollTo(int x, int y) {
         this.scrollX.set(x);
         this.scrollY.set(y);
     }
 
+    /**
+     * Returns the live horizontal offset state; layout clamps its value to the content range.
+     *
+     * @return the live state; changes notify its observers
+     */
     public State<Integer> getScrollXState() {
         return this.scrollX;
     }
 
+    /**
+     * Returns the live vertical offset state; layout clamps its value to the content range.
+     *
+     * @return the live state; changes notify its observers
+     */
     public State<Integer> getScrollYState() {
         return this.scrollY;
     }
 
+    /**
+     * Returns the vertical overflow measured by the latest layout pass.
+     *
+     * @return the nonnegative vertical overflow in pixels
+     */
     public int getMaxScrollY() {
         return Math.max(0, this.contentHeight - this.viewportHeight);
     }
 
+    /**
+     * Returns the horizontal overflow measured by the latest layout pass.
+     *
+     * @return the nonnegative horizontal overflow in pixels
+     */
     public int getMaxScrollX() {
         return Math.max(0, this.contentWidth - this.viewportWidth);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void compose(ICompositionScope scope) {
         var tree = scope.getTree();
@@ -177,6 +247,9 @@ public class ScrollArea extends BaseElement implements IComposableElement {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         var content = measuredChildren.isEmpty() ? new Size(0, 0) : measuredChildren.getFirst();
@@ -185,6 +258,9 @@ public class ScrollArea extends BaseElement implements IComposableElement {
         return new Size(constraints.maxWidth(), constraints.maxHeight());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
@@ -257,18 +333,24 @@ public class ScrollArea extends BaseElement implements IComposableElement {
         return Math.max(0, length - this.scrollbarStyle.inset * 2);
     }
 
+    /** The viewport's single scrolling axis. */
     public enum Direction {
+        /** Scrolls content vertically and places the gutter on the right. */
         VERTICAL,
+        /** Scrolls content horizontally and places the gutter at the bottom. */
         HORIZONTAL
     }
 
+    /** Vanilla scrollbar appearances with their corresponding track and thumb geometry. */
     public enum ScrollbarStyle {
+        /** Narrow list scrollbar with a thumb proportional to the visible content. */
         LIST(6, 32, true, "widget/scroller", "widget/scroller") {
             @Override
             void composeTrack(ICompositionScope scope) {
                 scope.e(new Sprite(SCROLLER_BG_SPRITE));
             }
         },
+        /** Creative-inventory scrollbar with a fixed-size grippy thumb and a recessed track. */
         GRIPPY(12, 15, false, "container/creative_inventory/scroller",
                 "container/creative_inventory/scroller_disabled") {
             @Override

@@ -30,7 +30,8 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * A primitive element for rendering text.
+ * A primitive for styled text with optional wrapping. Suppliers are sampled during measurement
+ * and drawing; bind layout state when changing text can alter its measured size.
  */
 public class Text extends BasePrimitiveElement {
 
@@ -42,31 +43,66 @@ public class Text extends BasePrimitiveElement {
     private int wrappedWidth = -1;
     private List<Component> wrappedLines = List.of();
 
+    /**
+     * Creates styled text. Omitted color and shadow settings use light gray text with a shadow.
+     *
+     * @param text the non-null styled text
+     */
     public Text(Component text) {
         this(() -> text, () -> 0xE0E0E0, () -> true);
     }
 
+    /**
+     * Creates styled text. Omitted color and shadow settings use light gray text with a shadow.
+     *
+     * @param text the non-null styled text
+     * @param color the drawing color
+     */
     public Text(Component text, int color) {
         this(() -> text, () -> color, () -> true);
     }
 
+    /**
+     * Creates styled text. Omitted color and shadow settings use light gray text with a shadow.
+     *
+     * @param textSupplier the non-null supplier of non-null styled text
+     * @param colorSupplier the non-null supplier of drawing colors
+     * @param shadowSupplier the non-null supplier controlling text shadows
+     */
     public Text(Supplier<Component> textSupplier, Supplier<Integer> colorSupplier, Supplier<Boolean> shadowSupplier) {
         this.textSupplier = textSupplier;
         this.colorSupplier = colorSupplier;
         this.shadowSupplier = shadowSupplier;
     }
 
-    // Builder-style configuration methods
+    /**
+     * Sets the drawing color.
+     *
+     * @param color the drawing color
+     * @return this element
+     */
     public Text setColor(int color) {
         this.colorSupplier = () -> color;
         return this;
     }
 
+    /**
+     * Sets whether text is drawn with a shadow.
+     *
+     * @param shadow whether to draw a text shadow
+     * @return this element
+     */
     public Text setShadow(boolean shadow) {
         this.shadowSupplier = () -> shadow;
         return this;
     }
 
+    /**
+     * Sets whether text wraps to the available width. Request layout when changing this after mounting.
+     *
+     * @param wrap whether to wrap text to the available width
+     * @return this element
+     */
     public Text setWrap(boolean wrap) {
         this.wrap = wrap;
         return this;
@@ -90,11 +126,17 @@ public class Text extends BasePrimitiveElement {
         return this.wrappedLines;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Component getNarrationMessage() {
         return this.textSupplier.get();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
         var font = Minecraft.getInstance().font;

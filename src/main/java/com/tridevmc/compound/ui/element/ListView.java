@@ -24,7 +24,6 @@ import com.tridevmc.compound.ui.cursor.UICursor;
 import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.state.State;
-import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
@@ -39,26 +38,20 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
- * A scrollable list of items with selection support.
+ * A scrollable, single-selection list with keyboard navigation and optional composed rows.
+ * Retain the instance to preserve selection and scroll position across recomposition.
+ * Replacing the items resets both. The default rows display each item's string value.
  *
- * <p><strong>Usage:</strong></p>
- * <pre>
- * scope.e(new ListView<>(), list -> {
- *     list.getElement().setItems(List.of("Item 1", "Item 2", "Item 3"));
- *     list.getElement().setOnSelectionChanged(item -> {
- *         System.out.println("Selected: " + item);
- *     });
- * });
- * </pre>
+ * @param <T> the item type.
  */
 public class ListView<T> extends BaseElement implements IComposableElement {
 
     private static final int DEFAULT_ITEM_HEIGHT = 16;
     private static final int DEFAULT_MAX_VISIBLE_ITEMS = 10;
 
-    private final State<Integer> selectedIndex = new StateImpl<>(-1);
-    private final State<Integer> hoverIndex = new StateImpl<>(-1);
-    private final State<Boolean> enabled = new StateImpl<>(true);
+    private final State<Integer> selectedIndex = State.of(-1);
+    private final State<Integer> hoverIndex = State.of(-1);
+    private final State<Boolean> enabled = State.of(true);
     private final List<T> items = Lists.newArrayList();
     private final ScrollArea scrollArea = new ScrollArea();
 
@@ -68,9 +61,13 @@ public class ListView<T> extends BaseElement implements IComposableElement {
     private int itemHeight = DEFAULT_ITEM_HEIGHT;
     private int maxVisibleItems = DEFAULT_MAX_VISIBLE_ITEMS;
 
+    /**
+     * Creates an empty list with 16-pixel rows and a preferred maximum of ten visible rows.
+     */
     public ListView() {
     }
 
+    /** {@inheritDoc} */
     @Override
     public void compose(ICompositionScope scope) {
         // Color suppliers update selection and hover without rebuilding every row.
@@ -162,11 +159,13 @@ public class ListView<T> extends BaseElement implements IComposableElement {
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isFocusable() {
         return this.enabled.get();
     }
 
+    /** {@inheritDoc} */
     @Override
     public Component getNarrationMessage() {
         int index = this.selectedIndex.get();
@@ -187,6 +186,11 @@ public class ListView<T> extends BaseElement implements IComposableElement {
         this.scrollArea.scrollTo(0, Math.clamp(scroll, 0, this.scrollArea.getMaxScrollY()));
     }
 
+    /**
+     * Copies the supplied items, clearing selection, hover, and scroll position.
+     *
+     * @param items the new items in display order.
+     */
     public void setItems(List<T> items) {
         this.items.clear();
         this.items.addAll(items);
@@ -196,11 +200,21 @@ public class ListView<T> extends BaseElement implements IComposableElement {
         this.invalidateComposition();
     }
 
+    /**
+     * Appends an item without changing selection.
+     *
+     * @param item the item to append.
+     */
     public void addItem(T item) {
         this.items.add(item);
         this.invalidateComposition();
     }
 
+    /**
+     * Removes an item and preserves the selected item where possible. No callback is fired.
+     *
+     * @param index the zero-based index; out-of-range indices are ignored.
+     */
     public void removeItem(int index) {
         if (index >= 0 && index < this.items.size()) {
             this.items.remove(index);
@@ -214,6 +228,11 @@ public class ListView<T> extends BaseElement implements IComposableElement {
         }
     }
 
+    /**
+     * Returns the selected item.
+     *
+     * @return the item, or null if there is no selection.
+     */
     public T getSelected() {
         int index = this.selectedIndex.get();
         if (index >= 0 && index < this.items.size()) {
@@ -222,6 +241,11 @@ public class ListView<T> extends BaseElement implements IComposableElement {
         return null;
     }
 
+    /**
+     * Selects and reveals an item, notifying the callback when the selection changes.
+     *
+     * @param index the zero-based index; out-of-range indices are ignored.
+     */
     public void setSelectedIndex(int index) {
         if (index < 0 || index >= this.items.size()) return;
         if (this.selectedIndex.get() != index) {
@@ -233,44 +257,87 @@ public class ListView<T> extends BaseElement implements IComposableElement {
         this.revealSelection();
     }
 
+    /**
+     * Sets the function used to turn values into display labels.
+     *
+     * @param provider the value-to-text function.
+     */
     public void setDisplayTextProvider(Function<T, String> provider) {
         this.displayTextProvider = provider;
         this.invalidateComposition();
     }
 
+    /**
+     * Replaces default labels with composed row content. The list still owns row selection.
+     *
+     * @param rowContent the item and row-scope callback, or null to restore default labels.
+     */
     public void setRowContent(BiConsumer<T, ICompositionScope> rowContent) {
         this.rowContent = rowContent;
         this.invalidateComposition();
     }
 
+    /**
+     * Replaces the selection-change callback for user and programmatic selection.
+     *
+     * @param listener the callback, or null to remove it.
+     */
     public void setOnSelectionChanged(Consumer<T> listener) {
         this.onSelectionChanged = listener;
     }
 
+    /**
+     * Sets the height of each row.
+     *
+     * @param height the positive row height in GUI pixels.
+     * @throws IllegalArgumentException if height is not positive.
+     */
     public void setItemHeight(int height) {
         if (height <= 0) throw new IllegalArgumentException("List row height must be positive");
         this.itemHeight = height;
         this.invalidateComposition();
     }
 
+    /**
+     * Caps the preferred height by a count of rows unless the list fills its available height.
+     *
+     * @param max the positive visible row count.
+     * @throws IllegalArgumentException if max is not positive.
+     */
     public void setMaxVisibleItems(int max) {
         if (max <= 0) throw new IllegalArgumentException("Visible list row count must be positive");
         this.maxVisibleItems = max;
         this.invalidateComposition();
     }
 
+    /**
+     * Returns the number of items.
+     *
+     * @return the item count.
+     */
     public int getItemCount() {
         return this.items.size();
     }
 
+    /**
+     * Returns whether user interaction is enabled.
+     *
+     * @return true when enabled.
+     */
     public boolean isEnabled() {
         return this.enabled.get();
     }
 
+    /**
+     * Changes whether user interaction is enabled.
+     *
+     * @param enabled whether to accept user interaction.
+     */
     public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
     }
 
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (!measuredChildren.isEmpty()) {
@@ -283,6 +350,7 @@ public class ListView<T> extends BaseElement implements IComposableElement {
         );
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
@@ -291,6 +359,7 @@ public class ListView<T> extends BaseElement implements IComposableElement {
         return List.of(bounds);
     }
 
+    /** {@inheritDoc} */
     @Override
     public UICursor getCursor(int x, int y) {
         return this.enabled.get() ? CompoundCursors.HAND : null;

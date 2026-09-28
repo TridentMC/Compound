@@ -40,6 +40,12 @@ import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix3x2fStack;
 import com.mojang.blaze3d.platform.InputConstants;
 
+/**
+ * Base class for screens built with composable elements.
+ * Override {@link #compose} to create a root element. The tree manages layout, rendering,
+ * focus, and input dispatch. Viewport changes rebuild the tree; keep persistent values
+ * in screen fields or retained controls. Closing the screen detaches the tree.
+ */
 public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
 
     private final CompoundScreenContext screenContext;
@@ -50,12 +56,16 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
     private double mouseX, mouseY;
     private double prevMouseX, prevMouseY;
 
+    /**
+     * Creates an empty-titled screen; its element tree is built during initialization.
+     */
     public ComposedUI() {
         super(Component.literal(""));
         this.screenContext = new CompoundScreenContext(this);
         this.tree = new UITree();
     }
 
+    /** {@inheritDoc} */
     @Override
     protected void init() {
         var viewport = this.tree.getViewportSize();
@@ -73,6 +83,7 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public void removed() {
         this.tree.reset();
@@ -80,12 +91,15 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
     }
 
     /**
-     * Override this method to define the UI composition.
+     * Builds the screen's element tree on initialization and after viewport changes.
+     * Add one root element and place descendants within its scope. This method may run
+     * repeatedly; retain state outside it when values must survive a rebuild.
      *
      * @param scope the root composition scope
      */
     protected abstract void compose(ICompositionScope scope);
 
+    /** {@inheritDoc} */
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
         this.activeGuiGraphics = graphics;
@@ -109,57 +123,110 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
         this.tree.getRequestedCursor().select();
     }
 
+    /** {@inheritDoc} */
     @Override
     public void tick() {
         super.tick();
         this.ticks++;
     }
 
+    /**
+     * Gets the last rendered pointer x coordinate.
+     *
+     * @return the pointer x coordinate in GUI pixels
+     */
     public double getMouseX() {
         return this.mouseX;
     }
 
+    /**
+     * Gets the last rendered pointer y coordinate.
+     *
+     * @return the pointer y coordinate in GUI pixels
+     */
     public double getMouseY() {
         return this.mouseY;
     }
 
+    /**
+     * Gets the pose stack from the latest render extraction. Use it only during rendering.
+     *
+     * @return the active pose stack, or null before the first extraction
+     */
     public Matrix3x2fStack getActiveStack() {
         return this.activeStack;
     }
 
+    /**
+     * Gets the number of ticks received by this screen instance.
+     *
+     * @return the elapsed screen tick count
+     */
     public long getTicks() {
         return this.ticks;
     }
 
+    /**
+     * Gets the scaled viewport width.
+     *
+     * @return the width in GUI pixels
+     */
     public int getWidth() {
         return this.width;
     }
 
+    /**
+     * Gets the scaled viewport height.
+     *
+     * @return the height in GUI pixels
+     */
     public int getHeight() {
         return this.height;
     }
 
+    /**
+     * Gets the Minecraft client assigned when the screen is initialized.
+     *
+     * @return the client instance, or null before initialization
+     */
     public Minecraft getMc() {
         return this.minecraft;
     }
 
+    /**
+     * Exposes this screen to screen-context integrations.
+     *
+     * @return this screen
+     */
     public Screen asGuiScreen() {
         return this;
     }
 
+    /**
+     * Gets the latest graphics extractor. Use it only during render extraction.
+     *
+     * @return the graphics extractor, or null before the first extraction
+     */
     public GuiGraphicsExtractor getActiveGuiGraphics() {
         return this.activeGuiGraphics;
     }
 
+    /**
+     * Gets the drawing context backed by this screen.
+     *
+     * @return the screen context
+     */
     public IScreenContext getScreenContext() {
         return this.screenContext;
     }
 
+    /** {@inheritDoc} */
     @Override
     public EnumUILayer getCurrentLayer() {
         return EnumUILayer.FOREGROUND;
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean keyPressed(@NotNull KeyEvent event) {
         // F3+B toggles debug overlay (matches Minecraft's hitbox debug pattern)
@@ -180,6 +247,7 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
         return consumed || super.keyPressed(event);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean keyReleased(@NotNull KeyEvent event) {
         KeyInputEvent keyEvent = new KeyInputEvent(
@@ -193,6 +261,7 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
         return consumed || super.keyReleased(event);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean charTyped(@NotNull CharacterEvent event) {
         int modifiers = 0;
@@ -204,6 +273,7 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
         return consumed || super.charTyped(event);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean mouseDragged(@NotNull MouseButtonEvent event, double pX, double pY) {
         MouseDragEvent dragEvent = new MouseDragEvent(
@@ -215,6 +285,7 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
         return consumed || super.mouseDragged(event, pX, pY);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean mouseClicked(@NotNull MouseButtonEvent event, boolean isDoubleClick) {
         boolean shiftDown = this.minecraft != null && this.minecraft.hasShiftDown();
@@ -228,6 +299,7 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
         return consumed || super.mouseClicked(event, isDoubleClick);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean mouseReleased(@NotNull MouseButtonEvent event) {
         MouseReleaseEvent releaseEvent = new MouseReleaseEvent(
@@ -237,6 +309,7 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
         return consumed || super.mouseReleased(event);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean mouseScrolled(double x, double y, double scrollX, double scrollY) {
         MouseScrollEvent scrollEvent = new MouseScrollEvent((int) x, (int) y, scrollX, scrollY);

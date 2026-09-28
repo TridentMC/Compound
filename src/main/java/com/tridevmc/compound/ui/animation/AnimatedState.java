@@ -27,7 +27,7 @@ import java.util.function.Function;
 /**
  * A state that automatically animates to new target values using interpolation.
  * <p>
- * Unlike StateImpl, this state updates itself over time via the AnimationScheduler.
+ * The AnimationScheduler advances this state over time.
  * Set a new target value and it smoothly animates from current to target.
  * <p>
  * Uses Minecraft's tick system (20 TPS) with partial tick interpolation for smooth rendering.

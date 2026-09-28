@@ -22,7 +22,6 @@ import com.google.common.collect.Lists;
 import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.state.State;
-import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
@@ -32,30 +31,28 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
- * A right-click context menu component for displaying action options.
- *
- * <p><strong>Usage:</strong></p>
- * <pre>
- * scope.e(new ContextMenu(), menu -> {
- *     menu.getElement().addItem("Copy", () -> copy());
- *     menu.getElement().addItem("Paste", () -> paste());
- *     menu.getElement().addItem("Delete", () -> delete());
- * });
- * </pre>
+ * An initially hidden action menu positioned with {@link #show(int, int)}.
+ * Add it to the composition once, then call show from the owning control's context action.
+ * The menu captures input while open and closes on Escape, an outside click, or an action.
+ * Its position is clamped to the viewport and overflowing items can scroll.
  */
 public class ContextMenu extends BaseElement implements IComposableElement {
 
     private static final int ITEM_HEIGHT = 16;
     private static final int MIN_WIDTH = 120;
 
-    private final State<Boolean> visible = new StateImpl<>(false);
+    private final State<Boolean> visible = State.of(false);
     private final List<MenuItem> items = Lists.newArrayList();
     private int x;
     private int y;
 
+    /**
+     * Creates an empty, hidden context menu.
+     */
     public ContextMenu() {
     }
 
+    /** {@inheritDoc} */
     @Override
     public void compose(ICompositionScope scope) {
         scope.bind(this.visible);
@@ -104,6 +101,12 @@ public class ContextMenu extends BaseElement implements IComposableElement {
         return maxWidth;
     }
 
+    /**
+     * Shows the menu at the requested GUI position, clamped to the viewport.
+     *
+     * @param x the horizontal GUI coordinate.
+     * @param y the vertical GUI coordinate.
+     */
     public void show(int x, int y) {
         this.x = x;
         this.y = y;
@@ -111,39 +114,67 @@ public class ContextMenu extends BaseElement implements IComposableElement {
         this.invalidateComposition();
     }
 
+    /**
+     * Hides the menu and releases its input capture.
+     */
     public void hide() {
         if (this.getNode() != null) this.getNode().getTree().clearInputRoot(this.getNode());
         this.visible.set(false);
     }
 
+    /**
+     * Returns whether the menu is shown.
+     *
+     * @return true when visible.
+     */
     public boolean isVisible() {
         return this.visible.get();
     }
 
+    /**
+     * Appends an enabled action. Activating it hides the menu before running the action.
+     *
+     * @param label the action label.
+     * @param action the action to run.
+     */
     public void addItem(String label, Runnable action) {
         this.addItem(Component.literal(label), action);
     }
 
+    /**
+     * Appends an enabled action. Activating it hides the menu before running the action.
+     *
+     * @param label the action label.
+     * @param action the action to run.
+     */
     public void addItem(Component label, Runnable action) {
         this.items.add(new MenuItem(label, action, true));
         this.invalidateComposition();
     }
 
+    /**
+     * Appends a noninteractive divider between action groups.
+     */
     public void addSeparator() {
         this.items.add(new MenuItem(Component.literal(""), () -> {}, false));
         this.invalidateComposition();
     }
 
+    /**
+     * Removes all actions and separators without changing visibility.
+     */
     public void clearItems() {
         this.items.clear();
         this.invalidateComposition();
     }
 
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> children) {
         return this.visible.get() ? new Size(constraints.maxWidth(), constraints.maxHeight()) : new Size(0, 0);
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> children) {
         if (children.isEmpty()) return List.of();

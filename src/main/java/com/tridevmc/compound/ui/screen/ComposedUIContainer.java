@@ -53,6 +53,14 @@ import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix3x2fStack;
 import com.mojang.blaze3d.platform.InputConstants;
 
+/**
+ * Base class for composable screens backed by a vanilla container menu.
+ * Add {@link InventorySlot} elements for menu slots; their placed bounds drive native
+ * inventory interaction and tooltips. Keep inventory rules in the menu.
+ * Viewport changes rebuild the tree, so keep persistent UI state in screen fields.
+ *
+ * @param <T> the menu type displayed by this screen
+ */
 public abstract class ComposedUIContainer<T extends CompoundContainerMenu> extends AbstractContainerScreen<T> implements IInternalCompoundUI {
 
     private static final WrappedField<Integer> quickCraftingType = WrappedField.create(AbstractContainerScreen.class, "quickCraftingType", "field_146987_F");
@@ -65,6 +73,13 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     private float mouseX, mouseY;
     private float prevMouseX, prevMouseY;
 
+    /**
+     * Creates a screen for the supplied menu.
+     *
+     * @param container the menu providing inventory slots and server-side interaction rules
+     * @param inventory the viewing player's inventory
+     * @param title the screen title supplied to vanilla container handling
+     */
     public ComposedUIContainer(T container, Inventory inventory, Component title) {
         super(container, inventory, title);
 
@@ -72,6 +87,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         this.tree = new UITree();
     }
 
+    /** {@inheritDoc} */
     @Override
     protected void init() {
         super.init();
@@ -90,6 +106,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public void removed() {
         this.tree.reset();
@@ -97,12 +114,15 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     }
 
     /**
-     * Override this method to define the UI composition.
+     * Builds the screen's element tree on initialization and after viewport changes.
+     * Add one root element and place descendants within its scope. This method may run
+     * repeatedly; retain state outside it when values must survive a rebuild.
      *
      * @param scope the root composition scope
      */
     protected abstract void compose(ICompositionScope scope);
 
+    /** {@inheritDoc} */
     @Override
     public void extractRenderState(GuiGraphicsExtractor gg, int mouseX, int mouseY, float partialTicks) {
         this.activeGuiGraphics = gg;
@@ -129,6 +149,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         super.extractTooltip(gg, mouseX, mouseY);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void containerTick() {
         super.containerTick();
@@ -209,6 +230,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override
     protected boolean isHovering(int x, int y, int width, int height, double mouseX, double mouseY) {
         // Vanilla identifies slots by their menu coordinates; the composed tree owns their visible bounds.
@@ -216,6 +238,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         return slot != null && slot.x == x && slot.y == y;
     }
 
+    /** {@inheritDoc} */
     @Override
     protected boolean hasClickedOutside(double mouseX, double mouseY, int left, int top) {
         var node = this.tree.findNodeAt((int) mouseX, (int) mouseY);
@@ -231,56 +254,111 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     /**
      * Identifies composed backgrounds whose bounds protect carried items from outside-click dropping.
      * Override for custom background composites; vanilla image bounds remain the fallback.
+     *
+     * @param element the hit element or one of its ancestors
+     * @return true if its bounds count as part of the container background
      */
     protected boolean isContainerBackground(IElement element) {
         return element instanceof Panel || element instanceof Surface;
     }
 
+    /**
+     * Gets the last rendered pointer x coordinate.
+     *
+     * @return the pointer x coordinate in GUI pixels
+     */
     public double getMouseX() {
         return this.mouseX;
     }
 
+    /**
+     * Gets the last rendered pointer y coordinate.
+     *
+     * @return the pointer y coordinate in GUI pixels
+     */
     public double getMouseY() {
         return this.mouseY;
     }
 
+    /**
+     * Gets the latest graphics extractor. Use it only during render extraction.
+     *
+     * @return the graphics extractor, or null before the first extraction
+     */
     public GuiGraphicsExtractor getActiveGuiGraphics() {
         return this.activeGuiGraphics;
     }
 
+    /**
+     * Gets the pose stack from the latest render extraction. Use it only during rendering.
+     *
+     * @return the active pose stack, or null before the first extraction
+     */
     public Matrix3x2fStack getActiveStack() {
         return this.activeGuiGraphics != null ? this.activeGuiGraphics.pose() : null;
     }
 
+    /**
+     * Gets the number of ticks received by this screen instance.
+     *
+     * @return the elapsed screen tick count
+     */
     public long getTicks() {
         return this.ticks;
     }
 
+    /**
+     * Gets the scaled viewport width.
+     *
+     * @return the width in GUI pixels
+     */
     public int getWidth() {
         return this.width;
     }
 
+    /**
+     * Gets the scaled viewport height.
+     *
+     * @return the height in GUI pixels
+     */
     public int getHeight() {
         return this.height;
     }
 
+    /**
+     * Gets the Minecraft client assigned when the screen is initialized.
+     *
+     * @return the client instance, or null before initialization
+     */
     public Minecraft getMc() {
         return this.minecraft;
     }
 
+    /**
+     * Exposes this screen to screen-context integrations.
+     *
+     * @return this screen
+     */
     public Screen asGuiScreen() {
         return this;
     }
 
+    /**
+     * Gets the drawing context backed by this screen.
+     *
+     * @return the screen context
+     */
     public IScreenContext getScreenContext() {
         return this.screenContext;
     }
 
+    /** {@inheritDoc} */
     @Override
     public EnumUILayer getCurrentLayer() {
         return EnumUILayer.FOREGROUND;
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean keyPressed(@NotNull KeyEvent event) {
         // F3+B toggles debug overlay (matches Minecraft's hitbox debug pattern)
@@ -301,6 +379,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         return consumed || super.keyPressed(event);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean keyReleased(@NotNull KeyEvent event) {
         KeyInputEvent keyEvent = new KeyInputEvent(
@@ -313,6 +392,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         return consumed || super.keyReleased(event);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean charTyped(@NotNull CharacterEvent event) {
         int modifiers = 0;
@@ -324,6 +404,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         return consumed || super.charTyped(event);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean mouseDragged(@NotNull MouseButtonEvent event, double pX, double pY) {
         MouseDragEvent dragEvent = new MouseDragEvent(
@@ -335,6 +416,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         return consumed || super.mouseDragged(event, pX, pY);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean mouseClicked(@NotNull MouseButtonEvent event, boolean isDoubleClick) {
         boolean shiftDown = this.minecraft != null && this.minecraft.hasShiftDown();
@@ -348,6 +430,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         return consumed || super.mouseClicked(event, isDoubleClick);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean mouseReleased(@NotNull MouseButtonEvent event) {
         MouseReleaseEvent releaseEvent = new MouseReleaseEvent(
@@ -357,6 +440,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         return consumed || super.mouseReleased(event);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean mouseScrolled(double x, double y, double scrollX, double scrollY) {
         MouseScrollEvent scrollEvent = new MouseScrollEvent((int) x, (int) y, scrollX, scrollY);

@@ -26,18 +26,34 @@ import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Supplier;
 
+/**
+ * Draws a solid ARGB rectangle in the assigned bounds. Color suppliers are sampled each frame.
+ */
 public class Rect extends BasePrimitiveElement {
 
     private Supplier<Integer> colorSupplier;
 
+    /**
+     * Creates a solid rectangle.
+     *
+     * @param color the ARGB drawing color
+     */
     public Rect(int color) {
         this(() -> color);
     }
 
+    /**
+     * Creates a solid rectangle.
+     *
+     * @param colorSupplier the non-null supplier of ARGB drawing colors
+     */
     public Rect(Supplier<Integer> colorSupplier) {
         this.colorSupplier = colorSupplier;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
         Integer fixedW = ownProperties.getFixedWidth();
@@ -73,10 +89,20 @@ public class Rect extends BasePrimitiveElement {
         context.drawRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), color);
     }
 
+    /**
+     * Returns the color supplier sampled during drawing.
+     *
+     * @return the configured supplier
+     */
     public Supplier<Integer> getColorSupplier() {
         return this.colorSupplier;
     }
 
+    /**
+     * Replaces the color supplier sampled during drawing.
+     *
+     * @param colorSupplier the non-null supplier of ARGB drawing colors
+     */
     public void setColorSupplier(Supplier<Integer> colorSupplier) {
         this.colorSupplier = colorSupplier;
     }

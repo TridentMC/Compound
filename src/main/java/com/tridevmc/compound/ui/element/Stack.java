@@ -23,11 +23,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A container that stacks children in z-order (layering).
- * Uses contentAlignment for positioning children within the available space.
+ * Overlays children in composition order, with later children drawn above earlier ones.
+ * Children keep their measured size and share the content origin unless content alignment is set.
+ * Explicit layers may change draw order.
  */
 public class Stack extends BaseContainer {
 
+    /** Creates an empty overlapping layout; configure content alignment through its scope. */
+    public Stack() {
+    }
+
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
@@ -52,6 +58,7 @@ public class Stack extends BaseContainer {
         return new Size(maxWidth, maxHeight);
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {

@@ -24,7 +24,6 @@ import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
-import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
@@ -39,19 +38,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * A draggable slider component for selecting numeric values from a continuous or discrete range.
- * Essential for volume controls, brightness, ranges, etc.
- *
- * <p><strong>Usage:</strong></p>
- * <pre>
- * scope.e(new Slider(0.0, 1.0, 0.01), slider -> {
- *     slider.getElement().setValue(0.75);
- *     slider.getElement().setFormatter(v -> String.format("%.0f%%", v * 100));
- *     slider.getElement().setOnValueChanged((old, newVal) -> {
- *         audioManager.setVolume(newVal);
- *     });
- * });
- * </pre>
+ * A vanilla-styled numeric slider with mouse dragging and keyboard adjustment.
+ * Values are clamped to a finite range and rounded to a step relative to the minimum.
+ * A zero step permits continuous values. Retain the instance to preserve its value.
  */
 public class Slider extends BaseElement implements IComposableElement {
 
@@ -106,10 +95,10 @@ public class Slider extends BaseElement implements IComposableElement {
         }
     }
 
-    private final State<Double> value = new StateImpl<>(0.0);
-    private final State<Boolean> enabled = new StateImpl<>(true);
-    private final State<Boolean> hovered = new StateImpl<>(false);
-    private final State<Boolean> dragging = new StateImpl<>(false);
+    private final State<Double> value = State.of(0.0);
+    private final State<Boolean> enabled = State.of(true);
+    private final State<Boolean> hovered = State.of(false);
+    private final State<Boolean> dragging = State.of(false);
 
     private double minValue;
     private double maxValue;
@@ -120,6 +109,14 @@ public class Slider extends BaseElement implements IComposableElement {
     private Consumer<Double> onDragStart;
     private Consumer<Double> onDragEnd;
 
+    /**
+     * Creates a slider initially set to its minimum.
+     *
+     * @param minValue the finite inclusive minimum.
+     * @param maxValue the finite inclusive maximum.
+     * @param step the finite, nonnegative increment; zero allows continuous values.
+     * @throws IllegalArgumentException if the bounds or step are invalid.
+     */
     public Slider(double minValue, double maxValue, double step) {
         if (!Double.isFinite(minValue) || !Double.isFinite(maxValue) || minValue > maxValue) {
             throw new IllegalArgumentException("Slider range must be finite and ordered");
@@ -131,10 +128,14 @@ public class Slider extends BaseElement implements IComposableElement {
         this.value.set(minValue);
     }
 
+    /**
+     * Creates a slider ranging from zero to one in increments of 0.01, initially at zero.
+     */
     public Slider() {
         this(0.0, 1.0, 0.01);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void compose(ICompositionScope scope) {
         scope.bindLayout(this.value);
@@ -244,6 +245,12 @@ public class Slider extends BaseElement implements IComposableElement {
         this.setValueInternal(newValue);
     }
 
+    /**
+     * Clamps and snaps the value, notifying the callback only if the result changes.
+     *
+     * @param value the requested finite value.
+     * @throws IllegalArgumentException if the value is not finite.
+     */
     public void setValue(double value) {
         this.setValueInternal(value);
     }
@@ -271,22 +278,50 @@ public class Slider extends BaseElement implements IComposableElement {
         soundManager.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
     }
 
+    /**
+     * Returns the current value.
+     *
+     * @return the current slider value.
+     */
     public double getValue() {
         return this.value.get();
     }
 
+    /**
+     * Returns the live value state. Use {@link #setValue(double)} for validated changes
+     * that apply range, step, and callbacks.
+     *
+     * @return the retained state owned by this slider.
+     */
     public State<Double> getValueState() {
         return this.value;
     }
 
+    /**
+     * Returns the inclusive minimum.
+     *
+     * @return the minimum value.
+     */
     public double getMinValue() {
         return this.minValue;
     }
 
+    /**
+     * Returns the inclusive maximum.
+     *
+     * @return the maximum value.
+     */
     public double getMaxValue() {
         return this.maxValue;
     }
 
+    /**
+     * Replaces the range and clamps and snaps the current value to it.
+     *
+     * @param min the finite inclusive minimum.
+     * @param max the finite inclusive maximum.
+     * @throws IllegalArgumentException if the bounds are not finite or min exceeds max.
+     */
     public void setRange(double min, double max) {
         if (!Double.isFinite(min) || !Double.isFinite(max) || min > max) {
             throw new IllegalArgumentException("Slider range must be finite and ordered");
@@ -297,50 +332,98 @@ public class Slider extends BaseElement implements IComposableElement {
         this.invalidateLayout();
     }
 
+    /**
+     * Replaces the increment and reapplies it to the current value.
+     *
+     * @param step the finite nonnegative increment; zero allows continuous values.
+     * @throws IllegalArgumentException if the step is negative or not finite.
+     */
     public void setStep(double step) {
         if (!Double.isFinite(step) || step < 0) throw new IllegalArgumentException("Slider step must be nonnegative");
         this.step = step;
         this.setValue(this.value.get());
     }
 
+    /**
+     * Returns whether the value label is shown.
+     *
+     * @return true when the label is enabled.
+     */
     public boolean isShowValue() {
         return this.showValue;
     }
 
+    /**
+     * Changes visibility of the value label.
+     *
+     * @param show whether to display the value.
+     */
     public void setShowValue(boolean show) {
         this.showValue = show;
         this.invalidateComposition();
     }
 
+    /**
+     * Sets the formatter used by the value label.
+     *
+     * @param formatter the value-to-text function.
+     */
     public void setFormatter(Function<Double, String> formatter) {
         this.formatter = formatter;
     }
 
+    /**
+     * Replaces the callback for user and programmatic value changes.
+     *
+     * @param onValueChanged the callback receiving the new value, or null to remove it.
+     */
     public void setOnValueChanged(Consumer<Double> onValueChanged) {
         this.onValueChanged = onValueChanged;
     }
 
+    /**
+     * Replaces the callback for the start of a mouse drag.
+     *
+     * @param onDragStart the callback receiving the current value, or null to remove it.
+     */
     public void setOnDragStart(Consumer<Double> onDragStart) {
         this.onDragStart = onDragStart;
     }
 
+    /**
+     * Replaces the callback for the end of a mouse drag.
+     *
+     * @param onDragEnd the callback receiving the current value, or null to remove it.
+     */
     public void setOnDragEnd(Consumer<Double> onDragEnd) {
         this.onDragEnd = onDragEnd;
     }
 
+    /**
+     * Returns whether user interaction is enabled.
+     *
+     * @return true when enabled.
+     */
     public boolean isEnabled() {
         return this.enabled.get();
     }
 
+    /**
+     * Changes whether user interaction is enabled.
+     *
+     * @param enabled whether to accept user interaction.
+     */
     public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isFocusable() {
         return this.enabled.get();
     }
 
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (!measuredChildren.isEmpty()) {
@@ -352,6 +435,7 @@ public class Slider extends BaseElement implements IComposableElement {
         );
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
@@ -360,6 +444,7 @@ public class Slider extends BaseElement implements IComposableElement {
         return List.of(bounds);
     }
 
+    /** {@inheritDoc} */
     @Override
     public UICursor getCursor(int x, int y) {
         return this.enabled.get() ? CompoundCursors.HAND : null;

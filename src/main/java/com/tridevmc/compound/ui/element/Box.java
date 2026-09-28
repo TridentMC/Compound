@@ -24,16 +24,19 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
- * A container that wraps a single child with padding and alignment.
- * Uses contentAlignment and padding properties from LayoutProperties.
- *
- * <p><strong>Important:</strong> Box is designed for a single child only. If multiple children
- * are added, only the first child will be rendered and a warning will be logged.</p>
+ * Single-child container with padding and optional content alignment.
+ * Add at most one child; use {@link Stack} for overlapping children. Without alignment,
+ * the child fills the content area. With alignment, it keeps its measured size.
  */
 public class Box extends BaseContainer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Box.class);
 
+    /** Creates an empty single-child container; configure padding and alignment through its scope. */
+    public Box() {
+    }
+
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
@@ -65,6 +68,7 @@ public class Box extends BaseContainer {
         return new Size(width, height);
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {

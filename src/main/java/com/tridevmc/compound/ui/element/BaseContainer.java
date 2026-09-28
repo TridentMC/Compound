@@ -17,9 +17,12 @@
 package com.tridevmc.compound.ui.element;
 
 /**
- * Base implementation for container elements.
- * Provides common functionality for elements that can have children.
+ * Base class for layout containers whose children are supplied through a container scope.
+ * Subclasses implement measurement and placement; the tree owns their child nodes.
  */
 public abstract class BaseContainer extends BaseElement implements IContainer {
-    // Layout properties are now passed as parameters to measure() and place()
+
+    /** Creates an unattached container base for a custom layout. */
+    public BaseContainer() {
+    }
 }

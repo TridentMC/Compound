@@ -29,7 +29,6 @@ import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.state.State;
-import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -44,23 +43,30 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+/**
+ * A multiline text editor with soft wrapping, selection, clipboard support, and vertical
+ * scrolling. Length limits and absolute selection offsets use UTF-16 code units.
+ */
 public class TextArea extends BaseElement implements IComposableElement {
 
     private static final int DEFAULT_TEXT_COLOR = 0xE0E0E0;
     private static final int DEFAULT_BACKGROUND_COLOR = 0xFF000000;
 
+    /** Presets for caret opacity changes. Custom timing is configured separately. */
     public enum CursorAnimationMode {
+        /** Switches between visible and hidden without a fade. */
         INSTANT,
+        /** Fades opacity using ease-in-out timing. */
         FADE
     }
 
-    private final State<String> text = new StateImpl<>("");
-    private final State<Integer> cursorLine = new StateImpl<>(0);
-    private final State<Integer> cursorColumn = new StateImpl<>(0);
-    private final State<Integer> selectionStart = new StateImpl<>(0);
-    private final State<Integer> selectionEnd = new StateImpl<>(0);
-    private final State<Integer> scrollLine = new StateImpl<>(0);
-    private final State<Boolean> focused = new StateImpl<>(false);
+    private final State<String> text = State.of("");
+    private final State<Integer> cursorLine = State.of(0);
+    private final State<Integer> cursorColumn = State.of(0);
+    private final State<Integer> selectionStart = State.of(0);
+    private final State<Integer> selectionEnd = State.of(0);
+    private final State<Integer> scrollLine = State.of(0);
+    private final State<Boolean> focused = State.of(false);
 
     private static final int SELECTION_COLOR = 0x800000FF;
 
@@ -82,10 +88,16 @@ public class TextArea extends BaseElement implements IComposableElement {
     private int composedVisibleLines;
     private int placedHeight = -1;
 
+    /**
+     * Creates an empty editable field with a 500-code-unit length limit.
+     */
     public TextArea() {
         this.updateLines();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void compose(ICompositionScope scope) {
         this.composedVisibleLines = this.getVisibleLines();
@@ -468,17 +480,26 @@ public class TextArea extends BaseElement implements IComposableElement {
         return Math.max(1, (bounds.height() - 8) / this.lineHeight);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean isFocusable() {
         return this.editable;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void onDetached() {
         this.cursorBlink.detach();
         this.focused.set(false);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Component getNarrationMessage() {
         return Component.translatable("gui.narrate.editBox", this.hint != null ? this.hint : Component.empty(), this.text.get());
@@ -537,10 +558,20 @@ public class TextArea extends BaseElement implements IComposableElement {
         }
     }
 
+    /**
+     * Returns the current unformatted text.
+     *
+     * @return the current text
+     */
     public String getValue() {
         return this.text.get();
     }
 
+    /**
+     * Replaces accepted text, applies the length limit, and resets the caret, selection, and scroll to the start.
+     *
+     * @param value the proposed non-null text; rejected values leave the field unchanged
+     */
     public void setValue(String value) {
         if (this.filter.test(value)) {
             String clamped = TextEditing.truncate(value, this.maxLength);
@@ -555,6 +586,12 @@ public class TextArea extends BaseElement implements IComposableElement {
         }
     }
 
+    /**
+     * Sets the UTF-16 length limit. Existing text is truncated without splitting a surrogate pair and the responder is notified.
+     *
+     * @param maxLength the nonnegative maximum number of UTF-16 code units
+     * @throws IllegalArgumentException if maxLength is negative
+     */
     public void setMaxLength(int maxLength) {
         if (maxLength < 0) throw new IllegalArgumentException("Maximum text length must be nonnegative");
         this.maxLength = maxLength;
@@ -569,37 +606,81 @@ public class TextArea extends BaseElement implements IComposableElement {
         }
     }
 
+    /**
+     * Controls editing and keyboard focus eligibility; programmatic value changes remain available.
+     *
+     * @param editable whether to accept user edits
+     */
     public void setEditable(boolean editable) {
         this.editable = editable;
         this.invalidateComposition();
     }
 
+    /**
+     * Sets the text color.
+     *
+     * @param color the drawing color
+     */
     public void setTextColor(int color) {
         this.textColor = color;
     }
 
+    /**
+     * Sets the background ARGB color.
+     *
+     * @param color the drawing color
+     */
     public void setBackgroundColor(int color) {
         this.backgroundColor = color;
     }
 
+    /**
+     * Sets the predicate that accepts or rejects proposed complete text values.
+     *
+     * @param filter the non-null predicate for proposed complete values
+     */
     public void setFilter(Predicate<String> filter) {
         this.filter = filter;
     }
 
+    /**
+     * Sets the callback notified after accepted value changes.
+     *
+     * @param responder the callback receiving accepted values, or null to disable notifications
+     */
     public void setResponder(Consumer<String> responder) {
         this.responder = responder;
     }
 
+    /**
+     * Sets the placeholder displayed while the field is empty.
+     *
+     * @param hint the placeholder, or null to clear it
+     */
     public void setHint(Component hint) {
         this.hint = hint;
         this.invalidateComposition();
     }
 
+    /**
+     * Applies a 300-millisecond caret animation using step or ease-in-out timing.
+     *
+     * @param mode the non-null caret animation preset
+     * @return this element
+     */
     public TextArea setCursorAnimationMode(CursorAnimationMode mode) {
         this.cursorAnimationMode = Objects.requireNonNull(mode);
         return this.setCursorAnimation(300, mode == CursorAnimationMode.INSTANT ? Easing.STEP : Easing.EASE_IN_OUT);
     }
 
+    /**
+     * Configures the looping caret opacity animation and restarts it when already mounted.
+     *
+     * @param intervalMillis the positive duration of each fade direction in milliseconds
+     * @param easing the non-null easing function
+     * @return this element
+     * @throws IllegalArgumentException if intervalMillis is not positive
+     */
     public TextArea setCursorAnimation(long intervalMillis, Easing easing) {
         this.cursorBlink.configure(intervalMillis, easing);
         this.cursorAnimationMode = easing == Easing.STEP ? CursorAnimationMode.INSTANT : CursorAnimationMode.FADE;
@@ -607,18 +688,36 @@ public class TextArea extends BaseElement implements IComposableElement {
         return this;
     }
 
+    /**
+     * Returns the selected caret animation preset.
+     *
+     * @return the current preset
+     */
     public CursorAnimationMode getCursorAnimationMode() {
         return this.cursorAnimationMode;
     }
 
+    /**
+     * Returns whether user editing is enabled.
+     *
+     * @return true when user editing is enabled
+     */
     public boolean isEditable() {
         return this.editable;
     }
 
+    /**
+     * Returns whether the tree has focused this editor.
+     *
+     * @return true when this editor has focus
+     */
     public boolean isFocused() {
         return this.focused.get();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (!measuredChildren.isEmpty()) {
@@ -630,6 +729,9 @@ public class TextArea extends BaseElement implements IComposableElement {
         );
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         boolean widthChanged = this.wrappedWidth != bounds.width() - 8;
@@ -654,6 +756,9 @@ public class TextArea extends BaseElement implements IComposableElement {
         return List.of(bounds);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public UICursor getCursor(int x, int y) {
         return this.editable ? CompoundCursors.IBEAM : null;

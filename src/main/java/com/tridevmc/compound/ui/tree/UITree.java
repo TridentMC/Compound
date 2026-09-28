@@ -124,7 +124,6 @@ public class UITree {
         return this.root != null;
     }
 
-    // Focus management
 
     public ITreeNode getNodeForElement(IElement element) {
         return this.elementToNode.get(element);
@@ -273,7 +272,6 @@ public class UITree {
             return null;
         }
 
-        // Update viewport if this element clips
         Bounds viewport = activeViewport;
         if (node.getLayoutProperties().isClip()) {
             if (activeViewport != null) {
@@ -353,7 +351,6 @@ public class UITree {
 
     @Deprecated
     public void bindNodeToState(ITreeNode node, State<?> state) {
-        // Default to composition binding for backward compatibility
         node.bindCompositionState(state);
     }
 
@@ -373,8 +370,6 @@ public class UITree {
             return;
         }
 
-        // Update animations FIRST using Minecraft's tick system
-        // This updates animation state values for the current tick
         this.animationScheduler.updateAnimations(context.getTicks());
 
         this.flushRecompositions();
@@ -415,8 +410,6 @@ public class UITree {
             }
         }
 
-        // Debug overlay rendered AFTER normal rendering (on top)
-        // Individual elements have zero awareness of debug mode
         if (DebugOverlayConfig.get().isEnabled()) {
             this.debugRenderer.render(context, this.input.hoveredNode());
         }
@@ -449,7 +442,6 @@ public class UITree {
         }
 
         if (element instanceof IPrimitiveElement primitive) {
-            // Optimization: only draw if element intersects viewport
             if (viewport == null || viewport.intersects(element.getBounds())) {
                 primitive.draw(context);
             }

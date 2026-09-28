@@ -27,22 +27,37 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * A primitive element that renders a gradient rectangle.
+ * A primitive rectangle with a vertical gradient between two ARGB colors.
  */
 public class GradientRect extends BasePrimitiveElement {
 
     private Supplier<Integer> topColorSupplier;
     private Supplier<Integer> bottomColorSupplier;
 
+    /**
+     * Creates a vertically shaded rectangle.
+     *
+     * @param topColor the top-edge ARGB color
+     * @param bottomColor the bottom-edge ARGB color
+     */
     public GradientRect(int topColor, int bottomColor) {
         this(() -> topColor, () -> bottomColor);
     }
 
+    /**
+     * Creates a vertically shaded rectangle.
+     *
+     * @param topColorSupplier the non-null supplier of top-edge ARGB colors
+     * @param bottomColorSupplier the non-null supplier of bottom-edge ARGB colors
+     */
     public GradientRect(Supplier<Integer> topColorSupplier, Supplier<Integer> bottomColorSupplier) {
         this.topColorSupplier = topColorSupplier;
         this.bottomColorSupplier = bottomColorSupplier;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
         return new Size(constraints.maxWidth(), constraints.maxHeight());
@@ -55,18 +70,38 @@ public class GradientRect extends BasePrimitiveElement {
         context.drawGradientRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), topColor, bottomColor);
     }
 
+    /**
+     * Returns the supplier for the gradient's top edge.
+     *
+     * @return the configured supplier
+     */
     public Supplier<Integer> getTopColorSupplier() {
         return this.topColorSupplier;
     }
 
+    /**
+     * Replaces the top-edge color supplier sampled during drawing.
+     *
+     * @param topColorSupplier the non-null supplier of top-edge ARGB colors
+     */
     public void setTopColorSupplier(Supplier<Integer> topColorSupplier) {
         this.topColorSupplier = topColorSupplier;
     }
 
+    /**
+     * Returns the supplier for the gradient's bottom edge.
+     *
+     * @return the configured supplier
+     */
     public Supplier<Integer> getBottomColorSupplier() {
         return this.bottomColorSupplier;
     }
 
+    /**
+     * Replaces the bottom-edge color supplier sampled during drawing.
+     *
+     * @param bottomColorSupplier the non-null supplier of bottom-edge ARGB colors
+     */
     public void setBottomColorSupplier(Supplier<Integer> bottomColorSupplier) {
         this.bottomColorSupplier = bottomColorSupplier;
     }

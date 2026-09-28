@@ -29,26 +29,46 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * A primitive element that renders an item stack.
+ * Draws an item stack and its decorations in a 16-pixel intrinsic area. Suppliers are sampled
+ * each frame; a null or empty stack draws nothing.
  */
 public class ItemDisplay extends BasePrimitiveElement {
 
     private Supplier<ItemStack> itemStackSupplier;
     private Supplier<String> countOverrideSupplier;
 
+    /**
+     * Creates an item display with vanilla count text unless an override is supplied.
+     *
+     * @param itemStack the displayed stack; null or empty draws nothing
+     */
     public ItemDisplay(ItemStack itemStack) {
         this(() -> itemStack, () -> null);
     }
 
+    /**
+     * Creates an item display with vanilla count text unless an override is supplied.
+     *
+     * @param itemStackSupplier the non-null supplier of stacks; null or empty results draw nothing
+     */
     public ItemDisplay(Supplier<ItemStack> itemStackSupplier) {
         this(itemStackSupplier, () -> null);
     }
 
+    /**
+     * Creates an item display with vanilla count text unless an override is supplied.
+     *
+     * @param itemStackSupplier the non-null supplier of stacks; null or empty results draw nothing
+     * @param countOverrideSupplier the non-null supplier of count labels; a null result uses the vanilla count
+     */
     public ItemDisplay(Supplier<ItemStack> itemStackSupplier, Supplier<String> countOverrideSupplier) {
         this.itemStackSupplier = itemStackSupplier;
         this.countOverrideSupplier = countOverrideSupplier;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
         int size = Math.min(constraints.maxWidth(), constraints.maxHeight());
@@ -68,18 +88,38 @@ public class ItemDisplay extends BasePrimitiveElement {
         context.drawItemStack(itemStack, rect, countOverride);
     }
 
+    /**
+     * Returns the stack supplier sampled during drawing.
+     *
+     * @return the configured supplier
+     */
     public Supplier<ItemStack> getItemStackSupplier() {
         return this.itemStackSupplier;
     }
 
+    /**
+     * Replaces the stack supplier sampled during drawing.
+     *
+     * @param itemStackSupplier the non-null supplier of stacks; null or empty results draw nothing
+     */
     public void setItemStackSupplier(Supplier<ItemStack> itemStackSupplier) {
         this.itemStackSupplier = itemStackSupplier;
     }
 
+    /**
+     * Returns the supplier for the displayed count override.
+     *
+     * @return the configured supplier
+     */
     public Supplier<String> getCountOverrideSupplier() {
         return this.countOverrideSupplier;
     }
 
+    /**
+     * Replaces the count override supplier sampled during drawing.
+     *
+     * @param countOverrideSupplier the non-null supplier of count labels; a null result uses the vanilla count
+     */
     public void setCountOverrideSupplier(Supplier<String> countOverrideSupplier) {
         this.countOverrideSupplier = countOverrideSupplier;
     }

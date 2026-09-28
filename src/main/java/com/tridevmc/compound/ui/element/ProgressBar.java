@@ -25,7 +25,6 @@ import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.state.State;
-import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.network.chat.Component;
 
 import javax.annotation.Nonnull;
@@ -34,13 +33,17 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+/**
+ * A progress indicator with optional labels and an animated indeterminate mode.
+ * Progress uses a configurable maximum, initially one.
+ */
 public class ProgressBar extends BaseElement implements IComposableElement {
 
     private static final int DEFAULT_MIN_WIDTH = 100;
     private static final int DEFAULT_HEIGHT = 12;
 
-    private final State<Double> progress = new StateImpl<>(0.0);
-    private final State<Boolean> indeterminate = new StateImpl<>(false);
+    private final State<Double> progress = State.of(0.0);
+    private final State<Boolean> indeterminate = State.of(false);
 
     private int backgroundColor = 0x00000000;
     private int fillColor = 0xFFFFFFFF;
@@ -52,9 +55,15 @@ public class ProgressBar extends BaseElement implements IComposableElement {
     private Consumer<Void> onCompleted;
     private double maxProgress = 1.0;
 
+    /**
+     * Creates an empty progress bar with a maximum of one.
+     */
     public ProgressBar() {
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void compose(ICompositionScope scope) {
         scope.bindLayout(this.progress);
@@ -103,6 +112,11 @@ public class ProgressBar extends BaseElement implements IComposableElement {
         });
     }
 
+    /**
+     * Clamps progress to zero through the maximum and notifies the completion callback on an upward crossing.
+     *
+     * @param progress the requested progress in the current maximum's units
+     */
     public void setProgress(double progress) {
         double oldProgress = this.progress.get();
         double clamped = Math.clamp(progress, 0.0, this.maxProgress);
@@ -113,68 +127,142 @@ public class ProgressBar extends BaseElement implements IComposableElement {
         }
     }
 
+    /**
+     * Clamps progress to zero through the maximum and notifies the completion callback on an upward crossing.
+     *
+     * @param current the requested progress in the given maximum's units
+     * @param max the finite, nonnegative maximum
+     */
     public void setProgress(double current, double max) {
         this.maxProgress = max;
         this.setProgress(current);
         this.invalidateLayout();
     }
 
+    /**
+     * Returns progress in the configured maximum's units.
+     *
+     * @return the current absolute progress
+     */
     public double getProgress() {
         return this.progress.get();
     }
 
+    /**
+     * Returns progress divided by the maximum, or zero when the maximum is not positive.
+     *
+     * @return the normalized progress
+     */
     public double getNormalizedProgress() {
         return this.maxProgress > 0 ? this.progress.get() / this.maxProgress : 0.0;
     }
 
+    /**
+     * Switches between a measured fill and a looping animated sweep.
+     *
+     * @param indeterminate whether to show an animated sweep
+     */
     public void setIndeterminate(boolean indeterminate) {
         this.indeterminate.set(indeterminate);
     }
 
+    /**
+     * Returns whether the animated sweep is enabled.
+     *
+     * @return true when enabled
+     */
     public boolean isIndeterminate() {
         return this.indeterminate.get();
     }
 
+    /**
+     * Controls the default percentage label and requests recomposition.
+     *
+     * @param show whether to display it
+     */
     public void setShowPercentage(boolean show) {
         this.showPercentage = show;
         this.invalidateComposition();
     }
 
+    /**
+     * Controls the current/maximum label and requests recomposition.
+     *
+     * @param show whether to display it
+     */
     public void setShowFraction(boolean show) {
         this.showFraction = show;
         this.invalidateComposition();
     }
 
+    /**
+     * Sets a fixed label that takes precedence over generated labels.
+     *
+     * @param label the fixed label, or null to use generated labels
+     */
     public void setLabel(Component label) {
         this.label = label;
         this.invalidateComposition();
     }
 
+    /**
+     * Sets a formatter used when no fixed, percentage, or fraction label is enabled.
+     *
+     * @param formatter the formatter receiving absolute progress, or null to disable it
+     */
     public void setLabelFormatter(Function<Double, String> formatter) {
         this.labelFormatter = formatter;
         this.invalidateComposition();
     }
 
+    /**
+     * Sets the callback invoked when setProgress moves from below the maximum to the maximum.
+     *
+     * @param onCompleted the callback receiving null on completion, or null to disable it
+     */
     public void setOnCompleted(Consumer<Void> onCompleted) {
         this.onCompleted = onCompleted;
     }
 
+    /**
+     * Sets the background ARGB color.
+     *
+     * @param color the drawing color
+     */
     public void setBackgroundColor(int color) {
         this.backgroundColor = color;
     }
 
+    /**
+     * Sets the progress fill ARGB color.
+     *
+     * @param color the drawing color
+     */
     public void setFillColor(int color) {
         this.fillColor = color;
     }
 
+    /**
+     * Sets the text color.
+     *
+     * @param color the drawing color
+     */
     public void setTextColor(int color) {
         this.textColor = color;
     }
 
+    /**
+     * Returns the live progress state. Prefer setProgress for clamping and completion callbacks.
+     *
+     * @return the live state; changes notify its observers
+     */
     public State<Double> getProgressState() {
         return this.progress;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (!measuredChildren.isEmpty()) {
@@ -186,6 +274,9 @@ public class ProgressBar extends BaseElement implements IComposableElement {
         );
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {

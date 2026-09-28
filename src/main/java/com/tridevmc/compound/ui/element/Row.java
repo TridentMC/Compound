@@ -23,11 +23,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A container that lays out children horizontally in a row.
- * Uses verticalAlignment and spacing properties from LayoutProperties.
+ * Arranges children from left to right in composition order.
+ * Configure spacing and vertical alignment through the scope layout properties.
+ * Child weights divide remaining width when the available width is bounded.
  */
 public class Row extends BaseContainer {
 
+    /** Creates an empty horizontal layout; configure spacing and alignment through its scope. */
+    public Row() {
+    }
+
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
@@ -47,6 +53,7 @@ public class Row extends BaseContainer {
         return new Size(totalWidth, maxHeight);
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {

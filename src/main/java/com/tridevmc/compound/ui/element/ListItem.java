@@ -32,6 +32,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+/**
+ * A selectable-looking list row configured through {@link #builder(Component)}.
+ * Selection, hover, and colors are supplied by the owner; the row does not change those
+ * values itself. Click and hover callbacks let a list coordinate its rows.
+ */
 public class ListItem extends BaseElement implements IComposableElement {
 
     private final Component label;
@@ -55,10 +60,21 @@ public class ListItem extends BaseElement implements IComposableElement {
         this.defaultTextColor = builder.defaultTextColor;
     }
 
+    /**
+     * Starts a row builder with unselected, unhovered defaults and white text.
+     *
+     * @param label the row label.
+     * @return a new builder.
+     * @throws NullPointerException if the label is null.
+     */
     public static Builder builder(Component label) {
         return new Builder(label);
     }
 
+    /**
+     * Configures a list row using live state and color suppliers.
+     * Unselected rows are transparent; selected and hovered backgrounds default to gray.
+     */
     public static final class Builder {
         private final Component label;
         private Supplier<Boolean> selected = () -> false;
@@ -72,41 +88,89 @@ public class ListItem extends BaseElement implements IComposableElement {
             this.label = Objects.requireNonNull(label);
         }
 
+        /**
+         * Sets the live selection supplier; the default is false.
+         *
+         * @param selected the non-null supplier.
+         * @return this builder.
+         * @throws NullPointerException if the supplier is null.
+         */
         public Builder selected(Supplier<Boolean> selected) {
             this.selected = Objects.requireNonNull(selected);
             return this;
         }
 
+        /**
+         * Sets the live hover supplier; the default is false.
+         *
+         * @param hovered the non-null supplier.
+         * @return this builder.
+         * @throws NullPointerException if the supplier is null.
+         */
         public Builder hovered(Supplier<Boolean> hovered) {
             this.hovered = Objects.requireNonNull(hovered);
             return this;
         }
 
+        /**
+         * Sets the ARGB background supplier used when selected.
+         *
+         * @param color the non-null supplier.
+         * @return this builder.
+         * @throws NullPointerException if the supplier is null.
+         */
         public Builder selectedBackgroundColor(Supplier<Integer> color) {
             this.selectedBackgroundColor = Objects.requireNonNull(color);
             return this;
         }
 
+        /**
+         * Sets the ARGB background supplier used when hovered but not selected.
+         *
+         * @param color the non-null supplier.
+         * @return this builder.
+         * @throws NullPointerException if the supplier is null.
+         */
         public Builder hoveredBackgroundColor(Supplier<Integer> color) {
             this.hoveredBackgroundColor = Objects.requireNonNull(color);
             return this;
         }
 
+        /**
+         * Sets the text color supplier used when selected or hovered.
+         *
+         * @param color the non-null supplier.
+         * @return this builder.
+         * @throws NullPointerException if the supplier is null.
+         */
         public Builder selectedTextColor(Supplier<Integer> color) {
             this.selectedTextColor = Objects.requireNonNull(color);
             return this;
         }
 
+        /**
+         * Sets the text color supplier used when neither selected nor hovered.
+         *
+         * @param color the non-null supplier.
+         * @return this builder.
+         * @throws NullPointerException if the supplier is null.
+         */
         public Builder defaultTextColor(Supplier<Integer> color) {
             this.defaultTextColor = Objects.requireNonNull(color);
             return this;
         }
 
+        /**
+         * Creates a row retaining the configured suppliers.
+         *
+         * @return a new list row.
+         */
         public ListItem build() {
             return new ListItem(this);
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public void compose(ICompositionScope scope) {
         scope.onClick(event -> {
@@ -135,15 +199,27 @@ public class ListItem extends BaseElement implements IComposableElement {
         });
     }
 
+    /**
+     * Adds a left-click handler; existing handlers remain registered.
+     *
+     * @param handler the action to run on a left click.
+     */
     public void setClickHandler(Runnable handler) {
         this.clickHandlers.add(handler);
     }
 
+    /**
+     * Replaces the pointer entry and exit handlers.
+     *
+     * @param enter the action on pointer entry.
+     * @param exit the action on pointer exit.
+     */
     public void setHoverHandlers(Runnable enter, Runnable exit) {
         this.hoverEnterHandler = enter;
         this.hoverExitHandler = exit;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (!measuredChildren.isEmpty()) {
@@ -152,6 +228,7 @@ public class ListItem extends BaseElement implements IComposableElement {
         return new Size(0, 0);
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {

@@ -26,22 +26,30 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
- * Base implementation of IElement with common functionality.
- * Concrete elements should extend this class.
+ * Base class for custom elements with tree-managed bounds and lifecycle.
+ * Extend this class and implement the appropriate element interface. An instance may be
+ * mounted in one tree position at a time; keep consumer state in fields when it must survive recomposition.
  */
 public abstract class BaseElement implements IElementInternal {
     private ITreeNode node;
 
+    /** Creates an unattached element; the tree assigns its node when mounted. */
+    public BaseElement() {
+    }
+
+    /** {@inheritDoc} */
     @Override
     public Bounds getBounds() {
         return this.node != null ? this.node.getBounds() : new Bounds(0, 0, 0, 0);
     }
 
+    /** {@inheritDoc} */
     @Override
     public ITreeNode getNode() {
         return this.node;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void setNode(ITreeNode node) {
         this.node = node;
@@ -61,17 +69,21 @@ public abstract class BaseElement implements IElementInternal {
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public void onAttached() {
     }
 
+    /** {@inheritDoc} */
     @Override
     public void onDetached() {
     }
 
+    /** {@inheritDoc} */
     @Override
     public abstract Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren);
 
+    /** {@inheritDoc} */
     @Override
     public abstract List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren);
 }

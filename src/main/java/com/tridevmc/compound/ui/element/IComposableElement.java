@@ -19,15 +19,16 @@ package com.tridevmc.compound.ui.element;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 
 /**
- * "Smart" components that encapsulate behavior and have internal composition.
- * Composable elements have internal children created via composition, but are not
- * containers from the external perspective.
+ * Component that builds its own child tree and exposes customization through slots.
+ * Consumers configure it through a composable-element scope; subclasses build children
+ * in {@link #compose}.
  */
 public interface IComposableElement extends IElement {
 
     /**
-     * Internal composition method.
-     * Called once during tree construction to build this element's internal UI.
+     * Builds this element's children on attachment and whenever its composition is invalidated.
+     * Previous children are detached before replay. Keep persistent consumer state in fields;
+     * callbacks and composition-local resources registered here are replaced on replay.
      *
      * @param scope the composition scope for building internal UI
      */

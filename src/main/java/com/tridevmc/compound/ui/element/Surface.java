@@ -29,10 +29,12 @@ import java.util.function.Supplier;
 
 /**
  * A composable surface with a solid background and an optional uniform border.
- * Replaces ad-hoc construction of backgrounds and borders from raw {@link Rect} primitives.
+ * Colors are sampled each frame. Content in {@link #CONTENT_SLOT} fills the surface;
+ * apply content padding when it must stay clear of the border.
  */
 public class Surface extends BaseElement implements IComposableElement {
 
+    /** The slot containing this element's consumer-provided content. */
     public static final SlotKey CONTENT_SLOT = new SlotKey("content");
 
     private final Supplier<Integer> backgroundColor;
@@ -42,9 +44,9 @@ public class Surface extends BaseElement implements IComposableElement {
     /**
      * Creates a surface with the given background and border colors.
      *
-     * @param backgroundColor the background color supplier
-     * @param borderColor     the border color supplier
-     * @param borderWidth     the border width in pixels
+     * @param backgroundColor the non-null supplier of ARGB background colors
+     * @param borderColor     the non-null supplier of ARGB border colors
+     * @param borderWidth     the border width in pixels; zero or negative values disable the border
      */
     public Surface(Supplier<Integer> backgroundColor, Supplier<Integer> borderColor, int borderWidth) {
         this.backgroundColor = backgroundColor;
@@ -55,7 +57,7 @@ public class Surface extends BaseElement implements IComposableElement {
     /**
      * Creates a surface with the given background color and no border.
      *
-     * @param backgroundColor the background color supplier
+     * @param backgroundColor the non-null supplier of ARGB background colors
      */
     public Surface(Supplier<Integer> backgroundColor) {
         this(backgroundColor, () -> 0, 0);
@@ -64,9 +66,9 @@ public class Surface extends BaseElement implements IComposableElement {
     /**
      * Creates a surface with constant colors.
      *
-     * @param backgroundColor the background color
-     * @param borderColor     the border color
-     * @param borderWidth     the border width in pixels
+     * @param backgroundColor the ARGB background color
+     * @param borderColor     the ARGB border color
+     * @param borderWidth     the border width in pixels; zero or negative values disable the border
      */
     public Surface(int backgroundColor, int borderColor, int borderWidth) {
         this(() -> backgroundColor, () -> borderColor, borderWidth);
@@ -75,12 +77,15 @@ public class Surface extends BaseElement implements IComposableElement {
     /**
      * Creates a surface with a constant background color and no border.
      *
-     * @param backgroundColor the background color
+     * @param backgroundColor the ARGB background color
      */
     public Surface(int backgroundColor) {
         this(() -> backgroundColor, () -> 0, 0);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void compose(ICompositionScope scope) {
         scope.e(new Stack(), stack -> {
@@ -97,6 +102,9 @@ public class Surface extends BaseElement implements IComposableElement {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (!measuredChildren.isEmpty()) {
@@ -105,6 +113,9 @@ public class Surface extends BaseElement implements IComposableElement {
         return new Size(0, 0);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {

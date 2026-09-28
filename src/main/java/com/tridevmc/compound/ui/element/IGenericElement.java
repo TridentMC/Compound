@@ -30,46 +30,45 @@ import java.util.List;
 public interface IGenericElement {
 
     /**
-     * Layout Phase 1: Measure (bottom-up).
-     * Returns the intrinsic size given constraints, layout properties, and measured child sizes.
-     * The tree has already measured children with their layout properties applied.
-     * Element calculates its intrinsic size based on measured children (for containers)
-     * or its own content (for primitives).
+     * Measures content after the tree has measured the children.
+     * Return the intrinsic content size; the tree adds this element's padding and margins
+     * and applies fixed, minimum, maximum, and fill constraints.
      *
      * @param constraints      the constraints for measuring this element's content
      * @param ownProperties    this element's layout properties (padding, spacing, alignment, etc.)
-     * @param measuredChildren sizes of children (INCLUDING their margins) already measured by tree
+     * @param measuredChildren sizes of children including their margins already measured by tree
      * @return the intrinsic size of this element (tree will add padding and apply other properties)
      */
     Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren);
 
     /**
-     * Layout Phase 2: Place (top-down).
-     * Calculates bounds for children based on this element's layout algorithm.
-     * Element is a pure function - all inputs provided as parameters.
-     * Tree will apply child margins and recursively place children.
+     * Allocates child bounds in screen coordinates after this element has been placed.
+     * Return one entry per child, in composition order, including each child's margins.
+     * The tree removes those margins before recursively placing each child.
      *
-     * @param bounds           this element's final bounds (set via setBounds before this is called)
+     * @param bounds           this element's final bounds, including padding but excluding its own margins
      * @param ownProperties    this element's layout properties
-     * @param measuredChildren sizes of children (INCLUDING their margins)
-     * @return bounds for each child (INCLUDING space for margins), tree will offset by child's margin
+     * @param measuredChildren sizes of children including their margins
+     * @return one allocated bounds entry per child, including space for its margins
      */
     List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren);
 
     /**
-     * Lifecycle: Called when element is attached to the tree.
+     * Called after the element is attached, before its children are composed and measured.
      */
     void onAttached();
 
     /**
-     * Lifecycle: Called when element is detached from the tree.
+     * Called when the element leaves the tree, including removal during parent recomposition.
+     * Release element-owned external resources here; tree-owned subscriptions are cleaned up by the tree.
      */
     void onDetached();
 
     /**
      * Gets the current bounds after placement.
      *
-     * @return the current bounds
+     * @return the placed screen bounds, possibly null before the first layout;
+     *         {@link BaseElement} returns empty bounds while detached
      */
     Bounds getBounds();
 }

@@ -23,7 +23,6 @@ import com.tridevmc.compound.ui.layout.*;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
-import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -33,20 +32,9 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * A tabbed container component for organizing content into multiple tabs.
- *
- * <p><strong>Usage:</strong></p>
- * <pre>
- * scope.e(new Tabs(), tabs -> {
- *     tabs.getElement().addTab("General", tabScope -> {
- *         tabScope.e(new Label(Component.literal("General settings")));
- *     });
- *     tabs.getElement().addTab("Advanced", tabScope -> {
- *         tabScope.e(new Label(Component.literal("Advanced settings")));
- *     });
- *     tabs.getElement().setSelectedTab(0);
- * });
- * </pre>
+ * A tabbed container that composes only the selected tab's body.
+ * Retain the Tabs instance to preserve its selection; retain stateful body elements
+ * separately if their state should survive switching tabs. Disabled tabs cannot be selected.
  */
 public class Tabs extends BaseElement implements IComposableElement {
 
@@ -63,14 +51,18 @@ public class Tabs extends BaseElement implements IComposableElement {
     private static final IScreenSprite TAB_SELECTED_HIGHLIGHTED_SPRITE = IScreenSprite.of(
             Identifier.withDefaultNamespace("widget/tab_selected_highlighted"));
 
-    private final State<Integer> selectedIndex = new StateImpl<>(0);
-    private final State<Boolean> enabled = new StateImpl<>(true);
+    private final State<Integer> selectedIndex = State.of(0);
+    private final State<Boolean> enabled = State.of(true);
     private final List<Tab> tabs = Lists.newArrayList();
     private Consumer<Integer> onTabChanged;
 
+    /**
+     * Creates an empty, enabled tab container.
+     */
     public Tabs() {
     }
 
+    /** {@inheritDoc} */
     @Override
     public void compose(ICompositionScope scope) {
         scope.e(new Column(), column -> {
@@ -116,21 +108,45 @@ public class Tabs extends BaseElement implements IComposableElement {
         }
     }
 
+    /**
+     * Appends an enabled tab. Its body is composed only when selected.
+     *
+     * @param label the tab label.
+     * @param content the callback that composes the tab body.
+     */
     public void addTab(String label, Consumer<ICompositionScope> content) {
         this.tabs.add(new Tab(Component.literal(label), content, true));
         this.invalidate();
     }
 
+    /**
+     * Appends an enabled tab. Its body is composed only when selected.
+     *
+     * @param label the tab label.
+     * @param content the callback that composes the tab body.
+     */
     public void addTab(Component label, Consumer<ICompositionScope> content) {
         this.tabs.add(new Tab(label, content, true));
         this.invalidate();
     }
 
+    /**
+     * Appends a tab with the given enabled state.
+     *
+     * @param label the tab label.
+     * @param content the callback that composes the selected body.
+     * @param enabled whether the tab can be selected.
+     */
     public void addTab(String label, Consumer<ICompositionScope> content, boolean enabled) {
         this.tabs.add(new Tab(Component.literal(label), content, enabled));
         this.invalidate();
     }
 
+    /**
+     * Removes a tab and keeps an enabled selection where possible, without a change callback.
+     *
+     * @param index the zero-based index; invalid indices are ignored.
+     */
     public void removeTab(int index) {
         if (index >= 0 && index < this.tabs.size()) {
             this.tabs.remove(index);
@@ -142,6 +158,11 @@ public class Tabs extends BaseElement implements IComposableElement {
         }
     }
 
+    /**
+     * Selects an enabled tab and invokes the callback when the selection changes.
+     *
+     * @param index the zero-based index; absent or disabled tabs are ignored.
+     */
     public void setSelectedTab(int index) {
         if (index < 0 || index >= this.tabs.size()) return;
         if (!this.tabs.get(index).enabled) return;
@@ -153,10 +174,21 @@ public class Tabs extends BaseElement implements IComposableElement {
         }
     }
 
+    /**
+     * Returns the stored selected index.
+     *
+     * @return the zero-based index, or -1 after selection repair finds no enabled tab.
+     */
     public int getSelectedTab() {
         return this.selectedIndex.get();
     }
 
+    /**
+     * Changes a tab's availability, repairing selection without invoking the change callback.
+     *
+     * @param index the zero-based index; invalid indices are ignored.
+     * @param enabled whether the tab can be selected.
+     */
     public void setTabEnabled(int index, boolean enabled) {
         if (index >= 0 && index < this.tabs.size()) {
             var tab = this.tabs.get(index);
@@ -166,18 +198,38 @@ public class Tabs extends BaseElement implements IComposableElement {
         }
     }
 
+    /**
+     * Replaces the callback invoked when {@link #setSelectedTab(int)} changes the selection.
+     *
+     * @param onTabChanged the callback receiving the new index, or null to remove it.
+     */
     public void setOnTabChanged(Consumer<Integer> onTabChanged) {
         this.onTabChanged = onTabChanged;
     }
 
+    /**
+     * Returns the number of tabs.
+     *
+     * @return the tab count.
+     */
     public int getTabCount() {
         return this.tabs.size();
     }
 
+    /**
+     * Returns whether user interaction is enabled.
+     *
+     * @return true when enabled.
+     */
     public boolean isEnabled() {
         return this.enabled.get();
     }
 
+    /**
+     * Changes whether user interaction is enabled.
+     *
+     * @param enabled whether to accept user interaction.
+     */
     public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
         for (var tab : this.tabs) {
@@ -202,6 +254,7 @@ public class Tabs extends BaseElement implements IComposableElement {
         this.selectedIndex.set(-1);
     }
 
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (!measuredChildren.isEmpty()) {
@@ -210,6 +263,7 @@ public class Tabs extends BaseElement implements IComposableElement {
         return new Size(constraints.maxWidth(), constraints.maxHeight());
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
@@ -218,6 +272,7 @@ public class Tabs extends BaseElement implements IComposableElement {
         return List.of(bounds);
     }
 
+    /** {@inheritDoc} */
     @Override
     public UICursor getCursor(int x, int y) {
         return this.enabled.get() ? CompoundCursors.HAND : null;

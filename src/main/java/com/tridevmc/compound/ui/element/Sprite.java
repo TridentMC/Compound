@@ -27,18 +27,35 @@ import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import java.util.List;
 import java.util.function.Supplier;
 
+/**
+ * Draws a screen sprite in the assigned bounds. A null sprite suppresses drawing.
+ * Sprite suppliers are sampled each frame.
+ */
 public class Sprite extends BasePrimitiveElement {
 
     private Supplier<IScreenSprite> spriteSupplier;
 
+    /**
+     * Creates a sprite element.
+     *
+     * @param sprite the sprite to draw, or null to suppress drawing
+     */
     public Sprite(IScreenSprite sprite) {
         this(() -> sprite);
     }
 
+    /**
+     * Creates a sprite element.
+     *
+     * @param spriteSupplier the non-null sprite supplier; a null result suppresses drawing
+     */
     public Sprite(Supplier<IScreenSprite> spriteSupplier) {
         this.spriteSupplier = spriteSupplier;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
         // If fillMax is set, the sprite should NOT affect parent sizing
@@ -68,14 +85,29 @@ public class Sprite extends BasePrimitiveElement {
         context.drawSprite(sprite, rect);
     }
 
+    /**
+     * Evaluates the current sprite supplier.
+     *
+     * @return the current sprite, or null
+     */
     public IScreenSprite getSprite() {
         return this.spriteSupplier.get();
     }
 
+    /**
+     * Replaces the sprite supplier with a constant.
+     *
+     * @param sprite the sprite to draw, or null to suppress drawing
+     */
     public void setSprite(IScreenSprite sprite) {
         this.spriteSupplier = () -> sprite;
     }
 
+    /**
+     * Replaces the sprite supplier sampled during drawing.
+     *
+     * @param spriteSupplier the non-null sprite supplier; a null result suppresses drawing
+     */
     public void setSpriteSupplier(Supplier<IScreenSprite> spriteSupplier) {
         this.spriteSupplier = spriteSupplier;
     }

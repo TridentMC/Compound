@@ -32,7 +32,6 @@ import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
-import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
@@ -47,6 +46,11 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+/**
+ * An animated on/off control using vanilla slider textures by default.
+ * User activation notifies listeners; {@link #setOn(boolean)} changes the state and
+ * animates the thumb silently. Retain the instance to preserve its on/off state.
+ */
 public class ToggleSwitch extends BaseElement implements IComposableElement {
 
     private static final int DEFAULT_WIDTH = 50;
@@ -99,9 +103,9 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
         }
     }
 
-    private final State<Boolean> on = new StateImpl<>(false);
-    private final State<Boolean> enabled = new StateImpl<>(true);
-    private final State<Boolean> hovered = new StateImpl<>(false);
+    private final State<Boolean> on = State.of(false);
+    private final State<Boolean> enabled = State.of(true);
+    private final State<Boolean> hovered = State.of(false);
     private final List<Consumer<Boolean>> changeListeners = Lists.newArrayList();
 
     private int onColor = 0xFF4CAF50;
@@ -114,24 +118,35 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
     private boolean useTextures = true;
     private AnimatedState<Integer> thumbAnimation;
 
+    /**
+     * Creates an enabled switch in the off state.
+     */
     public ToggleSwitch() {
     }
 
+    /**
+     * Creates an enabled switch with the given initial state.
+     *
+     * @param initialState whether the switch starts on.
+     */
     public ToggleSwitch(boolean initialState) {
         this.on.set(initialState);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void onDetached() {
         this.thumbAnimation = null;
         this.hovered.set(false);
     }
 
+    /** {@inheritDoc} */
     @Override
     public Component getNarrationMessage() {
         return Component.translatable(this.on.get() ? "options.on" : "options.off");
     }
 
+    /** {@inheritDoc} */
     @Override
     public void compose(ICompositionScope scope) {
         if (this.thumbAnimation == null) {
@@ -216,6 +231,7 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
         });
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isFocusable() { return this.enabled.get(); }
 
@@ -234,10 +250,20 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
         this.changeListeners.forEach(listener -> listener.accept(newValue));
     }
 
+    /**
+     * Returns the on/off state.
+     *
+     * @return true when on.
+     */
     public boolean isOn() {
         return this.on.get();
     }
 
+    /**
+     * Sets the state and animates the thumb without invoking change listeners.
+     *
+     * @param on whether the switch should be on.
+     */
     public void setOn(boolean on) {
         this.on.set(on);
         if (this.thumbAnimation != null) {
@@ -246,60 +272,121 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
         }
     }
 
+    /**
+     * Returns the live on/off state. Use {@link #setOn(boolean)} to also animate the thumb.
+     *
+     * @return the retained state owned by this switch.
+     */
     public State<Boolean> getOnState() {
         return this.on;
     }
 
+    /**
+     * Returns whether user interaction is enabled.
+     *
+     * @return true when enabled.
+     */
     public boolean isEnabled() {
         return this.enabled.get();
     }
 
+    /**
+     * Changes whether user interaction is enabled.
+     *
+     * @param enabled whether to accept user interaction.
+     */
     public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
     }
 
+    /**
+     * Replaces all change listeners with one listener for user activation.
+     *
+     * @param listener the callback receiving the new state.
+     */
     public void setOnChanged(Consumer<Boolean> listener) {
         this.changeListeners.clear();
         this.changeListeners.add(listener);
     }
 
+    /**
+     * Adds a listener for user activation.
+     *
+     * @param listener the callback receiving the new state.
+     */
     public void addOnChangedListener(Consumer<Boolean> listener) {
         this.changeListeners.add(listener);
     }
 
+    /**
+     * Sets the on color used when textures are disabled.
+     *
+     * @param color the ARGB color.
+     */
     public void setOnColor(int color) {
         this.onColor = color;
         this.invalidateComposition();
     }
 
+    /**
+     * Sets the off color used when textures are disabled.
+     *
+     * @param color the ARGB color.
+     */
     public void setOffColor(int color) {
         this.offColor = color;
         this.invalidateComposition();
     }
 
+    /**
+     * Sets the thumb color used when textures are disabled.
+     *
+     * @param color the ARGB color.
+     */
     public void setThumbColor(int color) {
         this.thumbColor = color;
     }
 
+    /**
+     * Sets the label displayed in the on state.
+     *
+     * @param label the label, or null for none.
+     */
     public void setOnLabel(Component label) {
         this.onLabel = label;
         this.invalidateComposition();
     }
 
+    /**
+     * Sets the label displayed in the off state.
+     *
+     * @param label the label, or null for none.
+     */
     public void setOffLabel(Component label) {
         this.offLabel = label;
         this.invalidateComposition();
     }
 
+    /**
+     * Chooses vanilla slider sprites or the configured solid colors.
+     *
+     * @param useTextures true to use sprites, false to use solid colors.
+     */
     public void setUseTextures(boolean useTextures) {
         this.useTextures = useTextures;
         this.invalidateComposition();
     }
 
+    /**
+     * Returns whether the switch uses vanilla sprites.
+     *
+     * @return true when textures are enabled.
+     */
     public boolean isUsingTextures() {
         return this.useTextures;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (!measuredChildren.isEmpty()) {
@@ -308,6 +395,7 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
         return new Size(DEFAULT_WIDTH, DEFAULT_HEIGHT);
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
@@ -316,6 +404,7 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
         return List.of(bounds);
     }
 
+    /** {@inheritDoc} */
     @Override
     public UICursor getCursor(int x, int y) {
         return this.enabled.get() ? CompoundCursors.HAND : null;

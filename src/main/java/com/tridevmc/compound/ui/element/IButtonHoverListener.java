@@ -16,7 +16,15 @@
 
 package com.tridevmc.compound.ui.element;
 
+/** Receives transitions into and out of a button's hovered state. */
 @FunctionalInterface
 public interface IButtonHoverListener {
+    /**
+     * Handles a hover transition.
+     *
+     * @param x the button centre x coordinate, in screen GUI pixels
+     * @param y the button centre y coordinate, in screen GUI pixels
+     * @param hovered true when the pointer enters; false when it leaves
+     */
     void onButtonHover(double x, double y, boolean hovered);
 }

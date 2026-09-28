@@ -34,9 +34,8 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
- * A slot element for the compose UI system.
- * Integrates with vanilla inventory management while providing declarative composition.
- * Composes several primitives: background sprite, underlay rect, item, label, overlay rect.
+ * An 18-pixel inventory slot backed by a vanilla {@link Slot}. Container screens coordinate
+ * item interaction and refresh its display state; this element supplies the visual representation.
  */
 public class InventorySlot extends BaseElement implements IComposableElement {
 
@@ -82,6 +81,9 @@ public class InventorySlot extends BaseElement implements IComposableElement {
         this.displayStack = vanillaSlot.getItem();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         // InventorySlot has fixed intrinsic size (18x18)
@@ -89,6 +91,9 @@ public class InventorySlot extends BaseElement implements IComposableElement {
         return new Size(SLOT_SIZE, SLOT_SIZE);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
@@ -99,6 +104,9 @@ public class InventorySlot extends BaseElement implements IComposableElement {
         return List.of(bounds);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void compose(ICompositionScope scope) {
         // Compose as a stack with proper layering
@@ -128,26 +136,54 @@ public class InventorySlot extends BaseElement implements IComposableElement {
         // ComposedUIContainer extracts vanilla item tooltips after the tree and carried items.
     }
 
+    /**
+     * Returns the backing vanilla slot without copying it.
+     *
+     * @return the backing slot
+     */
     public Slot getVanillaSlot() {
         return this.vanillaSlot;
     }
 
+    /**
+     * Controls the highlight drawn above the slot item.
+     *
+     * @param drawOverlay whether to draw the front highlight
+     */
     public void setDrawOverlay(boolean drawOverlay) {
         this.drawOverlay = drawOverlay;
     }
 
+    /**
+     * Controls the highlight drawn behind the slot item.
+     *
+     * @param drawUnderlay whether to draw the rear highlight
+     */
     public void setDrawUnderlay(boolean drawUnderlay) {
         this.drawUnderlay = drawUnderlay;
     }
 
+    /**
+     * Overrides the rendered stack without changing the backing inventory.
+     *
+     * @param displayStack the stack to display, or null to draw no item
+     */
     public void setDisplayStack(ItemStack displayStack) {
         this.displayStack = displayStack;
     }
 
+    /**
+     * Overrides the rendered item count without changing the backing inventory.
+     *
+     * @param displayString the count label, or null for the vanilla count
+     */
     public void setDisplayString(String displayString) {
         this.displayString = displayString;
     }
 
+    /**
+     * Clears highlights and count overrides, then refreshes the displayed stack from the backing slot.
+     */
     public void reset() {
         this.drawOverlay = false;
         this.drawUnderlay = false;

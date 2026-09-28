@@ -23,11 +23,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A container that lays out children vertically from top to bottom.
- * Uses horizontalAlignment and spacing properties from LayoutProperties.
+ * Arranges children from top to bottom in composition order.
+ * Configure spacing and horizontal alignment through the scope layout properties.
+ * Child weights divide remaining height when the available height is bounded.
  */
 public class Column extends BaseContainer {
 
+    /** Creates an empty vertical layout; configure spacing and alignment through its scope. */
+    public Column() {
+    }
+
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
@@ -47,6 +53,7 @@ public class Column extends BaseContainer {
         return new Size(maxWidth, totalHeight);
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {

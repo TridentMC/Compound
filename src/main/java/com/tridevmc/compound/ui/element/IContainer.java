@@ -18,7 +18,7 @@ package com.tridevmc.compound.ui.element;
 
 /**
  * Interface for layout containers that manage child elements.
- * Containers are responsible for measuring and placing their children.
+ * Containers derive their content size from measured children and allocate each child's bounds.
  *
  * <p>Built-in containers:</p>
  * <ul>
@@ -30,6 +30,4 @@ package com.tridevmc.compound.ui.element;
  * </ul>
  */
 public interface IContainer extends IGenericContainer {
-    // Container-specific methods could be added here if needed
-    // Currently inherits getChildren() from IGenericContainer
 }

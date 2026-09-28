@@ -29,7 +29,6 @@ import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
-import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
@@ -43,6 +42,10 @@ import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Consumer;
 
+/**
+ * A vanilla checkbox with an optional label. Mouse clicks and Space toggle its retained
+ * checked state and notify listeners; {@link #setChecked(boolean)} changes it silently.
+ */
 public class Checkbox extends BaseElement implements IComposableElement {
 
     private static final int BOX_SIZE = 17;
@@ -55,27 +58,42 @@ public class Checkbox extends BaseElement implements IComposableElement {
     private static final IScreenSprite DEFAULT_CHECKED_HIGHLIGHTED_SPRITE = IScreenSprite.of(
             Identifier.withDefaultNamespace("widget/checkbox_selected_highlighted"));
 
-    private final State<Boolean> checked = new StateImpl<>(false);
-    private final State<Boolean> enabled = new StateImpl<>(true);
-    private final State<Boolean> hovered = new StateImpl<>(false);
+    private final State<Boolean> checked = State.of(false);
+    private final State<Boolean> enabled = State.of(true);
+    private final State<Boolean> hovered = State.of(false);
     private final List<Consumer<Boolean>> checkedChangeListeners = Lists.newArrayList();
     private Component label;
     private int labelColor = 0xFFFFFF;
     private int spacing = 4;
     private boolean labelRight = true;
 
+    /**
+     * Creates an unchecked checkbox without a label.
+     */
     public Checkbox() {
     }
 
+    /**
+     * Creates an unchecked checkbox.
+     *
+     * @param label the optional label, or null for none.
+     */
     public Checkbox(Component label) {
         this.label = label;
     }
 
+    /**
+     * Creates a checkbox with an initial checked state.
+     *
+     * @param label the optional label, or null for none.
+     * @param checked the initial checked state.
+     */
     public Checkbox(Component label, boolean checked) {
         this.label = label;
         this.checked.set(checked);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void compose(ICompositionScope scope) {
 
@@ -122,6 +140,7 @@ public class Checkbox extends BaseElement implements IComposableElement {
         });
     }
 
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (!measuredChildren.isEmpty()) {
@@ -130,6 +149,7 @@ public class Checkbox extends BaseElement implements IComposableElement {
         return new Size(0, 0);
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
@@ -138,6 +158,7 @@ public class Checkbox extends BaseElement implements IComposableElement {
         return List.of(new Bounds(bounds.x(), bounds.y(), bounds.width(), BOX_SIZE));
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isFocusable() { return this.enabled.get(); }
 
@@ -151,70 +172,146 @@ public class Checkbox extends BaseElement implements IComposableElement {
         this.checkedChangeListeners.forEach(listener -> listener.accept(newValue));
     }
 
+    /**
+     * Returns the checked state.
+     *
+     * @return true when checked.
+     */
     public boolean isChecked() {
         return this.checked.get();
     }
 
+    /**
+     * Changes the checked state without invoking checked-change listeners.
+     *
+     * @param checked the new checked state.
+     */
     public void setChecked(boolean checked) {
         this.checked.set(checked);
     }
 
+    /**
+     * Returns the live checked state owned by this checkbox.
+     *
+     * @return the retained state; direct changes do not invoke checked-change listeners.
+     */
     public State<Boolean> getCheckedState() {
         return this.checked;
     }
 
+    /**
+     * Returns whether user interaction is enabled.
+     *
+     * @return true when enabled.
+     */
     public boolean isEnabled() {
         return this.enabled.get();
     }
 
+    /**
+     * Changes whether user interaction is enabled.
+     *
+     * @param enabled whether to accept user interaction.
+     */
     public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
     }
 
+    /**
+     * Returns the optional label.
+     *
+     * @return the label, or null when absent.
+     */
     public Component getLabel() {
         return this.label;
     }
 
+    /**
+     * Replaces the label and rebuilds the row.
+     *
+     * @param label the label, or null to omit it.
+     */
     public void setLabel(Component label) {
         this.label = label;
         this.invalidateComposition();
     }
 
+    /**
+     * Returns the enabled label color.
+     *
+     * @return the text color.
+     */
     public int getLabelColor() {
         return this.labelColor;
     }
 
+    /**
+     * Sets the enabled label color; disabled labels remain gray.
+     *
+     * @param color the text color.
+     */
     public void setLabelColor(int color) {
         this.labelColor = color;
     }
 
+    /**
+     * Returns the gap between the box and label.
+     *
+     * @return the gap in GUI pixels.
+     */
     public int getSpacing() {
         return this.spacing;
     }
 
+    /**
+     * Sets the gap between the box and label.
+     *
+     * @param spacing the gap in GUI pixels.
+     */
     public void setSpacing(int spacing) {
         this.spacing = spacing;
         this.invalidateComposition();
     }
 
+    /**
+     * Returns which side holds the label.
+     *
+     * @return true for a label to the right of the box.
+     */
     public boolean isLabelRight() {
         return this.labelRight;
     }
 
+    /**
+     * Chooses the side of the box on which to place the label.
+     *
+     * @param right true for the right side, false for the left.
+     */
     public void setLabelRight(boolean right) {
         this.labelRight = right;
         this.invalidateComposition();
     }
 
+    /**
+     * Replaces all checked-change listeners with one listener for user toggles.
+     *
+     * @param listener the callback receiving the new checked state.
+     */
     public void setOnCheckedChanged(Consumer<Boolean> listener) {
         this.checkedChangeListeners.clear();
         this.checkedChangeListeners.add(listener);
     }
 
+    /**
+     * Adds a listener for user toggles.
+     *
+     * @param listener the callback receiving the new checked state.
+     */
     public void addCheckedChangeListener(Consumer<Boolean> listener) {
         this.checkedChangeListeners.add(listener);
     }
 
+    /** {@inheritDoc} */
     @Override
     public UICursor getCursor(int x, int y) {
         return this.enabled.get() ? CompoundCursors.HAND : null;

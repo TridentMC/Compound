@@ -25,26 +25,32 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
- * Base class for primitive elements that provides common boilerplate.
- * Handles visibility checks and default placement behavior.
+ * Base class for leaf elements that draw within their assigned bounds.
+ * Subclasses implement measurement and {@link #drawElement}; primitives have no children.
+ * The tree checks visibility before drawing.
  */
 public abstract class BasePrimitiveElement extends BaseElement implements IPrimitiveElement {
 
+    /** Creates an unattached drawing primitive with no children. */
+    public BasePrimitiveElement() {
+    }
+
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren) {
         // Primitives have no children
         return List.of();
     }
 
+    /** {@inheritDoc} */
     @Override
     public final void draw(IScreenContext context) {
         this.drawElement(context, this.getBounds());
     }
 
     /**
-     * Draws this element. Called only when bounds are set.
-     * Elements that need visibility control should check their own visibility state
-     * in drawElement() before rendering.
+     * Draws this primitive at its placed screen coordinates.
+     * Called by {@link #draw} after the tree has assigned bounds.
      *
      * @param context the screen context for drawing
      * @param bounds  the element's bounds (guaranteed non-null)

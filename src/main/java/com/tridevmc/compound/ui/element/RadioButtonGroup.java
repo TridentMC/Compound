@@ -29,7 +29,6 @@ import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
-import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
@@ -43,6 +42,11 @@ import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Consumer;
 
+/**
+ * A vertical single-selection group using vanilla checkbox sprites.
+ * The same instance retains its options and selected index. Clicks and arrow keys select
+ * options; programmatic selection also invokes the selection callback when it changes.
+ */
 public class RadioButtonGroup extends BaseElement implements IComposableElement {
 
     private static final int SPACING = 4;
@@ -52,22 +56,26 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
     private static final IScreenSprite HIGHLIGHTED = IScreenSprite.of(Identifier.withDefaultNamespace("widget/checkbox_highlighted"));
     private static final IScreenSprite SELECTED_HIGHLIGHTED = IScreenSprite.of(Identifier.withDefaultNamespace("widget/checkbox_selected_highlighted"));
 
-    private final State<Integer> selectedIndex = new StateImpl<>(-1);
-    private final State<Boolean> enabled = new StateImpl<>(true);
+    private final State<Integer> selectedIndex = State.of(-1);
+    private final State<Boolean> enabled = State.of(true);
     private final List<RadioOption> options = Lists.newArrayList();
     private final List<State<Boolean>> optionHoverStates = Lists.newArrayList();
     private Consumer<Integer> onSelectionChanged;
     private int optionSpacing = 4;
     private int labelColor = 0xFFFFFF;
 
+    /**
+     * Creates an empty group with no selection.
+     */
     public RadioButtonGroup() {
     }
 
+    /** {@inheritDoc} */
     @Override
     public void compose(ICompositionScope scope) {
 
         while (this.optionHoverStates.size() < this.options.size()) {
-            this.optionHoverStates.add(new StateImpl<>(false));
+            this.optionHoverStates.add(State.of(false));
         }
         scope.onKeyPress(event -> {
             if (!this.enabled.get() || this.options.isEmpty()) return false;
@@ -119,6 +127,7 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
         });
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isFocusable() { return this.enabled.get(); }
 
@@ -138,6 +147,11 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
         }
     }
 
+    /**
+     * Selects an option and notifies the callback if the selection changes.
+     *
+     * @param index the zero-based index; invalid indices are ignored.
+     */
     public void setSelectedIndex(int index) {
         if (index < 0 || index >= this.options.size()) return;
         if (this.selectedIndex.get() != index) {
@@ -148,18 +162,33 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
         }
     }
 
+    /**
+     * Appends an option without changing selection.
+     *
+     * @param label the option label.
+     */
     public void addOption(String label) {
         this.options.add(new RadioOption(Component.literal(label)));
-        this.optionHoverStates.add(new StateImpl<>(false));
+        this.optionHoverStates.add(State.of(false));
         this.invalidateComposition();
     }
 
+    /**
+     * Appends an option without changing selection.
+     *
+     * @param label the option label.
+     */
     public void addOption(Component label) {
         this.options.add(new RadioOption(label));
-        this.optionHoverStates.add(new StateImpl<>(false));
+        this.optionHoverStates.add(State.of(false));
         this.invalidateComposition();
     }
 
+    /**
+     * Removes an option, clearing or shifting selection as needed without invoking the callback.
+     *
+     * @param index the zero-based index; invalid indices are ignored.
+     */
     public void removeOption(int index) {
         if (index >= 0 && index < this.options.size()) {
             this.options.remove(index);
@@ -173,35 +202,71 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
         }
     }
 
+    /**
+     * Returns the selected option index.
+     *
+     * @return the zero-based index, or -1 when no option is selected.
+     */
     public int getSelectedIndex() {
         return this.selectedIndex.get();
     }
 
+    /**
+     * Replaces the callback for user and programmatic selection changes.
+     *
+     * @param onSelectionChanged the callback receiving the index, or null to remove it.
+     */
     public void setOnSelectionChanged(Consumer<Integer> onSelectionChanged) {
         this.onSelectionChanged = onSelectionChanged;
     }
 
+    /**
+     * Sets the vertical gap between options.
+     *
+     * @param spacing the gap in GUI pixels.
+     */
     public void setOptionSpacing(int spacing) {
         this.optionSpacing = spacing;
         this.invalidateComposition();
     }
 
+    /**
+     * Sets the enabled label color; disabled labels remain gray.
+     *
+     * @param color the text color.
+     */
     public void setLabelColor(int color) {
         this.labelColor = color;
     }
 
+    /**
+     * Returns the number of options.
+     *
+     * @return the option count.
+     */
     public int getOptionCount() {
         return this.options.size();
     }
 
+    /**
+     * Returns whether user interaction is enabled.
+     *
+     * @return true when enabled.
+     */
     public boolean isEnabled() {
         return this.enabled.get();
     }
 
+    /**
+     * Changes whether user interaction is enabled.
+     *
+     * @param enabled whether to accept user interaction.
+     */
     public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
     }
 
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (!measuredChildren.isEmpty()) {
@@ -210,6 +275,7 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
         return new Size(0, 0);
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
@@ -218,6 +284,7 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
         return List.of(bounds);
     }
 
+    /** {@inheritDoc} */
     @Override
     public UICursor getCursor(int x, int y) {
         return this.enabled.get() ? CompoundCursors.HAND : null;

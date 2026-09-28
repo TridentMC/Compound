@@ -19,15 +19,14 @@ package com.tridevmc.compound.ui.element;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 
 /**
- * Elements that cannot have children - they draw pixels.
- * Primitives are "terminators" in the tree that actually render to the screen.
+ * Leaf element that draws content without creating child nodes.
+ * Use {@link BasePrimitiveElement} when implementing a custom primitive.
  */
 public interface IPrimitiveElement extends IElement {
 
     /**
-     * Draw this primitive element (called every frame).
-     * Only primitive elements draw - containers and composables do not.
-     * Mouse position and partial ticks can be queried from the context if needed.
+     * Draws the placed primitive during visible frames. The tree applies clipping and layer order.
+     * Read live values from suppliers here when changes do not require composition or layout.
      *
      * @param context the screen context for drawing
      */

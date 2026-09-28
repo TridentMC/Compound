@@ -28,8 +28,9 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * A single radio button indicator composed from higher-level elements.
- * Displays an outer square and an inner square when selected.
+ * A passive square selection indicator composed from colored rectangles.
+ * It does not handle clicks or coordinate selection; use {@link RadioButtonGroup}
+ * for an interactive group styled with vanilla checkbox sprites.
  */
 public class RadioButton extends BaseElement implements IComposableElement {
 
@@ -46,8 +47,8 @@ public class RadioButton extends BaseElement implements IComposableElement {
      * Creates a radio button indicator.
      *
      * @param selected  supplier for whether the indicator is selected
-     * @param outerColor supplier for the outer frame color
-     * @param innerColor supplier for the inner selected dot color
+     * @param outerColor supplier for the outer ARGB color
+     * @param innerColor supplier for the inner selected square's ARGB color
      */
     public RadioButton(Supplier<Boolean> selected, Supplier<Integer> outerColor, Supplier<Integer> innerColor) {
         this.selected = selected;
@@ -61,13 +62,14 @@ public class RadioButton extends BaseElement implements IComposableElement {
      * Creates a radio button indicator with constant colors.
      *
      * @param selected   whether the indicator is selected
-     * @param outerColor the outer frame color
-     * @param innerColor the inner selected dot color
+     * @param outerColor the outer ARGB color
+     * @param innerColor the inner selected square's ARGB color
      */
     public RadioButton(boolean selected, int outerColor, int innerColor) {
         this(() -> selected, () -> outerColor, () -> innerColor);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void compose(ICompositionScope scope) {
         scope.e(new Stack(), stack -> {
@@ -80,6 +82,7 @@ public class RadioButton extends BaseElement implements IComposableElement {
         });
     }
 
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (!measuredChildren.isEmpty()) {
@@ -88,6 +91,7 @@ public class RadioButton extends BaseElement implements IComposableElement {
         return new Size(this.size, this.size);
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {

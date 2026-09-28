@@ -16,7 +16,14 @@
 
 package com.tridevmc.compound.ui.element;
 
+/** Receives button activation from mouse or keyboard input. */
 @FunctionalInterface
 public interface IButtonPressListener {
+    /**
+     * Handles activation; keyboard activation supplies the button centre.
+     *
+     * @param x the activation x coordinate, in screen GUI pixels
+     * @param y the activation y coordinate, in screen GUI pixels
+     */
     void onButtonPress(double x, double y);
 }

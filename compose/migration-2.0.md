@@ -4,6 +4,7 @@ Compound 1.18.0 ports the existing libraries to Minecraft 26.3. Compound 2.0.0 r
 
 - Replace `CompoundUI` with `ComposedUI`, and `CompoundUIContainer` with `ComposedUIContainer`. Describe the screen with composition scopes instead of registering legacy elements and layouts.
 - Replace legacy `Element*` widgets and `Layout*` classes with composable controls, containers, and layout properties. Use `InventorySlot` and the container's slot mapping for inventory screens.
+- Construct observable values with `State.of(initialValue)`. `StateImpl` is package-private and its duplicate factory has been removed.
 - Use typed tree events and state bindings instead of legacy listener registration. MouseScrollEvent exposes `scrollX()` and `scrollY()`; key events distinguish navigation keys from logical editing shortcuts. CharEvent carries a Unicode code point.
 - Carets and highlights compose existing rectangles and text; cursor blinking uses the animation system. Keep retained state and animation ownership tied to the screen's lifecycle.
 

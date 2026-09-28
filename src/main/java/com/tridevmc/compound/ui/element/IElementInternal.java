@@ -41,7 +41,7 @@ public interface IElementInternal extends IGenericElement {
      * Called by UITree when element is attached to the tree.
      * Bounds are stored in the node, not duplicated in the element.
      *
-     * @param node the tree node this element is associated with
+     * @param node the owning tree node, or null when detaching
      */
     void setNode(ITreeNode node);
 }

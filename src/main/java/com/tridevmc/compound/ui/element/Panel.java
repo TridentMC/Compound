@@ -31,8 +31,13 @@ import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Supplier;
 
+/**
+ * A vanilla inventory-style background with content supplied through {@link #CONTENT_SLOT}.
+ * Add padding to the content when it must stay clear of the decorative border.
+ */
 public class Panel extends BaseElement implements IComposableElement {
 
+    /** The slot containing this element's consumer-provided content. */
     public static final SlotKey CONTENT_SLOT = new SlotKey("content");
 
     private static final int TEXTURE_SIZE = 256;
@@ -46,14 +51,27 @@ public class Panel extends BaseElement implements IComposableElement {
 
     private Supplier<IScreenSprite> spriteSupplier;
 
+    /**
+     * Creates a panel. The no-argument form uses the vanilla inventory-style background.
+     */
     public Panel() {
         this(Panel::getDefaultSprite);
     }
 
+    /**
+     * Creates a panel. The no-argument form uses the vanilla inventory-style background.
+     *
+     * @param sprite the sprite to draw, or null to suppress drawing
+     */
     public Panel(IScreenSprite sprite) {
         this(() -> sprite);
     }
 
+    /**
+     * Creates a panel. The no-argument form uses the vanilla inventory-style background.
+     *
+     * @param spriteSupplier the non-null sprite supplier; a null result suppresses drawing
+     */
     public Panel(Supplier<IScreenSprite> spriteSupplier) {
         this.spriteSupplier = spriteSupplier;
     }
@@ -64,7 +82,7 @@ public class Panel extends BaseElement implements IComposableElement {
                     Identifier.withDefaultNamespace("textures/gui/container/inventory.png"),
                     TEXTURE_SIZE, TEXTURE_SIZE
             );
-            // Custom writer that matches old Panel behavior: 4px corners/edges, 1px gray fill
+            // Preserve four-pixel corners and edges while stretching the center.
             DEFAULT_SPRITE = wrapWithWriter(baseSprite, new IScreenSpriteWriter() {
                 @Override
                 public void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height) {
@@ -133,6 +151,9 @@ public class Panel extends BaseElement implements IComposableElement {
         };
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void compose(ICompositionScope scope) {
         scope.e(new Stack(), stack -> {
@@ -148,6 +169,9 @@ public class Panel extends BaseElement implements IComposableElement {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         // Panel has no fixed intrinsic size - flexible by default
@@ -158,6 +182,9 @@ public class Panel extends BaseElement implements IComposableElement {
         return new Size(0, 0);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
@@ -168,19 +195,39 @@ public class Panel extends BaseElement implements IComposableElement {
         return List.of(bounds);
     }
 
+    /**
+     * Evaluates the current sprite supplier.
+     *
+     * @return the current sprite, or null
+     */
     public IScreenSprite getSprite() {
         return this.spriteSupplier.get();
     }
 
+    /**
+     * Replaces the sprite supplier with a constant.
+     *
+     * @param sprite the sprite to draw, or null to suppress drawing
+     */
     public void setSprite(IScreenSprite sprite) {
         this.spriteSupplier = () -> sprite;
         this.invalidateComposition();
     }
 
+    /**
+     * Returns the sprite supplier used for the background.
+     *
+     * @return the configured supplier
+     */
     public Supplier<IScreenSprite> getSpriteSupplier() {
         return this.spriteSupplier;
     }
 
+    /**
+     * Replaces the sprite supplier sampled during drawing.
+     *
+     * @param spriteSupplier the non-null sprite supplier; a null result suppresses drawing
+     */
     public void setSpriteSupplier(Supplier<IScreenSprite> spriteSupplier) {
         this.spriteSupplier = spriteSupplier;
         this.invalidateComposition();

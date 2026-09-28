@@ -25,6 +25,9 @@ import com.tridevmc.compound.ui.scope.ICompositionScope;
 import javax.annotation.Nonnull;
 import java.util.List;
 
+/**
+ * A horizontal rule that fills the available width. Thickness is measured in GUI pixels.
+ */
 public class Divider extends BaseElement implements IComposableElement {
 
     private static final int DEFAULT_COLOR = 0xFF808080;
@@ -33,38 +36,71 @@ public class Divider extends BaseElement implements IComposableElement {
     private int color;
     private int thickness;
 
+    /**
+     * Creates a horizontal rule; omitted values use gray and one-pixel thickness.
+     */
     public Divider() {
         this(DEFAULT_COLOR, DEFAULT_THICKNESS);
     }
 
+    /**
+     * Creates a horizontal rule; omitted values use gray and one-pixel thickness.
+     *
+     * @param color the ARGB drawing color
+     */
     public Divider(int color) {
         this(color, DEFAULT_THICKNESS);
     }
 
+    /**
+     * Creates a horizontal rule; omitted values use gray and one-pixel thickness.
+     *
+     * @param color the ARGB drawing color
+     * @param thickness the thickness in GUI pixels; negative values become zero
+     */
     public Divider(int color, int thickness) {
         this.color = color;
         this.thickness = Math.max(0, thickness);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void compose(ICompositionScope scope) {
         scope.e(new Rect(() -> this.color), rect -> rect.layout().fillMax());
     }
 
+    /**
+     * Sets the drawing color.
+     *
+     * @param color the ARGB drawing color
+     */
     public void setColor(int color) {
         this.color = color;
     }
 
+    /**
+     * Sets the rule thickness and requests layout. Negative values become zero.
+     *
+     * @param thickness the thickness in GUI pixels; negative values become zero
+     */
     public void setThickness(int thickness) {
         this.thickness = Math.max(0, thickness);
         this.invalidateLayout();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         return new Size(constraints.maxWidth(), Math.min(this.thickness, constraints.maxHeight()));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {

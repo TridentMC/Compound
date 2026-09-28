@@ -27,26 +27,50 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Arranges children row by row into a fixed number of columns.
+ * Each column and row uses the largest measured child size in that column or row.
+ * Children keep their measured size; configure grid spacing through this element's setters.
+ */
 public class Grid extends BaseContainer {
 
     private int columns;
     private int horizontalSpacing;
     private int verticalSpacing;
 
+    /**
+     * Creates a grid without gaps.
+     *
+     * @param columns the number of columns; use a positive value when adding children
+     */
     public Grid(int columns) {
         this(columns, 0, 0);
     }
 
+    /**
+     * Creates a grid with equal horizontal and vertical gaps.
+     *
+     * @param columns the number of columns; use a positive value when adding children
+     * @param spacing the gap between cells, in GUI pixels
+     */
     public Grid(int columns, int spacing) {
         this(columns, spacing, spacing);
     }
 
+    /**
+     * Creates a grid with independently sized gaps.
+     *
+     * @param columns the number of columns; use a positive value when adding children
+     * @param horizontalSpacing the gap between columns, in GUI pixels
+     * @param verticalSpacing the gap between rows, in GUI pixels
+     */
     public Grid(int columns, int horizontalSpacing, int verticalSpacing) {
         this.columns = columns;
         this.horizontalSpacing = horizontalSpacing;
         this.verticalSpacing = verticalSpacing;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty() || this.columns <= 0) {
@@ -81,6 +105,7 @@ public class Grid extends BaseContainer {
         return new Size(totalWidth, totalHeight);
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty() || this.columns <= 0) {
@@ -138,28 +163,58 @@ public class Grid extends BaseContainer {
         return (int) Math.ceil((double) childCount / this.columns);
     }
 
+    /**
+     * Gets the configured column count.
+     *
+     * @return the number of columns
+     */
     public int getColumns() {
         return this.columns;
     }
 
+    /**
+     * Changes the column count and requests layout.
+     *
+     * @param columns the number of columns; use a positive value when adding children
+     */
     public void setColumns(int columns) {
         this.columns = columns;
         this.invalidateLayout();
     }
 
+    /**
+     * Gets the gap between columns.
+     *
+     * @return the horizontal gap, in GUI pixels
+     */
     public int getHorizontalSpacing() {
         return this.horizontalSpacing;
     }
 
+    /**
+     * Changes the gap between columns and requests layout.
+     *
+     * @param horizontalSpacing the horizontal gap, in GUI pixels
+     */
     public void setHorizontalSpacing(int horizontalSpacing) {
         this.horizontalSpacing = horizontalSpacing;
         this.invalidateLayout();
     }
 
+    /**
+     * Gets the gap between rows.
+     *
+     * @return the vertical gap, in GUI pixels
+     */
     public int getVerticalSpacing() {
         return this.verticalSpacing;
     }
 
+    /**
+     * Changes the gap between rows and requests layout.
+     *
+     * @param verticalSpacing the vertical gap, in GUI pixels
+     */
     public void setVerticalSpacing(int verticalSpacing) {
         this.verticalSpacing = verticalSpacing;
         this.invalidateLayout();

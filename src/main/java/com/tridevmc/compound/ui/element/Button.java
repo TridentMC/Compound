@@ -26,7 +26,6 @@ import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.slot.SlotKey;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
-import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
@@ -38,21 +37,17 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * A composable button container that can have children.
- * Manages hover state, enabled/disabled state, and handles click events.
- * Children render on top of the state-based background sprite.
+ * A vanilla-styled button with centered content in {@link #CONTENT_SLOT}.
+ * Enabled, visible buttons accept left clicks and focused Enter or Space activation.
+ * Retain the instance to preserve its state and registered listeners.
  * <p>
- * Usage:
- * <pre>
- * scope.e(new Button(), button -> {
- *     button.fillSlot(Button.CONTENT_SLOT, content -> {
- *         content.e(new Label(Component.literal("Click me")));
- *     });
- * });
- * </pre>
+ * For a text button, fill the content slot with a {@link Label}.
  */
 public class Button extends BaseElement implements IComposableElement {
 
+    /**
+     * The centered button content, commonly a {@link Label}.
+     */
     public static final SlotKey CONTENT_SLOT = new SlotKey("content");
 
     private static final IScreenSprite DEFAULT_ENABLED_SPRITE = IScreenSprite.of(Identifier.withDefaultNamespace("widget/button"));
@@ -60,8 +55,8 @@ public class Button extends BaseElement implements IComposableElement {
     private static final IScreenSprite DEFAULT_HIGHLIGHTED_SPRITE = IScreenSprite.of(Identifier.withDefaultNamespace("widget/button_highlighted"));
 
     /**
-     * Vanilla-style Y offset for button text. Vanilla adds +1 to text Y position
-     * to make it appear more visually centered. Adjust for debugging.
+     * The global vertical content offset in GUI pixels, applied when a button composes.
+     * The default of one pixel matches vanilla button text positioning.
      */
     public static int VANILLA_TEXT_Y_OFFSET = 1;
 
@@ -75,23 +70,38 @@ public class Button extends BaseElement implements IComposableElement {
     private final List<IButtonPressListener> pressListeners;
     private final List<IButtonHoverListener> hoverListeners;
 
+    /**
+     * Creates an enabled, visible button.
+     */
     public Button() {
         this(true, true);
     }
 
+    /**
+     * Creates a visible button.
+     *
+     * @param enabled whether user activation is allowed.
+     */
     public Button(boolean enabled) {
         this(enabled, true);
     }
 
+    /**
+     * Creates a button with the given interaction and visibility states.
+     *
+     * @param enabled whether user activation is allowed.
+     * @param visible whether the button composes its content.
+     */
     public Button(boolean enabled, boolean visible) {
-        this.enabled = new StateImpl<>(enabled);
-        this.visible = new StateImpl<>(visible);
-        this.hovered = new StateImpl<>(false);
-        this.focused = new StateImpl<>(false);
+        this.enabled = State.of(enabled);
+        this.visible = State.of(visible);
+        this.hovered = State.of(false);
+        this.focused = State.of(false);
         this.pressListeners = Lists.newArrayList();
         this.hoverListeners = Lists.newArrayList();
     }
 
+    /** {@inheritDoc} */
     @Override
     public void compose(ICompositionScope scope) {
         scope.bind(this.visible);
@@ -170,6 +180,7 @@ public class Button extends BaseElement implements IComposableElement {
         });
     }
 
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (!measuredChildren.isEmpty()) {
@@ -178,6 +189,7 @@ public class Button extends BaseElement implements IComposableElement {
         return new Size(0, 0);
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
@@ -187,6 +199,7 @@ public class Button extends BaseElement implements IComposableElement {
         return List.of(bounds);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isFocusable() {
         return this.canPress();
@@ -196,6 +209,13 @@ public class Button extends BaseElement implements IComposableElement {
         return this.visible.get() && this.enabled.get();
     }
 
+    /**
+     * Replaces the sprites used for the button states.
+     *
+     * @param normal the idle sprite supplier.
+     * @param highlighted the hovered or focused sprite supplier.
+     * @param disabled the disabled sprite supplier.
+     */
     public void setSprites(Supplier<IScreenSprite> normal, Supplier<IScreenSprite> highlighted,
                            Supplier<IScreenSprite> disabled) {
         this.normalSprite = normal;
@@ -203,55 +223,118 @@ public class Button extends BaseElement implements IComposableElement {
         this.disabledSprite = disabled;
     }
 
+    /**
+     * Replaces the sprites used for the button states.
+     *
+     * @param normal the idle sprite.
+     * @param highlighted the hovered or focused sprite.
+     * @param disabled the disabled sprite.
+     */
     public void setSprites(IScreenSprite normal, IScreenSprite highlighted, IScreenSprite disabled) {
         this.setSprites(() -> normal, () -> highlighted, () -> disabled);
     }
 
+    /**
+     * Adds a listener for mouse and keyboard activation.
+     *
+     * @param listener the listener receiving GUI coordinates; keyboard activation uses the button origin.
+     */
     public void addPressListener(IButtonPressListener listener) {
         this.pressListeners.add(listener);
     }
 
+    /**
+     * Adds a listener for pointer entry and exit.
+     *
+     * @param listener the listener receiving the button center and whether the pointer entered.
+     */
     public void addHoverListener(IButtonHoverListener listener) {
         this.hoverListeners.add(listener);
     }
 
+    /**
+     * Returns whether user interaction is enabled.
+     *
+     * @return true when enabled.
+     */
     public boolean isEnabled() {
         return this.enabled.get();
     }
 
+    /**
+     * Changes whether user interaction is enabled.
+     *
+     * @param enabled whether to accept user interaction.
+     */
     public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
     }
 
+    /**
+     * Returns whether the button is visible.
+     *
+     * @return true when the button composes its content.
+     */
     public boolean isVisible() {
         return this.visible.get();
     }
 
+    /**
+     * Changes visibility and whether the button can receive focus or activation.
+     *
+     * @param visible whether to show the button.
+     */
     public void setVisible(boolean visible) {
         this.visible.set(visible);
     }
 
+    /**
+     * Returns the current pointer hover state.
+     *
+     * @return true while the pointer is over the button.
+     */
     public boolean isHovered() {
         return this.hovered.get();
     }
 
+    /**
+     * Returns the live enabled state owned by this button.
+     *
+     * @return the retained enabled state, not a snapshot.
+     */
     public State<Boolean> getEnabledState() {
         return this.enabled;
     }
 
+    /**
+     * Returns the live visible state owned by this button.
+     *
+     * @return the retained visible state, not a snapshot.
+     */
     public State<Boolean> getVisibleState() {
         return this.visible;
     }
 
+    /**
+     * Returns the live hovered state owned by this button.
+     *
+     * @return the retained hovered state, not a snapshot.
+     */
     public State<Boolean> getHoveredState() {
         return this.hovered;
     }
 
+    /** {@inheritDoc} */
     @Override
     public UICursor getCursor(int x, int y) {
         return this.canPress() ? CompoundCursors.HAND : null;
     }
 
+    /**
+     * Returns the live focused state owned by this button.
+     *
+     * @return the retained focused state, not a snapshot.
+     */
     public State<Boolean> getFocusedState() {
         return this.focused;
     }

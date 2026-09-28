@@ -24,16 +24,8 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * A composed caret/cursor element that renders a 1px vertical bar at a dynamic
- * horizontal offset. It is intended to be overlaid on top of a {@link Text}
- * element so the caret aligns with the rendered glyphs.
- *
- * <p>Composition:
- * <ul>
- *     <li>A {@link Row} with a {@link Spacer} (width = offset) and a 1px {@link Rect}.</li>
- *     <li>The color supplier is evaluated every frame, allowing blinking animations
- *     without recomposition.</li>
- * </ul>
+ * A composable one-pixel caret. Offset and height suppliers are sampled during composition;
+ * recompose when either changes. The color supplier is sampled each frame.
  */
 public class Cursor extends BaseElement implements IComposableElement {
 
@@ -41,12 +33,22 @@ public class Cursor extends BaseElement implements IComposableElement {
     private final Supplier<Integer> colorSupplier;
     private final Supplier<Integer> heightSupplier;
 
+    /**
+     * Creates a caret with supplied geometry and color.
+     *
+     * @param offsetSupplier the non-null supplier of horizontal pixel offsets, sampled during composition
+     * @param colorSupplier the non-null supplier of ARGB drawing colors
+     * @param heightSupplier the non-null supplier of caret heights in pixels, sampled during composition
+     */
     public Cursor(Supplier<Integer> offsetSupplier, Supplier<Integer> colorSupplier, Supplier<Integer> heightSupplier) {
         this.offsetSupplier = offsetSupplier;
         this.colorSupplier = colorSupplier;
         this.heightSupplier = heightSupplier;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void compose(ICompositionScope scope) {
         int offset = this.offsetSupplier.get();
@@ -59,6 +61,9 @@ public class Cursor extends BaseElement implements IComposableElement {
         });
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (!measuredChildren.isEmpty()) {
@@ -67,6 +72,9 @@ public class Cursor extends BaseElement implements IComposableElement {
         return new Size(0, 0);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {

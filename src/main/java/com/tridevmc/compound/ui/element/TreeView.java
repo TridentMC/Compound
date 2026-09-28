@@ -27,7 +27,6 @@ import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.scope.IContainerScope;
 import com.tridevmc.compound.ui.state.State;
-import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
@@ -38,22 +37,33 @@ import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+/**
+ * A scrollable hierarchy with expandable rows and keyboard selection.
+ * Add top-level nodes to the invisible root returned by {@link #getRoot()}.
+ * Retain the instance to preserve its nodes, expansion state, selection, and scroll position.
+ *
+ * @param <T> the node value type.
+ */
 public class TreeView<T> extends BaseElement implements IComposableElement {
 
     private static final int DEFAULT_ITEM_HEIGHT = 16;
     private static final int INDENT_SIZE = 16;
 
-    private final State<Boolean> enabled = new StateImpl<>(true);
+    private final State<Boolean> enabled = State.of(true);
     private final TreeNode<T> root;
     private final ScrollArea scrollArea = new ScrollArea();
     private Function<T, String> displayTextProvider = Object::toString;
     private Consumer<TreeNode<T>> onSelectionChanged;
     private int itemHeight = DEFAULT_ITEM_HEIGHT;
 
+    /**
+     * Creates an empty hierarchy with an invisible root and 16-pixel rows.
+     */
     public TreeView() {
         this.root = new TreeNode<>(null, null, this::invalidateComposition);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void compose(ICompositionScope scope) {
         scope.bind(this.enabled);
@@ -133,11 +143,13 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
         this.scrollArea.scrollTo(0, Math.clamp(scroll, 0, this.scrollArea.getMaxScrollY()));
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isFocusable() {
         return this.enabled.get();
     }
 
+    /** {@inheritDoc} */
     @Override
     public Component getNarrationMessage() {
         for (var node : this.visibleNodes()) {
@@ -218,33 +230,65 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
         }
     }
 
+    /**
+     * Returns the invisible root whose children are the top-level rows.
+     *
+     * @return the retained root, with a null value and no parent.
+     */
     public TreeNode<T> getRoot() {
         return this.root;
     }
 
+    /**
+     * Sets the function used to turn values into display labels.
+     *
+     * @param provider the value-to-text function.
+     */
     public void setDisplayTextProvider(Function<T, String> provider) {
         this.displayTextProvider = provider;
         this.invalidateComposition();
     }
 
+    /**
+     * Replaces the callback for selection made through tree interaction.
+     *
+     * @param listener the callback receiving the selected node, or null to remove it.
+     */
     public void setOnSelectionChanged(Consumer<TreeNode<T>> listener) {
         this.onSelectionChanged = listener;
     }
 
+    /**
+     * Sets the height of each row.
+     *
+     * @param height the positive row height in GUI pixels.
+     * @throws IllegalArgumentException if height is not positive.
+     */
     public void setItemHeight(int height) {
         if (height <= 0) throw new IllegalArgumentException("Tree row height must be positive");
         this.itemHeight = height;
         this.invalidateComposition();
     }
 
+    /**
+     * Returns whether user interaction is enabled.
+     *
+     * @return true when enabled.
+     */
     public boolean isEnabled() {
         return this.enabled.get();
     }
 
+    /**
+     * Changes whether user interaction is enabled.
+     *
+     * @param enabled whether to accept user interaction.
+     */
     public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
     }
 
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> measuredChildren) {
         if (!measuredChildren.isEmpty()) {
@@ -253,6 +297,7 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
         return new Size(constraints.maxWidth(), constraints.maxHeight());
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
         if (measuredChildren.isEmpty()) {
@@ -261,6 +306,12 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
         return List.of(bounds);
     }
 
+    /**
+     * A node owned by a tree, with retained expansion, selection, and hover state.
+     * Add and remove children through its methods so the tree is invalidated.
+     *
+     * @param <T> the node value type.
+     */
     public static class TreeNode<T> {
         private final T value;
         private final TreeNode<T> parent;
@@ -276,6 +327,12 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
             this.invalidate = invalidate;
         }
 
+        /**
+         * Appends an expanded child and invalidates the owning tree.
+         *
+         * @param value the child value.
+         * @return the new child.
+         */
         public TreeNode<T> addChild(T value) {
             TreeNode<T> child = new TreeNode<>(value, this, this.invalidate);
             this.children.add(child);
@@ -283,50 +340,107 @@ public class TreeView<T> extends BaseElement implements IComposableElement {
             return child;
         }
 
+        /**
+         * Appends a child and configures it before returning.
+         *
+         * @param value the child value.
+         * @param configurator the callback receiving the new child.
+         * @return the configured child.
+         */
         public TreeNode<T> addChild(T value, Consumer<TreeNode<T>> configurator) {
             TreeNode<T> child = this.addChild(value);
             configurator.accept(child);
             return child;
         }
 
+        /**
+         * Removes a direct child if present and invalidates the owning tree.
+         *
+         * @param child the child to remove.
+         */
         public void removeChild(TreeNode<T> child) {
             if (this.children.remove(child)) this.invalidate.run();
         }
 
+        /**
+         * Returns this node's value.
+         *
+         * @return the node value; the invisible root has a null value.
+         */
         public T getValue() {
             return this.value;
         }
 
+        /**
+         * Returns this node's parent.
+         *
+         * @return the parent, or null for the invisible root.
+         */
         public TreeNode<T> getParent() {
             return this.parent;
         }
 
+        /**
+         * Returns an unmodifiable live view of this node's children.
+         *
+         * @return the children in display order.
+         */
         public List<TreeNode<T>> getChildren() {
             return Collections.unmodifiableList(this.children);
         }
 
+        /**
+         * Returns whether this node's descendants are expanded.
+         *
+         * @return true when expanded.
+         */
         public boolean isExpanded() {
             return this.expanded;
         }
 
+        /**
+         * Changes expansion and invalidates the tree when needed.
+         *
+         * @param expanded whether to expand descendants.
+         */
         public void setExpanded(boolean expanded) {
             if (this.expanded == expanded) return;
             this.expanded = expanded;
             this.invalidate.run();
         }
 
+        /**
+         * Returns this node's selection flag.
+         *
+         * @return true when marked selected.
+         */
         public boolean isSelected() {
             return this.selected;
         }
 
+        /**
+         * Sets only this node's selection flag; it neither deselects other nodes nor invokes the tree callback.
+         *
+         * @param selected the new flag.
+         */
         public void setSelected(boolean selected) {
             this.selected = selected;
         }
 
+        /**
+         * Returns this node's hover flag.
+         *
+         * @return true when marked hovered.
+         */
         public boolean isHovered() {
             return this.hovered;
         }
 
+        /**
+         * Sets this node's hover flag.
+         *
+         * @param hovered the new flag.
+         */
         public void setHovered(boolean hovered) {
             this.hovered = hovered;
         }

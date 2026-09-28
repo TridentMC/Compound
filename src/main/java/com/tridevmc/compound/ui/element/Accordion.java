@@ -7,29 +7,48 @@ import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.slot.SlotKey;
 import com.tridevmc.compound.ui.state.State;
-import com.tridevmc.compound.ui.state.StateImpl;
 import net.minecraft.network.chat.Component;
 
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Consumer;
 
+/**
+ * A collapsible section with a button header and arbitrary content in {@link #CONTENT_SLOT}.
+ * The same instance retains its expanded state; collapsing removes the body from the tree,
+ * so retain body element instances separately when their state must survive expansion.
+ */
 public class Accordion extends BaseElement implements IComposableElement {
+    /**
+     * The body content, composed only while expanded.
+     */
     public static final SlotKey CONTENT_SLOT = new SlotKey("content");
 
     private final Component title;
     private final State<Boolean> expanded;
     private Consumer<Boolean> onExpandedChanged = value -> {};
 
+    /**
+     * Creates a collapsed section.
+     *
+     * @param title the header label.
+     */
     public Accordion(Component title) {
         this(title, false);
     }
 
+    /**
+     * Creates a section with the given initial expansion state.
+     *
+     * @param title the header label.
+     * @param expanded whether to compose the body initially.
+     */
     public Accordion(Component title, boolean expanded) {
         this.title = title;
-        this.expanded = new StateImpl<>(expanded);
+        this.expanded = State.of(expanded);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void compose(ICompositionScope scope) {
         scope.bindLayout(this.expanded);
@@ -47,10 +66,20 @@ public class Accordion extends BaseElement implements IComposableElement {
         });
     }
 
+    /**
+     * Returns whether the body is expanded.
+     *
+     * @return true when the body is expanded.
+     */
     public boolean isExpanded() {
         return this.expanded.get();
     }
 
+    /**
+     * Changes expansion and invokes the listener only when the state changes.
+     *
+     * @param expanded whether to expand the body.
+     */
     public void setExpanded(boolean expanded) {
         if (expanded != this.expanded.get()) {
             this.expanded.set(expanded);
@@ -58,15 +87,22 @@ public class Accordion extends BaseElement implements IComposableElement {
         }
     }
 
+    /**
+     * Replaces the expansion listener for user and programmatic changes.
+     *
+     * @param listener the callback receiving the new expanded state.
+     */
     public void setOnExpandedChanged(Consumer<Boolean> listener) {
         this.onExpandedChanged = listener;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Size measure(Constraints constraints, LayoutProperties props, List<Size> children) {
         return children.isEmpty() ? new Size(0, 0) : children.getFirst();
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> children) {
         return children.isEmpty() ? List.of() : List.of(bounds);
