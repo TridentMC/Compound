@@ -333,7 +333,7 @@ public interface ICompositionScope {
      * @return the animated state
      */
     default AnimatedState<Float> animateFloat(float initialValue, long durationMs, Easing easing) {
-        var state = new AnimatedState<>(initialValue, durationMs, Interpolators.FLOAT, easing, getTree().getAnimationScheduler());
+        var state = AnimatedState.of(initialValue, durationMs, Interpolators.FLOAT, easing, getTree().getAnimationScheduler());
         this.registerAnimation(state);
         return state;
     }
@@ -358,7 +358,7 @@ public interface ICompositionScope {
      * @return the animated state
      */
     default AnimatedState<Integer> animateInt(int initialValue, long durationMs, Easing easing) {
-        var state = new AnimatedState<>(initialValue, durationMs, Interpolators.INT, easing, getTree().getAnimationScheduler());
+        var state = AnimatedState.of(initialValue, durationMs, Interpolators.INT, easing, getTree().getAnimationScheduler());
         this.registerAnimation(state);
         return state;
     }
@@ -383,7 +383,7 @@ public interface ICompositionScope {
      * @return the animated state
      */
     default AnimatedState<Integer> animateColor(int initialValue, long durationMs, Easing easing) {
-        var state = new AnimatedState<>(initialValue, durationMs, Interpolators.COLOR, easing, getTree().getAnimationScheduler());
+        var state = AnimatedState.of(initialValue, durationMs, Interpolators.COLOR, easing, getTree().getAnimationScheduler());
         this.registerAnimation(state);
         return state;
     }
@@ -399,8 +399,8 @@ public interface ICompositionScope {
      * @return the looping animated state
      */
     default AnimatedState<Float> animateFloatLooping(float startValue, float endValue, long intervalMs, Easing easing) {
-        var state = new AnimatedState<Float>(startValue, intervalMs, Interpolators.FLOAT, easing,
-                getTree().getAnimationScheduler(), true, startValue, endValue);
+        var state = AnimatedState.looping(startValue, endValue, intervalMs, Interpolators.FLOAT, easing,
+                getTree().getAnimationScheduler());
         this.registerAnimation(state);
         return state;
     }
@@ -428,8 +428,8 @@ public interface ICompositionScope {
      * @return the looping animated state
      */
     default AnimatedState<Integer> animateIntLooping(int startValue, int endValue, long intervalMs, Easing easing) {
-        var state = new AnimatedState<Integer>(startValue, intervalMs, Interpolators.INT, easing,
-                getTree().getAnimationScheduler(), true, startValue, endValue);
+        var state = AnimatedState.looping(startValue, endValue, intervalMs, Interpolators.INT, easing,
+                getTree().getAnimationScheduler());
         this.registerAnimation(state);
         return state;
     }
@@ -457,8 +457,8 @@ public interface ICompositionScope {
      * @return the looping animated state
      */
     default AnimatedState<Integer> animateColorLooping(int startColor, int endColor, long intervalMs, Easing easing) {
-        var state = new AnimatedState<Integer>(startColor, intervalMs, Interpolators.COLOR, easing,
-                getTree().getAnimationScheduler(), true, startColor, endColor);
+        var state = AnimatedState.looping(startColor, endColor, intervalMs, Interpolators.COLOR, easing,
+                getTree().getAnimationScheduler());
         this.registerAnimation(state);
         return state;
     }

@@ -17,231 +17,92 @@
 package com.tridevmc.compound.ui.animation;
 
 import com.tridevmc.compound.ui.state.State;
-import com.tridevmc.compound.ui.state.StateObserver;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Function;
 
 /**
- * A state that automatically animates to new target values using interpolation.
- * <p>
- * The AnimationScheduler advances this state over time.
- * Set a new target value and it smoothly animates from current to target.
- * <p>
- * Uses Minecraft's tick system (20 TPS) with partial tick interpolation for smooth rendering.
+ * Observable animation driven by an {@link AnimationScheduler} on the client thread.
+ * Composition scopes provide factories that also dispose animations when their element detaches.
+ *
+ * @param <T> the animated value type
  */
-public class AnimatedState<T> implements State<T> {
-    private long durationTicks;
-    private final Interpolator<T> interpolator;
-    private Easing easing;
-    private final AnimationScheduler scheduler;
-    private final List<StateObserver> observers = new ArrayList<>();
-    private T lastTickValue;
-    private T currentTickValue;
-    private T targetValue;
-    private T animationStartValue;
-    private long startTick;
-    private long lastUpdateTick = -1;
-    private boolean isAnimating = false;
-    private boolean looping = false;
-    private T loopStartValue;
-    private T loopEndValue;
-    private final T originalLoopStart;
-    private final T originalLoopEnd;
-
-    public AnimatedState(T initialValue, long durationMillis,
-                         Interpolator<T> interpolator, Easing easing,
-                         AnimationScheduler scheduler) {
-        this(initialValue, durationMillis, interpolator, easing, scheduler, false, null, null);
-    }
-
+public interface AnimatedState<T> extends State<T> {
     /**
-     * Public constructor for looping animations.
-     * Used by composition scope factory methods.
-     */
-    public AnimatedState(T initialValue, long durationMillis,
-                         Interpolator<T> interpolator, Easing easing,
-                         AnimationScheduler scheduler,
-                         boolean looping, T loopStartValue, T loopEndValue) {
-        this.lastTickValue = initialValue;
-        this.currentTickValue = initialValue;
-        this.targetValue = looping ? loopEndValue : initialValue;
-        this.animationStartValue = initialValue;
-        // Convert milliseconds to ticks (20 TPS = 50ms per tick)
-        this.durationTicks = Math.max(1, durationMillis / 50);
-        this.interpolator = interpolator;
-        this.easing = easing;
-        this.scheduler = scheduler;
-        this.looping = looping;
-        this.loopStartValue = loopStartValue;
-        this.loopEndValue = loopEndValue;
-        this.originalLoopStart = loopStartValue;
-        this.originalLoopEnd = loopEndValue;
-        if (looping) {
-            this.isAnimating = true;
-            this.scheduler.registerAnimation(this);
-        }
-    }
-
-    @Override
-    public T get() {
-        return this.currentTickValue;
-    }
-
-    /**
-     * Get interpolated value for rendering (uses partial ticks for smooth animation).
-     * Should be called during render phase with partial tick value from screen context.
+     * Creates an idle state that animates when {@link #set} supplies a target.
      *
-     * @param partialTicks interpolation value 0.0-1.0 within current tick
-     * @return interpolated value for smooth rendering
+     * @param initialValue the initial value
+     * @param durationMillis transition duration, positive and rounded down to ticks (minimum one tick)
+     * @param interpolator interpolation for the value type
+     * @param easing progression within each transition
+     * @param scheduler the scheduler that will advance this state
+     * @param <T> the value type
+     * @return a new animation; the caller owns its disposal
      */
-    public T get(float partialTicks) {
-        if (!this.isAnimating || Objects.equals(this.lastTickValue, this.currentTickValue)) {
-            return this.currentTickValue;
-        }
-        return this.interpolator.interpolate(this.lastTickValue, this.currentTickValue, partialTicks);
-    }
-
-    @Override
-    public void set(T value) {
-        if (Objects.equals(this.targetValue, value)) {
-            return;
-        }
-        this.animationStartValue = this.currentTickValue;
-        this.lastTickValue = this.currentTickValue;
-        this.lastUpdateTick = -1;
-        this.targetValue = value;
-        this.isAnimating = true;
-
-        this.scheduler.registerAnimation(this);
-    }
-
-    @Override
-    public void update(Function<T, T> updater) {
-        this.set(updater.apply(this.currentTickValue));
+    static <T> AnimatedState<T> of(T initialValue, long durationMillis, Interpolator<T> interpolator,
+                                   Easing easing, AnimationScheduler scheduler) {
+        return new TickAnimation<>(initialValue, durationMillis, interpolator, easing, scheduler);
     }
 
     /**
-     * Set value immediately without animation.
-     * For looping animations, jumps to the value and fully resets the loop cycle.
+     * Creates an animation alternating between two endpoints. The first scheduler update
+     * establishes its start tick; skipped ticks preserve the loop's elapsed phase.
+     *
+     * @param startValue the initial endpoint
+     * @param endValue the other endpoint
+     * @param durationMillis duration of each leg, positive and rounded down to ticks (minimum one tick)
+     * @param interpolator interpolation for the value type
+     * @param easing progression within each leg; {@link Easing#STEP} toggles instantly
+     * @param scheduler the scheduler that will advance this state
+     * @param <T> the value type
+     * @return a running loop; the caller owns its disposal
      */
-    public void setImmediate(T value) {
-        this.lastTickValue = value;
-        this.currentTickValue = value;
-        this.lastUpdateTick = -1;
-
-        if (this.looping) {
-            this.loopStartValue = this.originalLoopStart;
-            this.loopEndValue = this.originalLoopEnd;
-            this.animationStartValue = value;
-            this.targetValue = this.originalLoopEnd;
-            this.lastUpdateTick = -1;
-        } else {
-            this.targetValue = value;
-            this.animationStartValue = value;
-            this.isAnimating = false;
-            this.scheduler.unregisterAnimation(this);
-        }
-
-        this.notifyObservers();
+    static <T> AnimatedState<T> looping(T startValue, T endValue, long durationMillis,
+                                        Interpolator<T> interpolator, Easing easing,
+                                        AnimationScheduler scheduler) {
+        var animation = new TickAnimation<>(startValue, durationMillis, interpolator, easing, scheduler);
+        animation.startLoop(startValue, endValue);
+        return animation;
     }
 
     /**
-     * Called by AnimationScheduler each tick.
-     * Updates the current value based on animation progress.
-     * Package-private.
+     * Samples the easing curve between the last scheduler tick and the next tick, without
+     * changing state or notifying observers. STEP easing remains an instantaneous toggle.
+     *
+     * @param partialTicks fraction of the tick, from zero to one
+     * @return the value at that render time
      */
-    void updateAnimation(long currentTick) {
-        if (!this.isAnimating) {
-            return;
-        }
-        if (this.lastUpdateTick == -1) {
-            this.startTick = currentTick;
-            this.lastUpdateTick = currentTick;
-        }
-        if (currentTick == this.lastUpdateTick) {
-            return;
-        }
-        this.lastTickValue = this.currentTickValue;
-        this.lastUpdateTick = currentTick;
-
-        long elapsedTicks = currentTick - this.startTick;
-        float progress = Math.min(1.0f, elapsedTicks / (float) this.durationTicks);
-
-        T newValue;
-        if (progress >= 1.0f) {
-            newValue = this.targetValue;
-
-            if (this.looping) {
-                this.animationStartValue = this.loopEndValue;
-                this.targetValue = this.loopStartValue;
-                T temp = this.loopStartValue;
-                this.loopStartValue = this.loopEndValue;
-                this.loopEndValue = temp;
-                this.startTick = currentTick;
-                this.lastUpdateTick = currentTick;
-            } else {
-                this.isAnimating = false;
-                this.scheduler.unregisterAnimation(this);
-                this.lastUpdateTick = -1;
-            }
-        } else {
-            float easedProgress = this.easing.apply(progress);
-            newValue = this.interpolator.interpolate(this.animationStartValue, this.targetValue, easedProgress);
-        }
-        if (!Objects.equals(this.currentTickValue, newValue)) {
-            this.currentTickValue = newValue;
-            if (!this.observers.isEmpty()) {
-                this.notifyObservers();
-            }
-        }
-    }
-
-    public boolean isAnimating() {
-        return this.isAnimating;
-    }
-
-    public void setTiming(long durationMillis, Easing easing) {
-        if (durationMillis <= 0) throw new IllegalArgumentException("Animation duration must be positive");
-        this.easing = Objects.requireNonNull(easing, "easing");
-        this.durationTicks = Math.max(1, durationMillis / 50);
-        this.animationStartValue = this.currentTickValue;
-        this.lastUpdateTick = -1;
-    }
+    T get(float partialTicks);
 
     /**
-     * Stop looping and complete the current animation.
-     * The animation will finish its current cycle and then stop.
+     * Ends looping and animates from the current value to the requested target.
+     * Repeating an existing one-shot target leaves its progress unchanged.
+     *
+     * @param value the target value
      */
-    public void stopLooping() {
-        this.looping = false;
-    }
-
     @Override
-    public void addObserver(StateObserver observer) {
-        if (!this.observers.contains(observer)) {
-            this.observers.add(observer);
-        }
-    }
+    void set(T value);
 
-    @Override
-    public void removeObserver(StateObserver observer) {
-        this.observers.remove(observer);
-    }
+    /**
+     * Applies a value immediately. A loop restarts toward its original end endpoint;
+     * a one-shot animation stops. Observers are notified only if the value changes.
+     *
+     * @param value the new value
+     */
+    void setImmediate(T value);
 
-    @Override
-    public void dispose() {
-        this.observers.clear();
-        this.scheduler.unregisterAnimation(this);
-    }
+    /**
+     * Reports whether a transition is scheduled.
+     *
+     * @return whether this state has a scheduled transition
+     */
+    boolean isAnimating();
 
-    private void notifyObservers() {
-        // Create copy to avoid concurrent modification
-        List<StateObserver> observersCopy = new ArrayList<>(this.observers);
-        for (StateObserver observer : observersCopy) {
-            observer.onStateChanged(this);
-        }
-    }
+    /**
+     * Changes timing and restarts the current leg from its current value.
+     *
+     * @param durationMillis positive transition duration, rounded down to ticks (minimum one tick)
+     * @param easing the new easing curve
+     */
+    void setTiming(long durationMillis, Easing easing);
+
+    /** Ends looping after the current leg reaches its target. */
+    void stopLooping();
 }

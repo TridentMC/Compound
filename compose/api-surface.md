@@ -188,7 +188,12 @@ fade.get(partialTicks);  // interpolated value for smooth drawing
 
 Explicit-easing overloads exist for all six (`animateFloat/Int/Color` and their `...Looping`
 variants). `AnimatedState<T>` also offers `setImmediate(value)`, `isAnimating()` and
-`stopLooping()`.
+`stopLooping()`. Calling `set(target)` ends a loop and starts a one-shot transition from its
+current value. `setImmediate(value)` resets an active loop toward its original end endpoint.
+`get(partialTicks)` samples the easing curve without changing state; STEP stays an instant toggle.
+
+Outside composition, use `AnimatedState.of(...)` or `AnimatedState.looping(...)` with an
+`AnimationScheduler`, and dispose the returned state when its owner is removed.
 
 ### Deferred layout (advanced)
 

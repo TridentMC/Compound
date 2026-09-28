@@ -21,26 +21,21 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Manages all active animations, updating them each frame.
- * Lives in UITree and is called during layoutAndRender.
+ * Advances animations using the owning screen's tick counter on the client thread.
+ * Repeated frame updates within a tick do not advance an animation twice.
  */
 public class AnimationScheduler {
-    // HashSet is sufficient - animations only updated on main thread
-    private final Set<AnimatedState<?>> activeAnimations = new HashSet<>();
+    private final Set<TickAnimation<?>> activeAnimations = new HashSet<>();
 
-    /**
-     * Register an animation to be updated each frame.
-     * Package-private - only called by AnimatedState.
-     */
-    void registerAnimation(AnimatedState<?> animation) {
+    /** Creates an empty scheduler. */
+    public AnimationScheduler() {
+    }
+
+    void registerAnimation(TickAnimation<?> animation) {
         this.activeAnimations.add(animation);
     }
 
-    /**
-     * Unregister an animation (called when animation completes).
-     * Package-private - only called by AnimatedState.
-     */
-    void unregisterAnimation(AnimatedState<?> animation) {
+    void unregisterAnimation(TickAnimation<?> animation) {
         this.activeAnimations.remove(animation);
     }
 
@@ -52,31 +47,38 @@ public class AnimationScheduler {
      */
     public void updateAnimations(long currentTick) {
         if (this.activeAnimations.isEmpty()) {
-            return;  // Fast path - no animations
+            return;
         }
 
-        // Copy to avoid concurrent modification during iteration
-        for (AnimatedState<?> animation : new ArrayList<>(this.activeAnimations)) {
-            animation.updateAnimation(currentTick);
+        for (TickAnimation<?> animation : new ArrayList<>(this.activeAnimations)) {
+            if (this.activeAnimations.contains(animation)) {
+                animation.updateAnimation(currentTick);
+            }
         }
     }
 
     /**
-     * Check if there are any active animations.
+     * Checks whether any animation is scheduled.
+     *
+     * @return whether at least one animation is active
      */
     public boolean hasActiveAnimations() {
         return !this.activeAnimations.isEmpty();
     }
 
     /**
-     * Clear all animations (called on cleanup).
+     * Disposes all scheduled animations and clears their observers.
      */
     public void dispose() {
-        this.activeAnimations.clear();
+        for (var animation : new ArrayList<>(this.activeAnimations)) {
+            animation.dispose();
+        }
     }
 
     /**
-     * Get count of active animations (for debugging).
+     * Counts scheduled animations.
+     *
+     * @return the number of active animations
      */
     public int getActiveAnimationCount() {
         return this.activeAnimations.size();
