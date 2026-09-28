@@ -9,16 +9,4 @@ plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
 
-apply from: "modules.gradle"
-
 rootProject.name = 'Compound'
-
-def compoundModuleNames = new String[compoundModules.size()]
-
-compoundModules.eachWithIndex { LinkedHashMap<String, String> entry, int i ->
-    compoundModuleNames[i] = entry.publicationName
-}
-
-println("Including Compound Modules ($compoundModuleNames)")
-
-// include(compoundModuleNames)

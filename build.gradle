@@ -65,12 +65,22 @@ def registerModule(LinkedHashMap<String, String> moduleData) {
     artifacts.add("archives", binaryJar)
     artifacts.add("archives", sourcesJar)
 
+    def moduleVersion = project.version.toString() + versionTag
     publishing.publications.create(moduleData.publicationName, MavenPublication) {
         groupId 'com.tridevmc.compound'
         artifactId moduleData.artifactName
-        version project.version + versionTag
+        version moduleVersion
         artifact binaryJar
         artifact sourcesJar
+        if (moduleData.publicationName in ['config', 'network', 'ui']) {
+            pom.withXml {
+                def dependency = asNode().appendNode('dependencies').appendNode('dependency')
+                dependency.appendNode('groupId', 'com.tridevmc.compound')
+                dependency.appendNode('artifactId', 'compound-core')
+                dependency.appendNode('version', moduleVersion)
+                dependency.appendNode('scope', 'compile')
+            }
+        }
     }
 }
 
