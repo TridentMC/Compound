@@ -1,11 +1,11 @@
 package com.tridevmc.compound.ui.integration;
 
+import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.test.MinecraftMockExtension;
 import com.tridevmc.compound.ui.element.Column;
 import com.tridevmc.compound.ui.element.Rect;
 import com.tridevmc.compound.ui.element.ScrollArea;
 import com.tridevmc.compound.ui.event.MouseScrollEvent;
-import com.tridevmc.compound.ui.scope.RootScope;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import com.tridevmc.compound.ui.tree.UITree;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,7 @@ class ScrollInputTest {
     void horizontalWheelMovesContent() {
         var tree = new UITree();
         var area = new ScrollArea(ScrollArea.Direction.HORIZONTAL);
-        new RootScope(tree).e(area, scroll -> {
+        ICompositionScope.root(tree).e(area, scroll -> {
             scroll.layout().fixedSize(100, 40);
             scroll.fillSlot(ScrollArea.CONTENT_SLOT, content ->
                     content.e(new Rect(0), rect -> rect.layout().fixedSize(300, 10)));
@@ -37,7 +37,7 @@ class ScrollInputTest {
         var tree = new UITree();
         var outer = new ScrollArea();
         var inner = new ScrollArea();
-        new RootScope(tree).e(outer, scroll -> {
+        ICompositionScope.root(tree).e(outer, scroll -> {
             scroll.layout().fixedSize(100, 100);
             scroll.fillSlot(ScrollArea.CONTENT_SLOT, content -> content.e(new Column(), column -> {
                 column.layout().fillMaxWidth();

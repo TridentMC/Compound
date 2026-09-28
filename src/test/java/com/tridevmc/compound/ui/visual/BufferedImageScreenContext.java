@@ -266,17 +266,12 @@ public class BufferedImageScreenContext implements com.tridevmc.compound.ui.scre
 
         IScreenSpriteWriter writer = sprite.getWriter();
         Color tint;
-        String label;
-
-        if (writer instanceof com.tridevmc.compound.ui.sprite.ScreenSpriteWriterNineSlice) {
-            tint = PANEL_BG;
-            label = null;
-        } else if (writer instanceof com.tridevmc.compound.ui.sprite.ScreenSpriteWriterTile) {
+        if (writer == IScreenSpriteWriter.tiled()) {
             tint = SLOT_BG;
-            label = null;
-        } else {
+        } else if (writer == IScreenSpriteWriter.stretch()) {
             tint = DEFAULT_SPRITE_TINT;
-            label = null;
+        } else {
+            tint = PANEL_BG;
         }
 
         this.g2d.setColor(tint);

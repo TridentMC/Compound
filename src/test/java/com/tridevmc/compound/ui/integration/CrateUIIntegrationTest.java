@@ -1,10 +1,10 @@
 package com.tridevmc.compound.ui.integration;
 
+import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.test.MinecraftMockExtension;
 import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.element.*;
 import com.tridevmc.compound.ui.layout.*;
-import com.tridevmc.compound.ui.scope.RootScope;
 import com.tridevmc.compound.ui.tree.ITreeNode;
 import com.tridevmc.compound.ui.tree.UITree;
 import com.tridevmc.compound.ui.screen.IPrimitiveScreenContext;
@@ -110,7 +110,7 @@ public class CrateUIIntegrationTest {
     void testCrateUIComposition() {
         // 1. Setup
         UITree tree = new UITree();
-        RootScope scope = new RootScope(tree);
+        var scope = ICompositionScope.root(tree);
         Column scrollContent = new Column();
 
         // Mock slots (27 crate + 27 player + 9 hotbar = 63 slots)

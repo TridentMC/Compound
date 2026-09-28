@@ -43,6 +43,19 @@ import java.util.function.Function;
 public interface ICompositionScope {
 
     /**
+     * Creates a fresh composition scope for an empty or reset tree. Use one scope per
+     * composition. The first element added becomes the
+     * root; subsequent elements attach to it. Screens create this scope automatically.
+     * Use this entry point when composing a standalone tree, such as a rendering harness.
+     *
+     * @param tree the non-null, empty or reset tree receiving the composition
+     * @return a new root scope for the tree
+     */
+    static ICompositionScope root(UITree tree) {
+        return new RootScope(tree);
+    }
+
+    /**
      * Add a primitive element to the tree.
      *
      * @param element      the element instance to add

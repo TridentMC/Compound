@@ -33,7 +33,6 @@ import com.tridevmc.compound.ui.event.CharEvent;
 import com.tridevmc.compound.ui.event.MouseClickEvent;
 import com.tridevmc.compound.ui.event.MouseMoveEvent;
 import com.tridevmc.compound.ui.event.MouseScrollEvent;
-import com.tridevmc.compound.ui.scope.RootScope;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.tree.UITree;
 import net.minecraft.ChatFormatting;
@@ -99,7 +98,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         var previousFocus = this.tree.getFocusedNode();
         this.tree.reset();
         this.tree.setViewportSize(this.width, this.height);
-        this.compose(new RootScope(this.tree));
+        this.compose(ICompositionScope.root(this.tree));
         if (previousFocus != null) {
             var restored = this.tree.getNodeForElement(previousFocus.getElement());
             if (restored != null) this.tree.requestFocus(restored);

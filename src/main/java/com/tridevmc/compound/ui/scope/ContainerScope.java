@@ -20,8 +20,8 @@ import com.tridevmc.compound.ui.element.IContainer;
 import com.tridevmc.compound.ui.tree.ITreeNode;
 import com.tridevmc.compound.ui.tree.UITree;
 
-public class ContainerScope<T extends IContainer> extends CompositionScope<T> implements IContainerScope<T> {
-    public ContainerScope(UITree tree, ITreeNode node, T element) {
+final class ContainerScope<T extends IContainer> extends CompositionScope<T> implements IContainerScope<T> {
+    ContainerScope(UITree tree, ITreeNode node, T element) {
         super(tree, node, element);
     }
 }

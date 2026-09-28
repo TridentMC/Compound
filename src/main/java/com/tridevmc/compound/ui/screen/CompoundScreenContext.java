@@ -36,11 +36,11 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
-public class CompoundScreenContext implements IScreenContext {
+final class CompoundScreenContext implements IScreenContext {
 
     private final IInternalCompoundUI ui;
 
-    public CompoundScreenContext(IInternalCompoundUI ui) {
+    CompoundScreenContext(IInternalCompoundUI ui) {
         this.ui = ui;
     }
 

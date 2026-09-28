@@ -24,11 +24,11 @@ import com.tridevmc.compound.ui.tree.ITreeNode;
 import com.tridevmc.compound.ui.tree.UITree;
 import java.util.function.Consumer;
 
-public class ComposableElementScope<T extends IComposableElement> extends CompositionScope<T>
+final class ComposableElementScope<T extends IComposableElement> extends CompositionScope<T>
         implements IComposableElementScope<T> {
     private final SlotMap slotMap;
 
-    public ComposableElementScope(UITree tree, ITreeNode node, T element, SlotMap slots) {
+    ComposableElementScope(UITree tree, ITreeNode node, T element, SlotMap slots) {
         super(tree, node, element);
         this.slotMap = slots;
     }

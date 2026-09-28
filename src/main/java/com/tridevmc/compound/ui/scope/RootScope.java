@@ -19,11 +19,11 @@ package com.tridevmc.compound.ui.scope;
 import com.tridevmc.compound.ui.tree.ITreeNode;
 import com.tridevmc.compound.ui.tree.UITree;
 
-public class RootScope implements NodeCompositionScope {
+final class RootScope implements NodeCompositionScope {
     private final UITree tree;
     private ITreeNode rootNode;
 
-    public RootScope(UITree tree) {
+    RootScope(UITree tree) {
         this.tree = tree;
     }
 

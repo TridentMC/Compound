@@ -22,7 +22,7 @@ import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
-import com.tridevmc.compound.ui.sprite.ScreenSpriteWriterNineSlice;
+import com.tridevmc.compound.ui.sprite.IScreenSpriteWriter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.data.AtlasIds;
 import net.minecraft.resources.Identifier;
@@ -44,7 +44,7 @@ public class InventorySlot extends BaseElement implements IComposableElement {
     private static final IScreenSprite SLOT_SPRITE = IScreenSprite.of(
             Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.GUI).getSprite(
                     Identifier.withDefaultNamespace("container/slot")),
-            new ScreenSpriteWriterNineSlice(
+            IScreenSpriteWriter.nineSlice(
                     1, 1, 1, 1)
     );
 

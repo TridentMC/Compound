@@ -18,14 +18,11 @@ package com.tridevmc.compound.ui.sprite;
 
 import com.tridevmc.compound.ui.screen.IScreenContext;
 
-/**
- * Implementation of {@link IScreenSpriteWriter} that draws a nine-slice sprite within the given dimensions.
- */
-public class ScreenSpriteWriterNineSlice implements IScreenSpriteWriter {
+final class ScreenSpriteWriterNineSlice implements IScreenSpriteWriter {
 
     private final int leftBorder, rightBorder, topBorder, bottomBorder;
 
-    public ScreenSpriteWriterNineSlice(int leftBorder, int rightBorder, int topBorder, int bottomBorder) {
+    ScreenSpriteWriterNineSlice(int leftBorder, int rightBorder, int topBorder, int bottomBorder) {
         this.leftBorder = leftBorder;
         this.rightBorder = rightBorder;
         this.topBorder = topBorder;

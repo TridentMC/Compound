@@ -164,7 +164,7 @@ public interface IScreenSprite {
 
             @Override
             public IScreenSpriteWriter getWriter() {
-                return ScreenSpriteWriterStretch.INSTANCE;
+                return IScreenSpriteWriter.stretch();
             }
 
             @Override

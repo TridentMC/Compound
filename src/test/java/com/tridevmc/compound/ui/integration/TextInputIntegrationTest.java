@@ -16,6 +16,7 @@
 
 package com.tridevmc.compound.ui.integration;
 
+import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.test.MinecraftMockExtension;
 import com.tridevmc.compound.ui.element.Box;
 import com.tridevmc.compound.ui.element.Button;
@@ -30,7 +31,6 @@ import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.Constraints;
 import com.tridevmc.compound.ui.layout.Position;
 import com.tridevmc.compound.ui.layout.Size;
-import com.tridevmc.compound.ui.scope.RootScope;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import com.tridevmc.compound.ui.tree.ITreeNode;
 import com.tridevmc.compound.ui.tree.UITree;
@@ -59,7 +59,7 @@ public class TextInputIntegrationTest {
     @Test
     void testTextInputComposition() {
         UITree tree = new UITree();
-        RootScope scope = new RootScope(tree);
+        var scope = ICompositionScope.root(tree);
 
         // Compose a UI with multiple TextInput elements in different configurations
         scope.e(new Stack(), stack -> {
@@ -287,7 +287,7 @@ public class TextInputIntegrationTest {
     @Test
     void testTextInputRendering() {
         UITree tree = new UITree();
-        RootScope scope = new RootScope(tree);
+        var scope = ICompositionScope.root(tree);
 
         scope.e(new Panel(), panel -> {
             panel.layout().fixedSize(200, 100);

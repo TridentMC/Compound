@@ -91,7 +91,7 @@ public class TreeNode implements ITreeNode {
     private LayoutProperties layoutProperties = LayoutProperties.create();
     private final List<AnimatedState<?>> registeredAnimations = new ArrayList<>();
 
-    public TreeNode(IElement element, UITree tree) {
+    TreeNode(IElement element, UITree tree) {
         this.element = element;
         this.tree = tree;
         this.preserveHandlers();

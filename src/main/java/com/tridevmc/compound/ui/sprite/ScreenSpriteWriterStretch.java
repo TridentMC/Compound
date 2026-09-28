@@ -18,12 +18,9 @@ package com.tridevmc.compound.ui.sprite;
 
 import com.tridevmc.compound.ui.screen.IScreenContext;
 
-/**
- * Implementation of {@link IScreenSpriteWriter} that stretches the sprite to fit the given dimensions.
- */
-public class ScreenSpriteWriterStretch implements IScreenSpriteWriter {
+final class ScreenSpriteWriterStretch implements IScreenSpriteWriter {
 
-    public static final ScreenSpriteWriterStretch INSTANCE = new ScreenSpriteWriterStretch();
+    static final ScreenSpriteWriterStretch INSTANCE = new ScreenSpriteWriterStretch();
 
     @Override
     public void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height) {
