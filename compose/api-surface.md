@@ -5,7 +5,7 @@ screen, what you get back from each scope, and which elements exist. It document
 public API (`com.tridevmc.compound.ui.*`), not the internal layout engine.
 
 For architecture and custom element authoring, see the
-[framework reference](../../Compound-UI-Framework-Reference.md).
+[framework reference](framework-reference.md).
 
 ---
 

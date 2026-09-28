@@ -105,7 +105,7 @@ idea {
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    // Use mockito-inline (5.x supports Java 21 better) to support static mocking
+    // Static Minecraft calls require the inline mock maker.
     testImplementation 'org.mockito:mockito-inline:5.2.0'
     testImplementation 'org.mockito:mockito-junit-jupiter:5.2.0'
 }
@@ -113,6 +113,6 @@ dependencies {
 // Configure JUnit 5 tests
 test {
     useJUnitPlatform()
-    // Allow ByteBuddy experimental support for Java 21
+    // This ByteBuddy version needs experimental support for Java 25.
     jvmArgs '-Dnet.bytebuddy.experimental=true'
 }

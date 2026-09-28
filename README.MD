@@ -25,3 +25,7 @@ Molecule is the companion demo mod used for in-game validation. Report game fail
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).
+
+## Composable UI
+
+Version 2.0.0 replaces the legacy UI API. See the [consumer API](compose/api-surface.md), [framework reference](compose/framework-reference.md), and [migration notes](compose/migration-2.0.md).
