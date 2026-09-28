@@ -28,6 +28,9 @@ Apache License 2.0. See [LICENSE](LICENSE).
 
 ## Composable UI
 
-Version 2.0.0 replaces the legacy UI API. See the [consumer API](compose/api-surface.md), [framework reference](compose/framework-reference.md), and [migration notes](compose/migration-2.0.md).
+Version 2.0.0 replaces the legacy UI API. Documentation lives in the [wiki](https://github.com/TridentMC/Compound/wiki/Composable-UI):
 
-The [wiki UI guide](https://github.com/TridentMC/Compound/wiki/Composable-UI) covers a complete screen, state, scrolling, animations, and inventories. Its [source pages](docs/wiki) are reviewed with the code.
+- [Getting started](https://github.com/TridentMC/Compound/wiki/Composable-UI)
+- [Consumer API](https://github.com/TridentMC/Compound/wiki/Composable-UI-API)
+- [Layout and custom elements](https://github.com/TridentMC/Compound/wiki/Composable-UI-Reference)
+- [Migration from 1.x](https://github.com/TridentMC/Compound/wiki/Composable-UI-Migration)
