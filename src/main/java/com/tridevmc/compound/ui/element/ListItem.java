@@ -30,22 +30,23 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
+import java.util.function.IntSupplier;
+import java.util.function.BooleanSupplier;
 
 /**
  * A selectable-looking list row configured through {@link #builder(Component)}.
  * Selection, hover, and colors are supplied by the owner; the row does not change those
  * values itself. Click and hover callbacks let a list coordinate its rows.
  */
-public class ListItem extends BaseElement implements IComposableElement {
+public class ListItem extends Element implements IComposableElement {
 
     private final Component label;
-    private final Supplier<Boolean> selected;
-    private final Supplier<Boolean> hovered;
-    private final Supplier<Integer> selectedBackgroundColor;
-    private final Supplier<Integer> hoveredBackgroundColor;
-    private final Supplier<Integer> selectedTextColor;
-    private final Supplier<Integer> defaultTextColor;
+    private final BooleanSupplier selected;
+    private final BooleanSupplier hovered;
+    private final IntSupplier selectedBackgroundColor;
+    private final IntSupplier hoveredBackgroundColor;
+    private final IntSupplier selectedTextColor;
+    private final IntSupplier defaultTextColor;
     private final List<Runnable> clickHandlers = new ArrayList<>();
     private Runnable hoverEnterHandler = () -> {};
     private Runnable hoverExitHandler = () -> {};
@@ -77,12 +78,12 @@ public class ListItem extends BaseElement implements IComposableElement {
      */
     public static final class Builder {
         private final Component label;
-        private Supplier<Boolean> selected = () -> false;
-        private Supplier<Boolean> hovered = () -> false;
-        private Supplier<Integer> selectedBackgroundColor = () -> 0xFF606060;
-        private Supplier<Integer> hoveredBackgroundColor = () -> 0xFF404040;
-        private Supplier<Integer> selectedTextColor = () -> 0xFFFFFFFF;
-        private Supplier<Integer> defaultTextColor = () -> 0xFFFFFFFF;
+        private BooleanSupplier selected = () -> false;
+        private BooleanSupplier hovered = () -> false;
+        private IntSupplier selectedBackgroundColor = () -> 0xFF606060;
+        private IntSupplier hoveredBackgroundColor = () -> 0xFF404040;
+        private IntSupplier selectedTextColor = () -> 0xFFFFFFFF;
+        private IntSupplier defaultTextColor = () -> 0xFFFFFFFF;
 
         private Builder(Component label) {
             this.label = Objects.requireNonNull(label);
@@ -95,7 +96,7 @@ public class ListItem extends BaseElement implements IComposableElement {
          * @return this builder.
          * @throws NullPointerException if the supplier is null.
          */
-        public Builder selected(Supplier<Boolean> selected) {
+        public Builder selected(BooleanSupplier selected) {
             this.selected = Objects.requireNonNull(selected);
             return this;
         }
@@ -107,7 +108,7 @@ public class ListItem extends BaseElement implements IComposableElement {
          * @return this builder.
          * @throws NullPointerException if the supplier is null.
          */
-        public Builder hovered(Supplier<Boolean> hovered) {
+        public Builder hovered(BooleanSupplier hovered) {
             this.hovered = Objects.requireNonNull(hovered);
             return this;
         }
@@ -119,7 +120,7 @@ public class ListItem extends BaseElement implements IComposableElement {
          * @return this builder.
          * @throws NullPointerException if the supplier is null.
          */
-        public Builder selectedBackgroundColor(Supplier<Integer> color) {
+        public Builder selectedBackgroundColor(IntSupplier color) {
             this.selectedBackgroundColor = Objects.requireNonNull(color);
             return this;
         }
@@ -131,7 +132,7 @@ public class ListItem extends BaseElement implements IComposableElement {
          * @return this builder.
          * @throws NullPointerException if the supplier is null.
          */
-        public Builder hoveredBackgroundColor(Supplier<Integer> color) {
+        public Builder hoveredBackgroundColor(IntSupplier color) {
             this.hoveredBackgroundColor = Objects.requireNonNull(color);
             return this;
         }
@@ -143,7 +144,7 @@ public class ListItem extends BaseElement implements IComposableElement {
          * @return this builder.
          * @throws NullPointerException if the supplier is null.
          */
-        public Builder selectedTextColor(Supplier<Integer> color) {
+        public Builder selectedTextColor(IntSupplier color) {
             this.selectedTextColor = Objects.requireNonNull(color);
             return this;
         }
@@ -155,7 +156,7 @@ public class ListItem extends BaseElement implements IComposableElement {
          * @return this builder.
          * @throws NullPointerException if the supplier is null.
          */
-        public Builder defaultTextColor(Supplier<Integer> color) {
+        public Builder defaultTextColor(IntSupplier color) {
             this.defaultTextColor = Objects.requireNonNull(color);
             return this;
         }
@@ -185,16 +186,16 @@ public class ListItem extends BaseElement implements IComposableElement {
             stack.layout().fillMax();
 
             stack.e(new Rect(() -> {
-                if (this.selected.get()) return this.selectedBackgroundColor.get();
-                if (this.hovered.get()) return this.hoveredBackgroundColor.get();
+                if (this.selected.getAsBoolean()) return this.selectedBackgroundColor.getAsInt();
+                if (this.hovered.getAsBoolean()) return this.hoveredBackgroundColor.getAsInt();
                 return 0x00000000;
             }), bg -> bg.layout().fillMax());
 
             stack.e(new Box(), content -> {
                 content.layout().fillMax().margin(4, 0, 4, 0).contentAlignment(Alignment.CENTER_LEFT);
                 content.e(new Label(this.label,
-                        () -> this.selected.get() || this.hovered.get()
-                                ? this.selectedTextColor.get() : this.defaultTextColor.get(), () -> true));
+                        () -> this.selected.getAsBoolean() || this.hovered.getAsBoolean()
+                                ? this.selectedTextColor.getAsInt() : this.defaultTextColor.getAsInt(), () -> true));
             });
         });
     }

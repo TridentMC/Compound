@@ -39,7 +39,7 @@ import java.util.Objects;
  * A clipped, single-axis viewport for {@link #CONTENT_SLOT}. Content is measured without a
  * bound on the scrolling axis. Displayed scrollbars reserve a gutter outside the content viewport.
  */
-public class ScrollArea extends BaseElement implements IComposableElement {
+public class ScrollArea extends Element implements IComposableElement {
 
     /** The slot containing this element's consumer-provided content. */
     public static final SlotKey CONTENT_SLOT = new SlotKey("content");
@@ -400,7 +400,7 @@ public class ScrollArea extends BaseElement implements IComposableElement {
         abstract void composeTrack(ICompositionScope scope);
     }
 
-    private class ScrollbarElement extends BaseElement implements IComposableElement {
+    private class ScrollbarElement extends Element implements IComposableElement {
 
         @Override
         public void compose(ICompositionScope scope) {

@@ -31,13 +31,14 @@ import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.IntSupplier;
+import java.util.function.DoubleSupplier;
 
 /**
  * A progress indicator with optional labels and an animated indeterminate mode.
  * Progress uses a configurable maximum, initially one.
  */
-public class ProgressBar extends BaseElement implements IComposableElement {
+public class ProgressBar extends Element implements IComposableElement {
 
     private static final int DEFAULT_MIN_WIDTH = 100;
     private static final int DEFAULT_HEIGHT = 12;
@@ -285,14 +286,14 @@ public class ProgressBar extends BaseElement implements IComposableElement {
         return List.of(bounds);
     }
 
-    private static class ProgressFill extends BaseElement implements IComposableElement {
-        private final Supplier<Integer> colorSupplier;
-        private final Supplier<Double> normalizedSupplier;
+    private static class ProgressFill extends Element implements IComposableElement {
+        private final IntSupplier colorSupplier;
+        private final DoubleSupplier normalizedSupplier;
         private final boolean indeterminate;
         private AnimatedState<Float> sweep;
 
-        ProgressFill(Supplier<Integer> colorSupplier,
-                     Supplier<Double> normalizedSupplier,
+        ProgressFill(IntSupplier colorSupplier,
+                     DoubleSupplier normalizedSupplier,
                      boolean indeterminate) {
             this.colorSupplier = colorSupplier;
             this.normalizedSupplier = normalizedSupplier;
@@ -318,7 +319,7 @@ public class ProgressBar extends BaseElement implements IComposableElement {
 
         @Override
         public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
-            double normalized = this.indeterminate ? 1.0 : this.normalizedSupplier.get();
+            double normalized = this.indeterminate ? 1.0 : this.normalizedSupplier.getAsDouble();
             int fillWidth = (int) (constraints.maxWidth() * normalized);
             return new Size(fillWidth, constraints.maxHeight());
         }

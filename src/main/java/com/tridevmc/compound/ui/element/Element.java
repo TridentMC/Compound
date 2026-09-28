@@ -30,11 +30,11 @@ import java.util.List;
  * Extend this class and implement the appropriate element interface. An instance may be
  * mounted in one tree position at a time; keep consumer state in fields when it must survive recomposition.
  */
-public abstract class BaseElement implements IElementInternal {
+public abstract class Element implements IElementInternal {
     private ITreeNode node;
 
     /** Creates an unattached element; the tree assigns its node when mounted. */
-    public BaseElement() {
+    public Element() {
     }
 
     /** {@inheritDoc} */

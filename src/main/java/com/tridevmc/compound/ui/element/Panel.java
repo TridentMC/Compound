@@ -35,7 +35,7 @@ import java.util.function.Supplier;
  * A vanilla inventory-style background with content supplied through {@link #CONTENT_SLOT}.
  * Add padding to the content when it must stay clear of the decorative border.
  */
-public class Panel extends BaseElement implements IComposableElement {
+public class Panel extends Element implements IComposableElement {
 
     /** The slot containing this element's consumer-provided content. */
     public static final SlotKey CONTENT_SLOT = new SlotKey("content");

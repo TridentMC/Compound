@@ -21,17 +21,17 @@ import com.tridevmc.compound.ui.scope.ICompositionScope;
 
 import javax.annotation.Nonnull;
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.function.IntSupplier;
 
 /**
  * A composable one-pixel caret. Offset and height suppliers are sampled during composition;
  * recompose when either changes. The color supplier is sampled each frame.
  */
-public class Cursor extends BaseElement implements IComposableElement {
+public class Cursor extends Element implements IComposableElement {
 
-    private final Supplier<Integer> offsetSupplier;
-    private final Supplier<Integer> colorSupplier;
-    private final Supplier<Integer> heightSupplier;
+    private final IntSupplier offsetSupplier;
+    private final IntSupplier colorSupplier;
+    private final IntSupplier heightSupplier;
 
     /**
      * Creates a caret with supplied geometry and color.
@@ -40,7 +40,7 @@ public class Cursor extends BaseElement implements IComposableElement {
      * @param colorSupplier the non-null supplier of ARGB drawing colors
      * @param heightSupplier the non-null supplier of caret heights in pixels, sampled during composition
      */
-    public Cursor(Supplier<Integer> offsetSupplier, Supplier<Integer> colorSupplier, Supplier<Integer> heightSupplier) {
+    public Cursor(IntSupplier offsetSupplier, IntSupplier colorSupplier, IntSupplier heightSupplier) {
         this.offsetSupplier = offsetSupplier;
         this.colorSupplier = colorSupplier;
         this.heightSupplier = heightSupplier;
@@ -51,8 +51,8 @@ public class Cursor extends BaseElement implements IComposableElement {
      */
     @Override
     public void compose(ICompositionScope scope) {
-        int offset = this.offsetSupplier.get();
-        int height = this.heightSupplier.get();
+        int offset = this.offsetSupplier.getAsInt();
+        int height = this.heightSupplier.getAsInt();
 
         scope.e(new Row(), row -> {
             row.layout().fillMaxHeight();

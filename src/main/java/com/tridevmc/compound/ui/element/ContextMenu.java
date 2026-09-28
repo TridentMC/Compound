@@ -36,7 +36,7 @@ import java.util.List;
  * The menu captures input while open and closes on Escape, an outside click, or an action.
  * Its position is clamped to the viewport and overflowing items can scroll.
  */
-public class ContextMenu extends BaseElement implements IComposableElement {
+public class ContextMenu extends Element implements IComposableElement {
 
     private static final int ITEM_HEIGHT = 16;
     private static final int MIN_WIDTH = 120;

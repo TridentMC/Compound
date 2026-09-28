@@ -25,17 +25,19 @@ import net.minecraft.network.chat.Component;
 
 import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.function.IntSupplier;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 /**
  * Composable read-only text with optional wrapping. Suppliers are read during measurement and
  * drawing; bind layout state when a supplier change can alter the measured size.
  */
-public class Label extends BaseElement implements IComposableElement {
+public class Label extends Element implements IComposableElement {
 
     private Supplier<Component> textSupplier;
-    private Supplier<Integer> colorSupplier;
-    private Supplier<Boolean> shadowSupplier;
+    private IntSupplier colorSupplier;
+    private BooleanSupplier shadowSupplier;
     private boolean wrap;
 
     /**
@@ -74,7 +76,7 @@ public class Label extends BaseElement implements IComposableElement {
      * @param text the non-null styled text
      * @param colorSupplier the non-null supplier of drawing colors
      */
-    public Label(Component text, Supplier<Integer> colorSupplier) {
+    public Label(Component text, IntSupplier colorSupplier) {
         this(() -> text, colorSupplier, () -> true);
     }
 
@@ -85,7 +87,7 @@ public class Label extends BaseElement implements IComposableElement {
      * @param colorSupplier the non-null supplier of drawing colors
      * @param shadowSupplier the non-null supplier controlling text shadows
      */
-    public Label(Component text, Supplier<Integer> colorSupplier, Supplier<Boolean> shadowSupplier) {
+    public Label(Component text, IntSupplier colorSupplier, BooleanSupplier shadowSupplier) {
         this(() -> text, colorSupplier, shadowSupplier);
     }
 
@@ -95,7 +97,7 @@ public class Label extends BaseElement implements IComposableElement {
      * @param textSupplier the non-null supplier of non-null styled text
      * @param colorSupplier the non-null supplier of drawing colors
      */
-    public Label(Supplier<Component> textSupplier, Supplier<Integer> colorSupplier) {
+    public Label(Supplier<Component> textSupplier, IntSupplier colorSupplier) {
         this(textSupplier, colorSupplier, () -> true);
     }
 
@@ -106,7 +108,7 @@ public class Label extends BaseElement implements IComposableElement {
      * @param colorSupplier the non-null supplier of drawing colors
      * @param shadowSupplier the non-null supplier controlling text shadows
      */
-    public Label(Supplier<Component> textSupplier, Supplier<Integer> colorSupplier, Supplier<Boolean> shadowSupplier) {
+    public Label(Supplier<Component> textSupplier, IntSupplier colorSupplier, BooleanSupplier shadowSupplier) {
         this.textSupplier = textSupplier;
         this.colorSupplier = colorSupplier;
         this.shadowSupplier = shadowSupplier;
@@ -125,7 +127,7 @@ public class Label extends BaseElement implements IComposableElement {
      */
     @Override
     public void compose(ICompositionScope scope) {
-        scope.e(new Text(() -> this.textSupplier.get(), () -> this.colorSupplier.get(), () -> this.shadowSupplier.get()).setWrap(this.wrap));
+        scope.e(new Text(() -> this.textSupplier.get(), () -> this.colorSupplier.getAsInt(), () -> this.shadowSupplier.getAsBoolean()).setWrap(this.wrap));
     }
 
     /**
@@ -194,7 +196,7 @@ public class Label extends BaseElement implements IComposableElement {
      * @return the current drawing color
      */
     public int getColor() {
-        return this.colorSupplier.get();
+        return this.colorSupplier.getAsInt();
     }
 
     /**
@@ -211,7 +213,7 @@ public class Label extends BaseElement implements IComposableElement {
      *
      * @return the configured supplier
      */
-    public Supplier<Integer> getColorSupplier() {
+    public IntSupplier getColorSupplier() {
         return this.colorSupplier;
     }
 
@@ -220,7 +222,7 @@ public class Label extends BaseElement implements IComposableElement {
      *
      * @param colorSupplier the non-null supplier of drawing colors
      */
-    public void setColorSupplier(Supplier<Integer> colorSupplier) {
+    public void setColorSupplier(IntSupplier colorSupplier) {
         this.colorSupplier = colorSupplier;
     }
 
@@ -230,7 +232,7 @@ public class Label extends BaseElement implements IComposableElement {
      * @return true when enabled
      */
     public boolean isShadow() {
-        return this.shadowSupplier.get();
+        return this.shadowSupplier.getAsBoolean();
     }
 
     /**
@@ -247,7 +249,7 @@ public class Label extends BaseElement implements IComposableElement {
      *
      * @return the configured supplier
      */
-    public Supplier<Boolean> getShadowSupplier() {
+    public BooleanSupplier getShadowSupplier() {
         return this.shadowSupplier;
     }
 
@@ -256,7 +258,7 @@ public class Label extends BaseElement implements IComposableElement {
      *
      * @param shadowSupplier the non-null supplier controlling text shadows
      */
-    public void setShadowSupplier(Supplier<Boolean> shadowSupplier) {
+    public void setShadowSupplier(BooleanSupplier shadowSupplier) {
         this.shadowSupplier = shadowSupplier;
     }
 

@@ -29,7 +29,7 @@ import java.util.List;
  * An invisible layout element with either a requested pixel size or flexible dimensions.
  * Flexible spacers consume the available constraints; use bounded layout or an explicit weight.
  */
-public class Spacer extends BaseElement implements IPrimitiveElement {
+public class Spacer extends Element implements IPrimitiveElement {
 
     private int width;
     private int height;

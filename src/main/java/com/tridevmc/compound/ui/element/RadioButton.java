@@ -25,21 +25,22 @@ import com.tridevmc.compound.ui.scope.ICompositionScope;
 
 import javax.annotation.Nonnull;
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.function.IntSupplier;
+import java.util.function.BooleanSupplier;
 
 /**
  * A passive square selection indicator composed from colored rectangles.
  * It does not handle clicks or coordinate selection; use {@link RadioButtonGroup}
  * for an interactive group styled with vanilla checkbox sprites.
  */
-public class RadioButton extends BaseElement implements IComposableElement {
+public class RadioButton extends Element implements IComposableElement {
 
     private static final int DEFAULT_SIZE = 12;
     private static final int DEFAULT_INSET = 3;
 
-    private final Supplier<Boolean> selected;
-    private final Supplier<Integer> outerColor;
-    private final Supplier<Integer> innerColor;
+    private final BooleanSupplier selected;
+    private final IntSupplier outerColor;
+    private final IntSupplier innerColor;
     private final int size;
     private final int inset;
 
@@ -50,7 +51,7 @@ public class RadioButton extends BaseElement implements IComposableElement {
      * @param outerColor supplier for the outer ARGB color
      * @param innerColor supplier for the inner selected square's ARGB color
      */
-    public RadioButton(Supplier<Boolean> selected, Supplier<Integer> outerColor, Supplier<Integer> innerColor) {
+    public RadioButton(BooleanSupplier selected, IntSupplier outerColor, IntSupplier innerColor) {
         this.selected = selected;
         this.outerColor = outerColor;
         this.innerColor = innerColor;
@@ -77,7 +78,7 @@ public class RadioButton extends BaseElement implements IComposableElement {
 
             stack.e(new Rect(this.outerColor), outer -> outer.layout().fillMax());
 
-            stack.e(new Rect(() -> this.selected.get() ? this.innerColor.get() : 0x00000000), inner ->
+            stack.e(new Rect(() -> this.selected.getAsBoolean() ? this.innerColor.getAsInt() : 0x00000000), inner ->
                     inner.layout().fillMax().margin(this.inset));
         });
     }

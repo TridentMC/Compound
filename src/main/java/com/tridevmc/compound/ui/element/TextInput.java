@@ -54,7 +54,7 @@ import java.util.function.Predicate;
  * A single-line editor with selection, clipboard support, formatting, and horizontal scrolling.
  * Absolute caret offsets and length limits use UTF-16 code units; relative movement uses code points.
  */
-public class TextInput extends BaseElement implements IComposableElement {
+public class TextInput extends Element implements IComposableElement {
 
     private static final IScreenSprite SPRITE_NORMAL = IScreenSprite.of(
             Identifier.withDefaultNamespace("widget/text_field"));
@@ -281,7 +281,7 @@ public class TextInput extends BaseElement implements IComposableElement {
         return Component.literal(visibleText);
     }
 
-    private class Suggestion extends BaseElement implements IComposableElement {
+    private class Suggestion extends Element implements IComposableElement {
         @Override
         public void compose(ICompositionScope scope) {
             scope.e(new Text(() -> Component.literal(TextInput.this.suggestion == null ? "" : TextInput.this.suggestion),

@@ -42,7 +42,7 @@ import java.util.function.Function;
  * Values are clamped to a finite range and rounded to a step relative to the minimum.
  * A zero step permits continuous values. Retain the instance to preserve its value.
  */
-public class Slider extends BaseElement implements IComposableElement {
+public class Slider extends Element implements IComposableElement {
 
     private static final int DEFAULT_MIN_WIDTH = 100;
     private static final int DEFAULT_HEIGHT = 20;
@@ -63,12 +63,12 @@ public class Slider extends BaseElement implements IComposableElement {
      * Composed slider handle element. Measures as the full track size but places a
      * child sprite at the position derived from the normalized value supplier.
      */
-    private class SliderThumb extends BaseElement implements IComposableElement {
+    private class SliderThumb extends Element implements IComposableElement {
         private final java.util.function.Supplier<IScreenSprite> spriteSupplier;
-        private final java.util.function.Supplier<Double> normalizedSupplier;
+        private final java.util.function.DoubleSupplier normalizedSupplier;
 
         SliderThumb(java.util.function.Supplier<IScreenSprite> spriteSupplier,
-                    java.util.function.Supplier<Double> normalizedSupplier) {
+                    java.util.function.DoubleSupplier normalizedSupplier) {
             this.spriteSupplier = spriteSupplier;
             this.normalizedSupplier = normalizedSupplier;
         }
@@ -85,7 +85,7 @@ public class Slider extends BaseElement implements IComposableElement {
 
         @Override
         public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
-            double normalized = this.normalizedSupplier.get();
+            double normalized = this.normalizedSupplier.getAsDouble();
             int trackWidth = bounds.width();
             int handleX = (int) (normalized * (trackWidth - HANDLE_WIDTH));
             return List.of(new Bounds(

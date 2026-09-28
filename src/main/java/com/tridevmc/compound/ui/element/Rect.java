@@ -24,14 +24,14 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 
 import javax.annotation.Nonnull;
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.function.IntSupplier;
 
 /**
  * Draws a solid ARGB rectangle in the assigned bounds. Color suppliers are sampled each frame.
  */
-public class Rect extends BasePrimitiveElement {
+public class Rect extends PrimitiveElement {
 
-    private Supplier<Integer> colorSupplier;
+    private IntSupplier colorSupplier;
 
     /**
      * Creates a solid rectangle.
@@ -47,7 +47,7 @@ public class Rect extends BasePrimitiveElement {
      *
      * @param colorSupplier the non-null supplier of ARGB drawing colors
      */
-    public Rect(Supplier<Integer> colorSupplier) {
+    public Rect(IntSupplier colorSupplier) {
         this.colorSupplier = colorSupplier;
     }
 
@@ -85,7 +85,7 @@ public class Rect extends BasePrimitiveElement {
 
     @Override
     protected void drawElement(IScreenContext context, @Nonnull Bounds bounds) {
-        int color = this.colorSupplier.get();
+        int color = this.colorSupplier.getAsInt();
         context.drawRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), color);
     }
 
@@ -94,7 +94,7 @@ public class Rect extends BasePrimitiveElement {
      *
      * @return the configured supplier
      */
-    public Supplier<Integer> getColorSupplier() {
+    public IntSupplier getColorSupplier() {
         return this.colorSupplier;
     }
 
@@ -103,7 +103,7 @@ public class Rect extends BasePrimitiveElement {
      *
      * @param colorSupplier the non-null supplier of ARGB drawing colors
      */
-    public void setColorSupplier(Supplier<Integer> colorSupplier) {
+    public void setColorSupplier(IntSupplier colorSupplier) {
         this.colorSupplier = colorSupplier;
     }
 }

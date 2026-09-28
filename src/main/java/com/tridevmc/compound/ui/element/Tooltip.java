@@ -35,7 +35,7 @@ import java.util.function.Supplier;
  * The default delay is 500 milliseconds and the default wrapping width is 200 GUI pixels.
  * The tooltip is hidden when another input surface obscures its content.
  */
-public class Tooltip extends BaseElement implements IComposableElement {
+public class Tooltip extends Element implements IComposableElement {
     /**
      * The content whose bounds determine tooltip hover.
      */
@@ -117,7 +117,7 @@ public class Tooltip extends BaseElement implements IComposableElement {
      */
     public void setOnHide(Consumer<Void> callback) { this.onHide = callback; }
 
-    private class NativeTooltip extends BasePrimitiveElement {
+    private class NativeTooltip extends PrimitiveElement {
         @Override
         public Size measure(Constraints constraints, LayoutProperties props, List<Size> children) {
             return new Size(0, 0);

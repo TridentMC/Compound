@@ -44,6 +44,7 @@ import net.minecraft.sounds.SoundEvents;
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -51,7 +52,7 @@ import java.util.function.Supplier;
  * User activation notifies listeners; {@link #setOn(boolean)} changes the state and
  * animates the thumb silently. Retain the instance to preserve its on/off state.
  */
-public class ToggleSwitch extends BaseElement implements IComposableElement {
+public class ToggleSwitch extends Element implements IComposableElement {
 
     private static final int DEFAULT_WIDTH = 50;
     private static final int DEFAULT_HEIGHT = 20;
@@ -65,14 +66,14 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
             Identifier.withDefaultNamespace("widget/slider_handle"));
     private static final IScreenSprite HANDLE_HIGHLIGHTED_SPRITE = IScreenSprite.of(
             Identifier.withDefaultNamespace("widget/slider_handle_highlighted"));
-    private class ToggleThumb extends BaseElement implements IComposableElement {
+    private class ToggleThumb extends Element implements IComposableElement {
         private final Supplier<IScreenSprite> spriteSupplier;
-        private final Supplier<Integer> positionSupplier;
-        private final Supplier<Integer> colorSupplier;
+        private final IntSupplier positionSupplier;
+        private final IntSupplier colorSupplier;
 
         ToggleThumb(Supplier<IScreenSprite> spriteSupplier,
-                    Supplier<Integer> positionSupplier,
-                    Supplier<Integer> colorSupplier) {
+                    IntSupplier positionSupplier,
+                    IntSupplier colorSupplier) {
             this.spriteSupplier = spriteSupplier;
             this.positionSupplier = positionSupplier;
             this.colorSupplier = colorSupplier;
@@ -95,7 +96,7 @@ public class ToggleSwitch extends BaseElement implements IComposableElement {
 
         @Override
         public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
-            int handleX = this.positionSupplier.get();
+            int handleX = this.positionSupplier.getAsInt();
             return List.of(new Bounds(
                     new Position(bounds.x() + handleX, bounds.y()),
                     new Size(HANDLE_WIDTH, bounds.height())

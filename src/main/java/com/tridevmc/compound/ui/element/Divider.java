@@ -28,7 +28,7 @@ import java.util.List;
 /**
  * A horizontal rule that fills the available width. Thickness is measured in GUI pixels.
  */
-public class Divider extends BaseElement implements IComposableElement {
+public class Divider extends Element implements IComposableElement {
 
     private static final int DEFAULT_COLOR = 0xFF808080;
     private static final int DEFAULT_THICKNESS = 1;

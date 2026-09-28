@@ -68,7 +68,7 @@ public interface IGenericElement {
      * Gets the current bounds after placement.
      *
      * @return the placed screen bounds, possibly null before the first layout;
-     *         {@link BaseElement} returns empty bounds while detached
+     *         {@link Element} returns empty bounds while detached
      */
     Bounds getBounds();
 }

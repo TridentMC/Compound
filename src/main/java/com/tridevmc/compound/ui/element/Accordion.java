@@ -18,7 +18,7 @@ import java.util.function.Consumer;
  * The same instance retains its expanded state; collapsing removes the body from the tree,
  * so retain body element instances separately when their state must survive expansion.
  */
-public class Accordion extends BaseElement implements IComposableElement {
+public class Accordion extends Element implements IComposableElement {
     /**
      * The body content, composed only while expanded.
      */
@@ -109,7 +109,7 @@ public class Accordion extends BaseElement implements IComposableElement {
     }
 
     // Only the body is rebuilt when toggled, preserving the header's keyboard focus.
-    private class ExpandedContent extends BaseElement implements IComposableElement {
+    private class ExpandedContent extends Element implements IComposableElement {
         private final Consumer<ICompositionScope> content;
 
         private ExpandedContent(Consumer<ICompositionScope> content) {

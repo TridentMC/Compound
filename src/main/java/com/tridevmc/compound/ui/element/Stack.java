@@ -27,7 +27,7 @@ import java.util.List;
  * Children keep their measured size and share the content origin unless content alignment is set.
  * Explicit layers may change draw order.
  */
-public class Stack extends BaseContainer {
+public class Stack extends Container {
 
     /** Creates an empty overlapping layout; configure content alignment through its scope. */
     public Stack() {

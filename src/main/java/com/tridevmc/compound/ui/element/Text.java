@@ -27,17 +27,19 @@ import net.minecraft.network.chat.Component;
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.IntSupplier;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 /**
  * A primitive for styled text with optional wrapping. Suppliers are sampled during measurement
  * and drawing; bind layout state when changing text can alter its measured size.
  */
-public class Text extends BasePrimitiveElement {
+public class Text extends PrimitiveElement {
 
     private Supplier<Component> textSupplier;
-    private Supplier<Integer> colorSupplier;
-    private Supplier<Boolean> shadowSupplier;
+    private IntSupplier colorSupplier;
+    private BooleanSupplier shadowSupplier;
     private boolean wrap;
     private Component wrappedText;
     private int wrappedWidth = -1;
@@ -69,7 +71,7 @@ public class Text extends BasePrimitiveElement {
      * @param colorSupplier the non-null supplier of drawing colors
      * @param shadowSupplier the non-null supplier controlling text shadows
      */
-    public Text(Supplier<Component> textSupplier, Supplier<Integer> colorSupplier, Supplier<Boolean> shadowSupplier) {
+    public Text(Supplier<Component> textSupplier, IntSupplier colorSupplier, BooleanSupplier shadowSupplier) {
         this.textSupplier = textSupplier;
         this.colorSupplier = colorSupplier;
         this.shadowSupplier = shadowSupplier;
@@ -167,16 +169,16 @@ public class Text extends BasePrimitiveElement {
             int y = bounds.y();
             for (var line : lines) {
                 if (y + font.lineHeight > bounds.bottom()) break;
-                var colored = line.copy().withStyle(style -> style.withColor(this.colorSupplier.get()));
-                if (this.shadowSupplier.get()) context.drawTextWithShadow(colored, bounds.x(), y);
+                var colored = line.copy().withStyle(style -> style.withColor(this.colorSupplier.getAsInt()));
+                if (this.shadowSupplier.getAsBoolean()) context.drawTextWithShadow(colored, bounds.x(), y);
                 else context.drawText(colored, bounds.x(), y);
                 y += font.lineHeight;
             }
             return;
         }
         // Draw text vertically centered within bounds
-        int color = this.colorSupplier.get();
-        boolean shadow = this.shadowSupplier.get();
+        int color = this.colorSupplier.getAsInt();
+        boolean shadow = this.shadowSupplier.getAsBoolean();
         Component coloredText = text.copy().withStyle(style -> style.withColor(color));
 
         int textY = bounds.y() + (bounds.height() - font.lineHeight) / 2;

@@ -34,7 +34,7 @@ final class TickAnimation<T> implements AnimatedState<T> {
     private Easing easing;
     private T value;
     private long sampledTick = UNSTARTED;
-    private Optional<Leg<T>> playback = Optional.empty();
+    private final Transition<T> transition = new Transition<>();
     private Optional<Endpoints<T>> loop = Optional.empty();
 
     TickAnimation(T initialValue, long durationMillis, Interpolator<T> interpolator,
@@ -57,17 +57,16 @@ final class TickAnimation<T> implements AnimatedState<T> {
 
     @Override
     public T get(float partialTicks) {
-        if (this.playback.isEmpty() || this.sampledTick == UNSTARTED) {
+        if (!this.transition.active || this.sampledTick == UNSTARTED) {
             return this.value;
         }
-        var leg = this.playback.get();
-        return this.sample(leg, this.sampledTick - leg.startTick() + Math.clamp(partialTicks, 0F, 1F));
+        return this.sample(this.sampledTick - this.transition.startTick + Math.clamp(partialTicks, 0F, 1F));
     }
 
     @Override
     public void set(T target) {
         boolean sameTarget = this.loop.isEmpty()
-                && Objects.equals(this.playback.isPresent() ? this.playback.get().to() : this.value, target);
+                && Objects.equals(this.transition.active ? this.transition.to : this.value, target);
         this.loop = Optional.empty();
         if (!sameTarget) {
             this.start(target);
@@ -92,55 +91,65 @@ final class TickAnimation<T> implements AnimatedState<T> {
     }
 
     private void start(T target) {
-        this.playback = Optional.of(new Leg<>(this.value, target, UNSTARTED));
+        this.transition.from = this.value;
+        this.transition.to = target;
+        this.transition.startTick = UNSTARTED;
+        this.transition.active = true;
         this.sampledTick = UNSTARTED;
         this.scheduler.registerAnimation(this);
     }
 
     void updateAnimation(long tick) {
-        if (this.playback.isEmpty() || tick == this.sampledTick) {
+        if (!this.transition.active || tick == this.sampledTick) {
             return;
         }
-        var leg = this.playback.get();
-        if (leg.startTick() == UNSTARTED) {
-            this.playback = Optional.of(new Leg<>(leg.from(), leg.to(), tick));
+        if (this.transition.startTick == UNSTARTED) {
+            this.transition.startTick = tick;
             this.sampledTick = tick;
             return;
         }
         this.sampledTick = tick;
-        long elapsed = Math.max(0, tick - leg.startTick());
+        long elapsed = Math.max(0, tick - this.transition.startTick);
         if (elapsed >= this.durationTicks && this.loop.isPresent()) {
-            leg = this.advanceLoop(leg, elapsed);
-            this.playback = Optional.of(leg);
-            elapsed = tick - leg.startTick();
+            this.advanceLoop(elapsed);
+            elapsed = tick - this.transition.startTick;
         }
         T previous = this.value;
-        this.value = this.sample(leg, elapsed);
+        this.value = this.sample(elapsed);
         if (elapsed >= this.durationTicks) {
             this.stop();
         }
         this.notifyChange(previous);
     }
 
-    private Leg<T> advanceLoop(Leg<T> leg, long elapsed) {
+    private void advanceLoop(long elapsed) {
         var endpoints = this.loop.orElseThrow();
         long completedLegs = elapsed / this.durationTicks;
-        T opposite = Objects.equals(leg.to(), endpoints.end()) ? endpoints.start() : endpoints.end();
-        T from = completedLegs % 2 == 1 ? leg.to() : opposite;
-        T to = completedLegs % 2 == 1 ? opposite : leg.to();
-        return new Leg<>(from, to, leg.startTick() + completedLegs * this.durationTicks);
+        T destination = this.transition.to;
+        T opposite = Objects.equals(destination, endpoints.end()) ? endpoints.start() : endpoints.end();
+        boolean reversed = completedLegs % 2 == 1;
+        this.transition.from = reversed ? destination : opposite;
+        this.transition.to = reversed ? opposite : destination;
+        this.transition.startTick += completedLegs * this.durationTicks;
     }
 
-    private T sample(Leg<T> leg, float elapsed) {
+    private T sample(float elapsed) {
         if (elapsed >= this.durationTicks) {
-            return leg.to();
+            return this.transition.to;
         }
-        return this.interpolator.interpolate(leg.from(), leg.to(), this.easing.apply(elapsed / this.durationTicks));
+        float progress = this.easing.apply(elapsed / this.durationTicks);
+        if (progress == 0F) {
+            return this.transition.from;
+        }
+        if (progress == 1F) {
+            return this.transition.to;
+        }
+        return this.interpolator.interpolate(this.transition.from, this.transition.to, progress);
     }
 
     @Override
     public boolean isAnimating() {
-        return this.playback.isPresent();
+        return this.transition.active;
     }
 
     @Override
@@ -150,7 +159,9 @@ final class TickAnimation<T> implements AnimatedState<T> {
         }
         this.easing = Objects.requireNonNull(easing, "easing");
         this.durationTicks = Math.max(1, durationMillis / 50);
-        this.playback.ifPresent(leg -> this.start(leg.to()));
+        if (this.transition.active) {
+            this.start(this.transition.to);
+        }
     }
 
     @Override
@@ -159,7 +170,10 @@ final class TickAnimation<T> implements AnimatedState<T> {
     }
 
     private void stop() {
-        this.playback = Optional.empty();
+        this.transition.active = false;
+        this.transition.from = null;
+        this.transition.to = null;
+        this.transition.startTick = UNSTARTED;
         this.sampledTick = UNSTARTED;
         this.scheduler.unregisterAnimation(this);
     }
@@ -184,14 +198,19 @@ final class TickAnimation<T> implements AnimatedState<T> {
     }
 
     private void notifyChange(T previous) {
-        if (!Objects.equals(previous, this.value)) {
+        if (!this.observers.isEmpty() && !Objects.equals(previous, this.value)) {
             for (var observer : new ArrayList<>(this.observers)) {
                 observer.onStateChanged(this);
             }
         }
     }
 
-    private record Leg<T>(T from, T to, long startTick) { }
+    private static final class Transition<T> {
+        private T from;
+        private T to;
+        private long startTick = UNSTARTED;
+        private boolean active;
+    }
 
     private record Endpoints<T>(T start, T end) { }
 }

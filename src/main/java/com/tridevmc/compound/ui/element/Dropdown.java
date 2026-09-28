@@ -51,7 +51,7 @@ import java.util.function.Function;
  *
  * @param <T> the option value type.
  */
-public class Dropdown<T> extends BaseElement implements IComposableElement {
+public class Dropdown<T> extends Element implements IComposableElement {
 
     private static final int DEFAULT_HEIGHT = 20;
     private static final int OPTION_HEIGHT = 16;
@@ -209,7 +209,7 @@ public class Dropdown<T> extends BaseElement implements IComposableElement {
         return this.popupBounds;
     }
 
-    private class Popup extends BaseContainer {
+    private class Popup extends Container {
         @Override
         public Size measure(Constraints constraints, LayoutProperties props, List<Size> children) {
             return getNode().getTree().getViewportSize();

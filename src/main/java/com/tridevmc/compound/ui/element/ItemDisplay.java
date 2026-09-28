@@ -32,7 +32,7 @@ import java.util.function.Supplier;
  * Draws an item stack and its decorations in a 16-pixel intrinsic area. Suppliers are sampled
  * each frame; a null or empty stack draws nothing.
  */
-public class ItemDisplay extends BasePrimitiveElement {
+public class ItemDisplay extends PrimitiveElement {
 
     private Supplier<ItemStack> itemStackSupplier;
     private Supplier<String> countOverrideSupplier;

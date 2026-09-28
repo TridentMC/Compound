@@ -22,7 +22,7 @@ import com.tridevmc.compound.ui.tree.ITreeNode;
  * Internal interface for UITree operations on elements.
  * <p>
  * WARNING: This interface is for framework-internal use only.
- * Element implementations should extend BaseElement instead of implementing this directly.
+ * Element implementations should extend Element instead of implementing this directly.
  * <p>
  * Methods in this interface are called by UITree during tree lifecycle and layout.
  * Elements should not call these methods directly - doing so may break the layout system.

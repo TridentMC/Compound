@@ -43,7 +43,7 @@ import java.util.function.Supplier;
  * <p>
  * For a text button, fill the content slot with a {@link Label}.
  */
-public class Button extends BaseElement implements IComposableElement {
+public class Button extends Element implements IComposableElement {
 
     /**
      * The centered button content, commonly a {@link Label}.

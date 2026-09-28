@@ -46,7 +46,7 @@ import java.util.function.Consumer;
  * A vanilla checkbox with an optional label. Mouse clicks and Space toggle its retained
  * checked state and notify listeners; {@link #setChecked(boolean)} changes it silently.
  */
-public class Checkbox extends BaseElement implements IComposableElement {
+public class Checkbox extends Element implements IComposableElement {
 
     private static final int BOX_SIZE = 17;
     private static final IScreenSprite DEFAULT_BOX_SPRITE = IScreenSprite.of(
@@ -96,48 +96,51 @@ public class Checkbox extends BaseElement implements IComposableElement {
     /** {@inheritDoc} */
     @Override
     public void compose(ICompositionScope scope) {
+        this.registerInput(scope);
+        scope.e(new Row(), row -> {
+            row.layout().fixedHeight(BOX_SIZE).spacing(this.spacing).verticalAlignment(Alignment.CENTER);
+            if (!this.labelRight) this.composeLabel(row);
+            this.composeIndicator(row, scope);
+            if (this.labelRight) this.composeLabel(row);
+        });
+    }
 
+    private void registerInput(ICompositionScope scope) {
         scope.onMouseEnter(() -> this.hovered.set(true));
         scope.onMouseExit(() -> this.hovered.set(false));
-
         scope.onClick(event -> {
             if (!this.enabled.get() || event.button() != InputConstants.MOUSE_BUTTON_LEFT) return false;
             scope.requestFocus();
             this.toggle();
             return true;
         });
-
         scope.onKeyPress(event -> {
-            if (!this.enabled.get()) return false;
-            if (event.keyCode() == InputConstants.KEY_SPACE) {
-                this.toggle();
-                return true;
-            }
-            return false;
+            if (!this.enabled.get() || event.keyCode() != InputConstants.KEY_SPACE) return false;
+            this.toggle();
+            return true;
         });
+    }
 
-        scope.e(new Row(), row -> {
-            row.layout().fixedHeight(BOX_SIZE).spacing(this.spacing).verticalAlignment(Alignment.CENTER);
+    private void composeLabel(ICompositionScope scope) {
+        if (this.label != null) {
+            scope.e(new Label(this.label, () -> this.enabled.get() ? this.labelColor : 0x808080, () -> false));
+        }
+    }
 
-            if (this.label != null && !this.labelRight) {
-                row.e(new Label(this.label, () -> this.enabled.get() ? this.labelColor : 0x808080, () -> false));
-            }
-
-            row.e(new Stack(), boxStack -> {
-                boxStack.layout().fixedSize(BOX_SIZE, BOX_SIZE);
-
-                boxStack.e(new Sprite(() -> {
-                    boolean highlighted = this.hovered.get() || scope.isFocused();
-                    return this.checked.get()
-                            ? highlighted ? DEFAULT_CHECKED_HIGHLIGHTED_SPRITE : DEFAULT_CHECKED_SPRITE
-                            : highlighted ? DEFAULT_HIGHLIGHTED_SPRITE : DEFAULT_BOX_SPRITE;
-                }), sprite -> sprite.layout().fillMax());
-            });
-
-            if (this.label != null && this.labelRight) {
-                row.e(new Label(this.label, () -> this.enabled.get() ? this.labelColor : 0x808080, () -> false));
-            }
+    private void composeIndicator(ICompositionScope content, ICompositionScope owner) {
+        content.e(new Stack(), indicator -> {
+            indicator.layout().fixedSize(BOX_SIZE, BOX_SIZE);
+            indicator.e(new Sprite(() -> this.getIndicatorSprite(owner.isFocused())),
+                    sprite -> sprite.layout().fillMax());
         });
+    }
+
+    private IScreenSprite getIndicatorSprite(boolean focused) {
+        boolean highlighted = this.hovered.get() || focused;
+        if (this.checked.get()) {
+            return highlighted ? DEFAULT_CHECKED_HIGHLIGHTED_SPRITE : DEFAULT_CHECKED_SPRITE;
+        }
+        return highlighted ? DEFAULT_HIGHLIGHTED_SPRITE : DEFAULT_BOX_SPRITE;
     }
 
     /** {@inheritDoc} */

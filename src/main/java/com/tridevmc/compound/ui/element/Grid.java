@@ -32,7 +32,7 @@ import java.util.List;
  * Each column and row uses the largest measured child size in that column or row.
  * Children keep their measured size; configure grid spacing through this element's setters.
  */
-public class Grid extends BaseContainer {
+public class Grid extends Container {
 
     private int columns;
     private int horizontalSpacing;

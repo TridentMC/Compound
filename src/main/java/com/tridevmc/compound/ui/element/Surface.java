@@ -25,20 +25,20 @@ import com.tridevmc.compound.ui.slot.SlotKey;
 
 import javax.annotation.Nonnull;
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.function.IntSupplier;
 
 /**
  * A composable surface with a solid background and an optional uniform border.
  * Colors are sampled each frame. Content in {@link #CONTENT_SLOT} fills the surface;
  * apply content padding when it must stay clear of the border.
  */
-public class Surface extends BaseElement implements IComposableElement {
+public class Surface extends Element implements IComposableElement {
 
     /** The slot containing this element's consumer-provided content. */
     public static final SlotKey CONTENT_SLOT = new SlotKey("content");
 
-    private final Supplier<Integer> backgroundColor;
-    private final Supplier<Integer> borderColor;
+    private final IntSupplier backgroundColor;
+    private final IntSupplier borderColor;
     private final int borderWidth;
 
     /**
@@ -48,7 +48,7 @@ public class Surface extends BaseElement implements IComposableElement {
      * @param borderColor     the non-null supplier of ARGB border colors
      * @param borderWidth     the border width in pixels; zero or negative values disable the border
      */
-    public Surface(Supplier<Integer> backgroundColor, Supplier<Integer> borderColor, int borderWidth) {
+    public Surface(IntSupplier backgroundColor, IntSupplier borderColor, int borderWidth) {
         this.backgroundColor = backgroundColor;
         this.borderColor = borderColor;
         this.borderWidth = borderWidth;
@@ -59,7 +59,7 @@ public class Surface extends BaseElement implements IComposableElement {
      *
      * @param backgroundColor the non-null supplier of ARGB background colors
      */
-    public Surface(Supplier<Integer> backgroundColor) {
+    public Surface(IntSupplier backgroundColor) {
         this(backgroundColor, () -> 0, 0);
     }
 
@@ -124,7 +124,7 @@ public class Surface extends BaseElement implements IComposableElement {
         return List.of(bounds);
     }
 
-    private class Border extends BaseElement implements IComposableElement {
+    private class Border extends Element implements IComposableElement {
         @Override
         public void compose(ICompositionScope scope) {
             for (int edge = 0; edge < 4; edge++) {

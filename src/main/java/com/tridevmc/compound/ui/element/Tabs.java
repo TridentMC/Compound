@@ -36,7 +36,7 @@ import java.util.function.Consumer;
  * Retain the Tabs instance to preserve its selection; retain stateful body elements
  * separately if their state should survive switching tabs. Disabled tabs cannot be selected.
  */
-public class Tabs extends BaseElement implements IComposableElement {
+public class Tabs extends Element implements IComposableElement {
 
     private static final int TAB_HEIGHT = 20;
     private static final int TAB_PADDING = 8;
@@ -278,7 +278,7 @@ public class Tabs extends BaseElement implements IComposableElement {
         return this.enabled.get() ? CompoundCursors.HAND : null;
     }
 
-    private final class TabContent extends BaseElement implements IComposableElement {
+    private final class TabContent extends Element implements IComposableElement {
         @Override
         public void compose(ICompositionScope scope) {
             scope.bindComposition(Tabs.this.selectedIndex);

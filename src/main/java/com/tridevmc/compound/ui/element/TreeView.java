@@ -44,7 +44,7 @@ import java.util.function.Function;
  *
  * @param <T> the node value type.
  */
-public class TreeView<T> extends BaseElement implements IComposableElement {
+public class TreeView<T> extends Element implements IComposableElement {
 
     private static final int DEFAULT_ITEM_HEIGHT = 16;
     private static final int INDENT_SIZE = 16;

@@ -36,7 +36,7 @@ import java.util.function.Consumer;
  * While visible, the dialog captures input; Escape closes it, while action buttons
  * only run their supplied actions. Retain the instance to call {@link #show()} again.
  */
-public class Modal extends BaseElement implements IComposableElement {
+public class Modal extends Element implements IComposableElement {
 
     /**
      * The scrolling body content; replaces the fallback message when supplied.

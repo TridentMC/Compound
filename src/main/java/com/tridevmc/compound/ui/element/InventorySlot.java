@@ -37,7 +37,7 @@ import java.util.List;
  * An 18-pixel inventory slot backed by a vanilla {@link Slot}. Container screens coordinate
  * item interaction and refresh its display state; this element supplies the visual representation.
  */
-public class InventorySlot extends BaseElement implements IComposableElement {
+public class InventorySlot extends Element implements IComposableElement {
 
     private static final int SLOT_SIZE = 18;
 

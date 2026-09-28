@@ -24,15 +24,15 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 
 import javax.annotation.Nonnull;
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.function.IntSupplier;
 
 /**
  * A primitive rectangle with a vertical gradient between two ARGB colors.
  */
-public class GradientRect extends BasePrimitiveElement {
+public class GradientRect extends PrimitiveElement {
 
-    private Supplier<Integer> topColorSupplier;
-    private Supplier<Integer> bottomColorSupplier;
+    private IntSupplier topColorSupplier;
+    private IntSupplier bottomColorSupplier;
 
     /**
      * Creates a vertically shaded rectangle.
@@ -50,7 +50,7 @@ public class GradientRect extends BasePrimitiveElement {
      * @param topColorSupplier the non-null supplier of top-edge ARGB colors
      * @param bottomColorSupplier the non-null supplier of bottom-edge ARGB colors
      */
-    public GradientRect(Supplier<Integer> topColorSupplier, Supplier<Integer> bottomColorSupplier) {
+    public GradientRect(IntSupplier topColorSupplier, IntSupplier bottomColorSupplier) {
         this.topColorSupplier = topColorSupplier;
         this.bottomColorSupplier = bottomColorSupplier;
     }
@@ -65,8 +65,8 @@ public class GradientRect extends BasePrimitiveElement {
 
     @Override
     protected void drawElement(IScreenContext context, @Nonnull Bounds bounds) {
-        int topColor = this.topColorSupplier.get();
-        int bottomColor = this.bottomColorSupplier.get();
+        int topColor = this.topColorSupplier.getAsInt();
+        int bottomColor = this.bottomColorSupplier.getAsInt();
         context.drawGradientRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), topColor, bottomColor);
     }
 
@@ -75,7 +75,7 @@ public class GradientRect extends BasePrimitiveElement {
      *
      * @return the configured supplier
      */
-    public Supplier<Integer> getTopColorSupplier() {
+    public IntSupplier getTopColorSupplier() {
         return this.topColorSupplier;
     }
 
@@ -84,7 +84,7 @@ public class GradientRect extends BasePrimitiveElement {
      *
      * @param topColorSupplier the non-null supplier of top-edge ARGB colors
      */
-    public void setTopColorSupplier(Supplier<Integer> topColorSupplier) {
+    public void setTopColorSupplier(IntSupplier topColorSupplier) {
         this.topColorSupplier = topColorSupplier;
     }
 
@@ -93,7 +93,7 @@ public class GradientRect extends BasePrimitiveElement {
      *
      * @return the configured supplier
      */
-    public Supplier<Integer> getBottomColorSupplier() {
+    public IntSupplier getBottomColorSupplier() {
         return this.bottomColorSupplier;
     }
 
@@ -102,7 +102,7 @@ public class GradientRect extends BasePrimitiveElement {
      *
      * @param bottomColorSupplier the non-null supplier of bottom-edge ARGB colors
      */
-    public void setBottomColorSupplier(Supplier<Integer> bottomColorSupplier) {
+    public void setBottomColorSupplier(IntSupplier bottomColorSupplier) {
         this.bottomColorSupplier = bottomColorSupplier;
     }
 }

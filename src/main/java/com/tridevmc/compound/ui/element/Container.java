@@ -20,9 +20,9 @@ package com.tridevmc.compound.ui.element;
  * Base class for layout containers whose children are supplied through a container scope.
  * Subclasses implement measurement and placement; the tree owns their child nodes.
  */
-public abstract class BaseContainer extends BaseElement implements IContainer {
+public abstract class Container extends Element implements IContainer {
 
     /** Creates an unattached container base for a custom layout. */
-    public BaseContainer() {
+    public Container() {
     }
 }

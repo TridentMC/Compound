@@ -47,7 +47,7 @@ import java.util.function.Consumer;
  * The same instance retains its options and selected index. Clicks and arrow keys select
  * options; programmatic selection also invokes the selection callback when it changes.
  */
-public class RadioButtonGroup extends BaseElement implements IComposableElement {
+public class RadioButtonGroup extends Element implements IComposableElement {
 
     private static final int SPACING = 4;
     private static final int BOX_SIZE = 17;
@@ -73,10 +73,19 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
     /** {@inheritDoc} */
     @Override
     public void compose(ICompositionScope scope) {
-
         while (this.optionHoverStates.size() < this.options.size()) {
             this.optionHoverStates.add(State.of(false));
         }
+        this.registerKeyboardInput(scope);
+        scope.e(new Column(), column -> {
+            column.layout().spacing(this.optionSpacing);
+            for (int i = 0; i < this.options.size(); i++) {
+                this.composeOption(column, scope, i);
+            }
+        });
+    }
+
+    private void registerKeyboardInput(ICompositionScope scope) {
         scope.onKeyPress(event -> {
             if (!this.enabled.get() || this.options.isEmpty()) return false;
             int step = switch (event.keyCode()) {
@@ -88,43 +97,32 @@ public class RadioButtonGroup extends BaseElement implements IComposableElement 
             this.select(Math.floorMod(this.selectedIndex.get() + step, this.options.size()));
             return true;
         });
+    }
 
-        scope.e(new Column(), column -> {
-            column.layout().spacing(this.optionSpacing);
-
-            for (int i = 0; i < this.options.size(); i++) {
-                final int index = i;
-                RadioOption option = this.options.get(i);
-                State<Boolean> hoverState = this.optionHoverStates.get(index);
-
-                column.e(new Row(), row -> {
-                    row.layout().fixedHeight(BOX_SIZE).spacing(SPACING).verticalAlignment(Alignment.CENTER);
-
-                    row.onMouseEnter(() -> hoverState.set(true));
-                    row.onMouseExit(() -> hoverState.set(false));
-
-                    row.e(new Sprite(() -> {
-                        boolean selected = this.selectedIndex.get() == index;
-                        boolean highlighted = this.enabled.get()
-                                && (hoverState.get() || scope.isFocused() && selected);
-                        return selected ? highlighted ? SELECTED_HIGHLIGHTED : SELECTED
-                                : highlighted ? HIGHLIGHTED : BOX;
-                    }), sprite -> sprite.layout().fixedSize(BOX_SIZE, BOX_SIZE));
-
-                    row.e(new Label(option.label, () -> {
-                        if (!this.enabled.get()) return 0x808080;
-                        return this.labelColor;
-                    }, () -> false));
-
-                    row.onClick(event -> {
-                        if (!this.enabled.get() || event.button() != InputConstants.MOUSE_BUTTON_LEFT) return false;
-                        scope.requestFocus();
-                        this.select(index);
-                        return true;
-                    });
-                });
-            }
+    private void composeOption(ICompositionScope content, ICompositionScope owner, int index) {
+        var option = this.options.get(index);
+        var hovered = this.optionHoverStates.get(index);
+        content.e(new Row(), row -> {
+            row.layout().fixedHeight(BOX_SIZE).spacing(SPACING).verticalAlignment(Alignment.CENTER);
+            row.onMouseEnter(() -> hovered.set(true));
+            row.onMouseExit(() -> hovered.set(false));
+            row.e(new Sprite(() -> this.getOptionSprite(index, hovered.get(), owner.isFocused())),
+                    sprite -> sprite.layout().fixedSize(BOX_SIZE, BOX_SIZE));
+            row.e(new Label(option.label, () -> this.enabled.get() ? this.labelColor : 0x808080, () -> false));
+            row.onClick(event -> {
+                if (!this.enabled.get() || event.button() != InputConstants.MOUSE_BUTTON_LEFT) return false;
+                owner.requestFocus();
+                this.select(index);
+                return true;
+            });
         });
+    }
+
+    private IScreenSprite getOptionSprite(int index, boolean hovered, boolean focused) {
+        boolean selected = this.selectedIndex.get() == index;
+        boolean highlighted = this.enabled.get() && (hovered || focused && selected);
+        if (selected) return highlighted ? SELECTED_HIGHLIGHTED : SELECTED;
+        return highlighted ? HIGHLIGHTED : BOX;
     }
 
     /** {@inheritDoc} */

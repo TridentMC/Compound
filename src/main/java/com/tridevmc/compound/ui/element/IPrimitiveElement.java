@@ -20,7 +20,7 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 
 /**
  * Leaf element that draws content without creating child nodes.
- * Use {@link BasePrimitiveElement} when implementing a custom primitive.
+ * Use {@link PrimitiveElement} when implementing a custom primitive.
  */
 public interface IPrimitiveElement extends IElement {
 

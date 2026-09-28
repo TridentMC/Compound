@@ -28,7 +28,7 @@ import java.util.List;
  * Add at most one child; use {@link Stack} for overlapping children. Without alignment,
  * the child fills the content area. With alignment, it keeps its measured size.
  */
-public class Box extends BaseContainer {
+public class Box extends Container {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Box.class);
 

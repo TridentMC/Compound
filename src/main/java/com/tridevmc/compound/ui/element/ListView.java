@@ -44,7 +44,7 @@ import java.util.function.Function;
  *
  * @param <T> the item type.
  */
-public class ListView<T> extends BaseElement implements IComposableElement {
+public class ListView<T> extends Element implements IComposableElement {
 
     private static final int DEFAULT_ITEM_HEIGHT = 16;
     private static final int DEFAULT_MAX_VISIBLE_ITEMS = 10;

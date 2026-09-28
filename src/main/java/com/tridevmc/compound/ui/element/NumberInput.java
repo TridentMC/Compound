@@ -32,7 +32,7 @@ import java.util.function.Consumer;
  * update the clamped numeric value; committing rewrites the text to that value.
  * Decimals are allowed by default, and the initial range is unbounded.
  */
-public class NumberInput extends BaseElement implements IComposableElement {
+public class NumberInput extends Element implements IComposableElement {
 
     private final TextInput textInput;
     private final State<Double> value = State.of(0.0);

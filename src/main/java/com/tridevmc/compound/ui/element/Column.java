@@ -27,7 +27,7 @@ import java.util.List;
  * Configure spacing and horizontal alignment through the scope layout properties.
  * Child weights divide remaining height when the available height is bounded.
  */
-public class Column extends BaseContainer {
+public class Column extends Container {
 
     /** Creates an empty vertical layout; configure spacing and alignment through its scope. */
     public Column() {

@@ -31,7 +31,7 @@ import java.util.function.Supplier;
  * Draws a screen sprite in the assigned bounds. A null sprite suppresses drawing.
  * Sprite suppliers are sampled each frame.
  */
-public class Sprite extends BasePrimitiveElement {
+public class Sprite extends PrimitiveElement {
 
     private Supplier<IScreenSprite> spriteSupplier;
 

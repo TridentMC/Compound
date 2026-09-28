@@ -6,11 +6,70 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AnimatedStateTest {
     private static final float EPSILON = 0.000001F;
+
+    @Test
+    void numericInterpolationDoesNotOverflowOppositeEndpoints() {
+        assertEquals(0, Interpolators.interpolateInt(Integer.MIN_VALUE, Integer.MAX_VALUE, 0.5F));
+        assertEquals(Integer.MAX_VALUE, Interpolators.interpolateInt(Integer.MIN_VALUE, Integer.MAX_VALUE, 1F));
+        assertEquals(Integer.MIN_VALUE, Interpolators.interpolateInt(Integer.MAX_VALUE, Integer.MIN_VALUE, 1F));
+        assertEquals(Integer.MAX_VALUE, Interpolators.interpolateInt(0, Integer.MAX_VALUE, 1.5F));
+        assertEquals(Integer.MIN_VALUE, Interpolators.interpolateInt(0, Integer.MIN_VALUE, 1.5F));
+        assertEquals(0F, Interpolators.interpolateFloat(-Float.MAX_VALUE, Float.MAX_VALUE, 0.5F), EPSILON);
+        assertEquals(0, Interpolators.INT.interpolate(Integer.MIN_VALUE, Integer.MAX_VALUE, 0.5F).intValue());
+    }
+
+    @Test
+    void colorInterpolationKeepsChannelsIndependent() {
+        assertEquals(0x7F7F7F7F, Interpolators.interpolateColor(0x00FF0000, 0xFF00FFFF, 0.5F));
+        assertEquals(0x00FF0000, Interpolators.interpolateColor(0x00FF0000, 0xFF00FFFF, 0F));
+        assertEquals(0xFF00FFFF, Interpolators.interpolateColor(0x00FF0000, 0xFF00FFFF, 1F));
+    }
+
+    @Test
+    void repeatedNullTargetDoesNotRestartACustomAnimation() {
+        var scheduler = new AnimationScheduler();
+        var state = AnimatedState.of("present", 200,
+                (start, end, progress) -> progress < 1 ? start : end, Easing.LINEAR, scheduler);
+        state.set(null);
+        scheduler.updateAnimations(0);
+        scheduler.updateAnimations(1);
+        state.set(null);
+        scheduler.updateAnimations(4);
+
+        assertNull(state.get());
+        assertFalse(state.isAnimating());
+    }
+
+    @Test
+    void stepSamplingReusesEndpointValues() {
+        var scheduler = new AnimationScheduler();
+        Integer start = 0xFF123456;
+        Integer end = 0xFF654321;
+        var state = AnimatedState.looping(start, end, 200, Interpolators.COLOR, Easing.STEP, scheduler);
+        scheduler.updateAnimations(0);
+        scheduler.updateAnimations(1);
+        assertSame(start, state.get());
+        assertSame(start, state.get(0.5F));
+        scheduler.updateAnimations(4);
+        assertSame(end, state.get());
+    }
+
+    @Test
+    void customEasingCanOvershootEndpoints() {
+        var scheduler = new AnimationScheduler();
+        var state = AnimatedState.of(0F, 200, Interpolators.FLOAT, progress -> 1.5F, scheduler);
+        state.set(1F);
+        scheduler.updateAnimations(0);
+        scheduler.updateAnimations(1);
+        assertEquals(1.5F, state.get(), EPSILON);
+    }
 
     @Test
     void duplicateSamplesDoNotAdvanceOrNotifyTwice() {

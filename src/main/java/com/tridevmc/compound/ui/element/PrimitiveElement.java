@@ -29,16 +29,15 @@ import java.util.List;
  * Subclasses implement measurement and {@link #drawElement}; primitives have no children.
  * The tree checks visibility before drawing.
  */
-public abstract class BasePrimitiveElement extends BaseElement implements IPrimitiveElement {
+public abstract class PrimitiveElement extends Element implements IPrimitiveElement {
 
     /** Creates an unattached drawing primitive with no children. */
-    public BasePrimitiveElement() {
+    public PrimitiveElement() {
     }
 
     /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren) {
-        // Primitives have no children
         return List.of();
     }
 
@@ -57,3 +56,4 @@ public abstract class BasePrimitiveElement extends BaseElement implements IPrimi
      */
     protected abstract void drawElement(IScreenContext context, @Nonnull Bounds bounds);
 }
+

@@ -47,7 +47,7 @@ import java.util.function.Predicate;
  * A multiline text editor with soft wrapping, selection, clipboard support, and vertical
  * scrolling. Length limits and absolute selection offsets use UTF-16 code units.
  */
-public class TextArea extends BaseElement implements IComposableElement {
+public class TextArea extends Element implements IComposableElement {
 
     private static final int DEFAULT_TEXT_COLOR = 0xE0E0E0;
     private static final int DEFAULT_BACKGROUND_COLOR = 0xFF000000;
