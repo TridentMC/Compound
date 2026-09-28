@@ -28,7 +28,7 @@ import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.sprite.ScreenSpriteWriterNineSlice;
 import net.minecraft.client.Minecraft;
 import net.minecraft.data.AtlasIds;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
@@ -41,12 +41,12 @@ import java.util.Objects;
  */
 public class ElementSlot extends Element {
 
-    private static final IScreenSprite SLOT_SPRITE = IScreenSprite.of(Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.GUI).getSprite(ResourceLocation.withDefaultNamespace("container/slot")), new ScreenSpriteWriterNineSlice(
+    private static final IScreenSprite SLOT_SPRITE = IScreenSprite.of(Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.GUI).getSprite(Identifier.withDefaultNamespace("container/slot")), new ScreenSpriteWriterNineSlice(
             1, 1, 1, 1
     ));
 
-    private static final IScreenSprite SLOT_HIGHLIGHT_BACK_SPRITE = IScreenSprite.of(ResourceLocation.withDefaultNamespace("container/slot_highlight_back"));
-    private static final IScreenSprite SLOT_HIGHLIGHT_FRONT_SPRITE = IScreenSprite.of(ResourceLocation.withDefaultNamespace("container/slot_highlight_front"));
+    private static final IScreenSprite SLOT_HIGHLIGHT_BACK_SPRITE = IScreenSprite.of(Identifier.withDefaultNamespace("container/slot_highlight_back"));
+    private static final IScreenSprite SLOT_HIGHLIGHT_FRONT_SPRITE = IScreenSprite.of(Identifier.withDefaultNamespace("container/slot_highlight_front"));
     private Slot slot;
     private boolean drawOverlay;
     private boolean drawUnderlay;

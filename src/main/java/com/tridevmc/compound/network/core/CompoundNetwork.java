@@ -23,7 +23,7 @@ import com.tridevmc.compound.network.message.Message;
 import com.tridevmc.compound.network.message.MessageConcept;
 import com.tridevmc.compound.network.message.MessageField;
 import com.tridevmc.compound.network.message.RegisteredMessage;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.LogicalSide;
 import net.neoforged.fml.ModContainer;
@@ -55,15 +55,15 @@ public class CompoundNetwork {
     private static final Map<Class<? extends Message>, CompoundNetwork> NETWORKS = Maps.newHashMap();
 
     private final Logger logger;
-    private final ResourceLocation networkId;
+    private final Identifier networkId;
     private final String name;
 
-    private Map<Class<? extends Message>, MessageConcept> messageConcepts;
-    private Map<String, Marshaller> marshallers;
-    private Map<Class, String> marshallerIds;
+    private final Map<Class<? extends Message>, MessageConcept> messageConcepts;
+    private final Map<String, Marshaller> marshallers;
+    private final Map<Class, String> marshallerIds;
 
 
-    private CompoundNetwork(ResourceLocation name, String version) {
+    private CompoundNetwork(Identifier name, String version) {
         this.networkId = name;
         this.name = name.getPath();
         this.messageConcepts = Maps.newHashMap();
@@ -83,7 +83,7 @@ public class CompoundNetwork {
     public static CompoundNetwork createNetwork(ModContainer container, String channel) {
         try {
             ArtifactVersion version = container.getModInfo().getVersion();
-            CompoundNetwork network = new CompoundNetwork(ResourceLocation.fromNamespaceAndPath(container.getModId(), channel), version.toString());
+            CompoundNetwork network = new CompoundNetwork(Identifier.fromNamespaceAndPath(container.getModId(), channel), version.toString());
             container.getEventBus().register(network);
             network.loadDefaultMarshallers();
             network.discoverMarshallers();
@@ -169,7 +169,7 @@ public class CompoundNetwork {
 
             for (Type acceptedType : acceptedTypes) {
                 try {
-                    this.marshallerIds.put(Class.forName(acceptedType.getClassName()), ids.get(0));
+                    this.marshallerIds.put(Class.forName(acceptedType.getClassName()), ids.getFirst());
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException(String.format(
                             "Failed to find class to marshall with name %s",
@@ -284,7 +284,7 @@ public class CompoundNetwork {
         return this.messageConcepts.get(msg.getClass());
     }
 
-    public ResourceLocation getNetworkId() {
+    public Identifier getNetworkId() {
         return networkId;
     }
 

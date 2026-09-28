@@ -32,8 +32,9 @@ import com.tridevmc.compound.ui.screen.CompoundScreenContext;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.render.state.GuiRenderState;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.state.gui.GuiRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.CharacterEvent;
@@ -52,13 +53,10 @@ import java.util.Optional;
 
 public abstract class CompoundUIContainer<T extends CompoundContainerMenu> extends AbstractContainerScreen<T> implements ICompoundUI, IInternalCompoundUI {
 
-    private static final WrappedField<Slot> clickedSlot = WrappedField.create(AbstractContainerScreen.class, "clickedSlot", "field_147005_v");
-    private static final WrappedField<Boolean> isSplittingStack = WrappedField.create(AbstractContainerScreen.class, "isSplittingStack", "field_147004_w");
-    private static final WrappedField<ItemStack> draggingItem = WrappedField.create(AbstractContainerScreen.class, "draggingItem", "field_147012_x");
     private static final WrappedField<Integer> quickCraftingType = WrappedField.create(AbstractContainerScreen.class, "quickCraftingType", "field_146987_F");
-    private static final WrappedField<GuiRenderState> guiRenderState = WrappedField.create(GuiGraphics.class, "guiRenderState", "f_399111_");
+    private static final WrappedField<GuiRenderState> guiRenderState = WrappedField.create(GuiGraphicsExtractor.class, "guiRenderState", "f_399111_");
 
-    private GuiGraphics activeGuiGraphics;
+    private GuiGraphicsExtractor activeGuiGraphics;
     private long ticks;
     private float mouseX, mouseY;
     private EnumUILayer currentLayer;
@@ -90,7 +88,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
         this.mouseScrollListeners = Lists.newArrayList();
 
         var mc = Minecraft.getInstance();
-        this.init(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
+        this.init(mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
         this.initElements();
         this.elements.forEach((e) -> e.initElement(this));
     }
@@ -107,14 +105,17 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     }
 
     @Override
-    protected void renderBg(GuiGraphics gg, float partialTicks, int mouseX, int mouseY) {
+    public void extractBackground(GuiGraphicsExtractor gg, int mouseX, int mouseY, float partialTicks) {
         this.activeGuiGraphics = gg;
+        this.mouseX = mouseX;
+        this.mouseY = mouseY;
+        this.updateSlotStates();
         this.currentLayer = EnumUILayer.BACKGROUND;
         this.elements.forEach(e->renderElement(e, EnumUILayer.BACKGROUND));
     }
 
     @Override
-    protected void renderLabels(GuiGraphics gg, int mouseX, int mouseY) {
+    protected void extractLabels(GuiGraphicsExtractor gg, int mouseX, int mouseY) {
         this.activeGuiGraphics = gg;
         var poseStack = gg.pose();
         poseStack.pushMatrix();
@@ -125,12 +126,11 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     }
 
     @Override
-    public void render(@NotNull GuiGraphics gg, int mouseX, int mouseY, float partialTicks) {
+    public void extractRenderState(@NotNull GuiGraphicsExtractor gg, int mouseX, int mouseY, float partialTicks) {
         this.activeGuiGraphics = gg;
         this.mouseX = mouseX;
         this.mouseY = mouseY;
-        this.updateSlotStates();
-        super.render(gg, mouseX, mouseY, partialTicks);
+        super.extractRenderState(gg, mouseX, mouseY, partialTicks);
         this.currentLayer = EnumUILayer.OVERLAY;
         this.elements.forEach((e) -> renderElement(e, EnumUILayer.OVERLAY));
     }
@@ -148,24 +148,22 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
      */
     private void updateSlotStates() {
         // Load some common variables using our wrapped fields.
-        var clickSlot = clickedSlot.get(this);
-        var dragItem = draggingItem.get(this);
         var quickCraftType = quickCraftingType.get(this);
-        var splittingStack = isSplittingStack.get(this);
         for (int i1 = 0; i1 < this.getMenu().slots.size(); ++i1) {
             var slot = this.getMenu().slots.get(i1);
             var slotElement = this.slotElements.get(slot);
             if (slotElement == null)
                 continue;
 
+            slotElement.setDisplayString(null);
+            slotElement.setDrawUnderlay(false);
+            slotElement.setDrawOverlay(false);
             var displayStack = slot.getItem();
-            var playerStack = this.getMc().player.containerMenu.getCarried();
-            if (slot == clickSlot && !dragItem.isEmpty() && splittingStack && !displayStack.isEmpty()) {
-                displayStack = displayStack.copy();
-                displayStack.setCount(displayStack.getCount() / 2);
-            } else if (this.isQuickCrafting && this.quickCraftSlots.contains(slot) && !playerStack.isEmpty()) {
+            var playerStack = this.getMenu().getCarried();
+            if (this.isQuickCrafting && this.quickCraftSlots.contains(slot) && !playerStack.isEmpty()) {
                 if (this.quickCraftSlots.size() == 1) {
-                    return;
+                    slotElement.setDisplayStack(ItemStack.EMPTY);
+                    continue;
                 }
 
                 if (AbstractContainerMenu.canItemQuickReplace(slot, playerStack, true) && this.getMenu().canDragTo(slot)) {
@@ -173,15 +171,16 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
                     slotElement.setDrawUnderlay(true);
                     var maxSize = Math.min(playerStack.getMaxStackSize(), slot.getMaxStackSize(playerStack));
                     var existingSlotContent = slot.getItem().isEmpty() ? 0 : slot.getItem().getCount();
-                    var quickCraftPlaceCount = AbstractContainerMenu.getQuickCraftPlaceCount(this.quickCraftSlots, quickCraftType, playerStack) + existingSlotContent;
+                    var quickCraftPlaceCount = AbstractContainerMenu.getQuickCraftPlaceCount(this.quickCraftSlots.size(), quickCraftType, playerStack) + existingSlotContent;
                     if (quickCraftPlaceCount > maxSize) {
+                        quickCraftPlaceCount = maxSize;
                         slotElement.setDisplayString(ChatFormatting.YELLOW.toString() + maxSize);
                     }
                     displayStack = displayStack.copyWithCount(quickCraftPlaceCount);
                 }
             }
             slotElement.setDisplayStack(displayStack);
-            boolean isHovered = slot.isActive() && slotElement.isMouseOverSlot(this.screenContext);
+            boolean isHovered = slot.isActive() && slot.isHighlightable() && slotElement.isMouseOverSlot(this.screenContext);
             // Vanilla renders both underlay and overlay under the same condition: hoveredSlot != null && slot.isHighlightable()
             slotElement.setDrawOverlay(isHovered);
             if (!this.isQuickCrafting || !this.quickCraftSlots.contains(slot)) {
@@ -242,7 +241,7 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
     }
 
     @Override
-    public GuiGraphics getActiveGuiGraphics() {
+    public GuiGraphicsExtractor getActiveGuiGraphics() {
         return this.activeGuiGraphics;
     }
 
@@ -288,20 +287,25 @@ public abstract class CompoundUIContainer<T extends CompoundContainerMenu> exten
 
     @Override
     public boolean keyPressed(@NotNull KeyEvent event) {
-        this.keyPressListeners.forEach((l) -> l.listen(this.screenContext, event.key(), event.scancode(), event.modifiers()));
+        this.keyPressListeners.forEach((l) -> l.listen(this.screenContext, event.key(), event.keycode(), event.modifiers()));
         return super.keyPressed(event);
     }
 
     @Override
     public boolean keyReleased(@NotNull KeyEvent event) {
-        this.keyReleaseListeners.forEach((l) -> l.listen(this.screenContext, event.key(), event.scancode(), event.modifiers()));
+        this.keyReleaseListeners.forEach((l) -> l.listen(this.screenContext, event.key(), event.keycode(), event.modifiers()));
         return super.keyReleased(event);
     }
 
 
     @Override
     public boolean charTyped(@NotNull CharacterEvent event) {
-        this.charTypeListeners.forEach((l) -> l.listen(this.screenContext, (char) event.codepoint(), event.modifiers()));
+        int modifiers = (this.minecraft.hasShiftDown() ? InputConstants.MOD_SHIFT : 0)
+                | (this.minecraft.hasControlDown() ? InputConstants.MOD_CONTROL : 0)
+                | (this.minecraft.hasAltDown() ? InputConstants.MOD_ALT : 0);
+        for (char character : event.codepointAsString().toCharArray()) {
+            this.charTypeListeners.forEach(listener -> listener.listen(this.screenContext, character, modifiers));
+        }
         return super.charTyped(event);
     }
 

@@ -22,15 +22,15 @@ import com.tridevmc.compound.ui.Rect2F;
 import com.tridevmc.compound.ui.UVData;
 import com.tridevmc.compound.ui.layout.ILayout;
 import com.tridevmc.compound.ui.screen.IScreenContext;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class ElementImage extends Element {
 
-    private final ResourceLocation textureLocation;
+    private final Identifier textureLocation;
     private final UVData min, max;
     private final EnumUILayer layer;
 
-    public ElementImage(Rect2F dimensions, ILayout layout, ResourceLocation textureLocation, Rect2F textureDimensions, EnumUILayer layer) {
+    public ElementImage(Rect2F dimensions, ILayout layout, Identifier textureLocation, Rect2F textureDimensions, EnumUILayer layer) {
         super(dimensions, layout);
         this.textureLocation = textureLocation;
         this.min = new UVData((float) textureDimensions.getX(), (float) textureDimensions.getY());

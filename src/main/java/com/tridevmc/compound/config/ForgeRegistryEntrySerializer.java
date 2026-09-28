@@ -16,7 +16,8 @@
 
 package com.tridevmc.compound.config;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.core.Holder;
 import org.jetbrains.annotations.Nullable;
 
 public class ForgeRegistryEntrySerializer<T> implements IConfigFieldSerializer<T> {
@@ -28,7 +29,7 @@ public class ForgeRegistryEntrySerializer<T> implements IConfigFieldSerializer<T
         } else {
             var key = field.getRegistry().getKey(value);
             if (key == null) {
-                throw new NullPointerException("Unable to find valid key for value " + value.toString());
+                throw new NullPointerException("Unable to find valid key for value " + value);
             } else {
                 return key.toString();
             }
@@ -40,7 +41,7 @@ public class ForgeRegistryEntrySerializer<T> implements IConfigFieldSerializer<T
         if (field.getRegistry() == null) {
             throw new NullPointerException("Unable to find valid registry with name " + field.getRegistryName().toString());
         } else {
-            T registeredValue = (T) field.getRegistry().get(ResourceLocation.parse(value)).orElse(null);
+            T registeredValue = field.getRegistry().getValue(Identifier.parse(value));
             if (registeredValue == null) {
                 throw new NullPointerException("Unable to find valid value for key " + value);
             } else {
@@ -56,7 +57,7 @@ public class ForgeRegistryEntrySerializer<T> implements IConfigFieldSerializer<T
 
     @Override
     public @Nullable String defaultListValue(ConfigField<T> field) {
-        var def = (T) field.getRegistry().getAny().orElse(null);
+        var def = field.getRegistry().getAny().map(Holder::value).orElse(null);
         return def != null ? toString(field, def) : null;
     }
 

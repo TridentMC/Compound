@@ -20,7 +20,7 @@ package com.tridevmc.compound.ui.sprite;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.data.AtlasIds;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Defines a screen sprite, used for interpolating texture file coordinates. To their UV equivalents.
@@ -47,7 +47,7 @@ public interface IScreenSprite {
             }
 
             @Override
-            public ResourceLocation getTextureLocation() {
+            public Identifier getTextureLocation() {
                 return location;
             }
 
@@ -99,11 +99,11 @@ public interface IScreenSprite {
      * @param location the location to create a screen sprite from.
      * @return a new screen sprite.
      */
-    static IScreenSprite of(ResourceLocation location) {
+    static IScreenSprite of(Identifier location) {
         return of(Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.GUI).getSprite(location));
     }
 
-    static IScreenSprite ofAssetLocation(ResourceLocation location, int width, int height) {
+    static IScreenSprite ofAssetLocation(Identifier location, int width, int height) {
         return new IScreenSprite() {
             @Override
             public IScreenSpriteWriter getWriter() {
@@ -111,7 +111,7 @@ public interface IScreenSprite {
             }
 
             @Override
-            public ResourceLocation getTextureLocation() {
+            public Identifier getTextureLocation() {
                 return location;
             }
 
@@ -154,7 +154,7 @@ public interface IScreenSprite {
      *
      * @return the atlas the sprite is located in.
      */
-    ResourceLocation getTextureLocation();
+    Identifier getTextureLocation();
 
     /**
      * Gets the minimum U coordinate of the sprite.

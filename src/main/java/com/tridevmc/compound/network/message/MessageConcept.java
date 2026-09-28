@@ -21,7 +21,7 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.fml.LogicalSide;
 import net.neoforged.neoforge.network.handling.IPayloadHandler;
 
@@ -40,7 +40,7 @@ public class MessageConcept {
     private final LogicalSide messageSide;
     private final ArrayList<MessageField> messageFields;
 
-    private final ResourceLocation messageId;
+    private final Identifier messageId;
     private final CustomPacketPayload.Type<MessagePayload> messageType;
 
     public MessageConcept(CompoundNetwork network, Class<? extends Message> messageClass,
@@ -50,7 +50,7 @@ public class MessageConcept {
         this.messageSide = messageSide;
         this.messageFields = messageFields;
         var canonicalNameUnderscoresAroundUpper = messageClass.getCanonicalName().replaceAll("([A-Z])", "_$1").toLowerCase();
-        this.messageId = ResourceLocation.fromNamespaceAndPath(network.getNetworkId().getNamespace(),
+        this.messageId = Identifier.fromNamespaceAndPath(network.getNetworkId().getNamespace(),
                 messageSide.name().toLowerCase() + "/" + canonicalNameUnderscoresAroundUpper);
         this.messageType = new CustomPacketPayload.Type<>(this.messageId);
     }
@@ -59,7 +59,7 @@ public class MessageConcept {
         return this.messageSide;
     }
 
-    public ResourceLocation getMessageId() {
+    public Identifier getMessageId() {
         return this.messageId;
     }
 

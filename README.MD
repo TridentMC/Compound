@@ -1,56 +1,27 @@
 # Trident Compound
 
-A set of shadable tools to reduce the boilerplate needed when developing mods for Minecraft using the MinecraftForge
-API.
+Libraries for developing Minecraft mods with NeoForge. Compound is a dependency, not a standalone mod.
 
-### For users
+This branch targets Minecraft **26.3**, NeoForge **26.3.0.26-beta**, and Java **25**. Build with `gradle build` (ModDevGradle 2.0.147). The library version is set in `properties.gradle`.
 
-If you've gotten an error mentioniong Compound when running your game first check what mod was referencing Compound and
-create an issue on that mod. If the issue is determined to be with Compound and not the mod using Compound then the
-developer can make an issue on this repo.
+## Modules
 
-### For developers
+Use `compound-all`, or select `compound-core`, `compound-config`, `compound-network`, and `compound-ui`. Config, network, and UI depend on the matching version of core; their Maven POMs declare that dependency. The legacy inventory artifact is retained for compatibility.
 
-To add compound to your project add a reference to a repo that contains the library, the most up-to-date version will
-always be available on the trident repo.
-
-To add the trident repo to your project add the following to your build.gradle
-
-```gradle
+```groovy
 repositories {
-    maven {
-        url 'https://repo.tridevmc.com/'
-    }
+    maven { url = 'https://repo.tridevmc.com/' }
+}
+
+dependencies {
+    implementation "com.tridevmc.compound:compound-ui:${compoundVersion}"
 }
 ```
 
-To add a Compound module to your project add a dependency with the given format
+Choose a version published for your Minecraft target. A branch version does not imply that its artifacts have been published. Include the required library modules in your mod's distribution; if shading and relocating, keep all Compound modules under the same relocated package.
 
-```gradle
-compile "com.tridevmc.compound:compound-${compoundModule}:${compoundVersion}"
-```
+Molecule is the companion demo mod used for in-game validation. Report game failures to the mod using Compound first; its developer can determine whether the library is responsible.
 
-Although not strictly required, it's recommended that you shade compound into your mod jar and relocate it to another
-package in your jar. This prevents conflicts if there's more than one mod that depends on Compound in a pack.
+## License
 
-To add ShadowJar to your project insert the following in your buildscript
-
-```gradle
-plugins {
-    id 'com.github.johnrengelman.shadow' version '4.0.4'
-}
-```
-
-Then to tell ShadowJar to shade compound into your output jar add the following
-
-```gradle
-shadowJar {
-    classifier = ""
-
-    dependencies {
-        include(dependency("com.tridevmc.compound:compound-${compoundModule}:${compoundVersion}"))
-    }
-
-    relocate "com.tridevmc.compound", "my.mod.package.compound"
-}
-```
+Apache License 2.0. See [LICENSE](LICENSE).

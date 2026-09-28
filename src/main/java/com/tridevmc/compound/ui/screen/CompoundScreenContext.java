@@ -16,28 +16,20 @@
 
 package com.tridevmc.compound.ui.screen;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.GpuTextureView;
-import com.mojang.blaze3d.vertex.*;
+
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
-import com.tridevmc.compound.ui.render.CompoundRenderable;
-import net.minecraft.Util;
+import com.mojang.blaze3d.Blaze3D;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.navigation.ScreenRectangle;
-import net.minecraft.client.gui.render.TextureSetup;
-import net.minecraft.client.gui.render.state.GuiRenderState;
+import net.minecraft.client.renderer.state.gui.GuiRenderState;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
-import org.joml.Matrix3x2f;
 import org.joml.Matrix3x2fStack;
 
 import java.net.URI;
@@ -109,7 +101,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawFormattedCharSequence(FormattedCharSequence processor, float x, float y) {
-        this.ui.getActiveGuiGraphics().drawString(this.getFont(), processor, (int) x, (int) y, 0xFF404040, false);
+        this.ui.getActiveGuiGraphics().text(this.getFont(), processor, (int) x, (int) y, 0xFF404040, false);
     }
 
     @Override
@@ -120,7 +112,7 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawFormattedCharSequenceWithShadow(FormattedCharSequence processor, float x, float y) {
-        this.ui.getActiveGuiGraphics().drawString(this.getFont(), processor, (int) x, (int) y, 0xFF404040, true);
+        this.ui.getActiveGuiGraphics().text(this.getFont(), processor, (int) x, (int) y, 0xFF404040, true);
     }
 
     @Override
@@ -130,33 +122,9 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawTexturedRect(ResourceLocation texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV) {
-        var pose = new Matrix3x2f(this.getActiveStack());
-
-        var textureView = getMc().getTextureManager().getTexture(texture).getTextureView();
-        var textureSetup = TextureSetup.singleTexture(textureView);
-
-        var bounds = new ScreenRectangle((int) x, (int) y, (int) width, (int) height).transformMaxBounds(pose);
-
-        this.getGuiRenderState().submitGuiElement(
-            new CompoundRenderable(
-                RenderPipelines.GUI_TEXTURED,
-                textureSetup,
-                pose,
-                null,
-                bounds,
-                consumer -> {
-                    // Emit vertices in correct winding order: top-left, bottom-left, bottom-right, top-right
-                    int color = -1;
-                    consumer.addVertexWith2DPose(pose, x, y).setUv(minU, minV).setColor(color);
-                    consumer.addVertexWith2DPose(pose, x, y + height).setUv(minU, maxV).setColor(color);
-                    consumer.addVertexWith2DPose(pose, x + width, y + height).setUv(maxU, maxV).setColor(color);
-                    consumer.addVertexWith2DPose(pose, x + width, y).setUv(maxU, minV).setColor(color);
-                }
-            )
-        );
+    public void drawTexturedRect(Identifier texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV) {
+        this.ui.getActiveGuiGraphics().blit(texture, (int) x, (int) y, (int) (x + width), (int) (y + height), minU, maxU, minV, maxV);
     }
-
     @Override
     public void drawTooltip(List<Component> tooltip, int x, int y, Optional<TooltipComponent> extraComponents, Font font) {
         this.ui.getActiveGuiGraphics().setTooltipForNextFrame(font, tooltip, extraComponents, x, y);
@@ -169,45 +137,23 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawItemStack(ItemStack stack, float x, float y, float width, float height, String altText) {
-        var font = IClientItemExtensions.of(stack).getFont(stack, IClientItemExtensions.FontContext.TOOLTIP);
+        var font = IClientItemExtensions.of(stack).getFont(stack, IClientItemExtensions.FontContext.ITEM_COUNT);
         if (font == null) font = this.getFont();
         var poseStack = this.getActiveStack();
         poseStack.pushMatrix();
         poseStack.translate(x, y);
         poseStack.scale(width / 16F, height / 16F);
 
-        this.ui.getActiveGuiGraphics().renderItem(stack, 0, 0);
-        this.ui.getActiveGuiGraphics().renderItemDecorations(font, stack, 0, 0, altText);
+        this.ui.getActiveGuiGraphics().item(stack, 0, 0);
+        this.ui.getActiveGuiGraphics().itemDecorations(font, stack, 0, 0, altText);
 
         poseStack.popMatrix();
     }
 
     @Override
     public void drawGradientRect(float x, float y, float width, float height, int startColour, int endColour) {
-        var pose = new Matrix3x2f(this.getActiveStack());
-
-        // Calculate bounds for culling and debug rendering
-        var bounds = new ScreenRectangle((int) x, (int) y, (int) width, (int) height).transformMaxBounds(pose);
-
-        this.getGuiRenderState().submitGuiElement(
-            new CompoundRenderable(
-                RenderPipelines.GUI,
-                TextureSetup.noTexture(),
-                pose,
-                null,
-                bounds,
-                consumer -> {
-                    // Emit vertices in correct winding order: top-left, bottom-left, bottom-right, top-right
-                    // Top two vertices use startColour, bottom two use endColour
-                    consumer.addVertexWith2DPose(pose, x, y).setColor(startColour);
-                    consumer.addVertexWith2DPose(pose, x, y + height).setColor(endColour);
-                    consumer.addVertexWith2DPose(pose, x + width, y + height).setColor(endColour);
-                    consumer.addVertexWith2DPose(pose, x + width, y).setColor(startColour);
-                }
-            )
-        );
+        this.ui.getActiveGuiGraphics().fillGradient((int) x, (int) y, (int) (x + width), (int) (y + height), startColour, endColour);
     }
-
     @Override
     public void sendChatMessage(String message) {
         this.sendChatMessage(message, true);
@@ -215,15 +161,15 @@ public class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void sendChatMessage(String message, boolean addToChat) {
-        var player = this.getMc().player;
-        if (player != null) {
-            this.getMc().player.displayClientMessage(Component.translatable(message), !addToChat);
+        if (addToChat) {
+            this.getMc().gui.hud.getChat().addClientSystemMessage(Component.translatable(message));
+        } else {
+            this.getMc().gui.hud.setOverlayMessage(Component.translatable(message), false);
         }
     }
-
     @Override
     public void openWebLink(URI url) {
-        Util.getPlatform().openUri(url);
+        Blaze3D.openUri(url);
     }
 
     @Override

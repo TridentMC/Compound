@@ -23,11 +23,11 @@ import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.render.state.GuiRenderState;
+import net.minecraft.client.renderer.state.gui.GuiRenderState;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.RenderType;
+
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.ItemStack;
@@ -278,7 +278,7 @@ public interface IPrimitiveScreenContext {
      * @param x the x coordinate to draw the rect at.
      * @param y the y coordinate to draw the rect at.
      */
-    void drawTexturedRect(ResourceLocation texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV);
+    void drawTexturedRect(Identifier texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV);
 
     /**
      * Draws a textured rect on the screen matching the provided rect data using the given sprite, utilizing the writer to draw the sprite.

@@ -24,8 +24,9 @@ import com.tridevmc.compound.ui.listeners.*;
 import com.tridevmc.compound.ui.screen.CompoundScreenContext;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.render.state.GuiRenderState;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.state.gui.GuiRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -38,9 +39,9 @@ import java.util.List;
 
 public abstract class CompoundUI extends Screen implements ICompoundUI, IInternalCompoundUI {
 
-    private static final WrappedField<GuiRenderState> guiRenderState = WrappedField.create(GuiGraphics.class, "guiRenderState", "f_399111_");
+    private static final WrappedField<GuiRenderState> guiRenderState = WrappedField.create(GuiGraphicsExtractor.class, "guiRenderState", "f_399111_");
 
-    private GuiGraphics activeGuiGraphics;
+    private GuiGraphicsExtractor activeGuiGraphics;
     private Matrix3x2fStack activeStack;
     private long ticks;
     private double mouseX, mouseY;
@@ -70,13 +71,13 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
         this.mouseScrollListeners = Lists.newArrayList();
 
         Minecraft mc = Minecraft.getInstance();
-        this.init(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
+        this.init(mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
         this.initElements();
         this.elements.forEach((e) -> e.initElement(this));
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
         this.activeGuiGraphics = graphics;
         this.activeStack = graphics.pose();
         this.mouseX = mouseX;
@@ -95,7 +96,7 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
             });
         }
 
-        super.render(graphics, mouseX, mouseY, partialTicks);
+        super.extractRenderState(graphics, mouseX, mouseY, partialTicks);
     }
 
     @Override
@@ -150,7 +151,7 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
     }
 
     @Override
-    public GuiGraphics getActiveGuiGraphics() {
+    public GuiGraphicsExtractor getActiveGuiGraphics() {
         return this.activeGuiGraphics;
     }
 
@@ -161,20 +162,25 @@ public abstract class CompoundUI extends Screen implements ICompoundUI, IInterna
 
     @Override
     public boolean keyPressed(@NotNull KeyEvent event) {
-        this.keyPressListeners.forEach((l) -> l.listen(this.screenContext, event.key(), event.scancode(), event.modifiers()));
+        this.keyPressListeners.forEach((l) -> l.listen(this.screenContext, event.key(), event.keycode(), event.modifiers()));
         return super.keyPressed(event);
     }
 
     @Override
     public boolean keyReleased(@NotNull KeyEvent event) {
-        this.keyReleaseListeners.forEach((l) -> l.listen(this.screenContext, event.key(), event.scancode(), event.modifiers()));
+        this.keyReleaseListeners.forEach((l) -> l.listen(this.screenContext, event.key(), event.keycode(), event.modifiers()));
         return super.keyReleased(event);
     }
 
 
     @Override
     public boolean charTyped(@NotNull CharacterEvent event) {
-        this.charTypeListeners.forEach((l) -> l.listen(this.screenContext, (char) event.codepoint(), event.modifiers()));
+        int modifiers = (this.minecraft.hasShiftDown() ? InputConstants.MOD_SHIFT : 0)
+                | (this.minecraft.hasControlDown() ? InputConstants.MOD_CONTROL : 0)
+                | (this.minecraft.hasAltDown() ? InputConstants.MOD_ALT : 0);
+        for (char character : event.codepointAsString().toCharArray()) {
+            this.charTypeListeners.forEach(listener -> listener.listen(this.screenContext, character, modifiers));
+        }
         return super.charTyped(event);
     }
 

@@ -25,7 +25,7 @@ import com.tridevmc.compound.ui.listeners.IMousePressListener;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 
 import java.util.List;
@@ -36,9 +36,9 @@ import java.util.List;
  */
 public class ElementButton extends Element {
 
-    private static final ResourceLocation ENABLED_TEXTURE_LOCATION = ResourceLocation.withDefaultNamespace("widget/button");
-    private static final ResourceLocation DISABLED_TEXTURE_LOCATION = ResourceLocation.withDefaultNamespace("widget/button_disabled");
-    private static final ResourceLocation HIGHLIGHTED_TEXTURE_LOCATION = ResourceLocation.withDefaultNamespace("widget/button_highlighted");
+    private static final Identifier ENABLED_TEXTURE_LOCATION = Identifier.withDefaultNamespace("widget/button");
+    private static final Identifier DISABLED_TEXTURE_LOCATION = Identifier.withDefaultNamespace("widget/button_disabled");
+    private static final Identifier HIGHLIGHTED_TEXTURE_LOCATION = Identifier.withDefaultNamespace("widget/button_highlighted");
     private boolean isEnabled;
     private boolean isVisible;
     private boolean isHovered;
