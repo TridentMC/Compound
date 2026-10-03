@@ -21,12 +21,8 @@ base {
 neoForge {
     version = neoForgeVersion
 
-    if (mappingsChannel == "parchment") {
-        parchment {
-            mappingsVersion = project.mappingsVersion
-            minecraftVersion =  project.mappingsMinecraftVersion
-        }
-    }
+    // Add modding dependencies (Minecraft classes) to the test source set
+    addModdingDependenciesTo sourceSets.test
 }
 
 configurations {
@@ -103,4 +99,20 @@ idea {
         downloadSources = true
         downloadJavadoc = true
     }
+}
+
+// Test dependencies
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // Static Minecraft calls require the inline mock maker.
+    testImplementation 'org.mockito:mockito-inline:5.2.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.2.0'
+}
+
+// Configure JUnit 5 tests
+test {
+    useJUnitPlatform()
+    // This ByteBuddy version needs experimental support for Java 25.
+    jvmArgs '-Dnet.bytebuddy.experimental=true'
 }

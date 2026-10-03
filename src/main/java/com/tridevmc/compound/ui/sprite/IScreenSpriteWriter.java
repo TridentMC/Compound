@@ -17,25 +17,64 @@
 package com.tridevmc.compound.ui.sprite;
 
 import com.tridevmc.compound.ui.screen.IScreenContext;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.metadata.gui.GuiMetadataSection;
 import net.minecraft.client.resources.metadata.gui.GuiSpriteScaling;
-import net.minecraft.data.AtlasIds;
 
 /**
  * Responsible for drawing/interpolating sprites to the screen.
  */
 public interface IScreenSpriteWriter {
 
+    /**
+     * Returns a shared writer that stretches the sprite to fill the destination rectangle.
+     *
+     * @return the stateless stretch writer.
+     */
+    static IScreenSpriteWriter stretch() {
+        return ScreenSpriteWriterStretch.INSTANCE;
+    }
+
+    /**
+     * Returns a shared writer that repeats the sprite at its original pixel dimensions.
+     * Partial tiles are cropped at the destination edges.
+     *
+     * @return the stateless tile writer.
+     */
+    static IScreenSpriteWriter tiled() {
+        return ScreenSpriteWriterTile.INSTANCE;
+    }
+
+    /**
+     * Creates a writer that preserves the corners and tiles the edges and center.
+     * Borders are measured in source pixels and kept at that size in GUI pixels.
+     * The source must have a positive center size, and the destination must be large
+     * enough to contain the borders.
+     *
+     * @param left the nonnegative left border width.
+     * @param right the nonnegative right border width.
+     * @param top the nonnegative top border height.
+     * @param bottom the nonnegative bottom border height.
+     * @return a new writer retaining the border dimensions.
+     */
+    static IScreenSpriteWriter nineSlice(int left, int right, int top, int bottom) {
+        return new ScreenSpriteWriterNineSlice(left, right, top, bottom);
+    }
+
+    /**
+     * Selects a writer from the sprite's GUI scaling metadata, defaulting to stretching.
+     *
+     * @param sprite the atlas sprite whose metadata supplies the scaling rules.
+     * @return a writer configured for the sprite.
+     */
     static IScreenSpriteWriter forTextureAtlasSprite(TextureAtlasSprite sprite) {
         var scaling = sprite.contents().getAdditionalMetadata(GuiMetadataSection.TYPE).orElse(GuiMetadataSection.DEFAULT).scaling();
         return switch (scaling.type()) {
-            case STRETCH -> new ScreenSpriteWriterStretch();
-            case TILE -> new ScreenSpriteWriterTile();
+            case STRETCH -> stretch();
+            case TILE -> tiled();
             case NINE_SLICE -> {
                 var scale = (GuiSpriteScaling.NineSlice) scaling;
-                yield new ScreenSpriteWriterNineSlice(scale.border().left(), scale.border().right(), scale.border().top(), scale.border().bottom());
+                yield nineSlice(scale.border().left(), scale.border().right(), scale.border().top(), scale.border().bottom());
             }
         };
     }

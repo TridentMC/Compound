@@ -16,13 +16,13 @@
 
 package com.tridevmc.compound.ui.screen;
 
-
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.IInternalCompoundUI;
-import com.mojang.blaze3d.Blaze3D;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.state.gui.GuiRenderState;
+import net.minecraft.client.renderer.RenderPipelines;
+import com.tridevmc.compound.ui.sprite.IScreenSprite;
+import com.mojang.blaze3d.Blaze3D;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -36,22 +36,17 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
-public class CompoundScreenContext implements IScreenContext {
+final class CompoundScreenContext implements IScreenContext {
 
     private final IInternalCompoundUI ui;
 
-    public CompoundScreenContext(IInternalCompoundUI ui) {
+    CompoundScreenContext(IInternalCompoundUI ui) {
         this.ui = ui;
     }
 
     @Override
     public Matrix3x2fStack getActiveStack() {
         return this.ui.getActiveStack();
-    }
-
-    @Override
-    public GuiRenderState getGuiRenderState() {
-        return this.ui.getGuiRenderState();
     }
 
     @Override
@@ -122,38 +117,77 @@ public class CompoundScreenContext implements IScreenContext {
     }
 
     @Override
-    public void drawTexturedRect(Identifier texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV) {
-        this.ui.getActiveGuiGraphics().blit(texture, (int) x, (int) y, (int) (x + width), (int) (y + height), minU, maxU, minV, maxV);
+    public void drawSprite(IScreenSprite sprite, float x, float y, float width, float height) {
+        if (!sprite.usesNativeScaling()) {
+            IScreenContext.super.drawSprite(sprite, x, y, width, height);
+            return;
+        }
+        var graphics = this.ui.getActiveGuiGraphics();
+        if (graphics != null) {
+            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite.getSpriteIdentifier(),
+                    (int) x, (int) y, (int) width, (int) height);
+        }
     }
+
+    @Override
+    public void drawTexturedRect(Identifier texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV) {
+        var gg = this.ui.getActiveGuiGraphics();
+        if (gg == null) return;
+
+        gg.blit(texture, (int) x, (int) y, (int) (x + width), (int) (y + height), minU, maxU, minV, maxV);
+    }
+
+    @Override
+    public void drawTooltip(ItemStack stack, int x, int y) {
+        var graphics = this.ui.getActiveGuiGraphics();
+        if (graphics != null) {
+            graphics.setTooltipForNextFrame(this.getFont(), stack, x, y);
+        }
+    }
+
     @Override
     public void drawTooltip(List<Component> tooltip, int x, int y, Optional<TooltipComponent> extraComponents, Font font) {
-        this.ui.getActiveGuiGraphics().setTooltipForNextFrame(font, tooltip, extraComponents, x, y);
+        var gg = this.ui.getActiveGuiGraphics();
+        if (gg == null) return;
+
+        gg.setTooltipForNextFrame(font, tooltip, extraComponents, x, y);
     }
 
     @Override
     public void drawProcessorAsTooltip(List<FormattedCharSequence> processors, int x, int y, Font font) {
-        this.ui.getActiveGuiGraphics().setTooltipForNextFrame(font, processors, x, y);
+        var gg = this.ui.getActiveGuiGraphics();
+        if (gg == null) return;
+
+        gg.setTooltipForNextFrame(font, processors, x, y);
     }
 
     @Override
     public void drawItemStack(ItemStack stack, float x, float y, float width, float height, String altText) {
+        var gg = this.ui.getActiveGuiGraphics();
+        if (gg == null) return;
+
         var font = IClientItemExtensions.of(stack).getFont(stack, IClientItemExtensions.FontContext.ITEM_COUNT);
         if (font == null) font = this.getFont();
-        var poseStack = this.getActiveStack();
-        poseStack.pushMatrix();
-        poseStack.translate(x, y);
-        poseStack.scale(width / 16F, height / 16F);
 
-        this.ui.getActiveGuiGraphics().item(stack, 0, 0);
-        this.ui.getActiveGuiGraphics().itemDecorations(font, stack, 0, 0, altText);
+        var pose = gg.pose();
+        pose.pushMatrix();
+        pose.translate(x, y);
+        pose.scale(width / 16F, height / 16F);
 
-        poseStack.popMatrix();
+        gg.item(stack, 0, 0);
+        gg.itemDecorations(font, stack, 0, 0, altText);
+
+        pose.popMatrix();
     }
 
     @Override
     public void drawGradientRect(float x, float y, float width, float height, int startColour, int endColour) {
-        this.ui.getActiveGuiGraphics().fillGradient((int) x, (int) y, (int) (x + width), (int) (y + height), startColour, endColour);
+        var gg = this.ui.getActiveGuiGraphics();
+        if (gg == null) return;
+
+        gg.fillGradient((int) x, (int) y, (int) (x + width), (int) (y + height), startColour, endColour);
     }
+
     @Override
     public void sendChatMessage(String message) {
         this.sendChatMessage(message, true);
@@ -163,10 +197,9 @@ public class CompoundScreenContext implements IScreenContext {
     public void sendChatMessage(String message, boolean addToChat) {
         if (addToChat) {
             this.getMc().gui.hud.getChat().addClientSystemMessage(Component.translatable(message));
-        } else {
-            this.getMc().gui.hud.setOverlayMessage(Component.translatable(message), false);
         }
     }
+
     @Override
     public void openWebLink(URI url) {
         Blaze3D.openUri(url);
@@ -194,6 +227,22 @@ public class CompoundScreenContext implements IScreenContext {
     @Override
     public EnumUILayer getCurrentLayer() {
         return this.ui.getCurrentLayer();
+    }
+
+    @Override
+    public void enableScissor(int x, int y, int right, int bottom) {
+        var gg = this.ui.getActiveGuiGraphics();
+        if (gg != null) {
+            gg.enableScissor(x, y, right, bottom);
+        }
+    }
+
+    @Override
+    public void disableScissor() {
+        var gg = this.ui.getActiveGuiGraphics();
+        if (gg != null) {
+            gg.disableScissor();
+        }
     }
 
 }

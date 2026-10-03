@@ -38,7 +38,7 @@ public interface IScreenContext extends IPrimitiveScreenContext {
         this.drawGradientRect(rect, colour, colour);
     }
 
-  
+
     /**
      * Draws a solid gradient rect on the screen matching the provided rect data.
      *
@@ -58,7 +58,7 @@ public interface IScreenContext extends IPrimitiveScreenContext {
      * @param maxUvs the maximum uvs for the rect.
      */
     default void drawTexturedRect(Identifier texture, Rect2F rect, UVData minUvs, UVData maxUvs) {
-        this.drawTexturedRect(texture, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), minUvs.getU(), minUvs.getV(), maxUvs.getU(), maxUvs.getV());
+        this.drawTexturedRect(texture, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), minUvs.u(), minUvs.v(), maxUvs.u(), maxUvs.v());
     }
 
     /**
@@ -79,7 +79,7 @@ public interface IScreenContext extends IPrimitiveScreenContext {
      * @param uv     the uv data to use for drawing the sprite.
      */
     default void drawRectUsingSprite(IScreenSprite sprite, Rect2F rect, UVData uv) {
-        this.drawRectUsingSprite(sprite, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), uv.getU(), uv.getV());
+        this.drawRectUsingSprite(sprite, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), uv.u(), uv.v());
     }
 
     /**
@@ -91,7 +91,7 @@ public interface IScreenContext extends IPrimitiveScreenContext {
      * @param maxUvs the maximum uvs for the rect.
      */
     default void drawRectUsingSprite(IScreenSprite sprite, Rect2F rect, UVData minUvs, UVData maxUvs) {
-        this.drawRectUsingSprite(sprite, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), minUvs.getU(), minUvs.getV(), maxUvs.getU(), maxUvs.getV());
+        this.drawRectUsingSprite(sprite, rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight(), minUvs.u(), minUvs.v(), maxUvs.u(), maxUvs.v());
     }
 
     /**
@@ -104,5 +104,23 @@ public interface IScreenContext extends IPrimitiveScreenContext {
     default void drawItemStack(ItemStack stack, Rect2F dimensions, String altText) {
         this.drawItemStack(stack, dimensions.getX(), dimensions.getY(), dimensions.getWidth(), dimensions.getHeight(), altText);
     }
+
+    /**
+     * Enables scissor test to clip rendering to the given rectangle.
+     * All rendering after this call will be clipped to the specified bounds.
+     * Must be followed by a disableScissor() call.
+     *
+     * @param x      the left edge of the scissor rectangle
+     * @param y      the top edge of the scissor rectangle
+     * @param right  the right edge of the scissor rectangle
+     * @param bottom the bottom edge of the scissor rectangle
+     */
+    void enableScissor(int x, int y, int right, int bottom);
+
+    /**
+     * Disables scissor test, restoring full rendering area.
+     * Must be called after enableScissor().
+     */
+    void disableScissor();
 
 }

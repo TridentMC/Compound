@@ -25,3 +25,12 @@ Molecule is the companion demo mod used for in-game validation. Report game fail
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).
+
+## Composable UI
+
+Version 2.0.0 replaces the legacy UI API. Documentation lives in the [wiki](https://github.com/TridentMC/Compound/wiki/Composable-UI):
+
+- [Getting started](https://github.com/TridentMC/Compound/wiki/Composable-UI)
+- [Consumer API](https://github.com/TridentMC/Compound/wiki/Composable-UI-API)
+- [Layout and custom elements](https://github.com/TridentMC/Compound/wiki/Composable-UI-Reference)
+- [Migration from 1.x](https://github.com/TridentMC/Compound/wiki/Composable-UI-Migration)
