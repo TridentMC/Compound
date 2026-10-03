@@ -129,9 +129,13 @@ public class TextArea extends Element implements IComposableElement {
 
         scope.onFocusGained(() -> {
             this.focused.set(true);
+            Minecraft.getInstance().textInputManager().onTextInputFocusChange(this, this.editable);
             this.cursorBlink.reset();
         });
-        scope.onFocusLost(() -> this.focused.set(false));
+        scope.onFocusLost(() -> {
+            this.focused.set(false);
+            Minecraft.getInstance().textInputManager().onTextInputFocusChange(this, false);
+        });
 
         scope.onScrollWhenFocused(event -> {
             if (this.lines.size() <= this.getVisibleLines()) return false;
@@ -612,6 +616,9 @@ public class TextArea extends Element implements IComposableElement {
      * @param editable whether to accept user edits
      */
     public void setEditable(boolean editable) {
+        if (this.focused.get()) {
+            Minecraft.getInstance().textInputManager().onTextInputFocusChange(this, editable);
+        }
         this.editable = editable;
         this.invalidateComposition();
     }

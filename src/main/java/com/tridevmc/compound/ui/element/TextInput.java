@@ -151,11 +151,13 @@ public class TextInput extends Element implements IComposableElement {
 
         scope.onFocusGained(() -> {
             this.focused.set(true);
+            Minecraft.getInstance().textInputManager().onTextInputFocusChange(this, this.editable);
             this.cursorBlink.reset();
         });
 
         scope.onFocusLost(() -> {
             this.focused.set(false);
+            Minecraft.getInstance().textInputManager().onTextInputFocusChange(this, false);
             this.onCommit.accept(this.text.get());
         });
     }
@@ -778,6 +780,9 @@ public class TextInput extends Element implements IComposableElement {
      * @return this element
      */
     public TextInput setEditable(boolean editable) {
+        if (this.focused.get()) {
+            Minecraft.getInstance().textInputManager().onTextInputFocusChange(this, editable);
+        }
         this.editable = editable;
         this.invalidateComposition();
         return this;
