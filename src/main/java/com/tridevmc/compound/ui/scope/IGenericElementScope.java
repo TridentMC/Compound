@@ -17,7 +17,13 @@
 package com.tridevmc.compound.ui.scope;
 
 import com.tridevmc.compound.ui.element.IGenericElement;
+import com.tridevmc.compound.ui.geometry.api.ITransform2D;
+import com.tridevmc.compound.ui.geometry.api.LocalPoint;
+import com.tridevmc.compound.ui.geometry.api.WorldPoint;
 import com.tridevmc.compound.ui.layout.LayoutProperties;
+
+import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * Base scope for configuring an element.
@@ -32,6 +38,26 @@ public interface IGenericElementScope<T extends IGenericElement> {
      * @return the element
      */
     T getElement();
+
+    /** Samples once after layout each frame, without composition or measurement invalidation. */
+    default void transform(Supplier<ITransform2D> supplier) {
+        this.layout().getBoundNode().transform(supplier);
+    }
+
+    /** Runs after layout and before any transform suppliers are sampled. */
+    default void beforeGeometry(Runnable action) {
+        this.layout().getBoundNode().beforeGeometry(action);
+    }
+
+    default Optional<LocalPoint> toLocal(WorldPoint point) {
+        return this.toLocal(point.x(), point.y());
+    }
+
+    /** Converts world callbacks using the same geometry as drawing and hit testing. */
+    default Optional<LocalPoint> toLocal(double x, double y) {
+        var geometry = this.layout().getBoundNode().getFrameGeometry();
+        return geometry == null ? Optional.empty() : geometry.toLocal(x, y);
+    }
 
     /**
      * Get the element's layout properties for configuration.

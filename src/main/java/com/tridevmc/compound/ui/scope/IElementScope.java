@@ -17,11 +17,34 @@
 package com.tridevmc.compound.ui.scope;
 
 import com.tridevmc.compound.ui.element.IElement;
+import com.tridevmc.compound.ui.event.MouseClickEvent;
+import com.tridevmc.compound.ui.event.MouseDragEvent;
+import com.tridevmc.compound.ui.event.MouseReleaseEvent;
+
+import java.util.function.Function;
 
 /**
  * Default scope for configuring an element.
  * Most elements use this interface.
  */
 public interface IElementScope<T extends IElement> extends IGenericElementScope<T> {
-    // All methods inherited from IGenericElementScope
+    default void onClick(Function<MouseClickEvent, Boolean> handler) {
+        this.layout().getBoundNode().addClickHandler(handler);
+    }
+
+    default void onMouseDrag(Function<MouseDragEvent, Boolean> handler) {
+        this.layout().getBoundNode().addMouseDragHandler(handler);
+    }
+
+    default void onMouseRelease(Function<MouseReleaseEvent, Boolean> handler) {
+        this.layout().getBoundNode().addMouseReleaseHandler(handler);
+    }
+
+    default void onMouseEnter(Runnable handler) {
+        this.layout().getBoundNode().addMouseEnterHandler(handler);
+    }
+
+    default void onMouseExit(Runnable handler) {
+        this.layout().getBoundNode().addMouseExitHandler(handler);
+    }
 }

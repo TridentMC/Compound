@@ -9,13 +9,4 @@ final class TextEditing {
                 && codePoint != 167 && (codePoint < 0xD800 || codePoint > 0xDFFF);
     }
 
-    static String truncate(String text, int maxLength) {
-        int end = Math.clamp(maxLength, 0, text.length());
-        if (end > 0 && end < text.length()
-                && Character.isHighSurrogate(text.charAt(end - 1))
-                && Character.isLowSurrogate(text.charAt(end))) {
-            end--;
-        }
-        return text.substring(0, end);
-    }
 }

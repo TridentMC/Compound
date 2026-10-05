@@ -25,6 +25,8 @@ import com.tridevmc.compound.ui.event.MouseDragEvent;
 import com.tridevmc.compound.ui.event.MouseMoveEvent;
 import com.tridevmc.compound.ui.event.MouseReleaseEvent;
 import com.tridevmc.compound.ui.event.MouseScrollEvent;
+import com.tridevmc.compound.ui.geometry.api.FrameGeometry;
+import com.tridevmc.compound.ui.geometry.api.ITransform2D;
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
@@ -34,12 +36,25 @@ import com.tridevmc.compound.ui.state.State;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Wraps an element and stores tree metadata (like DOM nodes wrap elements).
  * NOTE: This is internal to the framework and not exposed to elements or composition code.
  */
 public interface ITreeNode {
+
+    void transform(Supplier<ITransform2D> supplier);
+
+    ITransform2D sampleTransform();
+
+    FrameGeometry getFrameGeometry();
+
+    void frameGeometry(FrameGeometry geometry);
+
+    void beforeGeometry(Runnable action);
+
+    void prepareGeometry();
 
     // Element reference
     IElement getElement();

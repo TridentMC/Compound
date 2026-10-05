@@ -18,6 +18,8 @@ package com.tridevmc.compound.ui.tree;
 
 import com.mojang.blaze3d.platform.cursor.CursorType;
 import com.tridevmc.compound.ui.animation.AnimationScheduler;
+import com.tridevmc.compound.ui.animation.api.IAnimationTimeline;
+import com.tridevmc.compound.ui.animation.internal.AnimationTimeline;
 import com.tridevmc.compound.ui.debug.DebugOverlayConfig;
 import com.tridevmc.compound.ui.debug.LayoutDebugRenderer;
 import com.tridevmc.compound.ui.element.IElement;
@@ -40,6 +42,7 @@ import net.minecraft.client.Minecraft;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.LinkedHashSet;
 import java.util.Comparator;
@@ -61,6 +64,43 @@ public class UITree {
     private final Map<IElement, ITreeNode> elementToNode = new HashMap<>();
     private final TreeLayout layout = new TreeLayout();
     private final AnimationScheduler animationScheduler = new AnimationScheduler();
+    private final Map<AnimationTimeline, ITreeNode> timelines = new HashMap<>();
+    private long frameNanos;
+    private boolean preparingFrame;
+    private final Map<ITreeNode, Set<AnimationTimeline>> composingTimelines = new HashMap<>();
+
+    void beginTimelineComposition(ITreeNode node) {
+        this.composingTimelines.put(node, new HashSet<>());
+    }
+
+    void endTimelineComposition(ITreeNode node) {
+        var used = this.composingTimelines.remove(node);
+        this.timelines.entrySet().removeIf(entry -> {
+            if (entry.getValue() != node || used.contains(entry.getKey())) return false;
+            entry.getKey().detach(node);
+            return true;
+        });
+    }
+
+    public void useAnimationTimeline(ITreeNode node, IAnimationTimeline timeline) {
+        if (!this.isAttached(node)) throw new IllegalStateException("Timeline needs an attached node");
+        if (!(timeline instanceof AnimationTimeline clock)) {
+            throw new IllegalArgumentException("Use IAnimationTimeline.create()");
+        }
+        clock.attach(node);
+        this.timelines.put(clock, node);
+        var used = this.composingTimelines.get(node);
+        if (used != null) used.add(clock);
+        if (this.preparingFrame) clock.advance(this.frameNanos);
+    }
+
+    private void detachTimelines(ITreeNode node) {
+        this.timelines.entrySet().removeIf(entry -> {
+            if (entry.getValue() != node) return false;
+            entry.getKey().detach(node);
+            return true;
+        });
+    }
     private final LayoutDebugRenderer debugRenderer = new LayoutDebugRenderer();
     private ITreeNode root;
     private Size rootSize;
@@ -150,6 +190,7 @@ public class UITree {
     }
 
     private void unregisterNode(ITreeNode node) {
+        this.detachTimelines(node);
         this.input.detach(node);
         this.elementToNode.remove(node.getElement(), node);
         this.pendingRecompositions.remove(node);
@@ -272,18 +313,9 @@ public class UITree {
             return null;
         }
 
-        Bounds viewport = activeViewport;
-        if (node.getLayoutProperties().isClip()) {
-            if (activeViewport != null) {
-                viewport = activeViewport.intersection(elementBounds);
-            } else {
-                viewport = elementBounds;
-            }
-        }
-
-        if (viewport != null && !viewport.contains(x, y)) {
-            return null;
-        }
+        var geometry = node.getFrameGeometry();
+        Bounds viewport = geometry == null ? activeViewport : geometry.clip();
+        if (viewport != null && !viewport.contains(x, y)) return null;
 
         // Iterate in REVERSE order to hit-test top-most elements first
         List<ITreeNode> children = node.getChildren();
@@ -296,7 +328,7 @@ public class UITree {
             }
         }
 
-        if (result == null && elementBounds.contains(x, y)) {
+        if (result == null && (geometry == null ? elementBounds.contains(x, y) : geometry.contains(x, y))) {
             return node;
         }
 
@@ -370,9 +402,15 @@ public class UITree {
             return;
         }
 
-        this.animationScheduler.updateAnimations(context.getTicks());
-
-        this.flushRecompositions();
+        this.frameNanos = context.frameNanos();
+        this.preparingFrame = true;
+        try {
+            for (var timeline : this.timelines.keySet()) timeline.advance(this.frameNanos);
+            this.animationScheduler.updateAnimations(context.getTicks());
+            this.flushRecompositions();
+        } finally {
+            this.preparingFrame = false;
+        }
 
         var sizeChanged = this.lastWindowSize.width() != width || this.lastWindowSize.height() != height;
 
@@ -387,11 +425,10 @@ public class UITree {
             this.placeTree(Position.ORIGIN, this.rootConstraints);
             this.pendingHoverUpdate = true;
         }
-        if (this.pendingHoverUpdate) {
-            this.pendingHoverUpdate = false;
-            this.input.updateHoverState();
-        }
-
+        TreeGeometry.prepare(this.root);
+        TreeGeometry.sample(this.root, null, null);
+        this.pendingHoverUpdate = false;
+        this.input.updateHoverState();
     }
 
     public void renderTree(IScreenContext context) {
@@ -419,34 +456,27 @@ public class UITree {
         if (!node.getElement().isVisible()) return;
         IElement element = node.getElement();
 
-        boolean shouldClip = node.getLayoutProperties().isClip();
-        boolean didEnableScissor = false;
-        Bounds viewport = activeViewport;
-
-        if (shouldClip) {
-            Bounds clipBounds = element.getBounds();
-            if (clipBounds != null) {
-                if (activeViewport != null) {
-                    clipBounds = activeViewport.intersection(clipBounds);
-                }
-
-                viewport = clipBounds;
-                context.enableScissor(
-                        clipBounds.left(),
-                        clipBounds.top(),
-                        clipBounds.right(),
-                        clipBounds.bottom()
-                );
-                didEnableScissor = true;
-            }
+        var geometry = node.getFrameGeometry();
+        Bounds viewport = geometry == null ? activeViewport : geometry.clip();
+        if (geometry == null && node.getLayoutProperties().isClip()) {
+            viewport = viewport == null ? node.getBounds() : viewport.intersection(node.getBounds());
         }
-
-        if (element instanceof IPrimitiveElement primitive) {
-            if (viewport == null || viewport.intersects(element.getBounds())) {
+        boolean intersects = viewport == null || (geometry == null
+                ? viewport.intersects(node.getBounds())
+                : geometry.left() < viewport.right() && geometry.right() > viewport.left()
+                && geometry.top() < viewport.bottom() && geometry.bottom() > viewport.top());
+        if (intersects && element instanceof IPrimitiveElement primitive) {
+            var pose = geometry == null ? null : context.getActiveStack();
+            if (viewport != null) context.enableScissor(viewport.left(), viewport.top(), viewport.right(), viewport.bottom());
+            if (pose != null) pose.pushMatrix();
+            try {
+                if (pose != null && geometry != null) pose.mul(geometry.matrix());
                 primitive.draw(context);
+            } finally {
+                if (pose != null) pose.popMatrix();
+                if (viewport != null) context.disableScissor();
             }
         }
-
         for (ITreeNode child : node.getChildren()) {
             if (collectOverlays && child.getLayoutProperties().getLayer() > 0) {
                 this.overlayNodes.add(child);
@@ -454,10 +484,11 @@ public class UITree {
             }
             this.renderNode(child, context, viewport, collectOverlays);
         }
+    }
 
-        if (didEnableScissor) {
-            context.disableScissor();
-        }
+    /** Last pointer position delivered through this tree's input routing. */
+    public Position getMousePosition() {
+        return this.input.mousePosition();
     }
 
     void requestHoverUpdate() {

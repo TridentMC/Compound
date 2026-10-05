@@ -25,6 +25,8 @@ import com.tridevmc.compound.ui.event.MouseDragEvent;
 import com.tridevmc.compound.ui.event.MouseMoveEvent;
 import com.tridevmc.compound.ui.event.MouseReleaseEvent;
 import com.tridevmc.compound.ui.event.MouseScrollEvent;
+import com.tridevmc.compound.ui.geometry.api.FrameGeometry;
+import com.tridevmc.compound.ui.geometry.api.ITransform2D;
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
@@ -37,11 +39,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.Objects;
 
 /**
  * Implementation of ITreeNode that wraps an element and stores tree metadata.
  */
 public class TreeNode implements ITreeNode {
+    private Supplier<ITransform2D> transform = () -> ITransform2D.IDENTITY;
+    private FrameGeometry frameGeometry;
+    private Runnable beforeGeometry = () -> { };
+
     private final IElement element;
     private final List<ITreeNode> children = new ArrayList<>();
     private final List<State<?>> boundStates = new ArrayList<>();
@@ -95,6 +103,36 @@ public class TreeNode implements ITreeNode {
         this.element = element;
         this.tree = tree;
         this.preserveHandlers();
+    }
+
+    @Override
+    public void transform(Supplier<ITransform2D> supplier) {
+        this.transform = Objects.requireNonNull(supplier);
+    }
+
+    @Override
+    public ITransform2D sampleTransform() {
+        return Objects.requireNonNull(this.transform.get());
+    }
+
+    @Override
+    public FrameGeometry getFrameGeometry() {
+        return this.frameGeometry;
+    }
+
+    @Override
+    public void frameGeometry(FrameGeometry geometry) {
+        this.frameGeometry = geometry;
+    }
+
+    @Override
+    public void beforeGeometry(Runnable action) {
+        this.beforeGeometry = Objects.requireNonNull(action);
+    }
+
+    @Override
+    public void prepareGeometry() {
+        this.beforeGeometry.run();
     }
 
     @Override
@@ -296,9 +334,11 @@ public class TreeNode implements ITreeNode {
     public void runComposition() {
         this.clearCompositionResources();
         this.composing = true;
+        if (this.tree != null) this.tree.beginTimelineComposition(this);
         try {
             if (this.compositionFunction != null) this.compositionFunction.run();
         } finally {
+            if (this.tree != null) this.tree.endTimelineComposition(this);
             this.composing = false;
             this.hasComposed = true;
         }

@@ -29,11 +29,14 @@ import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.state.State;
+import com.tridevmc.compound.ui.text.api.TextInsets;
+import com.tridevmc.compound.ui.text.core.api.ITextEditor;
+import com.tridevmc.compound.ui.layout.Alignment;
+import com.tridevmc.compound.ui.layout.Position;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.Mth;
-import net.minecraft.util.Util;
 
 
 import javax.annotation.Nonnull;
@@ -60,11 +63,20 @@ public class TextArea extends Element implements IComposableElement {
         FADE
     }
 
-    private final State<String> text = State.of("");
+    private final ITextEditor editor =
+            ITextEditor.create(
+                    ITextEditor.Mode.MULTILINE, 500,
+                    ITextEditor.ReplacementCaret.START, "");
+    private final EditorState<String> text = new EditorState<>(
+            () -> this.editor.snapshot().text(), this::setValue);
     private final State<Integer> cursorLine = State.of(0);
     private final State<Integer> cursorColumn = State.of(0);
-    private final State<Integer> selectionStart = State.of(0);
-    private final State<Integer> selectionEnd = State.of(0);
+    private final EditorState<Integer> selectionStart = new EditorState<>(
+            () -> this.editor.snapshot().selection().anchor(),
+            pos -> this.editor.select(pos, this.editor.snapshot().selection().caret()));
+    private final EditorState<Integer> selectionEnd = new EditorState<>(
+            () -> this.editor.snapshot().selection().caret(),
+            pos -> this.editor.select(this.editor.snapshot().selection().anchor(), pos));
     private final State<Integer> scrollLine = State.of(0);
     private final State<Boolean> focused = State.of(false);
 
@@ -74,14 +86,19 @@ public class TextArea extends Element implements IComposableElement {
     private boolean editable = true;
     private int textColor = DEFAULT_TEXT_COLOR;
     private int backgroundColor = DEFAULT_BACKGROUND_COLOR;
-    private Predicate<String> filter = s -> s != null;
-    private Consumer<String> responder;
+    private TextInsets contentInsets =
+            new TextInsets(4, 4, 4, 4);
+    private Alignment textAlignment = Alignment.TOP_LEFT;
+    private boolean backgroundVisible = true;
+    private Consumer<ICompositionScope> background = scope -> scope.e(
+            new Surface(() -> this.backgroundColor), bg -> bg.layout().fillMax());
     private Component hint;
     private int lineHeight;
     private record DisplayLine(int start, String text) { }
 
     private final List<DisplayLine> lines = new ArrayList<>();
     private int wrappedWidth = -1;
+    private String wrappedText = "";
 
     private final CursorBlink cursorBlink = new CursorBlink();
     private CursorAnimationMode cursorAnimationMode = CursorAnimationMode.INSTANT;
@@ -93,6 +110,14 @@ public class TextArea extends Element implements IComposableElement {
      */
     public TextArea() {
         this.updateLines();
+        this.editor.observe(() -> {
+            if (!this.text.get().equals(this.wrappedText)) this.updateLines();
+            this.text.refresh();
+            this.projectCursor(this.editor.snapshot().selection().caret());
+            this.selectionStart.refresh();
+            this.selectionEnd.refresh();
+            this.scrollToCursor();
+        });
     }
 
     /**
@@ -149,10 +174,11 @@ public class TextArea extends Element implements IComposableElement {
         scope.e(new Stack(), stack -> {
             stack.layout().fillMax();
 
-            stack.e(new Surface(() -> this.backgroundColor), bg -> bg.layout().fillMax());
+            if (this.backgroundVisible) this.background.accept(stack);
 
             stack.e(new Box(), contentBox -> {
-                contentBox.layout().padding(4).fillMax().clip();
+                contentBox.layout().padding(this.contentInsets.left(), this.contentInsets.top(),
+                        this.contentInsets.right(), this.contentInsets.bottom()).fillMax().clip();
 
                 contentBox.e(new Stack(), textStack -> {
                     textStack.layout().fillMax();
@@ -178,7 +204,8 @@ public class TextArea extends Element implements IComposableElement {
                                 Component.literal(line),
                                 () -> this.editable ? this.textColor : 0x808080,
                                 () -> false
-                        ), label -> label.layout().margin(0, lineOffset * this.lineHeight, 0, 0));
+                        ), label -> label.layout().margin(this.lineOrigin(lineIndex).x(),
+                                this.lineOrigin(lineIndex).y() + lineOffset * this.lineHeight, 0, 0));
                     }
 
                     if (this.focused.get() && this.editable) {
@@ -187,7 +214,9 @@ public class TextArea extends Element implements IComposableElement {
 
                         if (cursorY >= 0 && cursorY < visibleLines * this.lineHeight) {
                             textStack.e(new Rect(this.cursorBlink::color), cursor -> cursor.layout()
-                                    .fixedSize(1, this.lineHeight).margin(cursorX, cursorY, 0, 0));
+                                    .fixedSize(1, this.lineHeight).margin(
+                                            cursorX + this.lineOrigin(this.cursorLine.get()).x(),
+                                            cursorY + this.lineOrigin(this.cursorLine.get()).y(), 0, 0));
                         }
                     }
                 });
@@ -203,9 +232,9 @@ public class TextArea extends Element implements IComposableElement {
             int start = Math.max(this.getSelectionMin(), line.start()) - line.start();
             int end = Math.min(this.getSelectionMax() - line.start(), line.text().length());
             if (start >= end) continue;
-            int x = font.width(line.text().substring(0, start));
+            int x = this.lineOrigin(startLine + row).x() + font.width(line.text().substring(0, start));
             int width = font.width(line.text().substring(start, end));
-            int y = row * this.lineHeight;
+            int y = this.lineOrigin(startLine + row).y() + row * this.lineHeight;
             scope.e(new Rect(SELECTION_COLOR), selection -> selection.layout()
                     .fixedSize(width, this.lineHeight).margin(x, y, 0, 0));
         }
@@ -270,13 +299,11 @@ public class TextArea extends Element implements IComposableElement {
 
         return switch (keyCode) {
             case InputConstants.KEY_BACKSPACE -> {
-                if (ctrl && !this.hasSelection()) this.setSelectionRange(this.wordPosition(-1), this.getCursorPosition());
-                this.deleteChar(-1);
+                this.editor.delete(-1, ctrl);
                 yield true;
             }
             case InputConstants.KEY_DELETE -> {
-                if (ctrl && !this.hasSelection()) this.setSelectionRange(this.getCursorPosition(), this.wordPosition(1));
-                this.deleteChar(1);
+                this.editor.delete(1, ctrl);
                 yield true;
             }
             case InputConstants.KEY_RETURN, InputConstants.KEY_NUMPADENTER -> {
@@ -294,36 +321,17 @@ public class TextArea extends Element implements IComposableElement {
         return true;
     }
 
-    private void insertText(String textToInsert) {
-        String currentText = this.text.get();
-
-        int insertPos;
-        if (this.hasSelection()) {
-            int selMin = this.getSelectionMin();
-            int selMax = this.getSelectionMax();
-            currentText = currentText.substring(0, selMin) + currentText.substring(selMax);
-            insertPos = selMin;
-        } else {
-            insertPos = this.getCursorPosition();
-        }
-
-        if (currentText.length() + textToInsert.length() > this.maxLength) {
-            textToInsert = TextEditing.truncate(textToInsert, this.maxLength - currentText.length());
-        }
-
-        String newText = currentText.substring(0, insertPos) + textToInsert + currentText.substring(insertPos);
-
-        if (this.filter.test(newText)) {
-            this.text.set(newText);
-            this.updateLines();
-            this.setCursorPosition(insertPos + textToInsert.length());
-            this.clearSelection();
-            this.scrollToCursor();
-            this.onValueChanged();
-        }
+    public void insertText(String textToInsert) {
+        this.editor.select(this.hasSelection() ? this.selectionStart.get() : this.getCursorPosition(),
+                this.hasSelection() ? this.selectionEnd.get() : this.getCursorPosition());
+        this.editor.insert(textToInsert);
     }
 
     private void setCursorPosition(int position) {
+        this.editor.moveTo(position, true);
+    }
+
+    private void projectCursor(int position) {
         int pos = Math.clamp(position, 0, this.text.get().length());
         int line = Math.clamp(this.cursorLine.get(), 0, this.lines.size() - 1);
         var currentLine = this.lines.get(line);
@@ -343,59 +351,26 @@ public class TextArea extends Element implements IComposableElement {
         this.cursorBlink.reset();
     }
 
-    private void deleteChar(int direction) {
-        String currentText = this.text.get();
-
-        if (this.hasSelection()) {
-            this.insertText("");
-            return;
-        }
-
-        int cursorPos = this.getCursorPosition();
-
-        int next = Util.offsetByCodepoints(currentText, cursorPos, direction);
-        if (next == cursorPos) return;
-        this.setSelectionRange(Math.min(cursorPos, next), Math.max(cursorPos, next));
-        this.insertText("");
-    }
-
     private void moveCursor(int deltaX, int deltaY) {
         if (deltaY == 0) {
-            this.setCursorPosition(Util.offsetByCodepoints(this.text.get(), this.getCursorPosition(), deltaX));
+            this.editor.move(deltaX, true);
         } else {
             int line = Math.clamp(this.cursorLine.get() + deltaY, 0, this.lines.size() - 1);
             var font = Minecraft.getInstance().font;
             int column = font.plainSubstrByWidth(this.lines.get(line).text(), this.getCursorX()).length();
             this.cursorLine.set(line);
-            this.cursorColumn.set(column);
+            this.setCursorPosition(this.getPositionForLineColumn(line, column));
         }
         this.scrollToCursor();
         this.cursorBlink.reset();
     }
 
     private int wordPosition(int direction) {
-        String value = this.text.get();
-        int cursor = this.getCursorPosition();
-        if (direction < 0) {
-            while (cursor > 0 && Character.isWhitespace(value.codePointBefore(cursor))) {
-                cursor = Util.offsetByCodepoints(value, cursor, -1);
-            }
-            while (cursor > 0 && !Character.isWhitespace(value.codePointBefore(cursor))) {
-                cursor = Util.offsetByCodepoints(value, cursor, -1);
-            }
-        } else {
-            while (cursor < value.length() && !Character.isWhitespace(value.codePointAt(cursor))) {
-                cursor = Util.offsetByCodepoints(value, cursor, 1);
-            }
-            while (cursor < value.length() && Character.isWhitespace(value.codePointAt(cursor))) {
-                cursor = Util.offsetByCodepoints(value, cursor, 1);
-            }
-        }
-        return cursor;
+        return this.editor.wordPosition(direction);
     }
 
     private int getCursorPosition() {
-        return this.getPositionForLineColumn(this.cursorLine.get(), this.cursorColumn.get());
+        return this.editor.snapshot().selection().caret();
     }
 
     private int getPositionForLineColumn(int line, int column) {
@@ -419,11 +394,11 @@ public class TextArea extends Element implements IComposableElement {
         Bounds bounds = this.getBounds();
         if (bounds == null) return;
 
-        int relativeX = mouseX - bounds.x() - 4;
-        int relativeY = mouseY - bounds.y() - 4;
-
-        int line = this.scrollLine.get() + relativeY / this.lineHeight;
+        Bounds content = this.getContentBounds();
+        int relativeY = mouseY - content.y() - this.lineOrigin(this.scrollLine.get()).y();
+        int line = this.scrollLine.get() + Math.floorDiv(relativeY, Math.max(1, this.lineHeight));
         line = Mth.clamp(line, 0, Math.max(0, this.lines.size() - 1));
+        int relativeX = mouseX - content.x() - this.lineOrigin(line).x();
 
         var font = Minecraft.getInstance().font;
         String textLine = this.lines.get(line).text();
@@ -434,24 +409,17 @@ public class TextArea extends Element implements IComposableElement {
         this.scrollToCursor();
         this.cursorBlink.reset();
 
-        int cursorPos = this.getCursorPosition();
-        if (shiftDown) {
-            this.selectionEnd.set(cursorPos);
-        } else {
-            this.selectionStart.set(cursorPos);
-            this.selectionEnd.set(cursorPos);
-        }
+        int cursorPos = this.getPositionForLineColumn(line, column);
+        this.editor.select(shiftDown ? this.selectionStart.get() : cursorPos, cursorPos);
     }
 
     private void setSelectionRange(int start, int end) {
-        this.selectionStart.set(start);
-        this.selectionEnd.set(end);
+        this.editor.select(start, end);
     }
 
     private void clearSelection() {
         int pos = this.getCursorPosition();
-        this.selectionStart.set(pos);
-        this.selectionEnd.set(pos);
+        this.editor.select(pos, pos);
     }
 
     private boolean hasSelection() {
@@ -481,7 +449,7 @@ public class TextArea extends Element implements IComposableElement {
     private int getVisibleLines() {
         Bounds bounds = this.getBounds();
         if (bounds == null || this.lineHeight == 0) return 1;
-        return Math.max(1, (bounds.height() - 8) / this.lineHeight);
+        return Math.max(1, this.getContentBounds().height() / this.lineHeight);
     }
 
     /**
@@ -512,7 +480,8 @@ public class TextArea extends Element implements IComposableElement {
     private void updateLines() {
         this.lines.clear();
         String currentText = this.text.get();
-        int width = this.getBounds().width() - 8;
+        this.wrappedText = currentText;
+        int width = this.getContentBounds().width();
         this.wrappedWidth = width;
         if (currentText.isEmpty()) {
             this.lines.add(new DisplayLine(0, ""));
@@ -541,25 +510,12 @@ public class TextArea extends Element implements IComposableElement {
         }
     }
 
-    private String getSelectedText() {
-        if (!this.hasSelection()) return "";
-        String currentText = this.text.get();
-        int selMin = this.getSelectionMin();
-        int selMax = this.getSelectionMax();
-        return currentText.substring(selMin, selMax);
+    public String getSelectedText() {
+        return this.editor.selectedText();
     }
 
     private void selectAll() {
-        this.selectionStart.set(0);
-        this.selectionEnd.set(this.text.get().length());
-        this.setCursorPosition(this.text.get().length());
-        this.scrollToCursor();
-    }
-
-    private void onValueChanged() {
-        if (this.responder != null) {
-            this.responder.accept(this.text.get());
-        }
+        this.editor.select(0, this.text.get().length());
     }
 
     /**
@@ -577,17 +533,7 @@ public class TextArea extends Element implements IComposableElement {
      * @param value the proposed non-null text; rejected values leave the field unchanged
      */
     public void setValue(String value) {
-        if (this.filter.test(value)) {
-            String clamped = TextEditing.truncate(value, this.maxLength);
-            this.text.set(clamped);
-            this.updateLines();
-            this.cursorLine.set(0);
-            this.cursorColumn.set(0);
-            this.selectionStart.set(0);
-            this.selectionEnd.set(0);
-            this.scrollLine.set(0);
-            this.onValueChanged();
-        }
+        this.editor.value(value);
     }
 
     /**
@@ -599,15 +545,7 @@ public class TextArea extends Element implements IComposableElement {
     public void setMaxLength(int maxLength) {
         if (maxLength < 0) throw new IllegalArgumentException("Maximum text length must be nonnegative");
         this.maxLength = maxLength;
-        String current = this.text.get();
-        if (current.length() > maxLength) {
-            this.text.set(TextEditing.truncate(current, maxLength));
-            this.updateLines();
-            this.setCursorPosition(maxLength);
-            this.clearSelection();
-            this.scrollToCursor();
-            this.onValueChanged();
-        }
+        this.editor.limit(maxLength);
     }
 
     /**
@@ -641,13 +579,55 @@ public class TextArea extends Element implements IComposableElement {
         this.backgroundColor = color;
     }
 
+    public Bounds getContentBounds() {
+        Bounds bounds = this.getBounds();
+        return this.contentInsets.apply(bounds == null ? new Bounds(0, 0, 200, 100) : bounds);
+    }
+
+    public TextArea setContentInsets(TextInsets insets) {
+        this.contentInsets = Objects.requireNonNull(insets);
+        this.updateLines();
+        this.projectCursor(this.getCursorPosition());
+        this.scrollLine.set(Math.clamp(this.scrollLine.get(), 0,
+                Math.max(0, this.lines.size() - this.getVisibleLines())));
+        this.scrollToCursor();
+        this.invalidateComposition();
+        return this;
+    }
+
+    public TextArea setTextAlignment(Alignment alignment) {
+        this.textAlignment = Objects.requireNonNull(alignment);
+        this.invalidateComposition();
+        return this;
+    }
+
+    public TextArea setBackground(Consumer<ICompositionScope> background) {
+        this.background = Objects.requireNonNull(background);
+        this.backgroundVisible = true;
+        this.invalidateComposition();
+        return this;
+    }
+
+    public TextArea setBackgroundVisible(boolean visible) {
+        this.backgroundVisible = visible;
+        this.invalidateComposition();
+        return this;
+    }
+
+    private Position lineOrigin(int line) {
+        int count = Math.min(this.getVisibleLines(), this.lines.size() - this.scrollLine.get());
+        int width = Minecraft.getInstance().font.width(this.lines.get(line).text());
+        return this.textAlignment.align(new Size(width, count * this.lineHeight),
+                new Size(this.getContentBounds().width(), this.getContentBounds().height()));
+    }
+
     /**
      * Sets the predicate that accepts or rejects proposed complete text values.
      *
      * @param filter the non-null predicate for proposed complete values
      */
     public void setFilter(Predicate<String> filter) {
-        this.filter = filter;
+        this.editor.filter(filter);
     }
 
     /**
@@ -656,7 +636,7 @@ public class TextArea extends Element implements IComposableElement {
      * @param responder the callback receiving accepted values, or null to disable notifications
      */
     public void setResponder(Consumer<String> responder) {
-        this.responder = responder;
+        this.editor.responder(responder);
     }
 
     /**
@@ -741,7 +721,7 @@ public class TextArea extends Element implements IComposableElement {
      */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> measuredChildren) {
-        boolean widthChanged = this.wrappedWidth != bounds.width() - 8;
+        boolean widthChanged = this.wrappedWidth != this.contentInsets.apply(bounds).width();
         boolean heightChanged = this.placedHeight != bounds.height();
         this.placedHeight = bounds.height();
         if (widthChanged) {

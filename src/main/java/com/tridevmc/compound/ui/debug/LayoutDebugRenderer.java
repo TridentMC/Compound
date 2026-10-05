@@ -60,6 +60,23 @@ public final class LayoutDebugRenderer {
                 LayoutDebugGeometry.drawAlignmentDrivers(context, childInAncestor, ancestor);
             }
         }
+        for (var node : ancestorChain) {
+            var geometry = node.getFrameGeometry();
+            var pose = context.getActiveStack();
+            if (geometry == null || pose == null) continue;
+            var clip = geometry.clip();
+            if (clip != null) context.enableScissor(clip.left(), clip.top(), clip.right(), clip.bottom());
+            pose.pushMatrix();
+            try {
+                pose.mul(geometry.matrix());
+                var bounds = node.getBounds();
+                context.drawRectOutline(bounds.x(), bounds.y(), bounds.width(), bounds.height(),
+                        node == hoveredNode ? 0xFFFFEB3B : 0xFF4FC3F7, 1);
+            } finally {
+                pose.popMatrix();
+                if (clip != null) context.disableScissor();
+            }
+        }
         LayoutDebugDetails.render(context, hoveredNode, ancestorChain);
     }
 }

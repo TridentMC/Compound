@@ -16,9 +16,7 @@
 
 package com.tridevmc.compound.ui.tree;
 
-import com.mojang.blaze3d.platform.cursor.CursorType;
 import com.tridevmc.compound.ui.cursor.UICursor;
-import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.event.CharEvent;
 import com.tridevmc.compound.ui.event.KeyInputEvent;
 import com.tridevmc.compound.ui.event.MouseClickEvent;
@@ -26,13 +24,19 @@ import com.tridevmc.compound.ui.event.MouseDragEvent;
 import com.tridevmc.compound.ui.event.MouseMoveEvent;
 import com.tridevmc.compound.ui.event.MouseReleaseEvent;
 import com.tridevmc.compound.ui.event.MouseScrollEvent;
+import com.tridevmc.compound.ui.geometry.api.LocalPoint;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Position;
+import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.platform.cursor.CursorType;
+import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.blaze3d.platform.cursor.CursorTypes;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 final class TreeInput {
@@ -70,6 +74,10 @@ final class TreeInput {
             this.capturedButton = -1;
         }
         if (this.focusedNode == node) this.clearFocus();
+    }
+
+    Position mousePosition() {
+        return new Position(this.lastMouseX, this.lastMouseY);
     }
 
     ITreeNode hoveredNode() {
@@ -274,8 +282,16 @@ final class TreeInput {
             while (current != null && this.acceptsInput(current)) {
                 Bounds bounds = current.getElement().getBounds();
                 if (bounds != null) {
-                    int localX = x - bounds.x();
-                    int localY = y - bounds.y();
+                    var geometry = current.getFrameGeometry();
+                    var local = geometry == null
+                            ? Optional.of(new LocalPoint(x - bounds.x(), y - bounds.y()))
+                            : geometry.toLocal(x, y);
+                    if (local.isEmpty()) {
+                        current = current.getParent();
+                        continue;
+                    }
+                    int localX = (int) Math.floor(local.get().x());
+                    int localY = (int) Math.floor(local.get().y());
                     var nodeCursor = current.getElement().getCursor(localX, localY);
                     if (nodeCursor != null) {
                         cursor = nodeCursor;

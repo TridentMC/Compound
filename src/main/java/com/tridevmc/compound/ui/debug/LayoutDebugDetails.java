@@ -77,7 +77,13 @@ final class LayoutDebugDetails {
         lines.add(new DebugLine("", 0xFF888888));
         lines.add(new DebugLine("BOUNDS ANALYSIS", 0xFF4FC3F7));
 
-        lines.add(new DebugLine("  Position: (" + (int)bounds.x() + ", " + (int)bounds.y() + ")", 0xFFCCCCCC));
+        lines.add(new DebugLine("  Layout: (" + bounds.x() + ", " + bounds.y() + ")", 0xFFCCCCCC));
+        var geometry = node.getFrameGeometry();
+        if (geometry != null) {
+            lines.add(new DebugLine(String.format("  Visual: (%.2f, %.2f) %.2f×%.2f",
+                    geometry.left(), geometry.top(), geometry.right() - geometry.left(),
+                    geometry.bottom() - geometry.top()), 0xFFFFEB3B));
+        }
 
         if (measuredSize != null) {
             lines.add(new DebugLine("  Measured: " + measuredSize.width() + "×" + measuredSize.height(), 0xFFCCCCCC));

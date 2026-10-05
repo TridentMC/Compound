@@ -164,6 +164,12 @@ interface NodeCompositionScope extends ICompositionScope {
     }
 
     @Override
+    default void useAnimationTimeline(com.tridevmc.compound.ui.animation.api.IAnimationTimeline timeline) {
+        if (this.scopeNode() == null) throw new IllegalStateException("Timeline needs a mounted node");
+        this.getTree().useAnimationTimeline(this.scopeNode(), timeline);
+    }
+
+    @Override
     default void registerAnimation(AnimatedState<?> animation) {
         if (this.scopeNode() != null) this.scopeNode().registerAnimation(animation);
     }

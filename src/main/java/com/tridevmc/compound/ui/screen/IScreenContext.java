@@ -28,6 +28,11 @@ import net.minecraft.world.item.ItemStack;
  */
 public interface IScreenContext extends IPrimitiveScreenContext {
 
+    /** Monotonic frame time; tree preparation samples this exactly once. */
+    default long frameNanos() {
+        return System.nanoTime();
+    }
+
     /**
      * Draws a solid single colour rect on the screen matching the provided rect data.
      *

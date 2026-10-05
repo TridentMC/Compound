@@ -96,7 +96,7 @@ final class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawFormattedCharSequence(FormattedCharSequence processor, float x, float y) {
-        this.ui.getActiveGuiGraphics().text(this.getFont(), processor, (int) x, (int) y, 0xFF404040, false);
+        this.drawSequence(processor, x, y, false);
     }
 
     @Override
@@ -107,7 +107,20 @@ final class CompoundScreenContext implements IScreenContext {
 
     @Override
     public void drawFormattedCharSequenceWithShadow(FormattedCharSequence processor, float x, float y) {
-        this.ui.getActiveGuiGraphics().text(this.getFont(), processor, (int) x, (int) y, 0xFF404040, true);
+        this.drawSequence(processor, x, y, true);
+    }
+
+    private void drawSequence(FormattedCharSequence processor, float x, float y, boolean shadow) {
+        var graphics = this.ui.getActiveGuiGraphics();
+        if (graphics == null) return;
+        var pose = graphics.pose();
+        pose.pushMatrix();
+        try {
+            pose.translate(x, y);
+            graphics.text(this.getFont(), processor, 0, 0, 0xFF404040, shadow);
+        } finally {
+            pose.popMatrix();
+        }
     }
 
     @Override
@@ -185,7 +198,15 @@ final class CompoundScreenContext implements IScreenContext {
         var gg = this.ui.getActiveGuiGraphics();
         if (gg == null) return;
 
-        gg.fillGradient((int) x, (int) y, (int) (x + width), (int) (y + height), startColour, endColour);
+        var pose = gg.pose();
+        pose.pushMatrix();
+        try {
+            pose.translate(x, y);
+            pose.scale(width, height);
+            gg.fillGradient(0, 0, 1, 1, startColour, endColour);
+        } finally {
+            pose.popMatrix();
+        }
     }
 
     @Override

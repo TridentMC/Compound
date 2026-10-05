@@ -17,8 +17,14 @@
 package com.tridevmc.compound.ui.scope;
 
 import com.tridevmc.compound.ui.element.IElement;
+import com.tridevmc.compound.ui.event.MouseClickEvent;
+import com.tridevmc.compound.ui.event.MouseDragEvent;
+import com.tridevmc.compound.ui.event.MouseReleaseEvent;
+import com.tridevmc.compound.ui.geometry.api.ITransform2D;
 import com.tridevmc.compound.ui.layout.LayoutProperties;
 import com.tridevmc.compound.ui.tree.ITreeNode;
+
+import java.util.function.Function;
 
 /**
  * Scope for configuring a basic element (no children, no composition).
@@ -34,7 +40,34 @@ class ElementScope<T extends IElement> implements IElementScope<T> {
         this.layoutProperties.setBoundNode(node);
     }
 
+    @Override
+    public void onClick(Function<MouseClickEvent, Boolean> handler) {
+        this.node.addClickHandler(handler);
+    }
+
+    @Override
+    public void onMouseDrag(Function<MouseDragEvent, Boolean> handler) {
+        this.node.addMouseDragHandler(handler);
+    }
+
+    @Override
+    public void onMouseRelease(Function<MouseReleaseEvent, Boolean> handler) {
+        this.node.addMouseReleaseHandler(handler);
+    }
+
+    @Override
+    public void onMouseEnter(Runnable handler) {
+        this.node.addMouseEnterHandler(handler);
+    }
+
+    @Override
+    public void onMouseExit(Runnable handler) {
+        this.node.addMouseExitHandler(handler);
+    }
+
     void resetLayoutProperties() {
+        this.node.transform(() -> ITransform2D.IDENTITY);
+        this.node.beforeGeometry(() -> { });
         this.layoutProperties = LayoutProperties.create();
         this.layoutProperties.setBoundNode(this.node);
     }

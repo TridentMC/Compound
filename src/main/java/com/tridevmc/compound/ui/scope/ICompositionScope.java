@@ -321,6 +321,9 @@ public interface ICompositionScope {
     default void registerAnimation(AnimatedState<?> animation) {
     }
 
+    /** Attaches a retained render-time timeline to this node, deduplicated across composition. */
+    void useAnimationTimeline(com.tridevmc.compound.ui.animation.api.IAnimationTimeline timeline);
+
     /** Keeps an animation cached in an element field alive across recompositions. */
     default void retainAnimation(AnimatedState<?> animation) {
         this.registerAnimation(animation);
