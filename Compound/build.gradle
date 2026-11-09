@@ -1,0 +1,118 @@
+plugins {
+    id 'java-library'
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.147'
+}
+
+apply from: "properties.gradle"
+
+version = modVersion
+group = modGroup
+ext.versionTag = ''
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+
+base {
+    archivesName = modBaseName
+}
+
+neoForge {
+    version = neoForgeVersion
+
+    // Add modding dependencies (Minecraft classes) to the test source set
+    addModdingDependenciesTo sourceSets.test
+}
+
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+if (file('private.gradle').exists()) {
+    apply from: 'private.gradle'
+}
+
+def registerModule(LinkedHashMap<String, String> moduleData) {
+    def defaultManifestAttributes = ["Specification-Title"     : "Compound",
+                                     "Specification-Vendor"    : "Trident",
+                                     "Implementation-Title"    : project.name,
+                                     "Implementation-Version"  : "${version}",
+                                     "Implementation-Vendor"   : "Trident",
+                                     "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                                     "FMLModType"              : "GAMELIBRARY"]
+
+    def binaryJar = tasks.register(moduleData.taskName, Jar) {
+        archiveBaseName = moduleData.artifactName
+        from(sourceSets.main.output) {
+            include moduleData.sources
+        }
+        manifest {
+            attributes(defaultManifestAttributes)
+        }
+    }
+    def sourcesJar = tasks.register(moduleData.taskName + "Sources", Jar) {
+        archiveBaseName = moduleData.artifactName
+        archiveClassifier = 'sources'
+        from(sourceSets.main.allSource) {
+            include moduleData.sources
+        }
+        manifest {
+            attributes(defaultManifestAttributes)
+        }
+    }
+
+    artifacts.add("archives", binaryJar)
+    artifacts.add("archives", sourcesJar)
+
+    def moduleVersion = project.version.toString() + versionTag
+    publishing.publications.create(moduleData.publicationName, MavenPublication) {
+        groupId 'com.tridevmc.compound'
+        artifactId moduleData.artifactName
+        version moduleVersion
+        artifact binaryJar
+        artifact sourcesJar
+        if (moduleData.publicationName in ['config', 'network', 'ui']) {
+            pom.withXml {
+                def dependency = asNode().appendNode('dependencies').appendNode('dependency')
+                dependency.appendNode('groupId', 'com.tridevmc.compound')
+                dependency.appendNode('artifactId', 'compound-core')
+                dependency.appendNode('version', moduleVersion)
+                dependency.appendNode('scope', 'compile')
+            }
+        }
+    }
+}
+
+apply from: "modules.gradle"
+
+compoundModules.each { LinkedHashMap<String, String> moduleData ->
+    registerModule(moduleData)
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}
+
+// Test dependencies
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // Static Minecraft calls require the inline mock maker.
+    testImplementation 'org.mockito:mockito-inline:5.2.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.2.0'
+}
+
+// Configure JUnit 5 tests
+test {
+    useJUnitPlatform()
+    // This ByteBuddy version needs experimental support for Java 25.
+    jvmArgs '-Dnet.bytebuddy.experimental=true'
+}

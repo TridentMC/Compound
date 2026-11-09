@@ -1,0 +1,109 @@
+/*
+ * Copyright 2018 - 2024 TridentMC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.tridevmc.compound.ui.element;
+
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Size;
+import com.tridevmc.compound.ui.screen.IScreenContext;
+
+import javax.annotation.Nonnull;
+import java.util.List;
+import java.util.function.IntSupplier;
+
+/**
+ * Draws a solid ARGB rectangle in the assigned bounds. Color suppliers are sampled each frame.
+ */
+public class Rect extends PrimitiveElement {
+
+    private IntSupplier colorSupplier;
+
+    /**
+     * Creates a solid rectangle.
+     *
+     * @param color the ARGB drawing color
+     */
+    public Rect(int color) {
+        this(() -> color);
+    }
+
+    /**
+     * Creates a solid rectangle.
+     *
+     * @param colorSupplier the non-null supplier of ARGB drawing colors
+     */
+    public Rect(IntSupplier colorSupplier) {
+        this.colorSupplier = colorSupplier;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren) {
+        Integer fixedW = ownProperties.getFixedWidth();
+        Integer fixedH = ownProperties.getFixedHeight();
+        boolean fillMaxW = ownProperties.isFillMaxWidth();
+        boolean fillMaxH = ownProperties.isFillMaxHeight();
+
+        int w;
+        int h;
+
+        if (fixedW != null) {
+            w = fixedW;
+        } else if (fillMaxW) {
+            w = 0;
+        } else {
+            w = constraints.maxWidth();
+        }
+
+        if (fixedH != null) {
+            h = fixedH;
+        } else if (fillMaxH) {
+            h = 0;
+        } else {
+            h = constraints.maxHeight();
+        }
+
+        return new Size(w, h);
+    }
+
+    @Override
+    protected void drawElement(IScreenContext context, @Nonnull Bounds bounds) {
+        int color = this.colorSupplier.getAsInt();
+        context.drawRect(bounds.x(), bounds.y(), bounds.width(), bounds.height(), color);
+    }
+
+    /**
+     * Returns the color supplier sampled during drawing.
+     *
+     * @return the configured supplier
+     */
+    public IntSupplier getColorSupplier() {
+        return this.colorSupplier;
+    }
+
+    /**
+     * Replaces the color supplier sampled during drawing.
+     *
+     * @param colorSupplier the non-null supplier of ARGB drawing colors
+     */
+    public void setColorSupplier(IntSupplier colorSupplier) {
+        this.colorSupplier = colorSupplier;
+    }
+}
