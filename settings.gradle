@@ -11,4 +11,5 @@ plugins {
 
 rootProject.name = 'Molecule'
 
+// Compound is developed in this repository alongside Molecule.
 include 'Compound'

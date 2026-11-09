@@ -3,10 +3,11 @@ pipeline {
 	stages {
 		stage('Build') {
 			steps {
-				sh 'rm -f private.gradle'
+				sh 'rm -f Compound/private.gradle'
 				sh './gradlew clean'
 				sh './gradlew build'
 				archive 'build/libs/*jar'
+				archive 'Compound/build/libs/*jar'
 			}
 		}
 		stage('DeployStable') {
@@ -16,8 +17,8 @@ pipeline {
 			steps {
 				withCredentials([file(credentialsId: 'privateStandard', variable: 'PRIVATEGRADLE')]) {
 					sh '''
-						rm -rf private.gradle
-						cp "$PRIVATEGRADLE" private.gradle
+						rm -f Compound/private.gradle
+						cp "$PRIVATEGRADLE" Compound/private.gradle
 						./gradlew publish
 					'''
 				}
@@ -27,8 +28,8 @@ pipeline {
 			steps {
 				withCredentials([file(credentialsId: 'privateSnapshot', variable: 'PRIVATEGRADLE')]) {
 					sh '''
-						rm -rf private.gradle
-						cp "$PRIVATEGRADLE" private.gradle
+						rm -rf Compound/private.gradle
+						cp "$PRIVATEGRADLE" Compound/private.gradle
 						./gradlew publish
 					'''
 				}

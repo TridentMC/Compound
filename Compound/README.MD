@@ -2,7 +2,7 @@
 
 Libraries for developing Minecraft mods with NeoForge. Compound is a dependency, not a standalone mod.
 
-This branch targets Minecraft **26.3**, NeoForge **26.3.0.26-beta**, and Java **25**. Build with `gradle build` (ModDevGradle 2.0.147). The library version is set in `properties.gradle`.
+This branch targets Minecraft **26.3**, NeoForge **26.3.0.26-beta**, and Java **25**. Compound lives in the Molecule monorepo; build it from the repository root with `gradle :Compound:build` (or `./gradlew :Compound:build`, ModDevGradle 2.0.147). The library version is set in `properties.gradle`.
 
 ## Modules
 
