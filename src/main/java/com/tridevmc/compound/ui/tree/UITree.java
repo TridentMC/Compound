@@ -244,6 +244,7 @@ public class UITree {
     public void attachNode(ITreeNode parent, ITreeNode child) {
         parent.addChild(child);
         this.registerNode(child);
+        this.requestRemeasurement(parent);
     }
 
     public void detachNode(ITreeNode node) {
@@ -253,6 +254,7 @@ public class UITree {
         }
 
         this.unregisterNode(node);
+        this.requestRemeasurement(parent);
     }
 
     public void recomposeNode(ITreeNode node) {

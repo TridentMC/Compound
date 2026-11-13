@@ -99,6 +99,15 @@ public interface ITreeNode {
 
     Set<State<?>> getLayoutStates();
 
+    /**
+     * Registers resource cleanup with the current ownership scope. Cleanup registered during
+     * composition runs before its next execution or when detached. Cleanup registered outside
+     * composition belongs to the node and runs when detached.
+     *
+     * @param cleanup the action releasing resources owned by this scope
+     */
+    void onDispose(Runnable cleanup);
+
     void dispose();
 
     // Composition function (stored for re-composition)

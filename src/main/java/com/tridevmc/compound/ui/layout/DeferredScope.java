@@ -19,7 +19,6 @@ package com.tridevmc.compound.ui.layout;
 import com.tridevmc.compound.ui.state.State;
 import com.tridevmc.compound.ui.state.StateObserver;
 import com.tridevmc.compound.ui.tree.ITreeNode;
-import com.tridevmc.compound.ui.tree.TreeNode;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -51,11 +50,23 @@ public class DeferredScope {
     private final ITreeNode boundNode;
     private final Consumer<DeferredScope> callback;
     private final Set<State<?>> boundStates = new HashSet<>();
+    private final StateObserver observer;
+    private boolean disposed;
 
     DeferredScope(LayoutProperties properties, ITreeNode node, Consumer<DeferredScope> callback) {
         this.properties = properties;
         this.boundNode = node;
         this.callback = callback;
+        this.observer = ignored -> {
+            if (this.disposed || node == null) return;
+            var tree = node.getTree();
+            if (tree != null) {
+                this.callback.accept(this);
+                tree.requestRemeasure(node);
+            }
+        };
+        // Capture ownership now, even when later callbacks discover more dependencies.
+        if (node != null) node.onDispose(this::dispose);
     }
 
     /**
@@ -65,16 +76,15 @@ public class DeferredScope {
      * @param state the state to bind
      */
     public void bind(State<?> state) {
-        if (this.boundNode instanceof TreeNode node && this.boundStates.add(state)) {
-            StateObserver observer = ignored -> {
-                if (node.getTree() != null) {
-                    this.callback.accept(this);
-                    node.getTree().requestRemeasure(node);
-                }
-            };
-            state.addObserver(observer);
-            node.onDispose(() -> state.removeObserver(observer));
+        if (!this.disposed && this.boundNode != null && this.boundStates.add(state)) {
+            state.addObserver(this.observer);
         }
+    }
+
+    private void dispose() {
+        this.disposed = true;
+        for (var state : this.boundStates) state.removeObserver(this.observer);
+        this.boundStates.clear();
     }
 
     /**
