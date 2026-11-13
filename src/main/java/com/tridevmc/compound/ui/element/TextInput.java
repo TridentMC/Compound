@@ -101,6 +101,10 @@ public class TextInput extends Element implements IComposableElement {
     @Nullable
     private String suggestion;
     private final List<TextFormatter> formatters = new ArrayList<>();
+    private String formattedValue = "";
+    private StyledInputText fullText;
+    private StyledInputText visibleText;
+    private int formattedDisplay = -1;
 
     private final CursorBlink cursorBlink = new CursorBlink();
     private Consumer<String> onCommit = text -> { };
@@ -121,6 +125,7 @@ public class TextInput extends Element implements IComposableElement {
     }
 
     private void refreshEditor() {
+        this.clearFormattedText();
         this.text.refresh();
         this.cursorPos.refresh();
         this.highlightPos.refresh();
@@ -133,6 +138,7 @@ public class TextInput extends Element implements IComposableElement {
      */
     @Override
     public void compose(ICompositionScope scope) {
+        this.clearFormattedText();
         scope.bind(this.text);
         scope.bind(this.cursorPos);
         scope.bind(this.highlightPos);
@@ -199,6 +205,7 @@ public class TextInput extends Element implements IComposableElement {
         this.cursorBlink.detach();
         this.focused.set(false);
         this.renderedText = null;
+        this.clearFormattedText();
     }
 
     /**
@@ -267,7 +274,7 @@ public class TextInput extends Element implements IComposableElement {
     private int getTextGroupWidth() {
         var font = Minecraft.getInstance().font;
         int width = this.getContentBounds().width();
-        if (font.width(this.text.get()) >= width) return width;
+        if (this.formattedText(0).width(font) >= width) return width;
         return Math.min(width, font.width(this.getRenderedText()));
     }
 
@@ -280,19 +287,7 @@ public class TextInput extends Element implements IComposableElement {
             return this.hint;
         }
 
-        String visibleText = currentText.substring(Math.min(display, currentText.length()));
-
-        FormattedCharSequence formatted = this.applyFormat(visibleText, display);
-        if (formatted != null) {
-            var component = Component.empty();
-            formatted.accept((index, style, codePoint) -> {
-                component.append(Component.literal(new String(Character.toChars(codePoint))).setStyle(style));
-                return true;
-            });
-            return component;
-        }
-
-        return Component.literal(visibleText);
+        return this.formattedText(display).component();
     }
 
     private class Suggestion extends Element implements IComposableElement {
@@ -317,7 +312,6 @@ public class TextInput extends Element implements IComposableElement {
 
     private int getCursorXOffset() {
         var font = Minecraft.getInstance().font;
-        String currentText = this.text.get();
         int cursor = this.cursorPos.get();
         int display = this.displayPos.get();
 
@@ -325,11 +319,8 @@ public class TextInput extends Element implements IComposableElement {
             return 0;
         }
 
-        String visibleText = currentText.substring(Math.min(display, currentText.length()));
         int cursorOffset = cursor - display;
-        int cursorInVisible = Math.min(cursorOffset, visibleText.length());
-
-        return font.width(visibleText.substring(0, cursorInVisible));
+        return this.formattedText(display).advance(font, cursorOffset);
     }
 
     /**
@@ -350,10 +341,10 @@ public class TextInput extends Element implements IComposableElement {
         int start = this.getSelectionStart();
         int end = this.getSelectionEnd();
         if (start < 0 || end <= start) return;
-        String visible = this.text.get().substring(this.displayPos.get());
         var font = Minecraft.getInstance().font;
-        int x = font.width(visible.substring(0, start));
-        int width = font.width(visible.substring(start, end));
+        var formatted = this.formattedText(this.displayPos.get());
+        int x = formatted.advance(font, start);
+        int width = formatted.advance(font, end) - x;
         scope.e(new Rect(0x800000FF), selection -> selection.layout()
                 .fixedSize(width, font.lineHeight).margin(x, 0, 0, 0));
     }
@@ -390,7 +381,32 @@ public class TextInput extends Element implements IComposableElement {
                 return result;
             }
         }
-        return null;
+        return FormattedCharSequence.forward(text, Style.EMPTY);
+    }
+
+    private void clearFormattedText() {
+        this.fullText = null;
+        this.visibleText = null;
+        this.formattedDisplay = -1;
+    }
+
+    private StyledInputText formattedText(int display) {
+        var value = this.text.get();
+        if (!value.equals(this.formattedValue)) {
+            this.clearFormattedText();
+            this.formattedValue = value;
+        }
+        int offset = Math.clamp(display, 0, value.length());
+        if (offset == 0 && this.fullText != null) return this.fullText;
+        if (offset == this.formattedDisplay && this.visibleText != null) return this.visibleText;
+        var suffix = value.substring(offset);
+        var formatted = StyledInputText.of(suffix, this.applyFormat(suffix, offset));
+        if (offset == 0) this.fullText = formatted;
+        else {
+            this.formattedDisplay = offset;
+            this.visibleText = formatted;
+        }
+        return formatted;
     }
 
     private boolean handleKeyPress(KeyInputEvent event) {
@@ -577,32 +593,20 @@ public class TextInput extends Element implements IComposableElement {
         }
 
         display = Math.min(display, currentText.length());
-        if (font.width(currentText) <= innerWidth) {
+        if (this.formattedText(0).width(font) <= innerWidth) {
             this.displayPos.set(0);
             return;
         }
         this.displayPos.set(display);
 
         if (cursor <= display) {
-            String beforeCursor = currentText.substring(0, cursor);
-            this.displayPos.set(cursor - font.plainSubstrByWidth(beforeCursor, innerWidth, true).length());
-            return;
+            display = 0;
         }
-
-        String visibleText = currentText.substring(display);
-        int cursorOffset = cursor - display;
-
-        if (cursorOffset <= visibleText.length()) {
-            String textToCursor = visibleText.substring(0, cursorOffset);
-            if (font.width(textToCursor) > innerWidth) {
-                while (display < cursor) {
-                    display = Util.offsetByCodepoints(currentText, display, 1);
-                    String newVisible = currentText.substring(display, cursor);
-                    if (font.width(newVisible) <= innerWidth) break;
-                }
-                this.displayPos.set(display);
-            }
+        while (display < cursor
+                && this.formattedText(display).advance(font, cursor - display) > innerWidth) {
+            display = Util.offsetByCodepoints(currentText, display, 1);
         }
+        this.displayPos.set(display);
     }
 
     private int findClickPosition(int clickX, int clickY) {
@@ -618,18 +622,8 @@ public class TextInput extends Element implements IComposableElement {
 
         if (relativeX < 0) return this.displayPos.get();
 
-        String currentText = this.text.get();
         int display = this.displayPos.get();
-        String visibleText = currentText.substring(Math.min(display, currentText.length()));
-
-        for (int i = 0; i < visibleText.length(); i = Util.offsetByCodepoints(visibleText, i, 1)) {
-            String sub = visibleText.substring(0, i);
-            if (font.width(sub) >= relativeX) {
-                return display + i;
-            }
-        }
-
-        return display + visibleText.length();
+        return display + this.formattedText(display).positionAt(font, relativeX);
     }
 
     private int getInnerWidth() {
@@ -824,7 +818,10 @@ public class TextInput extends Element implements IComposableElement {
      * @return this element
      */
     public TextInput addFormatter(TextFormatter formatter) {
-        this.formatters.add(formatter);
+        this.formatters.add(Objects.requireNonNull(formatter));
+        this.clearFormattedText();
+        this.scrollToCursor();
+        this.invalidateComposition();
         return this;
     }
 
@@ -835,6 +832,9 @@ public class TextInput extends Element implements IComposableElement {
      */
     public TextInput clearFormatters() {
         this.formatters.clear();
+        this.clearFormattedText();
+        this.scrollToCursor();
+        this.invalidateComposition();
         return this;
     }
 

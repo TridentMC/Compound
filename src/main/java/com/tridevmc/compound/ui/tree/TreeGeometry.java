@@ -9,15 +9,19 @@ import java.util.List;
 
 final class TreeGeometry {
     static void prepare(ITreeNode node) {
+        if (!isAttached(node)) return;
         node.prepareGeometry();
+        if (!isAttached(node)) return;
         for (var child : node.getChildren()) {
             prepare(child);
         }
     }
 
     static void sample(ITreeNode node, FrameGeometry parent, Bounds inheritedClip) {
+        if (!isAttached(node)) return;
         if (parent != null && node.getElement() instanceof IFrameLayoutElement element) {
             var allocation = element.prepareFrameLayout(parent);
+            if (!isAttached(node)) return;
             var layout = new TreeLayout();
             layout.measureNode(node, Constraints.fixed(allocation.width(), allocation.height()));
             node.setAllocatedBounds(allocation);
@@ -26,6 +30,7 @@ final class TreeGeometry {
         var bounds = node.getBounds();
         if (bounds == null) return;
         var transform = node.sampleTransform();
+        if (!isAttached(node)) return;
         double cos = Math.cos(transform.radians());
         double sin = Math.sin(transform.radians());
         double a = cos * transform.scaleX();
@@ -79,6 +84,10 @@ final class TreeGeometry {
         for (var child : node.getChildren()) {
             sample(child, geometry, clip);
         }
+    }
+
+    private static boolean isAttached(ITreeNode node) {
+        return node != null && node.getTree() != null && node.getTree().isAttached(node);
     }
 
     private static WorldPoint point(double a, double b, double c, double d,

@@ -19,7 +19,12 @@ package com.tridevmc.compound.ui.element;
 import com.mojang.blaze3d.platform.InputConstants;
 
 import com.google.common.collect.Lists;
-import com.tridevmc.compound.ui.layout.*;
+import com.tridevmc.compound.ui.element.internal.IFrameLayoutElement;
+import com.tridevmc.compound.ui.geometry.api.FrameGeometry;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.state.State;
 import net.minecraft.client.Minecraft;
@@ -35,6 +40,8 @@ import java.util.List;
  * Add it to the composition once, then call show from the owning control's context action.
  * The menu captures input while open and closes on Escape, an outside click, or an action.
  * Its position is clamped to the viewport and overflowing items can scroll.
+ * Popup clipping supports translated and axis-aligned scaled ancestors; rotated clipping
+ * requires a stencil backend.
  */
 public class ContextMenu extends Element implements IComposableElement {
 
@@ -67,11 +74,11 @@ public class ContextMenu extends Element implements IComposableElement {
             return true;
         });
         var viewport = tree.getViewportSize();
-        int menuWidth = Math.min(this.calculateWidth(), viewport.width());
         int contentHeight = this.items.stream().mapToInt(item -> item.separator() ? 5 : ITEM_HEIGHT).sum();
-        int menuHeight = Math.min(contentHeight + 2, viewport.height());
-        scope.e(new Surface(0xFF202020, 0xFFA0A0A0, 1), surface -> {
-            surface.layout().fixedSize(menuWidth, menuHeight);
+        var overlay = new MenuOverlay(new Size(this.calculateWidth(), contentHeight + 2));
+        scope.e(overlay, menu -> menu.e(overlay.surface, surface -> {
+            surface.layout().fixedSize(Math.min(overlay.wantedSize.width(), viewport.width()),
+                    Math.min(overlay.wantedSize.height(), viewport.height()));
             surface.fillSlot(Surface.CONTENT_SLOT, content -> content.e(new ScrollArea().showScrollbar(contentHeight + 2 > viewport.height()), scroll -> {
                 scroll.layout().fillMax().margin(1);
                 scroll.fillSlot(ScrollArea.CONTENT_SLOT, body -> body.e(new Column(), column -> {
@@ -89,7 +96,7 @@ public class ContextMenu extends Element implements IComposableElement {
                     }
                 }));
             }));
-        });
+        }));
     }
 
 
@@ -178,11 +185,37 @@ public class ContextMenu extends Element implements IComposableElement {
     /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> children) {
-        if (children.isEmpty()) return List.of();
-        var viewport = this.getNode().getTree().getViewportSize();
-        var size = children.get(0);
-        return List.of(new Bounds(Math.clamp(this.x, 0, Math.max(0, viewport.width() - size.width())),
-                Math.clamp(this.y, 0, Math.max(0, viewport.height() - size.height())), size.width(), size.height()));
+        return children.isEmpty() ? List.of() : List.of(bounds);
+    }
+
+    private class MenuOverlay extends Container implements IFrameLayoutElement {
+        private final Surface surface = new Surface(0xFF202020, 0xFFA0A0A0, 1);
+        private final Size wantedSize;
+        private Bounds content = new Bounds(0, 0, 0, 0);
+
+        MenuOverlay(Size wantedSize) {
+            this.wantedSize = wantedSize;
+        }
+
+        @Override
+        public Bounds prepareFrameLayout(FrameGeometry parent) {
+            var placement = PopupPlacement.at(parent, getNode().getTree().getViewportSize(),
+                    ContextMenu.this.x, ContextMenu.this.y, this.wantedSize);
+            this.content = placement.popup();
+            this.surface.getNode().getLayoutProperties().fixedSize(
+                    this.content.width(), this.content.height());
+            return placement.viewport();
+        }
+
+        @Override
+        public Size measure(Constraints constraints, LayoutProperties props, List<Size> children) {
+            return getNode().getTree().getViewportSize();
+        }
+
+        @Override
+        public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> children) {
+            return List.of(this.content);
+        }
     }
 
     private record MenuItem(Component label, Runnable action, boolean enabled) {

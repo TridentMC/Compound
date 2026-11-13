@@ -81,10 +81,12 @@ final class LazyCollection<T, K> extends Element implements ILazyCollection<T, K
 
     @Override
     public boolean reconcileSource() {
+        var host = this.getNode();
+        if (!this.isMounted(host)) return false;
         var changes = List.copyOf(this.pendingChanges);
         this.pendingChanges.clear();
         if (this.initialized && changes.isEmpty()) return false;
-        var tree = this.getNode().getTree();
+        var tree = host.getTree();
         for (var change : changes) {
             var iterator = this.cells.values().iterator();
             while (iterator.hasNext()) {
@@ -97,6 +99,7 @@ final class LazyCollection<T, K> extends Element implements ILazyCollection<T, K
                 };
                 if (discard) {
                     tree.detachNode(cell.node);
+                    if (!this.isMounted(host)) return false;
                     iterator.remove();
                 } else if (cell.index >= change.index()) {
                     if (change.kind() == ILazySource.Kind.INSERT) cell.index += change.count();
@@ -116,13 +119,15 @@ final class LazyCollection<T, K> extends Element implements ILazyCollection<T, K
 
     @Override
     public boolean prepareWindow(Bounds viewport) {
+        var host = this.getNode();
+        if (!this.isMounted(host)) return false;
         // Lifecycle callbacks can publish another change while the previous batch detaches cells.
         if (!this.pendingChanges.isEmpty()) {
             this.viewportDirty = true;
             return false;
         }
         boolean changed = false;
-        var tree = this.getNode().getTree();
+        var tree = host.getTree();
         var focused = tree.getFocusedNode();
         var captured = tree.getCapturedNode();
         boolean released = this.cells.values().stream().anyMatch(cell ->
@@ -164,9 +169,10 @@ final class LazyCollection<T, K> extends Element implements ILazyCollection<T, K
                         this.scope.e(new Stack(), cellScope -> {
                             cellScope.layout().fixedSize(this.cellWidth, this.cellHeight).clip();
                             this.composer.accept(item, cellScope);
-                            this.selection.decorate(key, cellScope, this.scope);
+                            if (this.isMounted(host)) this.selection.decorate(key, cellScope, this.scope);
                         });
-                        mounted.node = this.getNode().getChildren().getLast();
+                        if (!this.isMounted(host)) return false;
+                        mounted.node = host.getChildren().getLast();
                         this.cells.put(key, cell);
                         changed = true;
                         if (!this.pendingChanges.isEmpty()) {
@@ -184,6 +190,7 @@ final class LazyCollection<T, K> extends Element implements ILazyCollection<T, K
             var cell = iterator.next();
             if (cell.visible || cell.contains(focused) || cell.contains(captured)) continue;
             tree.detachNode(cell.node);
+            if (!this.isMounted(host)) return false;
             iterator.remove();
             changed = true;
         }
@@ -191,11 +198,14 @@ final class LazyCollection<T, K> extends Element implements ILazyCollection<T, K
             var ordered = this.cells.values().stream()
                     .sorted(Comparator.comparingInt(cell -> cell.index))
                     .map(cell -> cell.node).toList();
-            var host = this.getNode();
             for (var child : host.getChildren()) host.removeChild(child);
             for (var child : ordered) host.addChild(child);
         }
         return changed;
+    }
+
+    private boolean isMounted(ITreeNode host) {
+        return host != null && this.getNode() == host && host.getTree() != null;
     }
 
     @Override
