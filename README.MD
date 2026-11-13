@@ -2,7 +2,7 @@
 
 Libraries for developing Minecraft mods with NeoForge. Compound is a dependency, not a standalone mod.
 
-This branch targets Minecraft **26.3**, NeoForge **26.3.0.26-beta**, and Java **25**. Build with `gradle build` (ModDevGradle 2.0.147). The library version is set in `properties.gradle`.
+This branch targets Minecraft **26.3**, NeoForge **26.3.0.26-beta**, and Java **25**. Build from the repository root with `gradle :build :Molecule:build --max-workers=1 --no-parallel` (ModDevGradle 2.0.147). The library version is set in `properties.gradle`.
 
 ## Modules
 
@@ -20,7 +20,9 @@ dependencies {
 
 Choose a version published for your Minecraft target. A branch version does not imply that its artifacts have been published. Include the required library modules in your mod's distribution; if shading and relocating, keep all Compound modules under the same relocated package.
 
-Molecule is the companion demo mod used for in-game validation. Report game failures to the mod using Compound first; its developer can determine whether the library is responsible.
+Molecule is the demo mod in `Molecule/`. It depends on the root Compound project. Run it with `gradle :Molecule:runClient`. Its JAR is a local development artifact; Jenkins archives and publishes only Compound libraries.
+
+Run `gradle test :Molecule:test --max-workers=1 --no-parallel` for headless interaction and layout checks. Visual tests save diagnostic PNGs under `Molecule/build/screenshots/`. They use Java2D and approximate fonts and textures; native Minecraft rendering still requires a separate graphics-backed test environment.
 
 ## License
 

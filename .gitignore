@@ -24,3 +24,13 @@ private.properties
 # Files from bad operating systems :^)
 Thumbs.db
 .DS_Store
+
+# Local cache and demo outputs
+/.gradle-local
+/Molecule/build
+/Molecule/.gradle
+/Molecule/run
+/Molecule/runs
+/Molecule/logs
+/Molecule/out
+private.gradle
