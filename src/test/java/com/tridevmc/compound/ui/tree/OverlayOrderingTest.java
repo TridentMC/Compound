@@ -121,6 +121,55 @@ class OverlayOrderingTest {
         }
     }
 
+    @Test
+    void inputScopesRetainThePaintGroupOfTheirOverlayAncestor() {
+        for (boolean scopeIsOverlay : new boolean[]{true, false}) {
+            var tree = new UITree();
+            var inputScope = new Stack();
+            var visible = new Rect(RED);
+            ICompositionScope.root(tree).e(new Stack(), root -> {
+                root.layout().fillMax();
+                root.e(new Stack(), overlay -> {
+                    overlay.layout().fixedSize(30, 30).layer(scopeIsOverlay ? 0 : 100);
+                    overlay.e(inputScope, scope -> {
+                        scope.layout().fixedSize(30, 30).layer(scopeIsOverlay ? 100 : 0);
+                        scope.e(visible, rect -> rect.layout().fixedSize(30, 30));
+                        scope.e(new Rect(GREEN), rect -> rect.layout().fixedSize(30, 30).layer(2));
+                    });
+                });
+            });
+            try (var context = new BufferedImageScreenContext(100, 100)) {
+                tree.layoutAndRender(100, 100, context);
+                assertEquals(RED, context.getImage().getRGB(5, 5));
+                assertSame(visible, tree.findNodeAt(5, 5).getElement());
+                tree.setInputRoot(inputScope.getNode());
+                assertSame(visible, tree.findNodeAt(5, 5).getElement());
+            } finally {
+                tree.reset();
+            }
+        }
+    }
+
+    @Test
+    void layeredTreeRootParticipatesOnceInAbsoluteOrdering() {
+        var tree = new UITree();
+        var draws = new AtomicInteger();
+        var visible = countedRect(RED, draws);
+        ICompositionScope.root(tree).e(new Stack(), root -> {
+            root.layout().fillMax().layer(100);
+            root.e(visible, rect -> rect.layout().fixedSize(30, 30));
+            root.e(new Rect(GREEN), rect -> rect.layout().fixedSize(30, 30).layer(2));
+        });
+        try (var context = new BufferedImageScreenContext(100, 100)) {
+            tree.layoutAndRender(100, 100, context);
+            assertEquals(RED, context.getImage().getRGB(5, 5));
+            assertSame(visible, tree.findNodeAt(5, 5).getElement());
+            assertEquals(1, draws.get());
+        } finally {
+            tree.reset();
+        }
+    }
+
     private static Rect countedRect(int colour, AtomicInteger draws) {
         return new Rect(colour) {
             @Override

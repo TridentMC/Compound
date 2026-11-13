@@ -13,9 +13,11 @@ import com.tridevmc.compound.ui.element.ScrollArea;
 import com.tridevmc.compound.ui.event.KeyInputEvent;
 import com.tridevmc.compound.ui.event.MouseClickEvent;
 import com.tridevmc.compound.ui.event.MouseReleaseEvent;
+import com.tridevmc.compound.ui.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.screen.IScreenContext;
 import com.tridevmc.compound.ui.tree.UITree;
+import com.tridevmc.compound.ui.tree.ITreeNode;
 import com.tridevmc.compound.ui.visual.BufferedImageScreenContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,6 +80,44 @@ class LazyGridSelectionTest {
             assertEquals(20, view.selection.getSelectedKeys().size());
             view.key(InputConstants.KEY_ESCAPE, false, false);
             assertTrue(view.selection.getSelectedKeys().isEmpty());
+        }
+    }
+
+    @Test
+    void queuedEndThenHomeUsesTheFinalFocusBeforeLayout() {
+        try (var view = view(source(40), 128, 50, LazyGridSelectionTest::cell)) {
+            view.click(0, false, false);
+            view.key(InputConstants.KEY_END, false, true);
+            view.key(InputConstants.KEY_HOME, false, true);
+            view.prepare();
+            assertEquals(0, view.selection.getFocusedKey().orElseThrow());
+            assertEquals(0, view.area.getScrollYState().get());
+            assertFocusedCellVisible(view.tree, view.grid, view.selection, view.width, view.height);
+        }
+    }
+
+    @Test
+    void queuedArrowEventsDoNotAccumulateOldPlacementDeltas() {
+        try (var view = view(source(40), 128, 50, LazyGridSelectionTest::cell)) {
+            view.click(0, false, false);
+            for (int row = 0; row < 8; row++) view.key(InputConstants.KEY_DOWN, false, true);
+            view.prepare();
+            assertEquals(32, view.selection.getFocusedKey().orElseThrow());
+            assertEquals(8 * PITCH + CELL - view.height, view.area.getScrollYState().get());
+            assertFocusedCellVisible(view.tree, view.grid, view.selection, view.width, view.height);
+        }
+    }
+
+    @Test
+    void wheelThenKeyboardBeforeLayoutUsesTheRequestedScrollOffset() {
+        try (var view = view(source(40), 128, 50, LazyGridSelectionTest::cell)) {
+            view.click(0, false, false);
+            assertTrue(view.tree.dispatchScroll(5, 5, new MouseScrollEvent(5, 5, -5)));
+            assertTrue(view.area.getScrollYState().get() > 0);
+            view.key(InputConstants.KEY_HOME, false, true);
+            view.prepare();
+            assertEquals(0, view.area.getScrollYState().get());
+            assertFocusedCellVisible(view.tree, view.grid, view.selection, view.width, view.height);
         }
     }
 
@@ -161,27 +201,48 @@ class LazyGridSelectionTest {
         var tree = new UITree();
         var outer = new ScrollArea().showScrollbar(false);
         var horizontal = new ScrollArea(ScrollArea.Direction.HORIZONTAL).showScrollbar(false);
+        int gridHeight = 5 * PITCH - (PITCH - CELL);
         ICompositionScope.root(tree).e(outer, scroll -> {
             scroll.layout().fillMax();
             scroll.fillSlot(ScrollArea.CONTENT_SLOT, body -> body.e(new Column(), column -> {
                 column.e(new Rect(0), spacer -> spacer.layout().fixedSize(64, 20));
                 column.e(horizontal, nested -> {
-                    nested.layout().fixedSize(64, 80);
+                    // The outer viewport owns vertical scrolling; the horizontal viewport
+                    // must expose the grid's complete height rather than clipping its rows.
+                    nested.layout().fixedSize(64, gridHeight);
                     nested.fillSlot(ScrollArea.CONTENT_SLOT, content -> content.e(grid));
                 });
             }));
         });
         try {
             tree.prepareFrame(64, 60, mock(IScreenContext.class));
+            assertEquals(3 * PITCH + CELL - 64, horizontal.getMaxScrollX());
+            assertEquals(0, horizontal.getMaxScrollY());
+            assertEquals(20 + gridHeight - 60, outer.getMaxScrollY());
             tree.requestFocus(tree.getNodeForElement(grid));
+            assertTrue(tree.dispatchKeyPress(new KeyInputEvent(InputConstants.KEY_END,
+                    InputConstants.KEY_END, false, true, false)));
+            assertTrue(tree.dispatchKeyPress(new KeyInputEvent(InputConstants.KEY_HOME,
+                    InputConstants.KEY_HOME, false, true, false)));
+            tree.prepareFrame(64, 60, mock(IScreenContext.class));
+            assertEquals(0, model.getFocusedKey().orElseThrow());
+            assertFocusedCellVisible(tree, grid, model, 64, 60);
             assertTrue(tree.dispatchKeyPress(new KeyInputEvent(InputConstants.KEY_END,
                     InputConstants.KEY_END, false, true, false)));
             tree.prepareFrame(64, 60, mock(IScreenContext.class));
             assertEquals(19, model.getFocusedKey().orElseThrow());
             assertTrue(horizontal.getScrollXState().get() > 0);
             assertTrue(outer.getScrollYState().get() > 0);
+            assertFocusedCellVisible(tree, grid, model, 64, 60);
             var hit = tree.findNodeAt(52, 48);
             assertTrue(hit != null && tree.getNodeForElement(grid).isAncestorOf(hit));
+            assertTrue(tree.dispatchScroll(52, 48, new MouseScrollEvent(52, 48, 1, 0)));
+            assertTrue(tree.dispatchKeyPress(new KeyInputEvent(InputConstants.KEY_HOME,
+                    InputConstants.KEY_HOME, false, true, false)));
+            assertTrue(tree.dispatchKeyPress(new KeyInputEvent(InputConstants.KEY_END,
+                    InputConstants.KEY_END, false, true, false)));
+            tree.prepareFrame(64, 60, mock(IScreenContext.class));
+            assertFocusedCellVisible(tree, grid, model, 64, 60);
         } finally {
             tree.reset();
         }
@@ -189,6 +250,31 @@ class LazyGridSelectionTest {
 
     private static ILazySource.Mutable<Integer, Integer> source(int count) {
         return ILazySource.mutable(IntStream.range(0, count).boxed().toList(), key -> key);
+    }
+
+    private static void assertFocusedCellVisible(UITree tree, ILazyCollection<Integer, Integer> grid,
+            ISelection<Integer> model, int width, int height) {
+        int index = model.getKeys().indexOf(model.getFocusedKey().orElseThrow());
+        var host = tree.getNodeForElement(grid);
+        int x = host.getBounds().x() + index % 4 * PITCH;
+        int y = host.getBounds().y() + index / 4 * PITCH;
+        assertTrue(x >= 0 && y >= 0 && x + CELL <= width && y + CELL <= height,
+                () -> "Focused cell " + index + " at " + x + "," + y + " in " + width + "x" + height
+                        + "; host=" + host.getBounds() + scrollDescription(host));
+        assertTrue(host.getChildren().stream().anyMatch(cell -> cell.getBounds().x() == x
+                && cell.getBounds().y() == y && cell.getFrameGeometry().contains(x + 1, y + 1)
+                && cell.getFrameGeometry().contains(x + CELL - 1, y + CELL - 1)));
+    }
+
+    private static String scrollDescription(ITreeNode node) {
+        var result = new StringBuilder();
+        for (var parent = node.getParent(); parent != null; parent = parent.getParent()) {
+            if (!(parent.getElement() instanceof ScrollArea area)) continue;
+            result.append("; viewport=").append(parent.getBounds()).append(" live=")
+                    .append(area.getScrollXState().get()).append(',').append(area.getScrollYState().get())
+                    .append(" allocated=").append(parent.getChildren().getFirst().getAllocatedBounds());
+        }
+        return result.toString();
     }
 
     private static void cell(Integer item, ICompositionScope cell) {

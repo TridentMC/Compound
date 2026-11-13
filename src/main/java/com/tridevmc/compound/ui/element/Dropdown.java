@@ -166,7 +166,8 @@ public class Dropdown<T> extends Element implements IComposableElement {
         this.popupScroll.scrollTo(0, Math.max(0, (this.hoverIndex.get() + 1) * OPTION_HEIGHT - visibleHeight));
         scope.e(new Popup(), popup -> {
             var viewport = tree.getViewportSize();
-            popup.layout().fixedSize(viewport.width(), viewport.height()).layer(100);
+            popup.layout().fixedSize(viewport.width(), viewport.height())
+                    .layer(OverlayLayer.aboveAncestors(popup.getElement().getNode(), 100));
             popup.onClick(event -> { this.setOpen(false); return true; });
             popup.e(new Surface(0xFF202020, 0xFFA0A0A0, 1), surface -> {
                 var bounds = this.calculatePopupBounds();

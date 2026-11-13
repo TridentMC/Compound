@@ -84,7 +84,8 @@ public class Modal extends Element implements IComposableElement {
 
         if (!this.visible.get()) return;
         var tree = scope.getTree();
-        this.getNode().getLayoutProperties().layer(200).fillMax();
+        this.getNode().getLayoutProperties()
+                .layer(OverlayLayer.aboveAncestors(this.getNode(), 200)).fillMax();
         tree.setInputRoot(this.getNode());
         scope.onClick(event -> true);
         scope.onScroll(event -> true);

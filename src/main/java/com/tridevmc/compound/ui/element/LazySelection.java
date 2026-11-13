@@ -103,12 +103,21 @@ final class LazySelection<K> {
         for (var ancestor = node.getParent(); ancestor != null; ancestor = ancestor.getParent()) {
             if (!(ancestor.getElement() instanceof ScrollArea area)) continue;
             var viewport = area.getBounds();
+            var children = ancestor.getChildren();
+            if (children.isEmpty() || children.getFirst().getAllocatedBounds() == null) continue;
+            // Allocated content bounds record the applied offsets, before margins. Live
+            // offsets may already include wheel or keyboard events awaiting another layout.
+            var placedContent = children.getFirst().getAllocatedBounds();
+            long placedX = (long) viewport.x() - placedContent.x();
+            long placedY = (long) viewport.y() - placedContent.y();
+            int oldX = area.getScrollXState().get();
+            int oldY = area.getScrollYState().get();
+            left -= oldX - placedX;
+            top -= oldY - placedY;
             long deltaX = left < viewport.left() ? left - viewport.left()
                     : left + this.cellWidth > viewport.right() ? left + this.cellWidth - viewport.right() : 0;
             long deltaY = top < viewport.top() ? top - viewport.top()
                     : top + this.cellHeight > viewport.bottom() ? top + this.cellHeight - viewport.bottom() : 0;
-            int oldX = area.getScrollXState().get();
-            int oldY = area.getScrollYState().get();
             int nextX = Math.clamp(oldX + deltaX, 0, area.getMaxScrollX());
             int nextY = Math.clamp(oldY + deltaY, 0, area.getMaxScrollY());
             area.scrollTo(nextX, nextY);
