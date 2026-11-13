@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@ConfigType(ModConfig.Type.COMMON)
+@ConfigType(ModConfig.Type.LOCAL)
 public class MoleculeConfig {
 
     @ConfigValue(comment = "Test Integer")

@@ -56,6 +56,7 @@ neoForge {
         // but multi mod projects should define one per mod
         "${project.modBaseName}" {
             sourceSet(sourceSets.main)
+            sourceSet(rootProject.sourceSets.main)
         }
     }
 

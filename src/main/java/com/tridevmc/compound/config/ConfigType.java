@@ -35,6 +35,6 @@ public @interface ConfigType {
      *
      * @return the type of configuration.
      */
-    ModConfig.Type value() default ModConfig.Type.COMMON;
+    ModConfig.Type value() default ModConfig.Type.LOCAL;
 
 }

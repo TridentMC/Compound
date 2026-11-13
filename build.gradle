@@ -10,7 +10,7 @@ apply from: "properties.gradle"
 
 version = modVersion
 group = modGroup
-ext.versionTag = ''
+ext.versionTag = providers.gradleProperty('versionTag').getOrElse('')
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 

@@ -126,7 +126,7 @@ public class CompoundConfig<T> {
             ConfigType annotation = this.configClass.getAnnotation(ConfigType.class);
             return annotation.value();
         } else {
-            return ModConfig.Type.COMMON;
+            return ModConfig.Type.LOCAL;
         }
     }
 
