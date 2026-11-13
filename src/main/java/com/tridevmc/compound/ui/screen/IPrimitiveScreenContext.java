@@ -17,15 +17,12 @@
 package com.tridevmc.compound.ui.screen;
 
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
 import com.tridevmc.compound.ui.EnumUILayer;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.state.gui.GuiRenderState;
-import net.minecraft.client.gui.screens.Screen;
 
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
@@ -54,13 +51,6 @@ public interface IPrimitiveScreenContext {
      * @return the active matrix stack for the current draw.
      */
     Matrix3x2fStack getActiveStack();
-
-    /**
-     * Gets the active GuiRenderState for submitting rendering primitives.
-     *
-     * @return the active GuiRenderState for the current draw.
-     */
-    GuiRenderState getGuiRenderState();
 
     /**
      * Gets the width of the screen.
@@ -133,6 +123,27 @@ public interface IPrimitiveScreenContext {
      */
     default void drawRect(float x, float y, float width, float height, int colour) {
         this.drawGradientRect(x, y, width, height, colour, colour);
+    }
+
+    /**
+     * Draws a hollow rectangle outline.
+     *
+     * @param x         the x position of the rectangle
+     * @param y         the y position of the rectangle
+     * @param width     the width of the rectangle
+     * @param height    the height of the rectangle
+     * @param colour    the colour of the outline
+     * @param thickness the thickness of the outline in pixels
+     */
+    default void drawRectOutline(float x, float y, float width, float height, int colour, int thickness) {
+        // Top edge
+        this.drawRect(x, y, width, thickness, colour);
+        // Bottom edge
+        this.drawRect(x, y + height - thickness, width, thickness, colour);
+        // Left edge
+        this.drawRect(x, y + thickness, thickness, height - thickness * 2, colour);
+        // Right edge
+        this.drawRect(x + width - thickness, y + thickness, thickness, height - thickness * 2, colour);
     }
 
     /**
@@ -273,19 +284,28 @@ public interface IPrimitiveScreenContext {
 
     /**
      * Draws a textured rect on the screen matching the provided rect data.
+     * <p>
+     * The UV coordinates should be in normalized (0.0-1.0) space, as produced by
+     * {@link IScreenSprite#getU(float)} and {@link IScreenSprite#getV(float)}.
      *
-     * @param texture the texture to use for drawing.
-     * @param x the x coordinate to draw the rect at.
-     * @param y the y coordinate to draw the rect at.
+     * @param texture the texture location to use for drawing.
+     * @param x       the x coordinate to draw the rect at.
+     * @param y       the y coordinate to draw the rect at.
+     * @param width   the width of the rect to draw.
+     * @param height  the height of the rect to draw.
+     * @param minU    the minimum U coordinate (normalized).
+     * @param minV    the minimum V coordinate (normalized).
+     * @param maxU    the maximum U coordinate (normalized).
+     * @param maxV    the maximum V coordinate (normalized).
      */
     void drawTexturedRect(Identifier texture, float x, float y, float width, float height, float minU, float minV, float maxU, float maxV);
 
     /**
-     * Draws a textured rect on the screen matching the provided rect data using the given sprite, utilizing the writer to draw the sprite.
+     * Draws a sprite to the screen using the sprite's writer to handle stretch/tile/nine-slice scaling.
      *
-     * @param sprite the sprite to draw on the screen, used for gathering uv data and binding the texture.
-     * @param x      the x coordinate to draw the rect at.
-     * @param y      the y coordinate to draw the rect at.
+     * @param sprite the sprite to draw on the screen.
+     * @param x      the x coordinate to draw the sprite at.
+     * @param y      the y coordinate to draw the sprite at.
      * @param width  the width of the rect to draw.
      * @param height the height of the rect to draw.
      */
@@ -525,4 +545,4 @@ public interface IPrimitiveScreenContext {
      */
     EnumUILayer getCurrentLayer();
 
-}
+    }

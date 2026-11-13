@@ -16,44 +16,74 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.tridevmc.compound.ui.Rect2F;
-import com.tridevmc.compound.ui.layout.ILayout;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Size;
+import com.tridevmc.compound.ui.tree.ITreeNode;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 
 /**
- * Simple base class for elements that includes some boilerplate for layouts and dimensions.
+ * Base class for custom elements with tree-managed bounds and lifecycle.
+ * Extend this class and implement the appropriate element interface. An instance may be
+ * mounted in one tree position at a time; keep consumer state in fields when it must survive recomposition.
  */
-public class Element implements IElement {
+public abstract class Element implements IElementInternal {
+    private ITreeNode node;
 
-    private Rect2F dimensions;
-    private ILayout layout;
-
-    public Element(Rect2F dimensions, ILayout layout) {
-        this.dimensions = dimensions;
-        this.layout = layout;
+    /** Creates an unattached element; the tree assigns its node when mounted. */
+    public Element() {
     }
 
-    @Nonnull
+    /** {@inheritDoc} */
     @Override
-    public Rect2F getDimensions() {
-        return dimensions;
+    public Bounds getBounds() {
+        return this.node != null ? this.node.getBounds() : new Bounds(0, 0, 0, 0);
     }
 
+    /** {@inheritDoc} */
     @Override
-    public void setDimensions(@Nonnull Rect2F dimensions) {
-        this.dimensions = dimensions;
+    public ITreeNode getNode() {
+        return this.node;
     }
 
-    @Nonnull
+    /** {@inheritDoc} */
     @Override
-    public ILayout getLayout() {
-        return layout;
+    public void setNode(ITreeNode node) {
+        this.node = node;
     }
 
+    /** Schedules recomposition when this element is attached to a live tree. */
+    protected final void invalidateComposition() {
+        if (this.node != null && this.node.getTree() != null) {
+            this.node.getTree().requestRecompose(this.node);
+        }
+    }
+
+    /** Schedules measurement and placement without rebuilding this element's children. */
+    protected final void invalidateLayout() {
+        if (this.node != null && this.node.getTree() != null) {
+            this.node.getTree().requestRemeasure(this.node);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override
-    public void setLayout(@Nonnull ILayout layout) {
-        this.layout = layout;
+    public void onAttached() {
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public void onDetached() {
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public abstract Size measure(Constraints constraints, LayoutProperties ownProperties, List<Size> measuredChildren);
+
+    /** {@inheritDoc} */
+    @Override
+    public abstract List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties ownProperties, List<Size> measuredChildren);
 }

@@ -18,12 +18,9 @@ package com.tridevmc.compound.ui.sprite;
 
 import com.tridevmc.compound.ui.screen.IScreenContext;
 
-/**
- * Implementation of {@link IScreenSpriteWriter} that tiles the sprite within the given dimensions.
- */
-public class ScreenSpriteWriterTile implements IScreenSpriteWriter {
+final class ScreenSpriteWriterTile implements IScreenSpriteWriter {
 
-    public static final ScreenSpriteWriterTile INSTANCE = new ScreenSpriteWriterTile();
+    static final ScreenSpriteWriterTile INSTANCE = new ScreenSpriteWriterTile();
 
     @Override
     public void drawSprite(IScreenContext screen, IScreenSprite sprite, float x, float y, float width, float height) {
@@ -40,6 +37,7 @@ public class ScreenSpriteWriterTile implements IScreenSpriteWriter {
                 var tileHeight = Math.min(height - (v * spriteHeight), spriteHeight);
                 screen.drawRectUsingSprite(sprite,
                         tileX, tileY,
+                        tileWidth, tileHeight,
                         0, 0,
                         tileWidth, tileHeight
                 );

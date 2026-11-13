@@ -43,7 +43,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Used for the management and creation of Compound configs, create and load a configuration using {@link #of(Class, String)}
+ * Used for the management and creation of Compound configs, create and load a configuration using {@link #of(Class, ModContainer)}
  *
  * @param <T> the class of the configuration object.
  */

@@ -28,7 +28,7 @@ import java.lang.reflect.Type;
  */
 public class WrappedMethod<T> {
 
-    private Method method;
+    private final Method method;
 
     private WrappedMethod(Method method) {
         this.method = method;
