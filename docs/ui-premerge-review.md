@@ -62,3 +62,45 @@ Local validation reused the existing Minecraft 26.3 artifacts with
 `-x :createMinecraftArtifacts -x :Molecule:createMinecraftArtifacts`: NeoForge's normal
 artifact refresh failed when replacing its cached launcher manifest on Windows.
 The fresh-artifact path and the Jenkins job have not been executed in this review.
+
+## Follow-up review
+
+A fresh parallel adversarial review at `4d3de4d` reproduced seven additional issues.
+The fixes stay in UI PR #4. The Molecule repository migration stays in PR #6.
+
+| Issue | Repair and regression coverage |
+| --- | --- |
+| Padded or aligned containers used unbounded maxima as available space. | Box and Stack expand only along bounded axes; small content fits in either scroll direction. |
+| Root placement ignored fixed and maximum dimensions. | Placement respects measured size and margins; explicit fill and minimum constraints retain their behaviour. |
+| Container shortcuts escaped focused text editors. | Text editing retains keyboard ownership while preserving Escape handling. |
+| Different slots with identical menu coordinates resolved to the same native slot. | Native dispatch preserves slot identity and restores original coordinates afterwards. |
+| Transformed slots failed native hit testing. | Slot and inventory-background containment use the sampled drawing geometry. |
+| Reentrant source changes during lazy-cell disposal corrupted mounted indices. | Pending source changes settle before cells mount from newer data. |
+| Nested overlays ignored global numeric layer order. | Rendering and hit testing share ordered overlays; nested overlays draw once and lazy-cell clips remain effective. |
+
+Multi-selection also covers opt-in lazy grids and lists. Selection is retained by stable
+key across virtual unmounts, Ctrl-click toggles independent cells, Shift selects a
+row-major range, and Ctrl+Shift adds a range to existing selections. Existing lists and
+trees keep their single-selection default and opt-in multiple-selection behaviour.
+
+For an existing list or tree, call `setSelectionMode(EnumSelectionMode.MULTIPLE)`.
+For a lazy grid or list, retain the model outside composition and attach it:
+
+```java
+var selection = ISelection.<Integer>create(EnumSelectionMode.MULTIPLE);
+var grid = ILazyCollection.grid(source, 4, 20, 20, 2, composer).selection(selection);
+selection.setOnSelectionChanged(keys -> updateActions(keys));
+```
+
+An ordinary `Grid` composition can use the same model by supplying its ordered stable
+keys through `setKeys`, passing mouse modifiers to `select`, and drawing from
+`isSelected`. The lazy collection wires those behaviours automatically. Interactive
+children retain their own consumed input.
+
+The screen adapters use the mouse event's captured Shift and platform editing modifiers
+for selection, including Ctrl+Shift ranges, instead of polling the live keyboard state.
+Regression checks exercise both ordinary and container screen adapters.
+
+Follow-up validation: both builds pass with 122 Compound tests and 32 Molecule tests,
+zero failures and zero skips. The same cached-artifact limitation above still applies.
+The grid interaction regression generates `build/screenshots/grid-multiple-selection.png`.

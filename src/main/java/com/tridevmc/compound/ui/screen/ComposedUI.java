@@ -287,12 +287,9 @@ public abstract class ComposedUI extends Screen implements IInternalCompoundUI {
     /** {@inheritDoc} */
     @Override
     public boolean mouseClicked(@NotNull MouseButtonEvent event, boolean isDoubleClick) {
-        boolean shiftDown = this.minecraft != null && this.minecraft.hasShiftDown();
-        boolean ctrlDown = this.minecraft != null && this.minecraft.hasControlDown();
-        boolean altDown = this.minecraft != null && this.minecraft.hasAltDown();
         MouseClickEvent clickEvent = new MouseClickEvent(
                 (int) event.x(), (int) event.y(), event.button(),
-                shiftDown, ctrlDown, altDown
+                event.hasShiftDown(), event.hasControlDownWithQuirk(), event.hasAltDown()
         );
         boolean consumed = this.tree.dispatchClick((int) event.x(), (int) event.y(), clickEvent);
         return consumed || super.mouseClicked(event, isDoubleClick);

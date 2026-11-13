@@ -14,6 +14,20 @@ import java.util.function.BiConsumer;
  * Ancestor transforms are unsupported; cell contents may translate/scale within their clip.
  */
 public interface ILazyCollection<T, K> extends IComposableElement {
+    /**
+     * Enables retained key-based selection with automatic outlines and input wiring.
+     * Ctrl-click toggles cells; Shift selects a row-major range; Ctrl+Shift adds that range.
+     * Arrow keys navigate rows/columns, Ctrl+arrows move focus, Ctrl+Space toggles, Ctrl+A
+     * selects the entire source, and Escape clears selection. Consuming child controls keep
+     * their own input. Source changes refresh key order and prune removed selections before
+     * layout; values are still read only for mounted cells. Enabling this enumerates source
+     * keys on source changes, not on ordinary frames. Keep one source order per model.
+     *
+     * @param selection the retained model, normally {@code ISelection.create(EnumSelectionMode.MULTIPLE)}
+     * @return this collection
+     */
+    @Nonnull ILazyCollection<T, K> selection(@Nonnull ISelection<K> selection);
+
     @Nonnull
     static <T, K> ILazyCollection<T, K> grid(@Nonnull ILazySource<T, K> source,
             int columns, int cellWidth, int cellHeight, int spacing,

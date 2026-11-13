@@ -186,6 +186,11 @@ public class TextInput extends Element implements IComposableElement {
         return this.editable;
     }
 
+    @Override
+    public boolean isKeyboardInputExclusive() {
+        return this.editable;
+    }
+
     /**
      * {@inheritDoc}
      */

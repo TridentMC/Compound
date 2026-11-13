@@ -16,7 +16,12 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.tridevmc.compound.ui.layout.*;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutMath;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Position;
+import com.tridevmc.compound.ui.layout.Size;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -51,8 +56,8 @@ public class Stack extends Container {
         // When contentAlignment is set, expand to fill available constraints
         // so that centering is visible and meaningful
         if (props.getContentAlignment() != null) {
-            maxWidth = Math.max(maxWidth, constraints.maxWidth());
-            maxHeight = Math.max(maxHeight, constraints.maxHeight());
+            if (constraints.hasBoundedWidth()) maxWidth = Math.max(maxWidth, constraints.maxWidth());
+            if (constraints.hasBoundedHeight()) maxHeight = Math.max(maxHeight, constraints.maxHeight());
         }
 
         return new Size(maxWidth, maxHeight);

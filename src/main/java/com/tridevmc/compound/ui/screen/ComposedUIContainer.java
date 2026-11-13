@@ -35,6 +35,7 @@ import com.tridevmc.compound.ui.event.MouseMoveEvent;
 import com.tridevmc.compound.ui.event.MouseScrollEvent;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.tree.UITree;
+import com.tridevmc.compound.ui.tree.ITreeNode;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -51,6 +52,8 @@ import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix3x2fStack;
 import com.mojang.blaze3d.platform.InputConstants;
+
+import java.util.function.BooleanSupplier;
 
 /**
  * Base class for composable screens backed by a vanilla container menu.
@@ -71,6 +74,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     private long ticks;
     private float mouseX, mouseY;
     private float prevMouseX, prevMouseY;
+    private INativeSlotInput nativeSlotInput = INativeSlotInput.UNMAPPED;
 
     /**
      * Creates a screen for the supplied menu.
@@ -209,16 +213,14 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         while (node != null) {
             if (node.getElement() instanceof InventorySlot element) {
                 var slot = element.getVanillaSlot();
-                var bounds = element.getBounds();
-                if (slot.isActive() && bounds != null && bounds.contains(mouseX, mouseY)) return slot;
+                if (slot.isActive() && this.containsPointer(node, mouseX, mouseY)) return slot;
                 // Slot highlight sprites extend beyond their slot; their decorative halo must not steal a neighbour's hit.
                 var parent = node.getParent();
                 if (parent != null) {
                     for (var sibling : parent.getChildren()) {
                         if (sibling.getElement() instanceof InventorySlot neighbour) {
-                            var neighbourBounds = neighbour.getBounds();
-                            if (neighbour.getVanillaSlot().isActive() && neighbourBounds != null
-                                    && neighbourBounds.contains(mouseX, mouseY)) return neighbour.getVanillaSlot();
+                            if (neighbour.getVanillaSlot().isActive()
+                                    && this.containsPointer(sibling, mouseX, mouseY)) return neighbour.getVanillaSlot();
                         }
                     }
                 }
@@ -232,9 +234,25 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     /** {@inheritDoc} */
     @Override
     protected boolean isHovering(int x, int y, int width, int height, double mouseX, double mouseY) {
-        // Vanilla identifies slots by their menu coordinates; the composed tree owns their visible bounds.
         var slot = this.findHoveredSlot((int) mouseX, (int) mouseY);
-        return slot != null && slot.x == x && slot.y == y;
+        return slot != null && this.nativeSlotInput.matches(slot, x, y);
+    }
+
+    private boolean containsPointer(ITreeNode node, double x, double y) {
+        var geometry = node.getFrameGeometry();
+        var bounds = node.getBounds();
+        return geometry != null ? geometry.contains(x, y)
+                : bounds != null && bounds.contains((int) Math.floor(x), (int) Math.floor(y));
+    }
+
+    private boolean dispatchNativePointer(BooleanSupplier handler) {
+        var previousInput = this.nativeSlotInput;
+        try (var input = INativeSlotInput.capture(this.menu.slots)) {
+            this.nativeSlotInput = input;
+            return handler.getAsBoolean();
+        } finally {
+            this.nativeSlotInput = previousInput;
+        }
     }
 
     /** {@inheritDoc} */
@@ -244,7 +262,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         while (node != null) {
             // Full-screen layout containers are not inventory backgrounds.
             if ((this.isContainerBackground(node.getElement()) || node.getElement() instanceof InventorySlot)
-                    && node.getBounds().contains((int) mouseX, (int) mouseY)) return false;
+                    && this.containsPointer(node, mouseX, mouseY)) return false;
             node = node.getParent();
         }
         return super.hasClickedOutside(mouseX, mouseY, left, top);
@@ -375,6 +393,9 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
                 event.hasAltDown()
         );
         boolean consumed = this.tree.dispatchKeyPress(keyEvent);
+        var focused = this.tree.getFocusedNode();
+        if (!consumed && event.key() != InputConstants.KEY_ESCAPE && focused != null
+                && focused.getElement().isKeyboardInputExclusive()) return true;
         return consumed || super.keyPressed(event);
     }
 
@@ -412,21 +433,18 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
                 pX, pY
         );
         boolean consumed = this.tree.dispatchMouseDrag((int) event.x(), (int) event.y(), dragEvent);
-        return consumed || super.mouseDragged(event, pX, pY);
+        return consumed || this.dispatchNativePointer(() -> super.mouseDragged(event, pX, pY));
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean mouseClicked(@NotNull MouseButtonEvent event, boolean isDoubleClick) {
-        boolean shiftDown = this.minecraft != null && this.minecraft.hasShiftDown();
-        boolean ctrlDown = this.minecraft != null && this.minecraft.hasControlDown();
-        boolean altDown = this.minecraft != null && this.minecraft.hasAltDown();
         MouseClickEvent clickEvent = new MouseClickEvent(
                 (int) event.x(), (int) event.y(), event.button(),
-                shiftDown, ctrlDown, altDown
+                event.hasShiftDown(), event.hasControlDownWithQuirk(), event.hasAltDown()
         );
         boolean consumed = this.tree.dispatchClick((int) event.x(), (int) event.y(), clickEvent);
-        return consumed || super.mouseClicked(event, isDoubleClick);
+        return consumed || this.dispatchNativePointer(() -> super.mouseClicked(event, isDoubleClick));
     }
 
     /** {@inheritDoc} */
@@ -436,7 +454,7 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
                 (int) event.x(), (int) event.y(), event.button()
         );
         boolean consumed = this.tree.dispatchMouseRelease((int) event.x(), (int) event.y(), releaseEvent);
-        return consumed || super.mouseReleased(event);
+        return consumed || this.dispatchNativePointer(() -> super.mouseReleased(event));
     }
 
     /** {@inheritDoc} */
