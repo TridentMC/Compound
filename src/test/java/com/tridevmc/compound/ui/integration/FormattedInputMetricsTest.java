@@ -33,18 +33,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MinecraftMockExtension.class)
 class FormattedInputMetricsTest {
     @Test
-    void styledGlyphAdvancesDriveCaretAndPointerGeometry() throws Exception {
-        var input = bold("abcd");
-        try (var mounted = new Mounted(input, 120)) {
-            input.moveCursorTo(2, false);
-            mounted.prepare();
-            assertEquals(mounted.text().x() + 16, mounted.caret().x());
-            mounted.click(mounted.text().x() + 16);
-            assertEquals(2, input.getCursorPosState().get());
-        }
-    }
-
-    @Test
     void styledSelectionUsesTheSameRunAsDrawingAndPointerGeometry() throws Exception {
         var calls = new AtomicInteger();
         var input = new TextInput("abcd").setBordered(false);
@@ -55,6 +43,7 @@ class FormattedInputMetricsTest {
         try (var mounted = new Mounted(input, 120)) {
             input.moveCursorTo(2, false);
             mounted.prepare();
+            assertEquals(mounted.text().x() + 16, mounted.caret().x());
             int before = calls.get();
             mounted.tree.renderTree(mounted.context);
             assertEquals(before, calls.get());

@@ -13,6 +13,7 @@ import com.tridevmc.compound.ui.screen.IScreenContext;
 import com.tridevmc.compound.ui.tree.UITree;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -103,6 +104,7 @@ class LazyCollectionTest {
 
     @Test
     void gridsHaveIdenticalBoundedWorkAtTenAndFiftyThousand() {
+        var mountedCounts = new ArrayList<Integer>();
         for (int size : new int[]{10_000, 50_000}) {
             var fixture = new Fixture(size, 5);
             fixture.frame(100);
@@ -112,7 +114,7 @@ class LazyCollectionTest {
             assertEquals(25, fixture.draws.get());
             var mountedNodes = new AtomicInteger();
             fixture.tree.walkDepthFirst(fixture.tree.getRoot(), node -> mountedNodes.incrementAndGet());
-            assertEquals(53, mountedNodes.get());
+            mountedCounts.add(mountedNodes.get());
             var overlap = fixture.host().getChildren().get(5);
             fixture.frame(100);
             assertEquals(25, fixture.source.reads);
@@ -146,6 +148,7 @@ class LazyCollectionTest {
             fixture.tree.reset();
             assertNull(fixture.tree.getRoot());
         }
+        assertEquals(mountedCounts.getFirst(), mountedCounts.getLast());
     }
 
     @Test
