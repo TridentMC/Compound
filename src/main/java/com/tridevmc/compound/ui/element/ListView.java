@@ -60,7 +60,7 @@ public class ListView<T> extends Element implements IComposableElement {
     private final State<Integer> hoverIndex = State.of(-1);
     private final State<Boolean> enabled = State.of(true);
     private final List<T> items = Lists.newArrayList();
-    private final ScrollArea scrollArea = new ScrollArea();
+    private final ScrollArea scrollArea = new SelectionScrollArea();
 
     private Function<T, String> displayTextProvider = Object::toString;
     private BiConsumer<T, ICompositionScope> rowContent;
@@ -68,6 +68,7 @@ public class ListView<T> extends Element implements IComposableElement {
     private Consumer<List<T>> onSelectionsChanged = items -> { };
     private int itemHeight = DEFAULT_ITEM_HEIGHT;
     private int maxVisibleItems = DEFAULT_MAX_VISIBLE_ITEMS;
+    private boolean revealPending;
 
     /**
      * Creates an empty list with 16-pixel rows and a preferred maximum of ten visible rows.
@@ -202,16 +203,8 @@ public class ListView<T> extends Element implements IComposableElement {
     }
 
     private void revealSelection() {
-        int index = this.selection.focusedIndex(this.indices());
-        if (index < 0) return;
-        int top = index * this.itemHeight;
-        int bottom = top + this.itemHeight;
-        int scroll = this.scrollArea.getScrollYState().get();
-        int height = this.scrollArea.getBounds().height();
-        if (height <= 0) return;
-        if (top < scroll) scroll = top;
-        else if (bottom > scroll + height) scroll = bottom - height;
-        this.scrollArea.scrollTo(0, Math.clamp(scroll, 0, this.scrollArea.getMaxScrollY()));
+        this.revealPending = true;
+        this.invalidateLayout();
     }
 
     /**
@@ -223,6 +216,7 @@ public class ListView<T> extends Element implements IComposableElement {
         this.items.clear();
         this.items.addAll(items);
         this.selection.clear();
+        this.revealPending = false;
         this.hoverIndex.set(-1);
         this.scrollArea.scrollTo(0, 0);
         this.invalidateComposition();
@@ -296,6 +290,7 @@ public class ListView<T> extends Element implements IComposableElement {
 
     /** Clears selection and notifies the collection callback when it changes. */
     public void clearSelection() {
+        this.revealPending = false;
         if (this.selection.clear()) this.notifySelection(false);
     }
 
@@ -427,5 +422,26 @@ public class ListView<T> extends Element implements IComposableElement {
     @Override
     public UICursor getCursor(int x, int y) {
         return this.enabled.get() ? CompoundCursors.HAND : null;
+    }
+
+    private class SelectionScrollArea extends ScrollArea {
+        @Override
+        public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props,
+                                  List<Size> measuredChildren) {
+            if (ListView.this.revealPending && bounds.height() > 0 && !measuredChildren.isEmpty()) {
+                ListView.this.revealPending = false;
+                var index = ListView.this.selection.focusedIndex(ListView.this.indices());
+                if (index >= 0) {
+                    var top = index * ListView.this.itemHeight;
+                    var bottom = top + ListView.this.itemHeight;
+                    var scroll = this.getScrollYState().get();
+                    if (top < scroll) scroll = top;
+                    else if (bottom > scroll + bounds.height()) scroll = bottom - bounds.height();
+                    var maximum = Math.max(0, measuredChildren.getFirst().height() - bounds.height());
+                    this.scrollTo(0, Math.clamp(scroll, 0, maximum));
+                }
+            }
+            return super.place(bounds, props, measuredChildren);
+        }
     }
 }

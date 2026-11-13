@@ -289,7 +289,7 @@ public class TreeNode implements ITreeNode {
         return new ArrayList<>(this.registeredAnimations);
     }
 
-    /** Registers cleanup for resources owned by this node. */
+    @Override
     public void onDispose(Runnable cleanup) {
         (this.composing ? this.compositionDisposalActions : this.disposalActions).add(cleanup);
     }

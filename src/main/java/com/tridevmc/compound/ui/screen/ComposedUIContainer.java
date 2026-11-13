@@ -68,6 +68,8 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
     private static final WrappedField<Integer> quickCraftingType = WrappedField.create(AbstractContainerScreen.class, "quickCraftingType", "field_146987_F");
     private static final WrappedMethod<Void> RECALCULATE_QUICK_CRAFT_REMAINING =
             WrappedMethod.create(AbstractContainerScreen.class, "recalculateQuickCraftRemaining");
+    private static final WrappedMethod<Void> STOP_HOVERING =
+            WrappedMethod.create(AbstractContainerScreen.class, "onStopHovering", Slot.class);
     private final CompoundScreenContext screenContext;
     private final UITree tree;
     private GuiGraphicsExtractor activeGuiGraphics;
@@ -163,7 +165,12 @@ public abstract class ComposedUIContainer<T extends CompoundContainerMenu> exten
         var quickCraftType = quickCraftingType.get(this);
 
         Slot newHoveredSlot = this.findHoveredSlot((int) this.mouseX, (int) this.mouseY);
+        var previousHoveredSlot = this.hoveredSlot;
         this.hoveredSlot = newHoveredSlot;
+        if (previousHoveredSlot != null && previousHoveredSlot != newHoveredSlot) {
+            // Composed rendering bypasses vanilla's content pass, which owns item hover cleanup.
+            STOP_HOVERING.invoke(this, true, new Object[]{previousHoveredSlot});
+        }
         var playerStack = this.getMenu().getCarried();
         if (this.isQuickCrafting && !playerStack.isEmpty()) {
             boolean removed = this.quickCraftSlots.removeIf(slot -> !slot.isActive()

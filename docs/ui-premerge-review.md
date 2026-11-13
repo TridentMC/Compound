@@ -118,3 +118,30 @@ actionable findings. The native-container reviewer also reported no actionable f
 Final validation passes all 161 tests, both builds, and Javadoc generation. Javadoc
 retains existing documentation warnings. All validation was headless; native graphics
 and audio fidelity were not exercised.
+
+## Lifecycle and transformed popup follow-up
+
+The next parallel review at `79b9334` reproduced five further issues. All five repairs
+remain in UI PR #4; the Molecule migration remains in PR #6.
+
+| Issue | Repair and regression coverage |
+| --- | --- |
+| Detaching a child left sibling positions and parent dimensions stale. | Structural attach/detach invalidates the owning parent, including unchanged viewport and repeated lazy-mount cases. |
+| Deferred dependencies discovered after composition survived recomposition. | Each deferred scope owns one observer registry and captures cleanup ownership at creation. Disposal removes late dependencies and ignores stale notification snapshots. |
+| Selecting a list row before first layout either threw or lost its reveal. | Pending reveal uses the actual placed viewport and freshly measured content; it survives a zero-height viewport and follows remapped rows. |
+| Transformed dropdowns placed options outside the viewport. | Popup layout uses current-frame geometry, clamps translated/scaled content, and measures its actual scrolling viewport before drawing and hit testing. |
+| Composed container rendering skipped native item hover-exit callbacks. | Native hover cleanup runs once when the hovered slot changes, retaining vanilla empty-item and action-matching rules. |
+
+The fixes add 22 permanent regression tests. Parallel Standards and Spec reviewers
+also checked fractional backdrop coverage and focused-row reveal when the transformed
+popup viewport shrinks. The selected-row scenario failed both new reproductions before
+repair. Current-frame reveal now keeps the focused option visible while preserving
+later wheel scrolling. Both reviewers rechecked the final changes and reported no
+remaining actionable findings.
+
+Validation passes 151 Compound tests and 32 Molecule tests, zero failures and zero
+skips, both builds, and Javadoc generation with the existing documentation warnings.
+The headless renderer also generates `build/screenshots/transformed-dropdown.png`;
+pixel checks verify the viewport edge, and the image was inspected. Ctrl-click,
+Shift, and Ctrl+Shift list/tree/grid selection regressions remain part of the suite.
+The cached Minecraft artifact and native-rendering limitations above still apply.

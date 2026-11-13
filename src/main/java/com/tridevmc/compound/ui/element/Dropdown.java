@@ -21,6 +21,8 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.google.common.collect.Lists;
 import com.tridevmc.compound.ui.CompoundCursors;
 import com.tridevmc.compound.ui.cursor.UICursor;
+import com.tridevmc.compound.ui.element.internal.IFrameLayoutElement;
+import com.tridevmc.compound.ui.geometry.api.FrameGeometry;
 import com.tridevmc.compound.ui.layout.Alignment;
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.Constraints;
@@ -47,7 +49,8 @@ import java.util.function.Function;
  * A single-selection dropdown with a viewport-bounded, scrollable popup.
  * Options are copied at construction; the same instance retains its selection.
  * Arrow keys navigate the open popup, Enter or Space confirms, and Escape dismisses it.
- * Programmatic selection does not invoke the selection callback.
+ * Programmatic selection does not invoke the selection callback. Popup clipping supports
+ * translated and axis-aligned scaled ancestors; rotated clipping requires a stencil backend.
  *
  * @param <T> the option value type.
  */
@@ -134,12 +137,7 @@ public class Dropdown<T> extends Element implements IComposableElement {
                     int step = event.keyCode() == InputConstants.KEY_DOWN ? 1 : -1;
                     int index = Math.floorMod(this.hoverIndex.get() + step, this.options.size());
                     this.hoverIndex.set(index);
-                    if (this.popupScroll != null) {
-                        int top = this.popupScroll.getScrollYState().get();
-                        int row = index * OPTION_HEIGHT;
-                        int height = Math.max(OPTION_HEIGHT, this.popupBounds.height());
-                        this.popupScroll.scrollTo(0, row < top ? row : Math.max(top, row + OPTION_HEIGHT - height));
-                    }
+                    this.revealHovered(Math.max(0, this.popupBounds.height() - 2));
                     yield true;
                 }
                 default -> false;
@@ -164,12 +162,11 @@ public class Dropdown<T> extends Element implements IComposableElement {
         this.popupScroll = new ScrollArea().scrollSpeed(OPTION_HEIGHT);
         int visibleHeight = Math.max(0, this.calculatePopupBounds().height() - 2);
         this.popupScroll.scrollTo(0, Math.max(0, (this.hoverIndex.get() + 1) * OPTION_HEIGHT - visibleHeight));
-        scope.e(new Popup(), popup -> {
-            var viewport = tree.getViewportSize();
-            popup.layout().fixedSize(viewport.width(), viewport.height())
-                    .layer(OverlayLayer.aboveAncestors(popup.getElement().getNode(), 100));
+        var overlay = new Popup();
+        scope.e(overlay, popup -> {
+            popup.layout().layer(OverlayLayer.aboveAncestors(popup.getElement().getNode(), 100));
             popup.onClick(event -> { this.setOpen(false); return true; });
-            popup.e(new Surface(0xFF202020, 0xFFA0A0A0, 1), surface -> {
+            popup.e(overlay.surface, surface -> {
                 var bounds = this.calculatePopupBounds();
                 surface.layout().fixedSize(bounds.width(), bounds.height());
                 surface.fillSlot(Surface.CONTENT_SLOT, content -> {
@@ -199,9 +196,14 @@ public class Dropdown<T> extends Element implements IComposableElement {
     private Bounds calculatePopupBounds() {
         var anchor = this.getBounds();
         var viewport = this.getNode().getTree().getViewportSize();
+        int wanted = Math.min(this.options.size(), this.maxVisibleItems) * OPTION_HEIGHT + 2;
+        var geometry = this.getNode().getFrameGeometry();
+        if (geometry != null) {
+            this.popupBounds = PopupPlacement.of(geometry, viewport, wanted).popup();
+            return this.popupBounds;
+        }
         int below = Math.max(0, viewport.height() - anchor.bottom() - 2);
         int above = Math.max(0, anchor.y() - 2);
-        int wanted = Math.min(this.options.size(), this.maxVisibleItems) * OPTION_HEIGHT + 2;
         boolean upwards = below < wanted && above > below;
         int height = Math.min(wanted, upwards ? above : below);
         int width = Math.min(anchor.width(), viewport.width());
@@ -210,7 +212,34 @@ public class Dropdown<T> extends Element implements IComposableElement {
         return this.popupBounds;
     }
 
-    private class Popup extends Container {
+    private void revealHovered(int height) {
+        int index = this.hoverIndex.get();
+        if (this.popupScroll == null || index < 0 || index >= this.options.size()) return;
+        int top = this.popupScroll.getScrollYState().get();
+        int row = index * OPTION_HEIGHT;
+        this.popupScroll.scrollTo(0, row < top ? row : Math.max(top, row + OPTION_HEIGHT - height));
+    }
+
+    private class Popup extends Container implements IFrameLayoutElement {
+        private final Surface surface = new Surface(0xFF202020, 0xFFA0A0A0, 1);
+        private int visibleHeight = -1;
+
+        @Override
+        public Bounds prepareFrameLayout(FrameGeometry parent) {
+            int wanted = Math.min(Dropdown.this.options.size(), Dropdown.this.maxVisibleItems)
+                    * OPTION_HEIGHT + 2;
+            var placement = PopupPlacement.of(parent, getNode().getTree().getViewportSize(), wanted);
+            Dropdown.this.popupBounds = placement.popup();
+            int height = Math.max(0, placement.popup().height() - 2);
+            if (height != this.visibleHeight) {
+                Dropdown.this.revealHovered(height);
+                this.visibleHeight = height;
+            }
+            this.surface.getNode().getLayoutProperties().fixedSize(
+                    placement.popup().width(), placement.popup().height());
+            return placement.viewport();
+        }
+
         @Override
         public Size measure(Constraints constraints, LayoutProperties props, List<Size> children) {
             return getNode().getTree().getViewportSize();
@@ -218,7 +247,7 @@ public class Dropdown<T> extends Element implements IComposableElement {
 
         @Override
         public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> children) {
-            return List.of(Dropdown.this.calculatePopupBounds());
+            return List.of(Dropdown.this.popupBounds);
         }
     }
 

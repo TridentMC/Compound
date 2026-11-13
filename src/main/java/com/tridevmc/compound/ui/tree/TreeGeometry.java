@@ -2,7 +2,9 @@ package com.tridevmc.compound.ui.tree;
 
 import com.tridevmc.compound.ui.geometry.api.FrameGeometry;
 import com.tridevmc.compound.ui.geometry.api.WorldPoint;
+import com.tridevmc.compound.ui.element.internal.IFrameLayoutElement;
 import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
 import java.util.List;
 
 final class TreeGeometry {
@@ -14,6 +16,13 @@ final class TreeGeometry {
     }
 
     static void sample(ITreeNode node, FrameGeometry parent, Bounds inheritedClip) {
+        if (parent != null && node.getElement() instanceof IFrameLayoutElement element) {
+            var allocation = element.prepareFrameLayout(parent);
+            var layout = new TreeLayout();
+            layout.measureNode(node, Constraints.fixed(allocation.width(), allocation.height()));
+            node.setAllocatedBounds(allocation);
+            layout.placeNode(node, allocation);
+        }
         var bounds = node.getBounds();
         if (bounds == null) return;
         var transform = node.sampleTransform();
