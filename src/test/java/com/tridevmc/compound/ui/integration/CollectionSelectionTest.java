@@ -27,6 +27,36 @@ import static org.mockito.Mockito.mock;
 @ExtendWith(MinecraftMockExtension.class)
 class CollectionSelectionTest {
     @Test
+    void controlShiftRangesPreserveDisconnectedListAndTreeSelections() {
+        var list = new ListView<Integer>();
+        list.setItems(List.of(0, 1, 2, 3, 4));
+        list.setSelectionMode(EnumSelectionMode.MULTIPLE);
+        var listTree = mount(list);
+        try {
+            click(listTree, 0, false, false);
+            click(listTree, 2, false, true);
+            click(listTree, 4, true, true);
+            assertEquals(List.of(0, 2, 3, 4), list.getSelectedIndices());
+        } finally {
+            listTree.reset();
+        }
+
+        var view = new TreeView<Integer>();
+        for (var item : List.of(0, 1, 2, 3, 4)) view.getRoot().addChild(item);
+        view.setSelectionMode(EnumSelectionMode.MULTIPLE);
+        var viewTree = mount(view);
+        try {
+            click(viewTree, 0, false, false);
+            click(viewTree, 2, false, true);
+            click(viewTree, 4, true, true);
+            assertEquals(List.of(0, 2, 3, 4), view.getSelectedNodes().stream()
+                    .map(TreeView.TreeNode::getValue).toList());
+        } finally {
+            viewTree.reset();
+        }
+    }
+
+    @Test
     void keyboardFocusOutlineAppearsOnlyWhileCollectionHasFocus() {
         var list = new ListView<String>();
         list.setItems(List.of("zero", "one"));

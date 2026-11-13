@@ -26,6 +26,7 @@ final class LazyCollection<T, K> extends Element implements ILazyCollection<T, K
     private final int pitchX;
     private final int pitchY;
     private final BiConsumer<T, ICompositionScope> composer;
+    private final LazySelection<K> selection;
     private final Map<K, Cell> cells = new HashMap<>();
     private ICompositionScope scope;
     private ILazySource.Subscription subscription = ILazySource.Subscription.NONE;
@@ -50,6 +51,7 @@ final class LazyCollection<T, K> extends Element implements ILazyCollection<T, K
         this.spacing = spacing;
         this.pitchX = coordinate((long) cellWidth + spacing);
         this.pitchY = coordinate((long) cellHeight + spacing);
+        this.selection = new LazySelection<>(columns, this.pitchX, this.pitchY, cellWidth, cellHeight);
         this.width = coordinate((long) columns * this.pitchX - spacing);
     }
 
@@ -63,6 +65,7 @@ final class LazyCollection<T, K> extends Element implements ILazyCollection<T, K
     @Override
     public void compose(ICompositionScope scope) {
         this.scope = scope;
+        this.selection.compose(scope, this.getNode());
         this.cells.clear();
         this.initialized = false;
         this.viewportDirty = true;
@@ -107,11 +110,17 @@ final class LazyCollection<T, K> extends Element implements ILazyCollection<T, K
         this.height = rows == 0 ? 0 : coordinate(rows * this.pitchY - this.spacing);
         this.initialized = true;
         this.viewportDirty = true;
+        if (this.pendingChanges.isEmpty()) this.selection.reconcile(this.source);
         return true;
     }
 
     @Override
     public boolean prepareWindow(Bounds viewport) {
+        // Lifecycle callbacks can publish another change while the previous batch detaches cells.
+        if (!this.pendingChanges.isEmpty()) {
+            this.viewportDirty = true;
+            return false;
+        }
         boolean changed = false;
         var tree = this.getNode().getTree();
         var focused = tree.getFocusedNode();
@@ -155,6 +164,7 @@ final class LazyCollection<T, K> extends Element implements ILazyCollection<T, K
                         this.scope.e(new Stack(), cellScope -> {
                             cellScope.layout().fixedSize(this.cellWidth, this.cellHeight).clip();
                             this.composer.accept(item, cellScope);
+                            this.selection.decorate(key, cellScope, this.scope);
                         });
                         mounted.node = this.getNode().getChildren().getLast();
                         this.cells.put(key, cell);
@@ -186,6 +196,18 @@ final class LazyCollection<T, K> extends Element implements ILazyCollection<T, K
             for (var child : ordered) host.addChild(child);
         }
         return changed;
+    }
+
+    @Override
+    public ILazyCollection<T, K> selection(@Nonnull ISelection<K> selection) {
+        this.selection.model(selection);
+        this.invalidateComposition();
+        return this;
+    }
+
+    @Override
+    public boolean isFocusable() {
+        return this.selection.isEnabled();
     }
 
     @Override

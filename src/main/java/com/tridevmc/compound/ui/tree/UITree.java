@@ -317,9 +317,8 @@ public class UITree {
 
         // Overlays (layer > 0) are rendered on top and must be hit-tested first.
         List<ITreeNode> overlays = new ArrayList<>();
-        this.collectOverlayNodes(inputRoot, overlays);
+        TreeLayers.collect(inputRoot, overlays);
         if (!overlays.isEmpty()) {
-            overlays.sort((a, b) -> Integer.compare(a.getLayoutProperties().getLayer(), b.getLayoutProperties().getLayer()));
             for (int i = overlays.size() - 1; i >= 0; i--) {
                 ITreeNode overlay = overlays.get(i);
                 ITreeNode result = this.findNodeAtWithViewport(overlay, x, y, null);
@@ -330,17 +329,6 @@ public class UITree {
         }
 
         return this.findNodeAtWithViewport(inputRoot, x, y, null);
-    }
-
-    private void collectOverlayNodes(ITreeNode node, List<ITreeNode> result) {
-        if (!node.getElement().isVisible()) return;
-        for (ITreeNode child : node.getChildren()) {
-            if (child.getLayoutProperties().getLayer() > 0 && !TreeWindows.insideWindow(child)) {
-                result.add(child);
-            } else {
-                this.collectOverlayNodes(child, result);
-            }
-        }
     }
 
     private Bounds screenClip(Bounds clip) {
@@ -367,6 +355,7 @@ public class UITree {
         ITreeNode result = null;
         for (int i = children.size() - 1; i >= 0; i--) {
             ITreeNode child = children.get(i);
+            if (TreeLayers.isOverlay(child)) continue;
             result = this.findNodeAtWithViewport(child, x, y, viewport);
             if (result != null) {
                 break;  // Found a child node at this position
@@ -390,20 +379,21 @@ public class UITree {
 
     public void placeTree(Position rootPosition) {
         if (this.root != null && this.rootSize != null) {
-            Bounds rootBounds = new Bounds(rootPosition, this.rootSize);
+            var props = this.root.getLayoutProperties();
+            var allocated = new Bounds(rootPosition, this.rootSize);
+            this.root.setAllocatedBounds(allocated);
+            var rootBounds = new Bounds(rootPosition.x() + props.getMarginLeft(),
+                    rootPosition.y() + props.getMarginTop(),
+                    Constraints.subtractInset(this.rootSize.width(),
+                            (long) props.getMarginLeft() + props.getMarginRight()),
+                    Constraints.subtractInset(this.rootSize.height(),
+                            (long) props.getMarginTop() + props.getMarginBottom()));
             this.layout.placeNode(this.root, rootBounds);
         }
     }
 
     public void placeTree(Position rootPosition, Constraints rootConstraints) {
-        if (this.root != null && this.rootSize != null) {
-            Size constraintSize = new Size(
-                    rootConstraints.hasBoundedWidth() ? rootConstraints.maxWidth() : this.rootSize.width(),
-                    rootConstraints.hasBoundedHeight() ? rootConstraints.maxHeight() : this.rootSize.height()
-            );
-            Bounds rootBounds = new Bounds(rootPosition, constraintSize);
-            this.layout.placeNode(this.root, rootBounds);
-        }
+        this.placeTree(rootPosition);
     }
 
     private void requestRemeasurement(ITreeNode changedNode) {
@@ -495,14 +485,12 @@ public class UITree {
             return;
         }
 
-        this.overlayNodes.clear();
-        this.renderNode(this.root, context, null, true);
+        TreeLayers.collect(this.root, this.overlayNodes);
+        this.renderNode(this.root, context, null);
 
         if (!this.overlayNodes.isEmpty()) {
-            // Sort by layer ascending; collection order within a layer is pre-order traversal.
-            this.overlayNodes.sort(Comparator.comparingInt(node -> node.getLayoutProperties().getLayer()));
             for (var overlay : this.overlayNodes) {
-                this.renderNode(overlay, context, null, false);
+                this.renderNode(overlay, context, null);
             }
         }
 
@@ -511,7 +499,7 @@ public class UITree {
         }
     }
 
-    private void renderNode(ITreeNode node, IScreenContext context, Bounds activeViewport, boolean collectOverlays) {
+    private void renderNode(ITreeNode node, IScreenContext context, Bounds activeViewport) {
         if (!node.getElement().isVisible()) return;
         IElement element = node.getElement();
 
@@ -537,11 +525,8 @@ public class UITree {
             }
         }
         for (ITreeNode child : node.getChildren()) {
-            if (collectOverlays && child.getLayoutProperties().getLayer() > 0 && !TreeWindows.insideWindow(child)) {
-                this.overlayNodes.add(child);
-                continue;
-            }
-            this.renderNode(child, context, viewport, collectOverlays);
+            if (TreeLayers.isOverlay(child)) continue;
+            this.renderNode(child, context, viewport);
         }
     }
 

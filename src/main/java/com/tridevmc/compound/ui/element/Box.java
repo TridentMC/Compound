@@ -16,7 +16,12 @@
 
 package com.tridevmc.compound.ui.element;
 
-import com.tridevmc.compound.ui.layout.*;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutMath;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Position;
+import com.tridevmc.compound.ui.layout.Size;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,8 +63,10 @@ public class Box extends Container {
         int width, height;
         if (hasPadding) {
             // Fill available space when padding is present
-            width = Math.max(constraints.maxWidth(), childSize.width());
-            height = Math.max(constraints.maxHeight(), childSize.height());
+            width = constraints.hasBoundedWidth()
+                    ? Math.max(constraints.maxWidth(), childSize.width()) : childSize.width();
+            height = constraints.hasBoundedHeight()
+                    ? Math.max(constraints.maxHeight(), childSize.height()) : childSize.height();
         } else {
             // Wrap content when no padding - just return child size
             width = childSize.width();

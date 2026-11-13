@@ -69,6 +69,17 @@ public interface IElement extends IGenericElement {
     }
 
     /**
+     * Keeps unhandled keys within this element while it owns keyboard focus.
+     * Editors use this to prevent inventory and screen shortcuts from handling typed keys.
+     * Escape remains available to the containing screen.
+     *
+     * @return true when focused keyboard input must not reach screen shortcuts
+     */
+    default boolean isKeyboardInputExclusive() {
+        return false;
+    }
+
+    /**
      * Gets the cursor to display when the mouse is at the given coordinates relative to the element.
      *
      * @param x the x coordinate relative to the element
