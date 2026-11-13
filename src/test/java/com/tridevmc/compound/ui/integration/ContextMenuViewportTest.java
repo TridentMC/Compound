@@ -44,6 +44,9 @@ class ContextMenuViewportTest {
                 assertEquals(0xFFA0A0A0, image.getImage().getRGB(280, 250));
                 image.saveTo("build/screenshots/transformed-context-menu.png");
             }
+            tree.dispatchClick(0, 299, new MouseClickEvent(
+                    0, 299, InputConstants.MOUSE_BUTTON_LEFT, false, false, false));
+            assertFalse(menu.isVisible());
         } finally {
             tree.reset();
         }
@@ -113,22 +116,6 @@ class ContextMenuViewportTest {
             assertTrue(tree.dispatchClick(285, 255, new MouseClickEvent(
                     285, 255, InputConstants.MOUSE_BUTTON_LEFT, false, false, false)));
             assertEquals(1, actions.get());
-            assertFalse(menu.isVisible());
-        } finally {
-            tree.reset();
-        }
-    }
-
-    @Test
-    void outsideViewportEdgeClickDismissesTranslatedMenu() {
-        var menu = new ContextMenu();
-        menu.addItem("Action", () -> { });
-        var tree = mount(menu);
-        try {
-            menu.show(200, 100);
-            tree.prepareFrame(400, 300, mock(IScreenContext.class));
-            tree.dispatchClick(0, 299, new MouseClickEvent(
-                    0, 299, InputConstants.MOUSE_BUTTON_LEFT, false, false, false));
             assertFalse(menu.isVisible());
         } finally {
             tree.reset();

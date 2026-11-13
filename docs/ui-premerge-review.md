@@ -1,181 +1,76 @@
-# Composable UI pre-merge review
+# Composable UI validation
 
-Review target: [Compound PR #4](https://github.com/TridentMC/Compound/pull/4),
-base `878ff1f5cdc4af692fc5c073fa2a0e09ecc65fa8`, original head
-`937f25e70aa52d1141662dc50da724a6c521eed4`. Standards and spec reviews ran in
-separate adversarial agents. The repository migration has a separate PR.
+[UI PR #4](https://github.com/TridentMC/Compound/pull/4) contains the framework rewrite.
+The Molecule demo migration stays in [PR #6](https://github.com/TridentMC/Compound/pull/6).
 
-## Standards
+## UI coverage
 
-The review checked the documented visibility, geometry, input, and lifetime contracts,
-alongside the local code-style and behaviour-composition skills.
+The coverage baseline is the public widget contracts, the previous UI's capabilities,
+and the Molecule gallery. All 38 concrete public elements are accounted for, and every
+legacy widget category has a replacement. Tests focus
+on observable behaviour; passive drawing elements also receive gallery and pixel coverage.
 
-| Priority | Finding | Repair |
+| Group | Elements | Coverage |
 | --- | --- | --- |
-| P1 | Built-in controls compared transformed pointer events with untransformed bounds. | Buttons, sliders, text editors, and scrollbars convert through sampled geometry. Public event and listener coordinates remain in screen space. |
-| P2 | Hidden descendants retained focus and keyboard input despite the visibility contract. | Input targets validate attachment and ancestor visibility; focus and capture are released. |
-| P2 | A click handler could detach itself and then acquire stale capture. | Capture requires the consuming node to remain attached and visible. |
-| P2 | Tooltip drawing helpers disappeared at screen edges and could intercept content after gaining drawable bounds. | Helpers use anchor bounds, transformed hover, and explicit pointer exclusion. Children remain eligible for hit testing. |
+| Drawing | Rect, GradientRect, Text, Label, Sprite, Divider, Surface, Panel | Production layout/rendering, colours, text extraction, clipping, transforms, and gallery screenshots. |
+| Layout | Box, Column, Row, Stack, Grid, Spacer | Bounded/unbounded constraints, padding, margins, weights, alignment, placement, and inventory grids. |
+| Forms | Button, Checkbox, ToggleSwitch, RadioButton, RadioButtonGroup, Slider, CycleButton, TextInput, TextArea, NumberInput | Routed pointer/keyboard actions, toggles and exclusive choices, disabled controls, editing/validation, selection, and styled glyph geometry. RadioButton itself is a passive indicator. |
+| Collections | ListItem, ListView, TreeView, ISelection, lazy lists/grids | Single/multiple selection, Ctrl toggles, Shift/Ctrl+Shift ranges, navigation, stable keys, source changes, virtual mounting, and focus/capture retention. |
+| Overlays | Dropdown, ContextMenu, Modal, Tooltip | Viewport placement, current transforms, scrolling, dismissal, queued input, global paint/input order, and focus restoration. |
+| Navigation | Tabs, Accordion, ScrollArea | Tab overflow/reveal, accordion expansion, nested scrolling, both axes and scrollbar styles. |
+| Inventory | InventorySlot, ItemDisplay, composed container screens | Slot positions and identity, transformed input, native hover/drag/release, carried-item boundaries, rendering, and culling. |
+| Feedback/animation | ProgressBar, cursors, animated state, timelines | Progress rendering/range behaviour, pointer cursors, timing, cancellation, recomposition, and disposal. |
 
-Four findings repaired. The most severe was incorrect interaction with transformed controls.
+The combined demo checks render every gallery tab, a compact viewport, multiple
+selections, and resize retention. Rendering-only coverage is appropriate for passive
+decorations; interactive controls have direct behaviour checks.
 
-## Spec
+## Test scope
 
-The user required multi-selection, headless interaction checks, and useful screenshots
-before merging the rewrite. The PR description supplied the existing feature scope.
+Tests exercise production composition, layout, input routing, and rendering while mocking
+Minecraft services. They retain regressions for real failures in geometry, lifecycle,
+selection, native inventory integration, and callback reentrancy.
 
-| Priority | Finding | Repair |
-| --- | --- | --- |
-| P1 | Lists and trees could select only one row. | Opt-in `EnumSelectionMode.MULTIPLE`, Ctrl toggles, Shift ranges, Ctrl+A, keyboard navigation, immutable snapshots, and callbacks. Single selection remains the default. |
-| P2 | Modifier selection also expanded or collapsed tree branches. | Modifier clicks change selection without toggling expansion. |
-| P2 | Removed tree subtrees could remain selected in retained node objects. | Removal prunes selection; detached and foreign nodes are rejected. Collapsed descendants retain selection. |
-| P2 | Tab headers overflowed narrow viewports. | Headers scroll horizontally and reveal selected or focused tabs; navigation skips disabled tabs and retains header nodes. |
+The inventory integration test checks public slot/grid bounds and submitted rendering.
+It does not freeze private Stack/Sprite child order. Text editing checks exercise the
+public adapter and editing behaviour instead of repeating defaults and getter values.
+Related control checks share small grouped scenarios; isolated tests for every class
+or setter are unnecessary.
 
-Four findings repaired. The most severe was missing multiple selection.
-
-## Headless verification
-
-Tests exercise production composition, layout, input routing, transforms, clipping, and
-collection mutation. Java2D raster checks verify pointer geometry, selection and focus
-outlines, text extraction, and overlay clipping without opening a client window.
-
-`BufferedImageScreenContext` supports a fixed frame clock, matrix transforms, nested
-scissors, styled text, and resource disposal. Pixel assertions avoid hashes that depend
-on an operating system font. These are diagnostic images with approximate fonts and
-sprite/item placeholders. They do not establish native Minecraft texture, font, GPU,
-or audio fidelity.
-
-The Molecule demo harness renders the production gallery, every tab, a compact viewport,
-click selection, multiple selected rows, and selection retention after resize. Generated
-images remain in ignored build outputs. Jenkins archives them for review.
-
-Run the library checks with `gradle :test`. Once the separate migration is applied, run
-`gradle :test :Molecule:test` and inspect `Molecule/build/screenshots/gallery/`.
-Both builds limit Gradle and test workers and run with `java.awt.headless=true`.
-
-Validation on 2026-11-12: 89 library tests and 32 demo tests passed, with no skipped tests.
-Both projects built successfully. Publication assertions found exactly six Compound
-publications and no demo publish tasks; generated config/network/UI POMs require
-`compound-core` at the same version.
-
-Local validation reused the existing Minecraft 26.3 artifacts with
-`-x :createMinecraftArtifacts -x :Molecule:createMinecraftArtifacts`: NeoForge's normal
-artifact refresh failed when replacing its cached launcher manifest on Windows.
-The fresh-artifact path and the Jenkins job have not been executed in this review.
-
-## Follow-up review
-
-A fresh parallel adversarial review at `4d3de4d` reproduced seven additional issues.
-The fixes stay in UI PR #4. The Molecule repository migration stays in PR #6.
-
-| Issue | Repair and regression coverage |
-| --- | --- |
-| Padded or aligned containers used unbounded maxima as available space. | Box and Stack expand only along bounded axes; small content fits in either scroll direction. |
-| Root placement ignored fixed and maximum dimensions. | Placement respects measured size and margins; explicit fill and minimum constraints retain their behaviour. |
-| Container shortcuts escaped focused text editors. | Text editing retains keyboard ownership while preserving Escape handling. |
-| Different slots with identical menu coordinates resolved to the same native slot. | Native dispatch preserves slot identity and restores original coordinates afterwards. |
-| Transformed slots failed native hit testing. | Slot and inventory-background containment use the sampled drawing geometry. |
-| Reentrant source changes during lazy-cell disposal corrupted mounted indices. | Pending source changes settle before cells mount from newer data. |
-| Nested overlays ignored global numeric layer order. | Rendering and hit testing share ordered overlays; nested overlays draw once and lazy-cell clips remain effective. |
-
-Multi-selection also covers opt-in lazy grids and lists. Selection is retained by stable
-key across virtual unmounts, Ctrl-click toggles independent cells, Shift selects a
-row-major range, and Ctrl+Shift adds a range to existing selections. Existing lists and
-trees keep their single-selection default and opt-in multiple-selection behaviour.
-
-For an existing list or tree, call `setSelectionMode(EnumSelectionMode.MULTIPLE)`.
-For a lazy grid or list, retain the model outside composition and attach it:
+Multi-selection is opt-in:
 
 ```java
+list.setSelectionMode(EnumSelectionMode.MULTIPLE);
 var selection = ISelection.<Integer>create(EnumSelectionMode.MULTIPLE);
 var grid = ILazyCollection.grid(source, 4, 20, 20, 2, composer).selection(selection);
-selection.setOnSelectionChanged(keys -> updateActions(keys));
 ```
 
-An ordinary `Grid` composition can use the same model by supplying its ordered stable
-keys through `setKeys`, passing mouse modifiers to `select`, and drawing from
-`isSelected`. The lazy collection wires those behaviours automatically. Interactive
-children retain their own consumed input.
+Ctrl-click toggles independent items, Shift selects an anchored range, and Ctrl+Shift
+adds a range. Lazy collections retain selection by stable key across virtual unmounts.
+They use fixed cells and require identity transforms on their ancestors. ListView and
+TreeView remain eager. Axis-aligned clipping supports translation/scaling; rotated
+clipping requires a stencil backend.
 
-The screen adapters use the mouse event's captured Shift and platform editing modifiers
-for selection, including Ctrl+Shift ranges, instead of polling the live keyboard state.
-Regression checks exercise both ordinary and container screen adapters.
+## Validation
 
-Follow-up validation: both builds pass with 129 Compound tests and 32 Molecule tests,
-zero failures and zero skips. The same cached-artifact limitation above still applies.
-The grid interaction regression generates `build/screenshots/grid-multiple-selection.png`.
+Validated on 2026-11-13: 195 library tests and 32 demo tests pass, with no failures or
+skips. Both builds and Javadoc generation pass; existing Javadoc warnings remain.
 
-Three independent agents reviewed the fixes at `0b867b4` in parallel. They found three
-additional edge cases, now covered by permanent regression tests:
+Run `gradle :build :javadoc`. With the separate migration applied, also run
+`gradle :Molecule:build`. Gradle and test workers are limited in the build configuration;
+tests use `java.awt.headless=true`.
 
-- Built-in dropdowns inside modals needed layers above their containing overlays.
-- Input scopes needed to preserve the effective global paint group during hit testing.
-- Queued keyboard and wheel events needed reveal calculations based on both live and
-  last-placed scroll offsets, including nested horizontal and vertical viewports.
+Diagnostic images are generated under `build/screenshots/` and
+`Molecule/build/screenshots/gallery/`. Border/selection pixels and input geometry are
+asserted without depending on operating-system font hashes. The shared Java2D context
+handles transforms, scissors, styled text, a fixed clock, and resource disposal.
 
-The layer and selection reviewers rechecked those repairs and reported no remaining
-actionable findings. The native-container reviewer also reported no actionable findings.
-Final validation passes all 161 tests, both builds, and Javadoc generation. Javadoc
-retains existing documentation warnings. All validation was headless; native graphics
-and audio fidelity were not exercised.
+Publication checks verify six Compound publications and matching-version core
+dependencies. The separate migration gives Molecule no publishing plugin or tasks.
+Release jars contain the current UI classes and no Molecule classes.
 
-## Lifecycle and transformed popup follow-up
-
-The next parallel review at `79b9334` reproduced five further issues. All five repairs
-remain in UI PR #4; the Molecule migration remains in PR #6.
-
-| Issue | Repair and regression coverage |
-| --- | --- |
-| Detaching a child left sibling positions and parent dimensions stale. | Structural attach/detach invalidates the owning parent, including unchanged viewport and repeated lazy-mount cases. |
-| Deferred dependencies discovered after composition survived recomposition. | Each deferred scope owns one observer registry and captures cleanup ownership at creation. Disposal removes late dependencies and ignores stale notification snapshots. |
-| Selecting a list row before first layout either threw or lost its reveal. | Pending reveal uses the actual placed viewport and freshly measured content; it survives a zero-height viewport and follows remapped rows. |
-| Transformed dropdowns placed options outside the viewport. | Popup layout uses current-frame geometry, clamps translated/scaled content, and measures its actual scrolling viewport before drawing and hit testing. |
-| Composed container rendering skipped native item hover-exit callbacks. | Native hover cleanup runs once when the hovered slot changes, retaining vanilla empty-item and action-matching rules. |
-
-The fixes add 22 permanent regression tests. Parallel Standards and Spec reviewers
-also checked fractional backdrop coverage and focused-row reveal when the transformed
-popup viewport shrinks. The selected-row scenario failed both new reproductions before
-repair. Current-frame reveal now keeps the focused option visible while preserving
-later wheel scrolling. Both reviewers rechecked the final changes and reported no
-remaining actionable findings.
-
-Validation passes 151 Compound tests and 32 Molecule tests, zero failures and zero
-skips, both builds, and Javadoc generation with the existing documentation warnings.
-The headless renderer also generates `build/screenshots/transformed-dropdown.png`;
-pixel checks verify the viewport edge, and the image was inspected. Ctrl-click,
-Shift, and Ctrl+Shift list/tree/grid selection regressions remain part of the suite.
-The cached Minecraft artifact and native-rendering limitations above still apply.
-
-## Production readiness review
-
-Another parallel adversarial pass reviewed UI head `29674c8` against the PR's `26.3`
-base. The existing 183 tests were rerun successfully before exercising additional
-callback, modal, and formatting cases. Two Standards findings and six Spec findings
-were reproduced and repaired:
-
-| Axis | Issue | Repair and permanent coverage |
-| --- | --- | --- |
-| Standards | Animation or geometry callbacks could reset the tree while its frame continued. | Lifecycle generations stop stale frame work. Reset captures the original root, disposes roots composed during teardown, and releases observers, timelines, and animations. Replacement roots begin on their next frame. |
-| Standards | Lazy-cell disposal could close the tree during reconciliation and invalidate its iterator. | Host identity checks stop reconciliation after composer or disposal callbacks detach the collection. |
-| Spec | Reentrant focus callbacks could overwrite focus without sending loss notifications. | Serialized transitions preserve callback order, support redirects and clears, release lazy pins, and stop stale gains or narration after teardown. |
-| Spec | Tab traversal ignored transformed clipping. | Candidates use sampled world geometry, effective clipping, viewport bounds, and transform invertibility. Modal and pregeometry paths retain coverage. |
-| Spec | Transformed context menus clamped in the wrong coordinate space. | GUI positioning uses the current frame's inverse transform, bounded content, and a viewport-covering dismissal backdrop, including nested modals. |
-| Spec | Styled text drew with different metrics from its caret, selection, pointer, and scrolling. | A shared styled run provides cumulative glyph advances and UTF-16 mapping, including composite sequences, surrogate pairs, fractional metrics, and glyph-provider changes within the same Font instance. |
-| Spec | Disabled or closed dropdowns accepted queued clicks from their old popup subtree. | Popup visibility follows live enabled/open state before the next recomposition. |
-| Spec | Lower modal recomposition or reopening could steal input from the dialog painted above it. | Unique scope registrations follow actual paint priority and retain focus restoration history. Non-targetable overlay containers retain interactive descendants; decorative overlays do not promote their scope. Hidden scopes release unhandled input to the background and native screen. |
-
-The follow-up adds 45 permanent tests. Reviewers cross-checked fixes outside their own
-implementation areas, including teardown replacement ownership and modal child-overlay
-interaction. Both final axes reported no remaining actionable findings in that scope.
-
-Final headless validation passes 196 Compound tests and 32 Molecule tests with zero
-failures or skips. Both builds and Javadoc generation pass, retaining existing Javadoc
-warnings. A Gradle model/POM audit verifies six Compound publications, matching-version
-core dependencies, distinct source roots, and no Molecule publication tasks. The UI and
-all-in-one jars contain the current compiled UI classes and no Molecule classes.
-
-The context-menu test generates `build/screenshots/transformed-context-menu.png`, checks
-its viewport border pixel, and the image was inspected. No desktop control was used.
-Local validation still reuses the existing Minecraft artifacts. Fresh artifact
-generation, Jenkins execution, and native GPU/audio fidelity remain unverified; the
-headless result does not establish those production-environment properties.
+Local validation reuses existing Minecraft 26.3 artifacts with
+`-x :createMinecraftArtifacts -x :Molecule:createMinecraftArtifacts`, because NeoForge's
+launcher-manifest cache replacement fails in this Windows environment. Fresh artifact
+generation and Jenkins execution remain unverified. Java2D fonts, textures, and items
+are diagnostic approximations; native GPU/audio fidelity is outside these headless checks.

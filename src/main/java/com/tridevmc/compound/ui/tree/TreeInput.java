@@ -123,7 +123,6 @@ final class TreeInput {
         }
         // The scope's overlay descendants may be composed after this registration.
         this.scopeOrderDirty = true;
-        this.tree.requestHoverUpdate();
     }
 
     public void clearInputRoot(ITreeNode node) {
@@ -144,7 +143,6 @@ final class TreeInput {
                     var previous = entry.previousFocus();
                     this.requestFocus(this.acceptsInput(previous) ? previous : null);
                 }
-                this.tree.requestHoverUpdate();
                 return;
             }
         }

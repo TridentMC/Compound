@@ -143,7 +143,6 @@ public class UITree {
 
     private Size lastWindowSize = new Size(-1, -1);
 
-    private boolean pendingHoverUpdate = false;
     private final List<ITreeNode> overlayNodes = new ArrayList<>();
 
     public AnimationScheduler getAnimationScheduler() {
@@ -200,7 +199,6 @@ public class UITree {
             this.rootConstraints = null;
             this.lastWindowSize = new Size(-1, -1);
             this.layoutDirty = true;
-            this.pendingHoverUpdate = false;
         } finally {
             this.resetting = false;
         }
@@ -509,7 +507,6 @@ public class UITree {
                 this.placeTree(Position.ORIGIN, this.rootConstraints);
                 if (!this.isCurrentFrame(generation)) return;
                 this.dirtyWindows.addAll(this.windows);
-                this.pendingHoverUpdate = true;
             }
             var pending = List.copyOf(this.dirtyWindows);
             this.dirtyWindows.clear();
@@ -526,7 +523,6 @@ public class UITree {
         if (!this.isCurrentFrame(generation)) return;
         TreeGeometry.sample(this.root, null, null);
         if (!this.isCurrentFrame(generation)) return;
-        this.pendingHoverUpdate = false;
         this.input.updateHoverState();
     }
 
@@ -587,10 +583,6 @@ public class UITree {
     /** Last pointer position delivered through this tree's input routing. */
     public Position getMousePosition() {
         return this.input.mousePosition();
-    }
-
-    void requestHoverUpdate() {
-        this.pendingHoverUpdate = true;
     }
 
     public void setInputRoot(ITreeNode node) {
