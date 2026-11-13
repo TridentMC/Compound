@@ -21,24 +21,31 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.google.common.collect.Lists;
 import com.tridevmc.compound.ui.CompoundCursors;
 import com.tridevmc.compound.ui.cursor.UICursor;
-import com.tridevmc.compound.ui.layout.*;
+import com.tridevmc.compound.ui.layout.Alignment;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Size;
+import com.tridevmc.compound.ui.event.KeyInputEvent;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.state.State;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.IntStream;
 import java.util.function.Consumer;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
- * A scrollable, single-selection list with keyboard navigation and optional composed rows.
+ * A scrollable list with keyboard navigation, optional composed rows, and opt-in multiple selection.
  * Retain the instance to preserve selection and scroll position across recomposition.
  * Replacing the items resets both. The default rows display each item's string value.
  *
@@ -49,7 +56,7 @@ public class ListView<T> extends Element implements IComposableElement {
     private static final int DEFAULT_ITEM_HEIGHT = 16;
     private static final int DEFAULT_MAX_VISIBLE_ITEMS = 10;
 
-    private final State<Integer> selectedIndex = State.of(-1);
+    private final CollectionSelection<Integer> selection = new CollectionSelection<>();
     private final State<Integer> hoverIndex = State.of(-1);
     private final State<Boolean> enabled = State.of(true);
     private final List<T> items = Lists.newArrayList();
@@ -58,6 +65,7 @@ public class ListView<T> extends Element implements IComposableElement {
     private Function<T, String> displayTextProvider = Object::toString;
     private BiConsumer<T, ICompositionScope> rowContent;
     private Consumer<T> onSelectionChanged;
+    private Consumer<List<T>> onSelectionsChanged = items -> { };
     private int itemHeight = DEFAULT_ITEM_HEIGHT;
     private int maxVisibleItems = DEFAULT_MAX_VISIBLE_ITEMS;
 
@@ -72,21 +80,7 @@ public class ListView<T> extends Element implements IComposableElement {
     public void compose(ICompositionScope scope) {
         // Color suppliers update selection and hover without rebuilding every row.
 
-        scope.onKeyPress(event -> {
-            if (!this.enabled.get() || this.items.isEmpty()) return false;
-            int current = this.selectedIndex.get();
-            int index = switch (event.keyCode()) {
-                case InputConstants.KEY_UP -> current < 0 ? 0 : Math.max(0, current - 1);
-                case InputConstants.KEY_DOWN -> Math.min(this.items.size() - 1, current + 1);
-                case InputConstants.KEY_HOME -> 0;
-                case InputConstants.KEY_END -> this.items.size() - 1;
-                default -> -1;
-            };
-            if (index < 0) return false;
-            this.select(index);
-            this.revealSelection();
-            return true;
-        });
+        scope.onKeyPress(this::navigate);
 
         scope.e(new Surface(0xFF181818), background -> {
             background.layout().fillMax();
@@ -110,7 +104,7 @@ public class ListView<T> extends Element implements IComposableElement {
                                     row.onClick(event -> {
                                         if (!this.enabled.get() || event.button() != InputConstants.MOUSE_BUTTON_LEFT) return false;
                                         scope.requestFocus();
-                                        this.select(index);
+                                        this.select(index, event.shiftDown(), event.ctrlDown(), true);
                                         return true;
                                     });
                                     row.onMouseEnter(() -> this.hoverIndex.set(index));
@@ -119,7 +113,9 @@ public class ListView<T> extends Element implements IComposableElement {
                                     });
                                     row.e(new Surface(
                                             () -> this.hoverIndex.get() == index ? 0xFF303030 : 0x00000000,
-                                            () -> this.selectedIndex.get() == index ? 0xFFFFFFFF : 0x00000000,
+                                            () -> this.selection.contains(index) ? 0xFFFFFFFF
+                                                    : this.enabled.get() && scope.isFocused()
+                                                    && this.selection.isFocused(index) ? 0xFF808080 : 0x00000000,
                                             1), surface -> {
                                         surface.layout().fillMax();
                                         surface.fillSlot(Surface.CONTENT_SLOT, cell -> {
@@ -142,21 +138,53 @@ public class ListView<T> extends Element implements IComposableElement {
         });
     }
 
-    private void select(int index) {
-        if (index < 0 || index >= this.items.size()) return;
+    private List<Integer> indices() {
+        return IntStream.range(0, this.items.size()).boxed().toList();
+    }
 
-        int oldIndex = this.selectedIndex.get();
-        if (oldIndex != index) {
-            this.selectedIndex.set(index);
-
-            SoundManager soundManager = Minecraft.getInstance().getSoundManager();
-            soundManager.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-
-            if (this.onSelectionChanged != null) {
-                this.onSelectionChanged.accept(this.items.get(index));
-            }
-            Minecraft.getInstance().getNarrator().saySystemNow(this.getNarrationMessage());
+    private boolean navigate(KeyInputEvent event) {
+        if (!this.enabled.get() || this.items.isEmpty()) return false;
+        if (event.isShortcut(InputConstants.KEYCODE_A)
+                && this.selection.mode() == EnumSelectionMode.MULTIPLE) {
+            if (this.selection.selectAll(this.indices())) this.notifySelection(false);
+            return true;
         }
+        var current = this.selection.focusedIndex(this.indices());
+        if (event.keyCode() == InputConstants.KEY_SPACE && current >= 0) {
+            this.select(current, event.shiftDown(), event.ctrlDown(), true);
+            return true;
+        }
+        var index = switch (event.keyCode()) {
+            case InputConstants.KEY_UP -> current < 0 ? 0 : Math.max(0, current - 1);
+            case InputConstants.KEY_DOWN -> Math.min(this.items.size() - 1, current + 1);
+            case InputConstants.KEY_HOME -> 0;
+            case InputConstants.KEY_END -> this.items.size() - 1;
+            default -> -1;
+        };
+        if (index < 0) return false;
+        if (this.selection.mode() == EnumSelectionMode.MULTIPLE && event.ctrlDown() && !event.shiftDown()) {
+            this.selection.focus(index);
+        } else {
+            this.select(index, event.shiftDown(), event.ctrlDown(), true);
+        }
+        this.revealSelection();
+        return true;
+    }
+
+    private void select(int index, boolean extend, boolean toggle, boolean sound) {
+        if (this.selection.select(this.indices(), index, extend, toggle)) this.notifySelection(sound);
+    }
+
+    private void notifySelection(boolean sound) {
+        if (sound) {
+            Minecraft.getInstance().getSoundManager()
+                    .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+        }
+        this.selection.primary(this.indices()).ifPresent(index -> {
+            if (this.onSelectionChanged != null) this.onSelectionChanged.accept(this.items.get(index));
+        });
+        this.onSelectionsChanged.accept(this.getSelectedItems());
+        Minecraft.getInstance().getNarrator().saySystemNow(this.getNarrationMessage());
     }
 
     /** {@inheritDoc} */
@@ -168,13 +196,13 @@ public class ListView<T> extends Element implements IComposableElement {
     /** {@inheritDoc} */
     @Override
     public Component getNarrationMessage() {
-        int index = this.selectedIndex.get();
+        int index = this.selection.focusedIndex(this.indices());
         return Component.literal(index >= 0 && index < this.items.size()
                 ? this.displayTextProvider.apply(this.items.get(index)) : "List");
     }
 
     private void revealSelection() {
-        int index = this.selectedIndex.get();
+        int index = this.selection.focusedIndex(this.indices());
         if (index < 0) return;
         int top = index * this.itemHeight;
         int bottom = top + this.itemHeight;
@@ -194,7 +222,7 @@ public class ListView<T> extends Element implements IComposableElement {
     public void setItems(List<T> items) {
         this.items.clear();
         this.items.addAll(items);
-        this.selectedIndex.set(-1);
+        this.selection.clear();
         this.hoverIndex.set(-1);
         this.scrollArea.scrollTo(0, 0);
         this.invalidateComposition();
@@ -218,27 +246,21 @@ public class ListView<T> extends Element implements IComposableElement {
     public void removeItem(int index) {
         if (index >= 0 && index < this.items.size()) {
             this.items.remove(index);
-            if (this.selectedIndex.get() == index) {
-                this.selectedIndex.set(-1);
-            } else if (this.selectedIndex.get() > index) {
-                this.selectedIndex.set(this.selectedIndex.get() - 1);
-            }
+            this.selection.remap(selected -> selected == index ? Optional.empty()
+                    : Optional.of(selected > index ? selected - 1 : selected));
             this.hoverIndex.set(-1);
             this.invalidateComposition();
         }
     }
 
     /**
-     * Returns the selected item.
+     * Returns the focused selected item, or the first selected item in display order.
      *
      * @return the item, or null if there is no selection.
      */
+    @Nullable
     public T getSelected() {
-        int index = this.selectedIndex.get();
-        if (index >= 0 && index < this.items.size()) {
-            return this.items.get(index);
-        }
-        return null;
+        return this.selection.primary(this.indices()).map(this.items::get).orElse(null);
     }
 
     /**
@@ -247,14 +269,56 @@ public class ListView<T> extends Element implements IComposableElement {
      * @param index the zero-based index; out-of-range indices are ignored.
      */
     public void setSelectedIndex(int index) {
-        if (index < 0 || index >= this.items.size()) return;
-        if (this.selectedIndex.get() != index) {
-            this.selectedIndex.set(index);
-            if (this.onSelectionChanged != null) {
-                this.onSelectionChanged.accept(this.items.get(index));
-            }
-        }
+        this.select(index, false, false, false);
         this.revealSelection();
+    }
+
+    /** Returns selected row indices in display order as an immutable snapshot. */
+    @Nonnull
+    public List<Integer> getSelectedIndices() {
+        return this.selection.snapshot(this.indices());
+    }
+
+    /** Returns selected items in display order as an immutable snapshot. */
+    @Nonnull
+    public List<T> getSelectedItems() {
+        return this.getSelectedIndices().stream().map(this.items::get).toList();
+    }
+
+    /**
+     * Replaces selection atomically. Multiple indices require MULTIPLE mode.
+     * @param indices existing row indices; invalid indices cause an exception before mutation.
+     */
+    public void setSelectedIndices(@Nonnull List<Integer> indices) {
+        if (this.selection.replace(this.indices(), List.copyOf(indices))) this.notifySelection(false);
+        this.revealSelection();
+    }
+
+    /** Clears selection and notifies the collection callback when it changes. */
+    public void clearSelection() {
+        if (this.selection.clear()) this.notifySelection(false);
+    }
+
+    /** Returns the selection policy; new lists use SINGLE. */
+    @Nonnull
+    public EnumSelectionMode getSelectionMode() {
+        return this.selection.mode();
+    }
+
+    /**
+     * Changes the policy. Returning to SINGLE retains the focused selected row, or the first selection.
+     * @param mode the selection policy.
+     */
+    public void setSelectionMode(@Nonnull EnumSelectionMode mode) {
+        if (this.selection.mode(mode, this.indices())) this.notifySelection(false);
+    }
+
+    /**
+     * Receives immutable selection snapshots, including empty selection; collection edits are silent.
+     * @param listener the callback, or null to remove it.
+     */
+    public void setOnSelectionsChanged(@Nullable Consumer<List<T>> listener) {
+        this.onSelectionsChanged = listener == null ? items -> { } : listener;
     }
 
     /**

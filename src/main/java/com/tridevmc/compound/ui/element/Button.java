@@ -143,8 +143,9 @@ public class Button extends Element implements IComposableElement {
             int x = event.x();
             int y = event.y();
 
-            if (x >= bounds.x() && x < bounds.x() + bounds.width() &&
-                    y >= bounds.y() && y < bounds.y() + bounds.height()) {
+            var local = PointerPosition.local(this, x, y);
+            if (local.isPresent() && local.get().x() >= 0 && local.get().x() < bounds.width()
+                    && local.get().y() >= 0 && local.get().y() < bounds.height()) {
 
                 SoundManager soundManager = Minecraft.getInstance().getSoundManager();
                 soundManager.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));

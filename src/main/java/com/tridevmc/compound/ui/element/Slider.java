@@ -147,7 +147,7 @@ public class Slider extends Element implements IComposableElement {
             if (!this.enabled.get() || event.button() != InputConstants.MOUSE_BUTTON_LEFT) return false;
             scope.requestFocus();
             this.dragging.set(true);
-            this.updateValueFromPosition(event.x());
+            this.updateValueFromPosition(event.x(), event.y());
             if (this.onDragStart != null) {
                 this.onDragStart.accept(this.value.get());
             }
@@ -156,7 +156,7 @@ public class Slider extends Element implements IComposableElement {
 
         scope.onMouseDrag(event -> {
             if (!this.enabled.get() || !this.dragging.get()) return false;
-            this.updateValueFromPosition(event.x());
+            this.updateValueFromPosition(event.x(), event.y());
             return true;
         });
 
@@ -232,13 +232,16 @@ public class Slider extends Element implements IComposableElement {
         return range > 0 ? (this.value.get() - this.minValue) / range : 0;
     }
 
-    private void updateValueFromPosition(int mouseX) {
+    private void updateValueFromPosition(int mouseX, int mouseY) {
         Bounds bounds = this.getBounds();
         if (bounds == null) return;
 
+        var local = PointerPosition.local(this, mouseX, mouseY);
+        if (local.isEmpty()) return;
+
         int usableWidth = bounds.width() - HANDLE_WIDTH;
         if (usableWidth <= 0) return;
-        double normalized = (mouseX - (bounds.x() + HANDLE_WIDTH / 2.0)) / usableWidth;
+        double normalized = (local.get().x() - HANDLE_WIDTH / 2.0) / usableWidth;
         normalized = Mth.clamp(normalized, 0.0, 1.0);
 
         double newValue = this.minValue + normalized * (this.maxValue - this.minValue);

@@ -452,8 +452,10 @@ public class ScrollArea extends Element implements IComposableElement {
             int thumbLength = vertical ? owner.getScrollerHeight() : owner.getScrollerWidth();
             int travel = length - thumbLength;
             if (travel <= 0) return false;
-            int offset = vertical ? y - bounds.y() : x - bounds.x();
-            float ratio = (offset - owner.scrollbarStyle.inset - thumbLength / 2F) / travel;
+            var local = PointerPosition.local(owner, x, y);
+            if (local.isEmpty()) return false;
+            double offset = vertical ? local.get().y() : local.get().x();
+            double ratio = (offset - owner.scrollbarStyle.inset - thumbLength / 2.0) / travel;
             var scroll = vertical ? owner.scrollY : owner.scrollX;
             scroll.set(Math.clamp((int) (ratio * maxScroll), 0, maxScroll));
             return true;

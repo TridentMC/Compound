@@ -70,7 +70,7 @@ public class Tooltip extends Element implements IComposableElement {
     @Override
     public void compose(ICompositionScope scope) {
         scope.e(new Box(), content -> scope.slotInto(CONTENT_SLOT, content));
-        scope.e(new NativeTooltip(), tooltip -> tooltip.layout().fixedSize(0, 0).layer(300));
+        scope.e(new NativeTooltip(), tooltip -> tooltip.layout().fillMax().layer(300));
     }
 
     /** {@inheritDoc} */
@@ -82,7 +82,7 @@ public class Tooltip extends Element implements IComposableElement {
     /** {@inheritDoc} */
     @Override
     public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> children) {
-        return List.of(bounds, new Bounds(bounds.x(), bounds.y(), 0, 0));
+        return List.of(bounds, bounds);
     }
 
     /** {@inheritDoc} */
@@ -119,6 +119,11 @@ public class Tooltip extends Element implements IComposableElement {
 
     private class NativeTooltip extends PrimitiveElement {
         @Override
+        public boolean isHitTestable() {
+            return false;
+        }
+
+        @Override
         public Size measure(Constraints constraints, LayoutProperties props, List<Size> children) {
             return new Size(0, 0);
         }
@@ -127,7 +132,10 @@ public class Tooltip extends Element implements IComposableElement {
         protected void drawElement(IScreenContext context, Bounds bounds) {
             var owner = Tooltip.this;
             var anchor = owner.getBounds();
-            boolean hovered = anchor.contains((int) context.getMouseX(), (int) context.getMouseY());
+            var geometry = owner.getNode().getFrameGeometry();
+            boolean hovered = geometry == null
+                    ? anchor.contains((int) context.getMouseX(), (int) context.getMouseY())
+                    : geometry.contains(context.getMouseX(), context.getMouseY());
             if (hovered) {
                 var target = owner.getNode().getTree().findNodeAt((int) context.getMouseX(), (int) context.getMouseY());
                 hovered = target == owner.getNode() || (target != null && owner.getNode().isAncestorOf(target));

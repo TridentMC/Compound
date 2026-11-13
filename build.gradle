@@ -113,6 +113,8 @@ dependencies {
 // Configure JUnit 5 tests
 test {
     useJUnitPlatform()
+    maxParallelForks = 1
+    maxHeapSize = '512m'
     // This ByteBuddy version needs experimental support for Java 25.
-    jvmArgs '-Dnet.bytebuddy.experimental=true'
+    jvmArgs '-Dnet.bytebuddy.experimental=true', '-Djava.awt.headless=true', '-XX:ActiveProcessorCount=2'
 }

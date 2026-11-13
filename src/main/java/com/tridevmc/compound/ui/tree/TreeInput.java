@@ -60,6 +60,7 @@ final class TreeInput {
     void reset() {
         this.clearFocus();
         this.inputScopes.clear();
+        this.tree.releaseWindowPin(this.capturedNode);
         this.capturedNode = null;
         this.capturedButton = -1;
         this.lastHoveredPath.clear();
@@ -70,6 +71,7 @@ final class TreeInput {
         this.clearInputRoot(node);
         this.lastHoveredPath.remove(node);
         if (this.capturedNode == node) {
+            this.tree.releaseWindowPin(this.capturedNode);
             this.capturedNode = null;
             this.capturedButton = -1;
         }
@@ -90,6 +92,7 @@ final class TreeInput {
         if (this.focusedNode != node && (this.focusedNode == null || !node.isAncestorOf(this.focusedNode))) {
             this.clearFocus();
         }
+        this.tree.releaseWindowPin(this.capturedNode);
         this.capturedNode = null;
         this.tree.requestHoverUpdate();
     }
@@ -115,12 +118,35 @@ final class TreeInput {
     }
 
     private boolean acceptsInput(ITreeNode node) {
+        if (!this.tree.isAttached(node)) return false;
         var inputRoot = this.inputRoot();
-        return node != null && (node == inputRoot || (inputRoot != null && inputRoot.isAncestorOf(node)));
+        for (var current = node; current != null; current = current.getParent()) {
+            if (!current.getElement().isVisible()) return false;
+            if (current == inputRoot) {
+                for (var parent = current.getParent(); parent != null; parent = parent.getParent()) {
+                    if (!parent.getElement().isVisible()) return false;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void validateTargets() {
+        if (this.focusedNode != null && !this.acceptsInput(this.focusedNode)) this.clearFocus();
+        if (this.capturedNode != null && !this.acceptsInput(this.capturedNode)) {
+            this.tree.releaseWindowPin(this.capturedNode);
+            this.capturedNode = null;
+            this.capturedButton = -1;
+        }
     }
 
     public ITreeNode getFocusedNode() {
         return this.focusedNode;
+    }
+
+    ITreeNode getCapturedNode() {
+        return this.capturedNode;
     }
 
     public void requestFocus(ITreeNode node) {
@@ -128,6 +154,7 @@ final class TreeInput {
         if (this.focusedNode == node) return;
 
         var previousFocused = this.focusedNode;
+        this.tree.releaseWindowPin(previousFocused);
         this.focusedNode = null;
 
         if (previousFocused != null) {
@@ -136,6 +163,7 @@ final class TreeInput {
             }
         }
 
+        if (node != null && !this.acceptsInput(node)) return;
         this.focusedNode = node;
         if (UITree.DEBUG_EVENTS) {
             System.out.println("[UITree] focus=" + (node == null ? "none" : node.getElement().getClass().getSimpleName()));
@@ -170,6 +198,7 @@ final class TreeInput {
     public void clearFocus() {
         if (this.focusedNode != null) {
             var previousFocused = this.focusedNode;
+            this.tree.releaseWindowPin(previousFocused);
             this.focusedNode = null;
 
             for (var handler : previousFocused.getFocusLostHandlers()) {
@@ -183,6 +212,7 @@ final class TreeInput {
     }
 
     public boolean dispatchClick(int x, int y, MouseClickEvent event) {
+        this.validateTargets();
         ITreeNode node = this.tree.findNodeAt(x, y);
         if (UITree.DEBUG_EVENTS) {
             System.out.println("[UITree] dispatchClick at (" + x + "," + y + ") node=" +
@@ -209,8 +239,10 @@ final class TreeInput {
                             System.out.println("[UITree] click consumed by " +
                                     current.getElement().getClass().getSimpleName());
                         }
-                        this.capturedNode = current;
-                        this.capturedButton = event.button();
+                        if (this.acceptsInput(current)) {
+                            this.capturedNode = current;
+                            this.capturedButton = event.button();
+                        }
                         consumed = true;
                         break;
                     }
@@ -239,6 +271,7 @@ final class TreeInput {
     }
 
     void updateHoverState() {
+        this.validateTargets();
         int x = this.lastMouseX;
         int y = this.lastMouseY;
         ITreeNode node = this.tree.findNodeAt(x, y);
@@ -351,6 +384,7 @@ final class TreeInput {
     }
 
     public boolean dispatchKeyPress(KeyInputEvent event) {
+        this.validateTargets();
         if (UITree.DEBUG_EVENTS) {
             System.out.println("[UITree] key=" + event.keyCode() + " focus="
                     + (this.focusedNode == null ? "none" : this.focusedNode.getElement().getClass().getSimpleName()));
@@ -390,6 +424,7 @@ final class TreeInput {
     }
 
     public boolean dispatchKeyRelease(KeyInputEvent event) {
+        this.validateTargets();
         var current = this.focusedNode;
         while (current != null && this.acceptsInput(current)) {
             for (var handler : current.getKeyReleaseHandlers()) {
@@ -401,6 +436,7 @@ final class TreeInput {
     }
 
     public boolean dispatchCharTyped(CharEvent event) {
+        this.validateTargets();
         if (this.focusedNode != null && this.acceptsInput(this.focusedNode)) {
             for (var handler : this.focusedNode.getCharTypedHandlers()) {
                 if (handler.apply(event)) return true;
@@ -410,9 +446,11 @@ final class TreeInput {
     }
 
     public boolean dispatchMouseRelease(int x, int y, MouseReleaseEvent event) {
+        this.validateTargets();
         ITreeNode node = this.capturedNode != null && this.capturedButton == event.button()
                 ? this.capturedNode : this.tree.findNodeAt(x, y);
         if (this.capturedButton == event.button()) {
+            this.tree.releaseWindowPin(this.capturedNode);
             this.capturedNode = null;
             this.capturedButton = -1;
         }
@@ -434,6 +472,7 @@ final class TreeInput {
     }
 
     public boolean dispatchMouseDrag(int x, int y, MouseDragEvent event) {
+        this.validateTargets();
         ITreeNode node = this.capturedNode != null && this.capturedButton == event.button()
                 ? this.capturedNode : this.tree.findNodeAt(x, y);
         if (node != null) {

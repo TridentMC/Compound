@@ -150,14 +150,14 @@ public class TextInput extends Element implements IComposableElement {
         scope.onClick(event -> {
             if (event.button() != InputConstants.MOUSE_BUTTON_LEFT) return false;
             scope.requestFocus();
-            int clickPos = this.findClickPosition(event.x());
+            int clickPos = this.findClickPosition(event.x(), event.y());
             this.moveCursorTo(clickPos, event.shiftDown());
             return true;
         });
 
         scope.onMouseDrag(event -> {
             if (!this.editable || !this.focused.get()) return false;
-            int dragPos = this.findClickPosition(event.x());
+            int dragPos = this.findClickPosition(event.x(), event.y());
             this.moveCursorTo(dragPos, true);
             return true;
         });
@@ -600,14 +600,16 @@ public class TextInput extends Element implements IComposableElement {
         }
     }
 
-    private int findClickPosition(int clickX) {
+    private int findClickPosition(int clickX, int clickY) {
         var font = Minecraft.getInstance().font;
         Bounds bounds = this.getBounds();
         if (bounds == null || font == null) return 0;
 
         int textStartX = this.renderedText != null
                 ? this.renderedText.getBounds().x() : this.getContentBounds().x();
-        int relativeX = clickX - textStartX;
+        var local = PointerPosition.local(this, clickX, clickY);
+        if (local.isEmpty()) return this.cursorPos.get();
+        int relativeX = (int) Math.floor(local.get().x() + bounds.x() - textStartX);
 
         if (relativeX < 0) return this.displayPos.get();
 

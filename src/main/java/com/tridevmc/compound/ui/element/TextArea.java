@@ -395,10 +395,14 @@ public class TextArea extends Element implements IComposableElement {
         if (bounds == null) return;
 
         Bounds content = this.getContentBounds();
-        int relativeY = mouseY - content.y() - this.lineOrigin(this.scrollLine.get()).y();
+        var local = PointerPosition.local(this, mouseX, mouseY);
+        if (local.isEmpty()) return;
+        int relativeY = (int) Math.floor(local.get().y() + bounds.y() - content.y()
+                - this.lineOrigin(this.scrollLine.get()).y());
         int line = this.scrollLine.get() + Math.floorDiv(relativeY, Math.max(1, this.lineHeight));
         line = Mth.clamp(line, 0, Math.max(0, this.lines.size() - 1));
-        int relativeX = mouseX - content.x() - this.lineOrigin(line).x();
+        int relativeX = (int) Math.floor(local.get().x() + bounds.x() - content.x()
+                - this.lineOrigin(line).x());
 
         var font = Minecraft.getInstance().font;
         String textLine = this.lines.get(line).text();

@@ -50,6 +50,16 @@ public interface IElement extends IGenericElement {
     }
 
     /**
+     * Controls whether this element can be a pointer target. Children remain eligible.
+     * Decorative drawing overlays can return false so input reaches content beneath them.
+     *
+     * @return true when pointer hit testing may select this element
+     */
+    default boolean isHitTestable() {
+        return true;
+    }
+
+    /**
      * Declares whether the element can receive keyboard focus in its current state.
      *
      * @return true when focus traversal may select this element

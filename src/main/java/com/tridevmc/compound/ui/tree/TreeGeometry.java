@@ -40,6 +40,11 @@ final class TreeGeometry {
             d = nd;
             tx = nx;
         }
+        if (node.getElement() instanceof com.tridevmc.compound.ui.element.internal.IWindowedElement
+                && (Math.abs(a - 1) > 1e-9 || Math.abs(b) > 1e-9 || Math.abs(c) > 1e-9
+                || Math.abs(d - 1) > 1e-9 || Math.abs(tx) > 1e-9 || Math.abs(ty) > 1e-9)) {
+            throw new UnsupportedOperationException("Lazy collection ancestors must have identity transforms");
+        }
         var corners = List.of(point(a, b, c, d, tx, ty, bounds.left(), bounds.top()),
                 point(a, b, c, d, tx, ty, bounds.right(), bounds.top()),
                 point(a, b, c, d, tx, ty, bounds.right(), bounds.bottom()),
@@ -48,7 +53,8 @@ final class TreeGeometry {
         double top = corners.stream().mapToDouble(WorldPoint::y).min().orElseThrow();
         double right = corners.stream().mapToDouble(WorldPoint::x).max().orElseThrow();
         double bottom = corners.stream().mapToDouble(WorldPoint::y).max().orElseThrow();
-        Bounds clip = node.getLayoutProperties().getLayer() > 0 ? null : inheritedClip;
+        Bounds clip = node.getLayoutProperties().getLayer() > 0 && !TreeWindows.insideWindow(node)
+                ? null : inheritedClip;
         if (node.getLayoutProperties().isClip()) {
             if (Math.abs(b) > 1e-9 || Math.abs(c) > 1e-9) {
                 throw new UnsupportedOperationException("Rotated clipping requires a stencil backend; scissors are axis-aligned");

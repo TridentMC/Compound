@@ -16,10 +16,15 @@
 
 package com.tridevmc.compound.ui.element;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.google.common.collect.Lists;
 import com.tridevmc.compound.ui.CompoundCursors;
 import com.tridevmc.compound.ui.cursor.UICursor;
-import com.tridevmc.compound.ui.layout.*;
+import com.tridevmc.compound.ui.event.KeyInputEvent;
+import com.tridevmc.compound.ui.layout.Bounds;
+import com.tridevmc.compound.ui.layout.Constraints;
+import com.tridevmc.compound.ui.layout.LayoutProperties;
+import com.tridevmc.compound.ui.layout.Size;
 import com.tridevmc.compound.ui.scope.ICompositionScope;
 import com.tridevmc.compound.ui.sprite.IScreenSprite;
 import com.tridevmc.compound.ui.state.State;
@@ -54,6 +59,7 @@ public class Tabs extends Element implements IComposableElement {
     private final State<Integer> selectedIndex = State.of(0);
     private final State<Boolean> enabled = State.of(true);
     private final List<Tab> tabs = Lists.newArrayList();
+    private final HeaderViewport headers = new HeaderViewport();
     private Consumer<Integer> onTabChanged;
 
     /**
@@ -68,26 +74,31 @@ public class Tabs extends Element implements IComposableElement {
         scope.e(new Column(), column -> {
             column.layout().fillMax().spacing(0);
 
-            column.e(new Row(), tabRow -> {
-                tabRow.layout().spacing(TAB_SPACING);
-
-                for (int i = 0; i < this.tabs.size(); i++) {
-                    final int tabIndex = i;
-                    Tab tab = this.tabs.get(i);
-
-                    tabRow.e(tab.header, button -> {
-                        button.layout().fixedSize(Minecraft.getInstance().font.width(tab.label) + TAB_PADDING * 2, TAB_HEIGHT);
-                        button.getElement().setEnabled(this.enabled.get() && tab.enabled);
-                        button.fillSlot(Button.CONTENT_SLOT, content -> {
-                            content.e(new Label(tab.label,
-                                    () -> this.enabled.get() && tab.enabled ? 0xFFFFFF : 0xA0A0A0,
-                                    () -> true), label -> label.layout().deferred(layout -> {
-                                layout.bind(this.selectedIndex);
-                                layout.layout().margin(0, this.selectedIndex.get() == tabIndex ? 0 : 4, 0, 0);
-                            }));
+            column.e(this.headers, viewport -> {
+                viewport.layout().fillMaxWidth().fixedHeight(TAB_HEIGHT + 10);
+                viewport.fillSlot(ScrollArea.CONTENT_SLOT, headerContent -> headerContent.e(new Row(), tabRow -> {
+                    tabRow.layout().spacing(TAB_SPACING);
+                    for (int i = 0; i < this.tabs.size(); i++) {
+                        final int tabIndex = i;
+                        var tab = this.tabs.get(i);
+                        tabRow.e(tab.header, button -> {
+                            button.layout().fixedSize(Minecraft.getInstance().font.width(tab.label)
+                                    + TAB_PADDING * 2, TAB_HEIGHT);
+                            var node = button.layout().getBoundNode();
+                            node.addFocusGainedHandler(() -> this.headers.reveal(tabIndex));
+                            node.addKeyPressHandler(event -> this.navigateHeader(tabIndex, event));
+                            button.getElement().setEnabled(this.enabled.get() && tab.enabled);
+                            button.fillSlot(Button.CONTENT_SLOT, content -> {
+                                content.e(new Label(tab.label,
+                                        () -> this.enabled.get() && tab.enabled ? 0xFFFFFF : 0xA0A0A0,
+                                        () -> true), label -> label.layout().deferred(layout -> {
+                                    layout.bind(this.selectedIndex);
+                                    layout.layout().margin(0, this.selectedIndex.get() == tabIndex ? 0 : 4, 0, 0);
+                                }));
+                            });
                         });
-                    });
-                }
+                    }
+                }));
             });
 
             column.e(new TabContent(), content -> content.layout().fillMaxWidth().weight(1));
@@ -97,6 +108,7 @@ public class Tabs extends Element implements IComposableElement {
     private void selectTab(int index) {
         if (index < 0 || index >= this.tabs.size()) return;
         if (!this.tabs.get(index).enabled) return;
+        this.headers.reveal(index);
 
         int oldIndex = this.selectedIndex.get();
         if (oldIndex != index) {
@@ -106,6 +118,31 @@ public class Tabs extends Element implements IComposableElement {
                 this.onTabChanged.accept(index);
             }
         }
+    }
+
+    private boolean navigateHeader(int current, KeyInputEvent event) {
+        if (!this.enabled.get() || event.ctrlDown() || event.altDown() || event.shiftDown()) return false;
+        int step = switch (event.keyCode()) {
+            case InputConstants.KEY_LEFT, InputConstants.KEY_END -> -1;
+            case InputConstants.KEY_RIGHT, InputConstants.KEY_HOME -> 1;
+            default -> 0;
+        };
+        if (step == 0) return false;
+        int target = switch (event.keyCode()) {
+            case InputConstants.KEY_HOME -> 0;
+            case InputConstants.KEY_END -> this.tabs.size() - 1;
+            default -> current + step;
+        };
+        while (target >= 0 && target < this.tabs.size()) {
+            var tab = this.tabs.get(target);
+            if (tab.enabled) {
+                this.selectTab(target);
+                this.getNode().getTree().requestFocus(tab.header.getNode());
+                return true;
+            }
+            target += step;
+        }
+        return true;
     }
 
     /**
@@ -164,14 +201,7 @@ public class Tabs extends Element implements IComposableElement {
      * @param index the zero-based index; absent or disabled tabs are ignored.
      */
     public void setSelectedTab(int index) {
-        if (index < 0 || index >= this.tabs.size()) return;
-        if (!this.tabs.get(index).enabled) return;
-        if (this.selectedIndex.get() != index) {
-            this.selectedIndex.set(index);
-            if (this.onTabChanged != null) {
-                this.onTabChanged.accept(index);
-            }
-        }
+        this.selectTab(index);
     }
 
     /**
@@ -276,6 +306,44 @@ public class Tabs extends Element implements IComposableElement {
     @Override
     public UICursor getCursor(int x, int y) {
         return this.enabled.get() ? CompoundCursors.HAND : null;
+    }
+
+    private final class HeaderViewport extends ScrollArea {
+        private int revealIndex = -1;
+        private int lastSelected = -1;
+        private int lastWidth = -1;
+
+        private HeaderViewport() {
+            super(Direction.HORIZONTAL);
+        }
+
+        private void reveal(int index) {
+            this.revealIndex = index;
+            this.invalidateLayout();
+        }
+
+        @Override
+        public List<Bounds> place(@Nonnull Bounds bounds, LayoutProperties props, List<Size> children) {
+            int selected = Tabs.this.selectedIndex.get();
+            if (selected != this.lastSelected || bounds.width() != this.lastWidth) this.revealIndex = selected;
+            this.lastSelected = selected;
+            this.lastWidth = bounds.width();
+            if (this.revealIndex >= 0 && this.revealIndex < Tabs.this.tabs.size() && !children.isEmpty()) {
+                int left = 0;
+                for (int index = 0; index < this.revealIndex; index++) {
+                    left += Minecraft.getInstance().font.width(Tabs.this.tabs.get(index).label)
+                            + TAB_PADDING * 2 + TAB_SPACING;
+                }
+                int right = left + Minecraft.getInstance().font.width(Tabs.this.tabs.get(this.revealIndex).label)
+                        + TAB_PADDING * 2;
+                int scroll = this.getScrollXState().get();
+                if (right > scroll + bounds.width()) scroll = right - bounds.width();
+                if (left < scroll) scroll = left;
+                this.scrollTo(Math.clamp(scroll, 0, Math.max(0, children.getFirst().width() - bounds.width())), 0);
+                this.revealIndex = -1;
+            }
+            return super.place(bounds, props, children);
+        }
     }
 
     private final class TabContent extends Element implements IComposableElement {

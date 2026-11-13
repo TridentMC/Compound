@@ -25,6 +25,7 @@ import com.tridevmc.compound.ui.debug.LayoutDebugRenderer;
 import com.tridevmc.compound.ui.element.IElement;
 import com.tridevmc.compound.ui.element.IElementInternal;
 import com.tridevmc.compound.ui.element.IPrimitiveElement;
+import com.tridevmc.compound.ui.element.internal.IWindowedElement;
 import com.tridevmc.compound.ui.event.CharEvent;
 import com.tridevmc.compound.ui.event.KeyInputEvent;
 import com.tridevmc.compound.ui.event.MouseClickEvent;
@@ -107,7 +108,35 @@ public class UITree {
     private Constraints rootConstraints;
     private final Set<ITreeNode> pendingRecompositions = new LinkedHashSet<>();
     private boolean layoutDirty = true;
+    private final Set<ITreeNode> windows = new LinkedHashSet<>();
+    private final Set<ITreeNode> pendingWindowSources = new LinkedHashSet<>();
+    private final Set<ITreeNode> dirtyWindows = new LinkedHashSet<>();
     private final TreeInput input = new TreeInput(this);
+
+    public void requestWindowSource(ITreeNode node) {
+        if (this.isAttached(node)) this.pendingWindowSources.add(node);
+    }
+
+    void releaseWindowPin(ITreeNode node) {
+        for (var parent = node; parent != null; parent = parent.getParent()) {
+            if (parent.getElement() instanceof IWindowedElement) {
+                this.dirtyWindows.add(parent);
+                return;
+            }
+        }
+    }
+
+    private void flushWindowSources() {
+        var pending = List.copyOf(this.pendingWindowSources);
+        this.pendingWindowSources.clear();
+        for (var node : pending) {
+            if (this.isAttached(node)) {
+                var window = (IWindowedElement) node.getElement();
+                if (window.reconcileSource()) this.layoutDirty = true;
+                this.dirtyWindows.add(node);
+            }
+        }
+    }
 
     private Size lastWindowSize = new Size(-1, -1);
 
@@ -137,6 +166,9 @@ public class UITree {
         this.root = null;
         this.elementToNode.clear();
         this.pendingRecompositions.clear();
+        this.windows.clear();
+        this.pendingWindowSources.clear();
+        this.dirtyWindows.clear();
         this.animationScheduler.dispose();
         this.overlayNodes.clear();
         this.rootSize = null;
@@ -184,6 +216,10 @@ public class UITree {
 
     private void registerNode(ITreeNode node) {
         this.elementToNode.put(node.getElement(), node);
+        if (node.getElement() instanceof IWindowedElement) {
+            this.windows.add(node);
+            this.dirtyWindows.add(node);
+        }
         for (ITreeNode child : node.getChildren()) {
             this.registerNode(child);
         }
@@ -192,6 +228,9 @@ public class UITree {
     private void unregisterNode(ITreeNode node) {
         this.detachTimelines(node);
         this.input.detach(node);
+        this.windows.remove(node);
+        this.dirtyWindows.remove(node);
+        this.pendingWindowSources.remove(node);
         this.elementToNode.remove(node.getElement(), node);
         this.pendingRecompositions.remove(node);
         for (var child : node.getChildren()) this.unregisterNode(child);
@@ -296,12 +335,18 @@ public class UITree {
     private void collectOverlayNodes(ITreeNode node, List<ITreeNode> result) {
         if (!node.getElement().isVisible()) return;
         for (ITreeNode child : node.getChildren()) {
-            if (child.getLayoutProperties().getLayer() > 0) {
+            if (child.getLayoutProperties().getLayer() > 0 && !TreeWindows.insideWindow(child)) {
                 result.add(child);
             } else {
                 this.collectOverlayNodes(child, result);
             }
         }
+    }
+
+    private Bounds screenClip(Bounds clip) {
+        if (this.lastWindowSize.width() < 0 || this.lastWindowSize.height() < 0) return clip;
+        var screen = new Bounds(0, 0, this.lastWindowSize.width(), this.lastWindowSize.height());
+        return clip == null ? screen : clip.intersection(screen);
     }
 
     private ITreeNode findNodeAtWithViewport(ITreeNode node, int x, int y, Bounds activeViewport) {
@@ -314,7 +359,7 @@ public class UITree {
         }
 
         var geometry = node.getFrameGeometry();
-        Bounds viewport = geometry == null ? activeViewport : geometry.clip();
+        Bounds viewport = this.screenClip(geometry == null ? activeViewport : geometry.clip());
         if (viewport != null && !viewport.contains(x, y)) return null;
 
         // Iterate in REVERSE order to hit-test top-most elements first
@@ -328,7 +373,8 @@ public class UITree {
             }
         }
 
-        if (result == null && (geometry == null ? elementBounds.contains(x, y) : geometry.contains(x, y))) {
+        if (result == null && element.isHitTestable()
+                && (geometry == null ? elementBounds.contains(x, y) : geometry.contains(x, y))) {
             return node;
         }
 
@@ -419,11 +465,24 @@ public class UITree {
             this.rootConstraints = Constraints.loose(width, height);
             this.layoutDirty = true;
         }
-        if (this.layoutDirty) {
-            this.layoutDirty = false;
-            this.measureTree(this.rootConstraints);
-            this.placeTree(Position.ORIGIN, this.rootConstraints);
-            this.pendingHoverUpdate = true;
+        this.flushWindowSources();
+        for (int pass = 0; this.layoutDirty || !this.dirtyWindows.isEmpty(); pass++) {
+            if (pass == 8) throw new IllegalStateException("Lazy viewport layout did not settle in eight passes");
+            if (this.layoutDirty) {
+                this.layoutDirty = false;
+                this.measureTree(this.rootConstraints);
+                this.placeTree(Position.ORIGIN, this.rootConstraints);
+                this.dirtyWindows.addAll(this.windows);
+                this.pendingHoverUpdate = true;
+            }
+            var pending = List.copyOf(this.dirtyWindows);
+            this.dirtyWindows.clear();
+            for (var node : pending) {
+                if (this.isAttached(node)) {
+                    this.layoutDirty |= TreeWindows.reconcile(node, new Bounds(0, 0, width, height));
+                }
+            }
+            this.flushWindowSources();
         }
         TreeGeometry.prepare(this.root);
         TreeGeometry.sample(this.root, null, null);
@@ -457,14 +516,14 @@ public class UITree {
         IElement element = node.getElement();
 
         var geometry = node.getFrameGeometry();
-        Bounds viewport = geometry == null ? activeViewport : geometry.clip();
+        Bounds viewport = this.screenClip(geometry == null ? activeViewport : geometry.clip());
         if (geometry == null && node.getLayoutProperties().isClip()) {
             viewport = viewport == null ? node.getBounds() : viewport.intersection(node.getBounds());
         }
-        boolean intersects = viewport == null || (geometry == null
-                ? viewport.intersects(node.getBounds())
+        boolean intersects = viewport == null || (viewport.width() > 0 && viewport.height() > 0
+                && (geometry == null ? viewport.intersects(node.getBounds())
                 : geometry.left() < viewport.right() && geometry.right() > viewport.left()
-                && geometry.top() < viewport.bottom() && geometry.bottom() > viewport.top());
+                && geometry.top() < viewport.bottom() && geometry.bottom() > viewport.top()));
         if (intersects && element instanceof IPrimitiveElement primitive) {
             var pose = geometry == null ? null : context.getActiveStack();
             if (viewport != null) context.enableScissor(viewport.left(), viewport.top(), viewport.right(), viewport.bottom());
@@ -478,7 +537,7 @@ public class UITree {
             }
         }
         for (ITreeNode child : node.getChildren()) {
-            if (collectOverlays && child.getLayoutProperties().getLayer() > 0) {
+            if (collectOverlays && child.getLayoutProperties().getLayer() > 0 && !TreeWindows.insideWindow(child)) {
                 this.overlayNodes.add(child);
                 continue;
             }
@@ -505,6 +564,10 @@ public class UITree {
 
     public ITreeNode getFocusedNode() {
         return this.input.getFocusedNode();
+    }
+
+    public ITreeNode getCapturedNode() {
+        return this.input.getCapturedNode();
     }
 
     public void requestFocus(ITreeNode node) {

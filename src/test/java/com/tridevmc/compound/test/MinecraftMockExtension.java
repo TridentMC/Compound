@@ -6,6 +6,7 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.metadata.gui.GuiMetadataSection;
 import net.minecraft.client.resources.metadata.gui.GuiSpriteScaling;
 import net.minecraft.server.Bootstrap;
+import net.neoforged.fml.loading.FMLEnvironment;
 
 import java.util.Optional;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -24,10 +25,14 @@ import static org.mockito.Mockito.RETURNS_SMART_NULLS;
  */
 public class MinecraftMockExtension implements BeforeAllCallback, ExtensionContext.Store.CloseableResource {
     private static MockedStatic<Minecraft> minecraftMock;
+    private static MockedStatic<FMLEnvironment> environmentMock;
 
     // Static initializer runs when THIS class loads, which is before test classes load
     static {
         try {
+            // Minecraft static initializers consult FML before a plain JVM has a loader.
+            environmentMock = mockStatic(FMLEnvironment.class);
+            environmentMock.when(FMLEnvironment::isProduction).thenReturn(true);
             // Try to initialize Minecraft's Bootstrap to allow registries to work
             // This may fail with FML errors, but might initialize enough for static fields
             try {
@@ -111,6 +116,9 @@ public class MinecraftMockExtension implements BeforeAllCallback, ExtensionConte
     public void close() {
         if (minecraftMock != null) {
             minecraftMock.close();
+        }
+        if (environmentMock != null) {
+            environmentMock.close();
         }
     }
 }

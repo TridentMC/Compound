@@ -19,6 +19,7 @@ package com.tridevmc.compound.ui.element;
 import com.mojang.blaze3d.platform.InputConstants;
 
 import com.google.common.collect.Lists;
+import com.tridevmc.compound.ui.event.KeyInputEvent;
 import com.tridevmc.compound.ui.layout.Alignment;
 import com.tridevmc.compound.ui.layout.Bounds;
 import com.tridevmc.compound.ui.layout.Constraints;
@@ -32,6 +33,7 @@ import net.minecraft.network.chat.Component;
 
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Collections;
 import java.util.function.Consumer;
@@ -51,16 +53,18 @@ public class TreeView<T> extends Element implements IComposableElement {
 
     private final State<Boolean> enabled = State.of(true);
     private final TreeNode<T> root;
+    private final CollectionSelection<TreeNode<T>> selection = new CollectionSelection<>();
     private final ScrollArea scrollArea = new ScrollArea();
     private Function<T, String> displayTextProvider = Object::toString;
     private Consumer<TreeNode<T>> onSelectionChanged;
+    private Consumer<List<TreeNode<T>>> onSelectionsChanged = nodes -> { };
     private int itemHeight = DEFAULT_ITEM_HEIGHT;
 
     /**
      * Creates an empty hierarchy with an invisible root and 16-pixel rows.
      */
     public TreeView() {
-        this.root = new TreeNode<>(null, null, this::invalidateComposition);
+        this.root = new TreeNode<>(null, null, this);
     }
 
     /** {@inheritDoc} */
@@ -68,7 +72,7 @@ public class TreeView<T> extends Element implements IComposableElement {
     public void compose(ICompositionScope scope) {
         scope.bind(this.enabled);
 
-        scope.onKeyPress(event -> this.navigate(event.keyCode()));
+        scope.onKeyPress(this::navigate);
         scope.e(new Surface(0xFF181818), background -> {
             background.layout().fillMax();
             background.fillSlot(Surface.CONTENT_SLOT, body -> body.e(this.scrollArea, scroll -> {
@@ -81,13 +85,20 @@ public class TreeView<T> extends Element implements IComposableElement {
         });
     }
 
-    private boolean navigate(int key) {
+    private boolean navigate(KeyInputEvent event) {
+        var key = event.keyCode();
         if (!this.enabled.get()) return false;
         var nodes = this.visibleNodes();
         if (nodes.isEmpty()) return false;
-        int selected = -1;
-        for (int i = 0; i < nodes.size(); i++) {
-            if (nodes.get(i).isSelected()) selected = i;
+        if (event.isShortcut(InputConstants.KEYCODE_A)
+                && this.selection.mode() == EnumSelectionMode.MULTIPLE) {
+            if (this.selection.selectAll(nodes)) this.notifySelection();
+            return true;
+        }
+        var selected = this.selection.focusedIndex(nodes);
+        if (key == InputConstants.KEY_SPACE && selected >= 0) {
+            this.selectNode(nodes.get(selected), event.shiftDown(), event.ctrlDown());
+            return true;
         }
         int target = switch (key) {
             case InputConstants.KEY_UP -> Math.max(0, selected - 1);
@@ -97,25 +108,28 @@ public class TreeView<T> extends Element implements IComposableElement {
             default -> -1;
         };
         if (target >= 0) {
-            this.selectNode(nodes.get(target));
+            if (this.selection.mode() == EnumSelectionMode.MULTIPLE && event.ctrlDown() && !event.shiftDown()) {
+                this.selection.focus(nodes.get(target));
+            } else {
+                this.selectNode(nodes.get(target), event.shiftDown(), event.ctrlDown());
+            }
             this.revealRow(target);
             Minecraft.getInstance().getNarrator().saySystemNow(this.getNarrationMessage());
             return true;
         }
         if (key != InputConstants.KEY_LEFT && key != InputConstants.KEY_RIGHT) return false;
         TreeNode<T> node = nodes.get(Math.max(0, selected));
-        this.selectNode(node);
+        if (selected < 0) this.selectNode(node, false, false);
         if (key == InputConstants.KEY_LEFT) {
             if (node.isExpanded() && !node.children.isEmpty()) node.setExpanded(false);
-            else if (node.parent != this.root) this.selectNode(node.parent);
+            else if (node.parent != this.root) this.selectNode(node.parent, event.shiftDown(), event.ctrlDown());
         } else if (!node.children.isEmpty()) {
             if (!node.isExpanded()) node.setExpanded(true);
-            else this.selectNode(node.children.getFirst());
+            else this.selectNode(node.children.getFirst(), event.shiftDown(), event.ctrlDown());
         }
         nodes = this.visibleNodes();
-        for (int i = 0; i < nodes.size(); i++) {
-            if (nodes.get(i).isSelected()) this.revealRow(i);
-        }
+        var focused = this.selection.focusedIndex(nodes);
+        if (focused >= 0) this.revealRow(focused);
         Minecraft.getInstance().getNarrator().saySystemNow(this.getNarrationMessage());
         return true;
     }
@@ -152,11 +166,12 @@ public class TreeView<T> extends Element implements IComposableElement {
     /** {@inheritDoc} */
     @Override
     public Component getNarrationMessage() {
-        for (var node : this.visibleNodes()) {
-            if (node.isSelected()) {
-                String state = node.children.isEmpty() ? "" : node.isExpanded() ? ", expanded" : ", collapsed";
-                return Component.literal(this.displayTextProvider.apply(node.value) + state);
-            }
+        var visible = this.visibleNodes();
+        var focused = this.selection.focusedIndex(visible);
+        if (focused >= 0) {
+            var node = visible.get(focused);
+            var state = node.children.isEmpty() ? "" : node.isExpanded() ? ", expanded" : ", collapsed";
+            return Component.literal(this.displayTextProvider.apply(node.value) + state);
         }
         return Component.literal("Tree");
     }
@@ -171,7 +186,9 @@ public class TreeView<T> extends Element implements IComposableElement {
 
                 itemStack.e(new Surface(
                         () -> currentNode.isHovered() ? 0xFF303030 : 0x00000000,
-                        () -> currentNode.isSelected() ? 0xFFFFFFFF : 0x00000000, 1),
+                        () -> currentNode.isSelected() ? 0xFFFFFFFF
+                                : this.enabled.get() && scope.isFocused()
+                                && this.selection.isFocused(currentNode) ? 0xFF808080 : 0x00000000, 1),
                         bg -> bg.layout().fillMax());
 
                 itemStack.e(new Box(), labelBox -> {
@@ -187,10 +204,10 @@ public class TreeView<T> extends Element implements IComposableElement {
                 itemStack.onClick(event -> {
                     if (!this.enabled.get() || event.button() != InputConstants.MOUSE_BUTTON_LEFT) return false;
                     scope.requestFocus();
-                    if (!currentNode.children.isEmpty()) {
+                    if (!event.ctrlDown() && !event.shiftDown() && !currentNode.children.isEmpty()) {
                         currentNode.setExpanded(!currentNode.isExpanded());
                     }
-                    this.selectNode(currentNode);
+                    this.selectNode(currentNode, event.shiftDown(), event.ctrlDown());
                     Minecraft.getInstance().getNarrator().saySystemNow(this.getNarrationMessage());
                     return true;
                 });
@@ -213,21 +230,74 @@ public class TreeView<T> extends Element implements IComposableElement {
         return text;
     }
 
-    private void selectNode(TreeNode<T> node) {
-        if (node.isSelected()) return;
-        this.deselectAll(this.root);
-        node.setSelected(true);
+    private void selectNode(TreeNode<T> node, boolean extend, boolean toggle) {
+        if (this.selection.select(this.visibleNodes(), node, extend, toggle)) this.notifySelection();
+    }
 
-        if (this.onSelectionChanged != null) {
-            this.onSelectionChanged.accept(node);
+    private void notifySelection() {
+        this.selection.primary(this.allNodes()).ifPresent(node -> {
+            if (this.onSelectionChanged != null) this.onSelectionChanged.accept(node);
+        });
+        this.onSelectionsChanged.accept(this.getSelectedNodes());
+    }
+
+    private List<TreeNode<T>> allNodes() {
+        var nodes = Lists.<TreeNode<T>>newArrayList();
+        this.appendAll(this.root, nodes);
+        return nodes;
+    }
+
+    private void appendAll(TreeNode<T> parent, List<TreeNode<T>> nodes) {
+        for (var child : parent.children) {
+            nodes.add(child);
+            this.appendAll(child, nodes);
         }
     }
 
-    private void deselectAll(TreeNode<T> node) {
-        node.setSelected(false);
-        for (TreeNode<T> child : node.getChildren()) {
-            this.deselectAll(child);
-        }
+    private void collectionChanged() {
+        if (this.selection.retain(this.allNodes())) this.notifySelection();
+        this.invalidateComposition();
+    }
+
+    /** Returns selected attached nodes in tree order, including collapsed descendants. */
+    @Nonnull
+    public List<TreeNode<T>> getSelectedNodes() {
+        return this.selection.snapshot(this.allNodes());
+    }
+
+    /**
+     * Replaces selection with attached nodes; invalid or foreign nodes fail before mutation.
+     * @param nodes nodes owned by this tree; multiple nodes require MULTIPLE mode.
+     */
+    public void setSelectedNodes(@Nonnull List<TreeNode<T>> nodes) {
+        if (this.selection.replace(this.allNodes(), List.copyOf(nodes))) this.notifySelection();
+    }
+
+    /** Clears selection and notifies the collection callback when it changes. */
+    public void clearSelection() {
+        if (this.selection.clear()) this.notifySelection();
+    }
+
+    /** Returns the selection policy; new trees use SINGLE. */
+    @Nonnull
+    public EnumSelectionMode getSelectionMode() {
+        return this.selection.mode();
+    }
+
+    /**
+     * Changes the policy. Returning to SINGLE retains the focused selected node, or the first selection.
+     * @param mode the selection policy.
+     */
+    public void setSelectionMode(@Nonnull EnumSelectionMode mode) {
+        if (this.selection.mode(mode, this.allNodes())) this.notifySelection();
+    }
+
+    /**
+     * Receives immutable snapshots, including empty selection and removals of selected subtrees.
+     * @param listener the callback, or null to remove it.
+     */
+    public void setOnSelectionsChanged(@Nullable Consumer<List<TreeNode<T>>> listener) {
+        this.onSelectionsChanged = listener == null ? nodes -> { } : listener;
     }
 
     /**
@@ -316,15 +386,14 @@ public class TreeView<T> extends Element implements IComposableElement {
         private final T value;
         private final TreeNode<T> parent;
         private final List<TreeNode<T>> children = Lists.newArrayList();
-        private final Runnable invalidate;
+        private final TreeView<T> owner;
         private boolean expanded = true;
-        private boolean selected = false;
         private boolean hovered = false;
 
-        TreeNode(T value, TreeNode<T> parent, Runnable invalidate) {
+        TreeNode(T value, TreeNode<T> parent, TreeView<T> owner) {
             this.value = value;
             this.parent = parent;
-            this.invalidate = invalidate;
+            this.owner = owner;
         }
 
         /**
@@ -334,9 +403,9 @@ public class TreeView<T> extends Element implements IComposableElement {
          * @return the new child.
          */
         public TreeNode<T> addChild(T value) {
-            TreeNode<T> child = new TreeNode<>(value, this, this.invalidate);
+            TreeNode<T> child = new TreeNode<>(value, this, this.owner);
             this.children.add(child);
-            this.invalidate.run();
+            this.owner.collectionChanged();
             return child;
         }
 
@@ -359,7 +428,7 @@ public class TreeView<T> extends Element implements IComposableElement {
          * @param child the child to remove.
          */
         public void removeChild(TreeNode<T> child) {
-            if (this.children.remove(child)) this.invalidate.run();
+            if (this.children.remove(child)) this.owner.collectionChanged();
         }
 
         /**
@@ -406,7 +475,7 @@ public class TreeView<T> extends Element implements IComposableElement {
         public void setExpanded(boolean expanded) {
             if (this.expanded == expanded) return;
             this.expanded = expanded;
-            this.invalidate.run();
+            this.owner.collectionChanged();
         }
 
         /**
@@ -415,16 +484,24 @@ public class TreeView<T> extends Element implements IComposableElement {
          * @return true when marked selected.
          */
         public boolean isSelected() {
-            return this.selected;
+            return this.owner.selection.contains(this);
         }
 
         /**
-         * Sets only this node's selection flag; it neither deselects other nodes nor invokes the tree callback.
+         * Changes this attached node's selection without invoking callbacks. SINGLE mode replaces other selections.
          *
          * @param selected the new flag.
          */
         public void setSelected(boolean selected) {
-            this.selected = selected;
+            var order = this.owner.allNodes();
+            if (!order.contains(this)) return;
+            if (selected) {
+                if (!this.isSelected()) this.owner.selection.select(order, this, false,
+                        this.owner.getSelectionMode() == EnumSelectionMode.MULTIPLE);
+            } else {
+                this.owner.selection.replace(order,
+                        this.owner.getSelectedNodes().stream().filter(node -> node != this).toList());
+            }
         }
 
         /**
