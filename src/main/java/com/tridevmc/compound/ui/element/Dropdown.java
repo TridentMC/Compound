@@ -225,6 +225,11 @@ public class Dropdown<T> extends Element implements IComposableElement {
         private int visibleHeight = -1;
 
         @Override
+        public boolean isVisible() {
+            return Dropdown.this.open.get() && Dropdown.this.enabled.get();
+        }
+
+        @Override
         public Bounds prepareFrameLayout(FrameGeometry parent) {
             int wanted = Math.min(Dropdown.this.options.size(), Dropdown.this.maxVisibleItems)
                     * OPTION_HEIGHT + 2;

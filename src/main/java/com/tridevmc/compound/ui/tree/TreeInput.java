@@ -33,6 +33,7 @@ import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -49,8 +50,14 @@ final class TreeInput {
     private int lastMouseY;
     private Set<ITreeNode> lastHoveredPath = new HashSet<>();
     private CursorType requestedCursor = CursorTypes.ARROW;
+    @Nullable private FocusRequest pendingFocus;
+    private boolean changingFocus;
+    private long focusResetVersion;
+    private ITreeNode activeInputRoot;
+    private boolean scopeOrderDirty = true;
 
     private record InputScope(ITreeNode node, ITreeNode previousFocus) { }
+    private record FocusRequest(@Nullable ITreeNode target) { }
 
 
     TreeInput(UITree tree) {
@@ -58,16 +65,28 @@ final class TreeInput {
     }
 
     void reset() {
-        this.clearFocus();
-        this.inputScopes.clear();
-        this.tree.releaseWindowPin(this.capturedNode);
-        this.capturedNode = null;
-        this.capturedButton = -1;
-        this.lastHoveredPath.clear();
-        this.requestedCursor = CursorTypes.ARROW;
+        var wasChangingFocus = this.changingFocus;
+        this.changingFocus = true;
+        this.focusResetVersion++;
+        this.pendingFocus = null;
+        try {
+            this.loseFocus();
+            this.inputScopes.clear();
+            this.activeInputRoot = null;
+            this.scopeOrderDirty = true;
+            this.tree.releaseWindowPin(this.capturedNode);
+            this.capturedNode = null;
+            this.capturedButton = -1;
+            this.lastHoveredPath.clear();
+            this.requestedCursor = CursorTypes.ARROW;
+        } finally {
+            this.pendingFocus = null;
+            this.changingFocus = wasChangingFocus;
+        }
     }
 
     void detach(ITreeNode node) {
+        this.scopeOrderDirty = true;
         this.clearInputRoot(node);
         this.lastHoveredPath.remove(node);
         if (this.capturedNode == node) {
@@ -75,7 +94,11 @@ final class TreeInput {
             this.capturedNode = null;
             this.capturedButton = -1;
         }
-        if (this.focusedNode == node) this.clearFocus();
+        if (this.focusedNode == node) {
+            // Detachment must notify loss before this node's owned resources are disposed.
+            if (this.changingFocus) this.loseFocus();
+            else this.clearFocus();
+        }
     }
 
     Position mousePosition() {
@@ -87,13 +110,19 @@ final class TreeInput {
     }
 
     public void setInputRoot(ITreeNode node) {
-        if (node == null || this.inputRoot() == node) return;
+        if (!this.tree.isAttached(node) || this.inputRoot() == node
+                || this.inputScopes.stream().anyMatch(scope -> scope.node() == node)) return;
+        var previousRoot = this.inputRoot();
         this.inputScopes.add(new InputScope(node, this.focusedNode));
-        if (this.focusedNode != node && (this.focusedNode == null || !node.isAncestorOf(this.focusedNode))) {
-            this.clearFocus();
+        this.scopeOrderDirty = true;
+        if (this.inputRoot() != previousRoot) {
+            if (!this.acceptsInput(this.focusedNode)) this.clearFocus();
+            this.tree.releaseWindowPin(this.capturedNode);
+            this.capturedNode = null;
+            this.capturedButton = -1;
         }
-        this.tree.releaseWindowPin(this.capturedNode);
-        this.capturedNode = null;
+        // The scope's overlay descendants may be composed after this registration.
+        this.scopeOrderDirty = true;
         this.tree.requestHoverUpdate();
     }
 
@@ -101,11 +130,19 @@ final class TreeInput {
         for (int i = this.inputScopes.size() - 1; i >= 0; i--) {
             var entry = this.inputScopes.get(i);
             if (entry.node() == node) {
-                var wasActive = i == this.inputScopes.size() - 1;
+                var wasActive = this.inputRoot() == node;
                 this.inputScopes.remove(i);
+                if (i < this.inputScopes.size()) {
+                    var following = this.inputScopes.get(i);
+                    var previous = following.previousFocus();
+                    if (previous == null || previous == node || node.isAncestorOf(previous)) {
+                        this.inputScopes.set(i, new InputScope(following.node(), entry.previousFocus()));
+                    }
+                }
+                this.scopeOrderDirty = true;
                 if (wasActive) {
                     var previous = entry.previousFocus();
-                    this.requestFocus(this.tree.isAttached(previous) ? previous : null);
+                    this.requestFocus(this.acceptsInput(previous) ? previous : null);
                 }
                 this.tree.requestHoverUpdate();
                 return;
@@ -114,7 +151,19 @@ final class TreeInput {
     }
 
     ITreeNode inputRoot() {
-        return this.inputScopes.isEmpty() ? this.tree.getRoot() : this.inputScopes.getLast().node();
+        if (this.inputScopes.isEmpty()) return this.tree.getRoot();
+        if (this.scopeOrderDirty) {
+            this.activeInputRoot = InputScopeOrder.highest(this.tree,
+                    this.inputScopes.stream().map(InputScope::node).toList());
+            this.scopeOrderDirty = false;
+        }
+        return this.activeInputRoot;
+    }
+
+    private boolean hasActiveScope() {
+        var root = this.inputRoot();
+        return this.acceptsInput(root)
+                && this.inputScopes.stream().anyMatch(scope -> scope.node() == root);
     }
 
     private boolean acceptsInput(ITreeNode node) {
@@ -133,6 +182,7 @@ final class TreeInput {
     }
 
     private void validateTargets() {
+        this.scopeOrderDirty = true;
         if (this.focusedNode != null && !this.acceptsInput(this.focusedNode)) this.clearFocus();
         if (this.capturedNode != null && !this.acceptsInput(this.capturedNode)) {
             this.tree.releaseWindowPin(this.capturedNode);
@@ -150,32 +200,56 @@ final class TreeInput {
     }
 
     public void requestFocus(ITreeNode node) {
-        if (node != null && (!this.tree.isAttached(node) || !this.acceptsInput(node))) return;
-        if (this.focusedNode == node) return;
+        if (node != null && !this.acceptsInput(node)) return;
+        this.pendingFocus = new FocusRequest(node);
+        if (this.changingFocus) return;
+        this.changingFocus = true;
+        try {
+            for (var pass = 0; this.pendingFocus != null; pass++) {
+                if (pass == 64) throw new IllegalStateException("Focus requests did not settle in 64 transitions");
+                var request = this.pendingFocus;
+                this.pendingFocus = null;
+                this.changeFocus(request.target());
+            }
+        } finally {
+            this.changingFocus = false;
+            this.pendingFocus = null;
+        }
+    }
 
+    private void changeFocus(ITreeNode node) {
+        if (this.focusedNode == node) return;
+        var resetVersion = this.focusResetVersion;
+        this.loseFocus();
+        // A lost callback can redirect or clear focus; finish its notification batch first.
+        if (resetVersion != this.focusResetVersion || this.pendingFocus != null) return;
+        if (node == null || !this.acceptsInput(node)) return;
+
+        this.focusedNode = node;
+        if (UITree.DEBUG_EVENTS) {
+            System.out.println("[UITree] focus=" + node.getElement().getClass().getSimpleName());
+        }
+        for (var handler : node.getFocusGainedHandlers()) {
+            if (resetVersion != this.focusResetVersion || this.focusedNode != node
+                    || !this.acceptsInput(node)) return;
+            handler.run();
+        }
+        if (resetVersion != this.focusResetVersion || this.focusedNode != node
+                || !this.acceptsInput(node)
+                || this.pendingFocus != null && this.pendingFocus.target() != node) return;
+        var minecraft = Minecraft.getInstance();
+        if (minecraft != null && minecraft.getNarrator() != null) {
+            minecraft.getNarrator().saySystemNow(this.narrationMessage(node));
+        }
+    }
+
+    private void loseFocus() {
         var previousFocused = this.focusedNode;
         this.tree.releaseWindowPin(previousFocused);
         this.focusedNode = null;
-
         if (previousFocused != null) {
             for (var handler : previousFocused.getFocusLostHandlers()) {
                 handler.run();
-            }
-        }
-
-        if (node != null && !this.acceptsInput(node)) return;
-        this.focusedNode = node;
-        if (UITree.DEBUG_EVENTS) {
-            System.out.println("[UITree] focus=" + (node == null ? "none" : node.getElement().getClass().getSimpleName()));
-        }
-
-        if (node != null) {
-            for (var handler : node.getFocusGainedHandlers()) {
-                handler.run();
-            }
-            var minecraft = Minecraft.getInstance();
-            if (minecraft != null && minecraft.getNarrator() != null) {
-                minecraft.getNarrator().saySystemNow(this.narrationMessage(node));
             }
         }
     }
@@ -196,15 +270,7 @@ final class TreeInput {
     }
 
     public void clearFocus() {
-        if (this.focusedNode != null) {
-            var previousFocused = this.focusedNode;
-            this.tree.releaseWindowPin(previousFocused);
-            this.focusedNode = null;
-
-            for (var handler : previousFocused.getFocusLostHandlers()) {
-                handler.run();
-            }
-        }
+        this.requestFocus(null);
     }
 
     public boolean hasFocus(ITreeNode node) {
@@ -249,9 +315,9 @@ final class TreeInput {
                 }
                 current = current.getParent();
             }
-            return consumed || !this.inputScopes.isEmpty();
+            return consumed || this.hasActiveScope();
         }
-        return !this.inputScopes.isEmpty();
+        return this.hasActiveScope();
     }
 
     public CursorType getRequestedCursor() {
@@ -359,6 +425,7 @@ final class TreeInput {
     }
 
     public boolean dispatchScroll(int x, int y, MouseScrollEvent event) {
+        this.validateTargets();
         ITreeNode node = this.tree.findNodeAt(x, y);
         if (UITree.DEBUG_EVENTS) {
             System.out.println("[UITree] dispatchScroll at (" + x + "," + y + ") node=" +
@@ -380,7 +447,7 @@ final class TreeInput {
                 current = current.getParent();
             }
         }
-        return !this.inputScopes.isEmpty();
+        return this.hasActiveScope();
     }
 
     public boolean dispatchKeyPress(KeyInputEvent event) {
@@ -399,28 +466,58 @@ final class TreeInput {
             }
             current = current.getParent();
         }
-        return !this.inputScopes.isEmpty();
+        return this.hasActiveScope();
     }
 
     private boolean moveFocus(boolean backwards) {
         var candidates = new ArrayList<ITreeNode>();
         this.tree.walkDepthFirst(this.inputRoot(), node -> {
-            var bounds = node.getBounds();
-            if (!node.getElement().isVisible() || !node.getElement().isFocusable() || bounds == null || bounds.width() <= 0 || bounds.height() <= 0) return;
-            for (var parent = node.getParent(); parent != null; parent = parent.getParent()) {
-                if (!parent.getElement().isVisible()) return;
-                if (parent.getLayoutProperties().isClip() && parent.getBounds() != null
-                        && !parent.getBounds().intersects(bounds)) return;
-                if (parent == this.inputRoot() || parent.getLayoutProperties().getLayer() > 0) break;
-            }
-            candidates.add(node);
+            if (this.acceptsInput(node) && node.getElement().isFocusable()
+                    && this.isVisibleForFocus(node)) candidates.add(node);
         });
-        if (candidates.isEmpty()) return !this.inputScopes.isEmpty();
+        if (candidates.isEmpty()) return this.hasActiveScope();
         var index = candidates.indexOf(this.focusedNode);
         var next = index < 0 ? (backwards ? candidates.size() - 1 : 0)
                 : Math.floorMod(index + (backwards ? -1 : 1), candidates.size());
         this.requestFocus(candidates.get(next));
         return true;
+    }
+
+    private boolean isVisibleForFocus(ITreeNode node) {
+        var bounds = node.getBounds();
+        if (bounds == null || bounds.width() <= 0 || bounds.height() <= 0) return false;
+        var geometry = node.getFrameGeometry();
+        if (geometry != null) {
+            double determinant = geometry.a() * geometry.d() - geometry.b() * geometry.c();
+            if (!Double.isFinite(determinant) || Math.abs(determinant) < 1e-12) return false;
+            return this.intersectsViewport(geometry.left(), geometry.top(), geometry.right(),
+                    geometry.bottom(), geometry.clip());
+        }
+        for (var parent = node.getParent(); parent != null; parent = parent.getParent()) {
+            if (parent.getLayoutProperties().isClip() && parent.getBounds() != null) {
+                bounds = bounds.intersection(parent.getBounds());
+            }
+            if (parent == this.inputRoot() || parent.getLayoutProperties().getLayer() > 0) break;
+        }
+        return this.intersectsViewport(bounds.left(), bounds.top(), bounds.right(), bounds.bottom(), null);
+    }
+
+    private boolean intersectsViewport(double left, double top, double right, double bottom,
+                                       @Nullable Bounds clip) {
+        if (clip != null) {
+            left = Math.max(left, clip.left());
+            top = Math.max(top, clip.top());
+            right = Math.min(right, clip.right());
+            bottom = Math.min(bottom, clip.bottom());
+        }
+        var viewport = this.tree.getViewportSize();
+        if (viewport.width() >= 0 && viewport.height() >= 0) {
+            left = Math.max(left, 0);
+            top = Math.max(top, 0);
+            right = Math.min(right, viewport.width());
+            bottom = Math.min(bottom, viewport.height());
+        }
+        return right > left && bottom > top;
     }
 
     public boolean dispatchKeyRelease(KeyInputEvent event) {
@@ -432,7 +529,7 @@ final class TreeInput {
             }
             current = current.getParent();
         }
-        return !this.inputScopes.isEmpty();
+        return this.hasActiveScope();
     }
 
     public boolean dispatchCharTyped(CharEvent event) {
@@ -442,7 +539,7 @@ final class TreeInput {
                 if (handler.apply(event)) return true;
             }
         }
-        return !this.inputScopes.isEmpty();
+        return this.hasActiveScope();
     }
 
     public boolean dispatchMouseRelease(int x, int y, MouseReleaseEvent event) {
@@ -466,9 +563,9 @@ final class TreeInput {
                 }
                 current = current.getParent();
             }
-            return consumed || !this.inputScopes.isEmpty();
+            return consumed || this.hasActiveScope();
         }
-        return !this.inputScopes.isEmpty();
+        return this.hasActiveScope();
     }
 
     public boolean dispatchMouseDrag(int x, int y, MouseDragEvent event) {
@@ -487,8 +584,8 @@ final class TreeInput {
                 }
                 current = current.getParent();
             }
-            return consumed || !this.inputScopes.isEmpty();
+            return consumed || this.hasActiveScope();
         }
-        return !this.inputScopes.isEmpty();
+        return this.hasActiveScope();
     }
 }

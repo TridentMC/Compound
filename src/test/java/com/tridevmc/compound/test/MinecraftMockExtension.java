@@ -1,6 +1,7 @@
 package com.tridevmc.compound.test;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.StringSplitter;
 import net.minecraft.client.renderer.texture.SpriteContents;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.metadata.gui.GuiMetadataSection;
@@ -71,6 +72,7 @@ public class MinecraftMockExtension implements BeforeAllCallback, ExtensionConte
 
             // Create a mock Font for Text.measure()
             net.minecraft.client.gui.Font mockFont = mock(net.minecraft.client.gui.Font.class, withSettings().lenient());
+            lenient().when(mockFont.getSplitter()).thenReturn(new StringSplitter((codePoint, style) -> 6F));
             lenient().when(mockFont.width((net.minecraft.network.chat.FormattedText) any())).thenAnswer(invocation -> {
                 net.minecraft.network.chat.FormattedText text = invocation.getArgument(0);
                 // Return 6 pixels per character as a reasonable approximation

@@ -69,6 +69,9 @@ public class UITree {
     private long frameNanos;
     private boolean preparingFrame;
     private final Map<ITreeNode, Set<AnimationTimeline>> composingTimelines = new HashMap<>();
+    private long lifecycleGeneration;
+    private boolean resetting;
+    private final Queue<ITreeNode> rootsMountedDuringReset = new LinkedList<>();
 
     void beginTimelineComposition(ITreeNode node) {
         this.composingTimelines.put(node, new HashSet<>());
@@ -84,7 +87,7 @@ public class UITree {
     }
 
     public void useAnimationTimeline(ITreeNode node, IAnimationTimeline timeline) {
-        if (!this.isAttached(node)) throw new IllegalStateException("Timeline needs an attached node");
+        if (!this.isRegistered(node)) throw new IllegalStateException("Timeline needs an attached node");
         if (!(timeline instanceof AnimationTimeline clock)) {
             throw new IllegalArgumentException("Use IAnimationTimeline.create()");
         }
@@ -152,7 +155,15 @@ public class UITree {
     }
 
     public void setRoot(ITreeNode root) {
+        if (this.resetting) {
+            if (root != null && root != this.root && !this.rootsMountedDuringReset.contains(root)) {
+                this.registerNode(root);
+                this.rootsMountedDuringReset.add(root);
+            }
+            return;
+        }
         if (this.root != null && this.root != root) this.reset();
+        if (this.root != root) this.lifecycleGeneration++;
         this.layoutDirty = true;
         this.root = root;
         if (root != null) {
@@ -160,22 +171,39 @@ public class UITree {
         }
     }
 
+    /**
+     * Releases the tree and its resources. Compositions attempted from teardown callbacks are
+     * also disposed; compose a replacement after this method returns.
+     */
     public void reset() {
-        this.input.reset();
-        if (this.root != null) this.unregisterNode(this.root);
-        this.root = null;
-        this.elementToNode.clear();
-        this.pendingRecompositions.clear();
-        this.windows.clear();
-        this.pendingWindowSources.clear();
-        this.dirtyWindows.clear();
-        this.animationScheduler.dispose();
-        this.overlayNodes.clear();
-        this.rootSize = null;
-        this.rootConstraints = null;
-        this.lastWindowSize = new Size(-1, -1);
-        this.layoutDirty = true;
-        this.pendingHoverUpdate = false;
+        if (this.resetting) return;
+        this.resetting = true;
+        this.lifecycleGeneration++;
+        var previousRoot = this.root;
+        try {
+            this.input.reset();
+            if (previousRoot != null) this.unregisterNode(previousRoot);
+            while (!this.rootsMountedDuringReset.isEmpty()) {
+                var discarded = this.rootsMountedDuringReset.remove();
+                if (discarded.getTree() == this) this.unregisterNode(discarded);
+            }
+            this.root = null;
+            this.elementToNode.clear();
+            this.pendingRecompositions.clear();
+            this.composingTimelines.clear();
+            this.windows.clear();
+            this.pendingWindowSources.clear();
+            this.dirtyWindows.clear();
+            this.animationScheduler.dispose();
+            this.overlayNodes.clear();
+            this.rootSize = null;
+            this.rootConstraints = null;
+            this.lastWindowSize = new Size(-1, -1);
+            this.layoutDirty = true;
+            this.pendingHoverUpdate = false;
+        } finally {
+            this.resetting = false;
+        }
     }
 
     public void setViewportSize(int width, int height) {
@@ -189,6 +217,10 @@ public class UITree {
     }
 
     boolean isAttached(ITreeNode node) {
+        return !this.resetting && this.isRegistered(node);
+    }
+
+    private boolean isRegistered(ITreeNode node) {
         return node != null && this.elementToNode.get(node.getElement()) == node;
     }
 
@@ -445,15 +477,19 @@ public class UITree {
             return;
         }
 
+        // Callbacks may close or replace the tree; a replacement starts on its next frame.
+        var generation = this.lifecycleGeneration;
         this.frameNanos = context.frameNanos();
         this.preparingFrame = true;
         try {
             for (var timeline : this.timelines.keySet()) timeline.advance(this.frameNanos);
             this.animationScheduler.updateAnimations(context.getTicks());
+            if (!this.isCurrentFrame(generation)) return;
             this.flushRecompositions();
         } finally {
             this.preparingFrame = false;
         }
+        if (!this.isCurrentFrame(generation)) return;
 
         var sizeChanged = this.lastWindowSize.width() != width || this.lastWindowSize.height() != height;
 
@@ -463,12 +499,15 @@ public class UITree {
             this.layoutDirty = true;
         }
         this.flushWindowSources();
+        if (!this.isCurrentFrame(generation)) return;
         for (int pass = 0; this.layoutDirty || !this.dirtyWindows.isEmpty(); pass++) {
             if (pass == 8) throw new IllegalStateException("Lazy viewport layout did not settle in eight passes");
             if (this.layoutDirty) {
                 this.layoutDirty = false;
                 this.measureTree(this.rootConstraints);
+                if (!this.isCurrentFrame(generation)) return;
                 this.placeTree(Position.ORIGIN, this.rootConstraints);
+                if (!this.isCurrentFrame(generation)) return;
                 this.dirtyWindows.addAll(this.windows);
                 this.pendingHoverUpdate = true;
             }
@@ -477,18 +516,26 @@ public class UITree {
             for (var node : pending) {
                 if (this.isAttached(node)) {
                     this.layoutDirty |= TreeWindows.reconcile(node, new Bounds(0, 0, width, height));
+                    if (!this.isCurrentFrame(generation)) return;
                 }
             }
             this.flushWindowSources();
+            if (!this.isCurrentFrame(generation)) return;
         }
         TreeGeometry.prepare(this.root);
+        if (!this.isCurrentFrame(generation)) return;
         TreeGeometry.sample(this.root, null, null);
+        if (!this.isCurrentFrame(generation)) return;
         this.pendingHoverUpdate = false;
         this.input.updateHoverState();
     }
 
+    private boolean isCurrentFrame(long generation) {
+        return this.root != null && this.lifecycleGeneration == generation;
+    }
+
     public void renderTree(IScreenContext context) {
-        if (this.root == null) {
+        if (this.root == null || this.root.getBounds() == null) {
             return;
         }
 

@@ -145,3 +145,37 @@ The headless renderer also generates `build/screenshots/transformed-dropdown.png
 pixel checks verify the viewport edge, and the image was inspected. Ctrl-click,
 Shift, and Ctrl+Shift list/tree/grid selection regressions remain part of the suite.
 The cached Minecraft artifact and native-rendering limitations above still apply.
+
+## Production readiness review
+
+Another parallel adversarial pass reviewed UI head `29674c8` against the PR's `26.3`
+base. The existing 183 tests were rerun successfully before exercising additional
+callback, modal, and formatting cases. Two Standards findings and six Spec findings
+were reproduced and repaired:
+
+| Axis | Issue | Repair and permanent coverage |
+| --- | --- | --- |
+| Standards | Animation or geometry callbacks could reset the tree while its frame continued. | Lifecycle generations stop stale frame work. Reset captures the original root, disposes roots composed during teardown, and releases observers, timelines, and animations. Replacement roots begin on their next frame. |
+| Standards | Lazy-cell disposal could close the tree during reconciliation and invalidate its iterator. | Host identity checks stop reconciliation after composer or disposal callbacks detach the collection. |
+| Spec | Reentrant focus callbacks could overwrite focus without sending loss notifications. | Serialized transitions preserve callback order, support redirects and clears, release lazy pins, and stop stale gains or narration after teardown. |
+| Spec | Tab traversal ignored transformed clipping. | Candidates use sampled world geometry, effective clipping, viewport bounds, and transform invertibility. Modal and pregeometry paths retain coverage. |
+| Spec | Transformed context menus clamped in the wrong coordinate space. | GUI positioning uses the current frame's inverse transform, bounded content, and a viewport-covering dismissal backdrop, including nested modals. |
+| Spec | Styled text drew with different metrics from its caret, selection, pointer, and scrolling. | A shared styled run provides cumulative glyph advances and UTF-16 mapping, including composite sequences, surrogate pairs, fractional metrics, and glyph-provider changes within the same Font instance. |
+| Spec | Disabled or closed dropdowns accepted queued clicks from their old popup subtree. | Popup visibility follows live enabled/open state before the next recomposition. |
+| Spec | Lower modal recomposition or reopening could steal input from the dialog painted above it. | Unique scope registrations follow actual paint priority and retain focus restoration history. Non-targetable overlay containers retain interactive descendants; decorative overlays do not promote their scope. Hidden scopes release unhandled input to the background and native screen. |
+
+The follow-up adds 45 permanent tests. Reviewers cross-checked fixes outside their own
+implementation areas, including teardown replacement ownership and modal child-overlay
+interaction. Both final axes reported no remaining actionable findings in that scope.
+
+Final headless validation passes 196 Compound tests and 32 Molecule tests with zero
+failures or skips. Both builds and Javadoc generation pass, retaining existing Javadoc
+warnings. A Gradle model/POM audit verifies six Compound publications, matching-version
+core dependencies, distinct source roots, and no Molecule publication tasks. The UI and
+all-in-one jars contain the current compiled UI classes and no Molecule classes.
+
+The context-menu test generates `build/screenshots/transformed-context-menu.png`, checks
+its viewport border pixel, and the image was inspected. No desktop control was used.
+Local validation still reuses the existing Minecraft artifacts. Fresh artifact
+generation, Jenkins execution, and native GPU/audio fidelity remain unverified; the
+headless result does not establish those production-environment properties.
