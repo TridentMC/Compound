@@ -317,18 +317,23 @@ public class UITree {
 
         // Overlays (layer > 0) are rendered on top and must be hit-tested first.
         List<ITreeNode> overlays = new ArrayList<>();
-        TreeLayers.collect(inputRoot, overlays);
+        TreeLayers.collect(this.root, overlays);
+        var inputGroup = TreeLayers.group(inputRoot);
         if (!overlays.isEmpty()) {
             for (int i = overlays.size() - 1; i >= 0; i--) {
                 ITreeNode overlay = overlays.get(i);
-                ITreeNode result = this.findNodeAtWithViewport(overlay, x, y, null);
+                var candidate = inputGroup.filter(group -> group == overlay).isPresent()
+                        ? inputRoot : inputRoot.isAncestorOf(overlay) ? overlay : null;
+                if (candidate == null) continue;
+                ITreeNode result = this.findNodeAtWithViewport(candidate, x, y, null);
                 if (result != null) {
                     return result;
                 }
             }
         }
 
-        return this.findNodeAtWithViewport(inputRoot, x, y, null);
+        return inputGroup.isPresent() ? null
+                : this.findNodeAtWithViewport(inputRoot, x, y, null);
     }
 
     private Bounds screenClip(Bounds clip) {
@@ -486,7 +491,7 @@ public class UITree {
         }
 
         TreeLayers.collect(this.root, this.overlayNodes);
-        this.renderNode(this.root, context, null);
+        if (!TreeLayers.isOverlay(this.root)) this.renderNode(this.root, context, null);
 
         if (!this.overlayNodes.isEmpty()) {
             for (var overlay : this.overlayNodes) {

@@ -101,6 +101,20 @@ The screen adapters use the mouse event's captured Shift and platform editing mo
 for selection, including Ctrl+Shift ranges, instead of polling the live keyboard state.
 Regression checks exercise both ordinary and container screen adapters.
 
-Follow-up validation: both builds pass with 122 Compound tests and 32 Molecule tests,
+Follow-up validation: both builds pass with 129 Compound tests and 32 Molecule tests,
 zero failures and zero skips. The same cached-artifact limitation above still applies.
 The grid interaction regression generates `build/screenshots/grid-multiple-selection.png`.
+
+Three independent agents reviewed the fixes at `0b867b4` in parallel. They found three
+additional edge cases, now covered by permanent regression tests:
+
+- Built-in dropdowns inside modals needed layers above their containing overlays.
+- Input scopes needed to preserve the effective global paint group during hit testing.
+- Queued keyboard and wheel events needed reveal calculations based on both live and
+  last-placed scroll offsets, including nested horizontal and vertical viewports.
+
+The layer and selection reviewers rechecked those repairs and reported no remaining
+actionable findings. The native-container reviewer also reported no actionable findings.
+Final validation passes all 161 tests, both builds, and Javadoc generation. Javadoc
+retains existing documentation warnings. All validation was headless; native graphics
+and audio fidelity were not exercised.

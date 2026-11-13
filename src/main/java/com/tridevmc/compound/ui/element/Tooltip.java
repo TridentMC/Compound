@@ -70,7 +70,8 @@ public class Tooltip extends Element implements IComposableElement {
     @Override
     public void compose(ICompositionScope scope) {
         scope.e(new Box(), content -> scope.slotInto(CONTENT_SLOT, content));
-        scope.e(new NativeTooltip(), tooltip -> tooltip.layout().fillMax().layer(300));
+        scope.e(new NativeTooltip(), tooltip -> tooltip.layout().fillMax()
+                .layer(OverlayLayer.aboveAncestors(tooltip.getElement().getNode(), 300)));
     }
 
     /** {@inheritDoc} */

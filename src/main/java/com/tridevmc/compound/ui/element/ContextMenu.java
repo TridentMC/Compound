@@ -58,7 +58,8 @@ public class ContextMenu extends Element implements IComposableElement {
         scope.bind(this.visible);
         if (!this.visible.get()) return;
         var tree = scope.getTree();
-        this.getNode().getLayoutProperties().layer(150).fillMax();
+        this.getNode().getLayoutProperties()
+                .layer(OverlayLayer.aboveAncestors(this.getNode(), 150)).fillMax();
         tree.setInputRoot(this.getNode());
         scope.onClick(event -> { this.hide(); return true; });
         scope.onKeyPress(event -> {
